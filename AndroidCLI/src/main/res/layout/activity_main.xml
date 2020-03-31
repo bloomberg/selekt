@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="5dp"
+    android:paddingEnd="5dp"
+    android:paddingStart="5dp"
+    tools:context=".CLIActivity">
+
+    <TextView
+        android:id="@+id/console"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fontFamily="serif-monospace"
+        android:gravity="bottom|start"
+        android:keepScreenOn="true"
+        android:textColor="@color/orange"
+        android:textSize="12sp"
+        android:scrollbars="vertical"
+        android:textColorHint="@color/orange" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="serif-monospace"
+            android:textColor="@color/orange"
+            android:textSize="12sp"
+            android:text="@string/prompt" />
+
+        <EditText
+            android:id="@+id/input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="serif-monospace"
+            android:textSize="12sp"
+            android:inputType="textVisiblePassword"
+            android:textColor="@color/orange"
+            android:hint="@string/input_sql_hint"
+            android:importantForAutofill="no"
+            android:textColorHint="@color/orange" />
+
+    </LinearLayout>
+
+</LinearLayout>

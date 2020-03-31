@@ -1,0 +1,118 @@
+/*
+ * Copyright 2020 Bloomberg Finance L.P.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.bloomberg.selekt.android.support
+
+import android.content.Context
+import android.database.sqlite.SQLiteDatabaseCorruptException
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.RoomDatabase
+import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.android.SQLiteDatabase
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.After
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.DisableOnDebug
+import org.junit.rules.Timeout
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.File
+import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
+
+@Database(entities = [User::class], version = 1, exportSchema = false)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}
+
+@Entity
+data class User(
+    @PrimaryKey val uid: Int,
+    @ColumnInfo(name = "first_name") val firstName: String?,
+    @ColumnInfo(name = "last_name") val lastName: String?
+)
+
+@Dao
+interface UserDao {
+    @Query("SELECT * FROM user WHERE first_name LIKE :first AND last_name LIKE :last LIMIT 1")
+    fun findByName(first: String, last: String): User
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(vararg users: User)
+}
+
+@RunWith(RobolectricTestRunner::class)
+internal class RoomKtTest {
+    @get:Rule
+    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
+
+    private val file = File.createTempFile("test-room", ".db").also { it.deleteOnExit() }
+    private val context = mock<Context>().apply {
+        whenever(getDatabasePath(any())) doReturn file
+    }
+    private val key = ByteArray(32) { 0x42 }
+    private val database = buildRoomDatabase(
+        context,
+        AppDatabase::class.java,
+        "app",
+        SQLiteJournalMode.WAL,
+        key
+    )
+
+    @After
+    fun tearDown() {
+        database.close()
+    }
+
+    @Test
+    fun insert() {
+        val user = User(42, "Michael", "Bloomberg")
+        database.userDao().run {
+            insertAll(user)
+            assertEquals(user, findByName("Michael", "Bloomberg"))
+        }
+    }
+
+    @Test
+    fun encryption() {
+        database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
+        SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, null).use {
+            assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
+                it.journalMode
+            }
+        }
+    }
+
+    @Test
+    fun journalMode() {
+        database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
+        SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, key).use {
+            assertEquals(SQLiteJournalMode.WAL, it.journalMode)
+        }
+    }
+}

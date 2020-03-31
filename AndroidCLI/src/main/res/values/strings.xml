@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AndroidSelektCLI</string>
+    <string name="input_sql_hint">Enter SQL, return to execute…</string>
+    <string name="prompt"><![CDATA[>]]></string>
+</resources>

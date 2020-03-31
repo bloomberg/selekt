@@ -1,0 +1,1 @@
+hello 'foo' please escape \my single quotes! {{{} bhhh {bbh} {1}}

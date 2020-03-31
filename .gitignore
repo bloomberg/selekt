@@ -1,0 +1,17 @@
+.DS_Store
+
+.project
+.idea/
+build/
+.gradle/
+*.iml
+local.properties
+.externalNativeBuild
+
+**/generated
+**/.cxx
+
+**/CMakeCache.txt
+**/*.cmake
+**/CMakeFiles
+**/MakeFile
