@@ -5,7 +5,6 @@ Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zet
 ## Menu
 
 - [Rationale](#rationale)
-- [Building](#building)
 - [Quick start](#quick-start)
 - [Contributions](#contributions)
 - [License](#license)
@@ -17,14 +16,6 @@ Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zet
 The two most popular publicly available alternatives to Selekt are the Android SDK's own SQLite database, and [Android-SQLCipher](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/). The Android SDK's SQLite database does not encrypt databases, instead relying on the OS's user security model to restrict access. Android-SQLCipher uses the SQLCipher library to encrypt databases, but because the derivation of every key is by design expensive it can't be allowed to make full use of the concurrency offered by SQLite3: Each database must have only one connection, connections cannot be ephemeral and must persist even if idling.
 
 Selekt sits somewhere between the two: Selekt also uses SQLCipher to encrypt databases with AES-256, but uses SQLCipher in a mode that moves the responsibility for deriving keys to the caller. This compromise sacrifices some of the security guarantee offered by the default operating mode of SQLCipher, in return for allowing greater concurrency and efficient resource use while still retaining pretty good security.
-
-## Building 
-
-```bash
-./build_selekt.sh
-```
-
-Requires Java 8.
 
 ## Quick Start
 
