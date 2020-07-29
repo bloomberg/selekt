@@ -22,4 +22,4 @@ message(STATUS "Including OpenSSL headers from: ${INCLUDE_OPENSSL_DIR}")
 target_include_directories(selekt SYSTEM PUBLIC ${INCLUDE_OPENSSL_DIR})
 
 target_sources(selekt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3_jni.cpp)
-target_compile_options(selekt PRIVATE "-Werror")
+#target_compile_options(selekt PRIVATE "-Werror")
