@@ -5,6 +5,7 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
--keepclasseswithmembernames,includedescriptorclasses class * {
+# Eagerly loaded in JNI.
+-keep class com.bloomberg.selekt.ExternalSQLite {
     native <methods>;
 }
