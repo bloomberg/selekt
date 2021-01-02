@@ -31,5 +31,7 @@ internal class Key(value: ByteArray) {
         value.fill(0)
     }
 
-    operator fun invoke() = value.asBlobLiteral()
+    operator fun invoke() = synchronized(lock) {
+        value.asBlobLiteral()
+    }
 }
