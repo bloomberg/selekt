@@ -16,6 +16,7 @@
 
 plugins {
     kotlin("jvm")
+    jacoco
 }
 
 description = "Selekt Pools library."
@@ -28,4 +29,12 @@ disableKotlinCompilerAssertions()
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")
+}
+
+tasks.withType<JacocoReport>().configureEach {
+    reports {
+        csv.isEnabled = false
+        html.isEnabled = true
+        xml.isEnabled = true
+    }
 }

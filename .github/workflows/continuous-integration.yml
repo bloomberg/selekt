@@ -1,10 +1,6 @@
 name: 'Continous Integration'
 
-on:
-  pull_request:
-  push:
-    branches-ignore:
-      - 'main'
+on: [pull_request, push]
 
 jobs:
   ci-pipeline:
@@ -44,3 +40,7 @@ jobs:
         ./gradlew :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
         ./gradlew assembleSelekt
+    - name: 'Coverage'
+      run: |
+        ./gradlew :Pools:jacocoTestReport
+        bash <(curl -s https://codecov.io/bash)
