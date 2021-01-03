@@ -33,7 +33,7 @@ enum class Versions(
     KOTLIN("1.3.72", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_COROUTINES("1.3.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KTLINT("0.35.0", URL("https://github.com/pinterest/ktlint")),
-    JACOCO("0.8.5", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
+    JACOCO("0.8.6", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.5.2", URL("https://junit.org/junit5/")),

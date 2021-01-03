@@ -18,15 +18,6 @@ import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.LibraryPlugin
 import org.gradle.api.plugins.PluginContainer
 
-import org.jetbrains.kotlin.gradle.plugin.KotlinAndroidPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
-
 internal fun PluginContainer.findAndroidAppPlugin() = findPlugin(AppPlugin::class.java)
 
 internal fun PluginContainer.findAndroidLibraryPlugin() = findPlugin(LibraryPlugin::class.java)
-
-internal val PluginContainer.hasKotlinPlugin
-    get() = hasPlugin(KotlinPluginWrapper::class.java)
-
-internal val PluginContainer.hasKotlinAndroidPlugin
-    get() = hasPlugin(KotlinAndroidPluginWrapper::class.java)

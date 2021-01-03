@@ -42,5 +42,5 @@ jobs:
         ./gradlew assembleSelekt
     - name: 'Coverage'
       run: |
-        ./gradlew :Pools:jacocoTestReport
+        ./gradlew :jacocoSelektTestReport
         bash <(curl -s https://codecov.io/bash)

@@ -20,6 +20,7 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
     id("kotlin-android-extensions")
+    id("bb-jacoco-android")
     kotlin("kapt")
 }
 

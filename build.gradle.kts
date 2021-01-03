@@ -18,6 +18,7 @@
 
 import io.gitlab.arturbosch.detekt.Detekt
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 
 buildscript {
     repositories {
@@ -151,5 +152,50 @@ tasks.register("checkJavaVersion") {
     logger.quiet(version)
     assert(Regex(".*OpenJDK.*build 1\\.8\\..*").containsMatchIn(version)) {
         "Gradle's Java home is currently: '$javaHome'. However AdoptOpenJDK 8 is required."
+    }
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+fun JacocoReportBase.initialise() {
+    group = "verification"
+    val block: (JacocoReport) -> Unit = {
+        this@initialise.classDirectories.from(it.classDirectories)
+        this@initialise.executionData.from(it.executionData)
+        this@initialise.sourceDirectories.from(it.sourceDirectories)
+    }
+    subprojects {
+        pluginManager.withPlugin("bb-jacoco-android") {
+            pluginManager.withPlugin("com.android.library") {
+                val capitalisedVariant = this@subprojects.extensions.getByType(
+                    JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
+                tasks.withType<JacocoReport> {
+                    if (name.contains(capitalisedVariant)) {
+                        block(this@withType)
+                        this@initialise.dependsOn(this@withType)
+                    }
+                }
+            }
+        }
+        pluginManager.withPlugin("org.gradle.jacoco") {
+            configure<JacocoPluginExtension> {
+                toolVersion = Versions.JACOCO.version
+            }
+            pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+                tasks.withType<JacocoReport> {
+                    block(this@withType)
+                    this@initialise.dependsOn(this@withType)
+                }
+            }
+        }
+    }
+}
+
+tasks.register<JacocoReport>("jacocoSelektTestReport") {
+    initialise()
+    description = "Generates a global JaCoCo coverage report."
+    reports {
+        csv.isEnabled = false
+        html.isEnabled = true
+        xml.isEnabled = true
     }
 }
