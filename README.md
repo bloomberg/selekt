@@ -1,5 +1,7 @@
 # Selekt
 
+[![Coverage Status](https://codecov.io/gh/bloomberg/selekt/branch/main/graph/badge.svg)](https://codecov.io/gh/bloomberg/selekt)
+
 Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zetetic.net/sqlcipher/), an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3.
 
 ## Menu
