@@ -115,7 +115,7 @@ internal class WindowedCursor(
 
     override fun isFirst() = position == 0 && count > 0
 
-    override fun isLast() = count.let { it == position && it > 0 }
+    override fun isLast() = count.let { it > 0 && it - 1 == position }
 
     override fun isNull(index: Int) = window.isNull(position, index)
 
