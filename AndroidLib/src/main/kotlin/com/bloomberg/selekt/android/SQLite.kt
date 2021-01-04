@@ -80,5 +80,5 @@ internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
         extendedCode: SQLCode,
         message: String,
         context: String?
-    ) = "Code $code; Extended code $extendedCode}; Message: $message; Context: $context"
+    ) = "Code $code; Extended code $extendedCode; Message: $message; Context: $context"
 }
