@@ -30,18 +30,34 @@ enum class Versions(
     DOKKA("0.9.18", URL("https://github.com/Kotlin/dokka")),
     ESPRESSO_CORE("3.1.1",
         URL("https://android.googlesource.com/platform/frameworks/testing/+/android-support-test/espresso")),
-    KOTLIN("1.3.72", URL("https://github.com/JetBrains/kotlin")),
-    KOTLIN_COROUTINES("1.3.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
-    KTLINT("0.35.0", URL("https://github.com/pinterest/ktlint")),
     JACOCO("0.8.6", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.5.2", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.5.2", URL("https://junit.org/junit5/")),
+    KOTLIN("1.3.72", URL("https://github.com/JetBrains/kotlin")),
+    KOTLIN_COROUTINES("1.3.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
+    KTLINT("0.35.0", URL("https://github.com/pinterest/ktlint")),
     MOCKITO_ANDROID("3.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_CORE("3.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("2.1.0", URL("https://github.com/nhaarman/mockito-kotlin")),
     ROBOLECTRIC("4.3.1", URL("https://github.com/robolectric/robolectric"));
 
     override fun toString() = version
+
+    private companion object {
+        init {
+            checkLexicographicOrder()
+        }
+
+        private fun checkLexicographicOrder() {
+            values().map { it.name.replace('_', '-') }.run {
+                slice(1 until size).forEachIndexed { index, version ->
+                    check(this[index] < version) {
+                        "Versions are not listed lexicographically near '${values()[index + 1].name}'."
+                    }
+                }
+            }
+        }
+    }
 }
