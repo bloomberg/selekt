@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.commons.threadLocal
-import com.bloomberg.selekt.pools.IObjectPool
+import com.bloomberg.selekt.annotations.Generated
+import com.bloomberg.selekt.commons.threadLocal
+import com.bloomberg.selekt.pools.IPooledObject
+import com.bloomberg.selekt.pools.TieredObjectPool
 import javax.annotation.concurrent.NotThreadSafe
 
-internal typealias SQLExecutorPool = IObjectPool<String, CloseableSQLExecutor>
+internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
 
 internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
     private val session by threadLocal { SQLSession(pool) }
@@ -34,10 +36,21 @@ internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
 
     fun beginImmediateTransaction() = session.beginImmediateTransaction()
 
+    fun blob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        readOnly: Boolean
+    ) = session.blob(name, table, column, row, readOnly)
+
     fun endTransaction() = session.endTransaction()
 
     val inTransaction: Boolean
         get() = session.inTransaction
+
+    @Generated
+    inline fun <T> execute(readOnly: Boolean, block: () -> T) = session.execute(!readOnly) { block() }
 
     fun setTransactionSuccessful() = session.setTransactionSuccessful()
 
@@ -45,6 +58,7 @@ internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
 
     fun yieldTransaction(pauseMillis: Long) = session.yieldTransaction(pauseMillis)
 
+    @Generated
     internal inline fun <R> execute(
         primary: Boolean,
         sql: String,
@@ -69,6 +83,16 @@ internal class SQLSession(
     override fun beginImmediateTransaction() = begin(TransactionMode.IMMEDIATE)
 
     fun beginRawTransaction(sql: String) = begin(sql)
+
+    fun blob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        readOnly: Boolean
+    ) = execute(!readOnly) {
+        it.executeForBlob(name, table, column, row)
+    }
 
     override fun endTransaction() {
         --depth
@@ -101,6 +125,7 @@ internal class SQLSession(
         return true
     }
 
+    @Generated
     internal inline fun <R> execute(
         primary: Boolean,
         sql: String,
@@ -130,7 +155,7 @@ internal class SQLSession(
     private fun internalBegin(sql: String) {
         transactionSql = sql
         retain(true, sql).runCatching {
-            executeWithRetry(sql)
+            executeWithRetry(sql, SQLStatementType.BEGIN)
         }.exceptionOrNull()?.let {
             rollbackQuietly()
             release()
@@ -152,13 +177,13 @@ internal class SQLSession(
     }
 
     private fun commit() = execute(true, "END") {
-        runCatching { it.executeWithRetry("END") }.exceptionOrNull()?.let {
+        runCatching { it.executeWithRetry("END", SQLStatementType.COMMIT) }.exceptionOrNull()?.let {
             rollbackQuietly()
             throw it
         }
     }
 
-    private fun rollback() = execute(false, "ROLLBACK") { it.execute("ROLLBACK") }
+    private fun rollback() = execute(false, "ROLLBACK") { it.execute("ROLLBACK", SQLStatementType.ABORT) }
 
     private fun rollbackQuietly() {
         runCatching { rollback() }
@@ -172,12 +197,21 @@ internal class SQLExecutorProxy(
 ) : CloseableSQLExecutor {
     internal var executor: CloseableSQLExecutor = StubCloseableSQLExecutor
 
+    @Generated
     private inline fun <R> internalExecute(
         sql: String,
         defaultValue: R,
         block: () -> R
+    ) = internalExecute(sql, sql.sqlStatementType(), defaultValue, block)
+
+    @Generated
+    private inline fun <R> internalExecute(
+        sql: String,
+        statementType: SQLStatementType,
+        defaultValue: R,
+        block: () -> R
     ) = session.run {
-        sql.sqlStatementType().let {
+        statementType.let {
             if (!it.isTransactional) {
                 return block()
             }
@@ -204,6 +238,10 @@ internal class SQLExecutorProxy(
     override val isPrimary: Boolean
         get() = executor.isPrimary
 
+    override var tag: Boolean
+        get() = executor.tag
+        set(value) { executor.tag = value }
+
     override val isReadOnly: Boolean
         get() = executor.isReadOnly
 
@@ -215,7 +253,30 @@ internal class SQLExecutorProxy(
         executor.execute(sql, bindArgs)
     }
 
+    override fun execute(sql: String, statementType: SQLStatementType, bindArgs: Array<*>) = internalExecute(
+        sql,
+        statementType,
+        0
+    ) {
+        executor.execute(sql, statementType, bindArgs)
+    }
+
+    override fun executeForBlob(name: String, table: String, column: String, row: Long) =
+        executor.executeForBlob(name, table, column, row)
+
     override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0) {
+        executor.executeForChangedRowCount(sql, bindArgs)
+    }
+
+    override fun executeForChangedRowCount(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = internalExecute(sql, statementType, 0) {
+        executor.executeForChangedRowCount(sql, statementType, bindArgs)
+    }
+
+    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) = internalExecute(sql, 0) {
         executor.executeForChangedRowCount(sql, bindArgs)
     }
 
@@ -230,6 +291,14 @@ internal class SQLExecutorProxy(
         executor.executeForLastInsertedRowId(sql, bindArgs)
     }
 
+    override fun executeForLastInsertedRowId(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = internalExecute(sql, statementType, 0L) {
+        executor.executeForLastInsertedRowId(sql, statementType, bindArgs)
+    }
+
     override fun executeForLong(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0L) {
         executor.executeForLong(sql, bindArgs)
     }
@@ -240,6 +309,10 @@ internal class SQLExecutorProxy(
 
     override fun executeWithRetry(sql: String) = internalExecute(sql, 0) {
         executor.executeWithRetry(sql)
+    }
+
+    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = internalExecute(sql, statementType, 0) {
+        executor.executeWithRetry(sql, statementType)
     }
 
     override fun matches(key: String) = executor.matches(key)
@@ -254,6 +327,10 @@ private object StubCloseableSQLExecutor : CloseableSQLExecutor {
     override val isPrimary: Boolean
         get() = throw UnsupportedOperationException()
 
+    override var tag: Boolean
+        get() = throw UnsupportedOperationException()
+        set(@Suppress("UNUSED_PARAMETER") value) = throw UnsupportedOperationException()
+
     override val isReadOnly: Boolean
         get() = throw UnsupportedOperationException()
 
@@ -263,7 +340,25 @@ private object StubCloseableSQLExecutor : CloseableSQLExecutor {
 
     override fun execute(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
 
+    override fun execute(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = throw UnsupportedOperationException()
+
+    override fun executeForBlob(name: String, table: String, column: String, row: Long) =
+        throw UnsupportedOperationException()
+
     override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
+
+    override fun executeForChangedRowCount(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = throw UnsupportedOperationException()
+
+    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) =
+        throw UnsupportedOperationException()
 
     override fun executeForCursorWindow(sql: String, bindArgs: Array<*>, window: ICursorWindow) =
         throw UnsupportedOperationException()
@@ -272,11 +367,19 @@ private object StubCloseableSQLExecutor : CloseableSQLExecutor {
 
     override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
 
+    override fun executeForLastInsertedRowId(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = throw UnsupportedOperationException()
+
     override fun executeForLong(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
 
     override fun executeForString(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
 
     override fun executeWithRetry(sql: String) = throw UnsupportedOperationException()
+
+    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = throw UnsupportedOperationException()
 
     override fun matches(key: String) = throw UnsupportedOperationException()
 
@@ -302,12 +405,13 @@ interface ISQLTransactor {
 }
 
 @NotThreadSafe
-internal open class Session<K : Any, T : Any> constructor(
-    private val pool: IObjectPool<K, T>
+internal open class Session<K : Any, T : IPooledObject<K>> constructor(
+    private val pool: TieredObjectPool<K, T>
 ) {
     private var obj: T? = null
     private var retainCount = 0
 
+    @Generated
     inline fun <R> execute(
         primary: Boolean,
         key: K,
@@ -320,17 +424,32 @@ internal open class Session<K : Any, T : Any> constructor(
         }
     }
 
+    @Generated
+    inline fun <R> execute(
+        primary: Boolean,
+        block: (T) -> R
+    ) = retain(primary).run {
+        try {
+            block(this)
+        } finally {
+            release()
+        }
+    }
+
     val hasObject: Boolean
         get() = retainCount > 0
 
-    protected fun retain(primary: Boolean, key: K) =
-        (obj ?: (if (primary) pool.borrowPrimaryObject() else pool.borrowObject(key)).also { obj = it })
-            .also { ++retainCount }
+    protected fun retain(primary: Boolean, key: K) = retain(primary) { pool.borrowObject(key) }
 
-    protected fun release() = checkNotNull(obj).release()
+    protected fun release() = obj!!.release()
+
+    private fun retain(primary: Boolean) = retain(primary) { pool.borrowObject() }
+
+    @Generated
+    private inline fun retain(primary: Boolean, block: () -> T) =
+        (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also { obj = it }).also { ++retainCount }
 
     private fun T.release() {
-        check(retainCount > 0) { "Attempting to over-release a resource." }
         if (--retainCount == 0) {
             pool.returnObject(this).also { obj = null }
         }

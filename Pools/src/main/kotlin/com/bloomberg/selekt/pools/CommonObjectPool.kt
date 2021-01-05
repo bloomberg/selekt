@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package com.bloomberg.selekt.pools
 
-import com.bloomberg.commons.LinkedDeque
-import com.bloomberg.commons.withTryLock
+import com.bloomberg.selekt.annotations.Generated
+import com.bloomberg.selekt.commons.LinkedDeque
+import com.bloomberg.selekt.commons.withTryLock
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -26,35 +27,29 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 
-internal class CommonObjectPool<K : Any, T : IKeyedObject<K>>(
+class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
-    private val configuration: PoolConfiguration
+    private val configuration: PoolConfiguration,
+    private val otherPool: SingleObjectPool<K, T>
 ) : IObjectPool<K, T> {
     init {
-        require(configuration.maxTotal > 1) { "Pool configuration must allow at least two objects." }
+        require(configuration.maxTotal > 0) { "Pool configuration must allow at least one object." }
     }
-
-    private val maxSecondaryTotal = configuration.maxTotal - 1
 
     private val isClosed = AtomicBoolean(false)
 
     private val lock = ReentrantLock(true)
-    private val primaryAvailable = lock.newCondition()
-    private val secondaryAvailable = lock.newCondition()
+    private val available = lock.newCondition()
 
     @GuardedBy("lock")
-    private var idlePrimaryObject: PooledObject<T>? = null
+    private val idleObjects = LinkedDeque<T>()
     @GuardedBy("lock")
-    private val idleSecondaryObjects = LinkedDeque<PooledObject<T>>()
-    @GuardedBy("lock")
-    private var primaryExists = false
-    @GuardedBy("lock")
-    private var secondaryCount = 0
+    private var count = 0
     @GuardedBy("lock")
     private var future: ScheduledFuture<*>? = null
     @GuardedBy("lock")
-    private var tag = Long.MIN_VALUE
+    private var tag = false
 
     override fun close() {
         if (isClosed.getAndSet(true)) {
@@ -63,146 +58,86 @@ internal class CommonObjectPool<K : Any, T : IKeyedObject<K>>(
         evict()
     }
 
-    override fun borrowPrimaryObject(): T {
+    override fun borrowObject() = internalBorrowObject { null }
+
+    override fun borrowObject(key: K) = internalBorrowObject {
+        idleObjects.pollFirst {
+            it.matches(key)
+        }
+    }
+
+    @Suppress("Detekt.ReturnCount")
+    @Generated
+    private inline fun internalBorrowObject(preferred: () -> T?): T {
         lock.withLock {
             while (!isClosed.get()) {
-                idlePrimaryObject?.let {
-                    idlePrimaryObject = null
-                    return it.obj
+                preferred()?.let {
+                    return it
                 }
-                if (!primaryExists) {
-                    primaryExists = true
+                idleObjects.pollFirst()?.let {
+                    return it
+                }
+                if (count < configuration.maxTotal) {
                     attemptScheduleEviction()
+                    ++count
                     return@withLock Unit
                 }
+                otherPool.borrowObjectOrNull()?.let { return it }
                 do {
-                    primaryAvailable.awaitUninterruptibly()
-                } while (idlePrimaryObject == null && primaryExists)
+                    available.awaitUninterruptibly()
+                } while (idleObjects.isEmpty && count == configuration.maxTotal)
             }
             null
         }?.let {
-            return factory.makePrimaryObject()
+            return factory.makeObject()
         }
         error("Pool is closed.")
-    }
-
-    /**
-     * Poll for a non-primary object, else make a non-primary object, else acquire the primary object if it is available
-     * and has no waiters, else make the primary object, else wait for a non-primary object to become available.
-     */
-    @Suppress("Detekt.ComplexMethod", "Detekt.ReturnCount")
-    override fun borrowObject(key: K): T {
-        lock.withLock {
-            while (!isClosed.get()) {
-                idleSecondaryObjects.pollFirst {
-                    it.obj.matches(key)
-                }?.let {
-                    return it.obj
-                }
-                idleSecondaryObjects.pollFirst()?.let {
-                    return it.obj
-                }
-                if (secondaryCount < maxSecondaryTotal) {
-                    ++secondaryCount
-                    attemptScheduleEviction()
-                    return@withLock Tier.SECONDARY
-                }
-                if (!lock.hasWaiters(primaryAvailable)) {
-                    idlePrimaryObject?.let {
-                        idlePrimaryObject = null
-                        return it.obj
-                    }
-                    if (!primaryExists) {
-                        primaryExists = true
-                        return@withLock Tier.PRIMARY
-                    }
-                }
-                do {
-                    secondaryAvailable.awaitUninterruptibly()
-                } while (idleSecondaryObjects.isEmpty && secondaryCount == maxSecondaryTotal)
-            }
-            null
-        }?.let {
-            return when (it) {
-                Tier.SECONDARY -> factory.makeObject()
-                Tier.PRIMARY -> factory.makePrimaryObject()
-            }
-        }
-        error("Pool is closed.")
-    }
-
-    override fun gauge() = factory.gauge().run {
-        PoolGauge(createdCount - destroyedCount)
     }
 
     override fun returnObject(obj: T) {
         lock.withLock {
-            if (obj.isPrimary) {
-                returnPrimaryObject(obj)
-            } else {
-                returnSecondaryObject(obj)
-            }
+            obj.tag = tag
+            idleObjects.putFirst(obj)
+            available.signal()
         }
         if (isClosed.get()) {
             evict()
         }
     }
 
-    @GuardedBy("lock")
-    private fun returnPrimaryObject(obj: T) {
-        idlePrimaryObject = PooledObject(obj, tag)
-        primaryAvailable.signal()
-    }
-
-    @GuardedBy("lock")
-    private fun returnSecondaryObject(obj: T) {
-        idleSecondaryObjects.putFirst(PooledObject(obj, tag))
-        secondaryAvailable.signal()
-    }
-
     internal fun evict() {
-        lock.withTryLock {
+        lock.withTryLock(0L, TimeUnit.MILLISECONDS) {
             if (isClosed.get()) {
                 factory.close()
-                primaryAvailable.signalAll()
-                secondaryAvailable.signalAll()
+                available.signalAll()
             }
-            if (!primaryExists && secondaryCount == 0) {
+            if (count == 0) {
                 cancelScheduledEviction()
                 return@evict
             }
             evictions()
         }?.forEach {
-            factory.destroyObject(it.obj)
+            factory.destroyObject(it)
         }
     }
 
     @GuardedBy("lock")
-    private fun evictions(): List<PooledObject<T>> {
-        fun PooledObject<T>.isIdle() = this@isIdle.tag - this@CommonObjectPool.tag < 0L
-        fun shouldRemove(it: PooledObject<T>) = isClosed.get() ||
-            it.isIdle() && future?.isCancelled == false
+    private fun evictions(): List<T> {
+        fun T.isIdle() = this@isIdle.tag != this@CommonObjectPool.tag
+        fun shouldRemove(it: T) = it.isIdle() && future?.isCancelled == false || isClosed.get()
         return sequence {
-            val iterator = idleSecondaryObjects.reverseMutableIterator()
+            val iterator = idleObjects.reverseMutableIterator()
             iterator.forEach {
                 if (shouldRemove(it)) {
                     iterator.remove()
-                    --secondaryCount
-                    secondaryAvailable.signal()
+                    --count
+                    available.signal()
                     yield(it)
                 } else {
                     return@forEach
                 }
             }
-            idlePrimaryObject?.let {
-                if (shouldRemove(it)) {
-                    idlePrimaryObject = null
-                    primaryExists = false
-                    primaryAvailable.signal()
-                    yield(it)
-                }
-            }
-        }.toList().also { ++tag }
+        }.toList().also { tag = !tag }
     }
 
     @GuardedBy("lock")
@@ -216,7 +151,7 @@ internal class CommonObjectPool<K : Any, T : IKeyedObject<K>>(
         if (future?.isCancelled == false || configuration.evictionIntervalMillis < 0L || isClosed.get()) {
             return
         }
-        ++tag
+        tag = !tag
         future = executor.scheduleAtFixedRate(
             ::evict,
             configuration.evictionDelayMillis,
@@ -224,9 +159,4 @@ internal class CommonObjectPool<K : Any, T : IKeyedObject<K>>(
             TimeUnit.MILLISECONDS
         )
     }
-}
-
-private enum class Tier {
-    PRIMARY,
-    SECONDARY
 }

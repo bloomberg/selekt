@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.pools.FactoryGauge
-import com.bloomberg.selekt.pools.IKeyedObject
+import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.IObjectFactory
 import com.bloomberg.selekt.pools.PoolConfiguration
 import com.bloomberg.selekt.pools.createObjectPool
@@ -36,7 +36,6 @@ private val sharedExecutor = ScheduledThreadPoolExecutor(1, ThreadFactory {
         priority = Thread.NORM_PRIORITY
     }
 }).apply {
-    maximumPoolSize = corePoolSize
     setKeepAliveTime(
         (KEEP_ALIVE_MULTIPLIER * SQLiteJournalMode.WAL.databaseConfiguration.timeBetweenEvictionRunsMillis).toLong(),
         TimeUnit.MILLISECONDS
@@ -55,7 +54,7 @@ internal fun openConnectionPool(
     sharedExecutor,
     configuration.toPoolConfiguration())
 
-internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IKeyedObject<String>
+internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<String>
 
 private fun DatabaseConfiguration.toPoolConfiguration() = PoolConfiguration(
     evictionDelayMillis = evictionDelayMillis,
@@ -99,7 +98,7 @@ private class SQLConnectionFactory(
     }
 
     override fun makePrimaryObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE.or(SQL_OPEN_CREATE), random, key).also {
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
             ++createdCount
         }
     }

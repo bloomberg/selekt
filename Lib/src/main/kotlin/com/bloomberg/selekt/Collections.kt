@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.Generated
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("NOTHING_TO_INLINE")
+@Generated
 internal inline fun <T> concurrentSetOf(): MutableSet<T> = Collections.newSetFromMap(ConcurrentHashMap<T, Boolean>())

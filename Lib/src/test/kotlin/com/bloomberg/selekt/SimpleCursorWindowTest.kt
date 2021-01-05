@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,35 @@ internal class SimpleCursorWindowTest {
     }
 
     @Test
+    fun close() = window.run {
+        allocateRow()
+        assertEquals(1, numberOfRows())
+        close()
+        assertEquals(0, numberOfRows())
+    }
+
+    @Test
     fun getBlob() = window.run {
-        val blob = ByteArray(32) { 42 }
+        val blob = ByteArray(1) { 42 }
         allocateRow()
         put(blob)
         assertSame(blob, getBlob(0, 0))
+    }
+
+    @Test
+    fun getBlobAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertSame(null, getBlob(0, 0))
+    }
+
+    @Test
+    fun getBlobAsLong(): Unit = window.run {
+        allocateRow()
+        put(1L)
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            getBlob(0, 0)
+        }
     }
 
     @Test
@@ -63,9 +87,58 @@ internal class SimpleCursorWindowTest {
     }
 
     @Test
+    fun getDoubleAsFloat() = window.run {
+        allocateRow()
+        put(42.0f)
+        assertEquals(42.0, getDouble(0, 0))
+    }
+
+    @Test
+    fun getDoubleAsLong() = window.run {
+        allocateRow()
+        put(42L)
+        assertEquals(42.0, getDouble(0, 0))
+    }
+
+    @Test
+    fun getDoubleAsString() = window.run {
+        allocateRow()
+        put("42.0")
+        assertEquals(42.0, getDouble(0, 0))
+    }
+
+    @Test
+    fun getDoubleAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(0.0, getDouble(0, 0))
+    }
+
+    @Test
     fun getFloat() = window.run {
         allocateRow()
         put(42.0f)
+        assertEquals(42.0f, getFloat(0, 0))
+    }
+
+    @Test
+    fun getFloatAsDouble() = window.run {
+        allocateRow()
+        put(42.0)
+        assertEquals(42.0f, getFloat(0, 0))
+    }
+
+    @Test
+    fun getFloatAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(0.0f, getFloat(0, 0))
+    }
+
+    @Test
+    fun getFloatAsString() = window.run {
+        allocateRow()
+        put("42.0")
         assertEquals(42.0f, getFloat(0, 0))
     }
 
@@ -77,6 +150,55 @@ internal class SimpleCursorWindowTest {
     }
 
     @Test
+    fun getIntAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(0, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsLong() = window.run {
+        allocateRow()
+        put(42L)
+        assertEquals(42, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsString() = window.run {
+        allocateRow()
+        put("42")
+        assertEquals(42, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsDoubleRoundedDown() = window.run {
+        allocateRow()
+        put(42.3)
+        assertEquals(42, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsDoubleRoundedUp() = window.run {
+        allocateRow()
+        put(42.7)
+        assertEquals(43, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsFloatRoundedDown() = window.run {
+        allocateRow()
+        put(42.3f)
+        assertEquals(42, getInt(0, 0))
+    }
+
+    @Test
+    fun getIntAsFloatRoundedUp() = window.run {
+        allocateRow()
+        put(42.7f)
+        assertEquals(43, getInt(0, 0))
+    }
+
+    @Test
     fun getLong() = window.run {
         allocateRow()
         put(42L)
@@ -84,9 +206,93 @@ internal class SimpleCursorWindowTest {
     }
 
     @Test
+    fun getLongAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(0L, getLong(0, 0))
+    }
+
+    @Test
+    fun getLongAsDoubleRoundedDown() = window.run {
+        allocateRow()
+        put(42.3)
+        assertEquals(42L, getLong(0, 0))
+    }
+
+    @Test
+    fun getLongAsDoubleRoundedUp() = window.run {
+        allocateRow()
+        put(42.7)
+        assertEquals(43L, getLong(0, 0))
+    }
+
+    @Test
+    fun getLongAsFloatRoundedDown() = window.run {
+        allocateRow()
+        put(42.3f)
+        assertEquals(42L, getLong(0, 0))
+    }
+
+    @Test
+    fun getLongAsFloatRoundedUp() = window.run {
+        allocateRow()
+        put(42.7f)
+        assertEquals(43L, getLong(0, 0))
+    }
+
+    @Test
+    fun getLongAsString() = window.run {
+        allocateRow()
+        put("42")
+        assertEquals(42L, getLong(0, 0))
+    }
+
+    @Test
     fun getShort() = window.run {
         allocateRow()
         put(42.toShort())
+        assertEquals(42.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(0.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsDoubleRoundedDown() = window.run {
+        allocateRow()
+        put(42.3)
+        assertEquals(42.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsDoubleRoundedUp() = window.run {
+        allocateRow()
+        put(42.7)
+        assertEquals(43.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsFloatRoundedDown() = window.run {
+        allocateRow()
+        put(42.3f)
+        assertEquals(42.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsFloatRoundedUp() = window.run {
+        allocateRow()
+        put(42.7f)
+        assertEquals(43.toShort(), getShort(0, 0))
+    }
+
+    @Test
+    fun getShortAsString() = window.run {
+        allocateRow()
+        put("42")
         assertEquals(42.toShort(), getShort(0, 0))
     }
 
@@ -99,11 +305,25 @@ internal class SimpleCursorWindowTest {
     }
 
     @Test
+    fun getStringAsNull() = window.run {
+        allocateRow()
+        putNull()
+        assertEquals(null, getString(0, 0))
+    }
+
+    @Test
     fun getStringBlob() = window.run {
         val text = "foo"
         allocateRow()
         put(text)
-        assertTrue(requireNotNull(getBlob(0, 0)).contentEquals(byteArrayOf(102, 111, 111)))
+        assertTrue(requireNotNull(getBlob(0, 0)) contentEquals byteArrayOf(102, 111, 111))
+    }
+
+    @Test
+    fun getStringAsLong() = window.run {
+        allocateRow()
+        put(42L)
+        assertEquals("42", getString(0, 0))
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <string>
 #include <cstring>
 #include <bloomberg/AutoJByteArray.h>
-#include <bloomberg/AutoJString.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
 
@@ -46,16 +45,16 @@ static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
     return array;
 }
 
-JNIEXPORT static jstring JNICALL
-jni_git_commit(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_gitCommit(
     JNIEnv* env,
     jobject obj
 ) {
     return env->NewStringUTF(SELEKT_GIT_COMMIT);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_blob(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -68,8 +67,8 @@ jni_bind_blob(
     return sqlite3_bind_blob(statement, index, value, value.length(), SQLITE_TRANSIENT);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_double(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindDouble(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -80,8 +79,8 @@ jni_bind_double(
     return sqlite3_bind_double(statement, index, jvalue);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_int(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindInt(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -92,8 +91,8 @@ jni_bind_int(
     return sqlite3_bind_int(statement, index, jvalue);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_int64(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindInt64(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -104,8 +103,8 @@ jni_bind_int64(
     return sqlite3_bind_int64(statement, index, jvalue);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_null(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindNull(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -115,8 +114,8 @@ jni_bind_null(
     return sqlite3_bind_null(statement, index);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_parameter_count(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindParameterCount(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -125,8 +124,8 @@ jni_bind_parameter_count(
     return sqlite3_bind_parameter_count(statement);
 }
 
-JNIEXPORT static jint JNICALL
-jni_bind_text(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindText(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -134,18 +133,134 @@ jni_bind_text(
     jstring jvalue
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    AutoJString value(env, jvalue);
-    return sqlite3_bind_text(
+    auto value = env->GetStringUTFChars(jvalue, nullptr);
+    auto result = sqlite3_bind_text(
         statement,
         index,
         value,
-        value.length8(),
+        env->GetStringUTFLength(jvalue),
         SQLITE_TRANSIENT
     );
+    env->ReleaseStringUTFChars(jvalue, value);
+    return result;
 }
 
-JNIEXPORT static jint JNICALL
-jni_busy_timeout(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindZeroBlob(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index,
+    jint length
+) {
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    return sqlite3_bind_zeroblob(statement, index, length);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobBytes(
+    JNIEnv* env,
+    jobject obj,
+    jlong jblob
+) {
+    return sqlite3_blob_bytes(reinterpret_cast<sqlite3_blob*>(jblob));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobClose(
+    JNIEnv* env,
+    jobject obj,
+    jlong jblob
+) {
+    return sqlite3_blob_close(reinterpret_cast<sqlite3_blob*>(jblob));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb,
+    jstring jname,
+    jstring jtable,
+    jstring jcolumn,
+    jlong jrow,
+    jint jflags,
+    jlongArray jholder
+) {
+    sqlite3_blob* blob;
+    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto table = env->GetStringUTFChars(jtable, nullptr);
+    auto column = env->GetStringUTFChars(jcolumn, nullptr);
+    auto result = sqlite3_blob_open(
+        reinterpret_cast<sqlite3*>(jdb),
+        name,
+        table,
+        column,
+        jrow,
+        jflags,
+        &blob
+    );
+    env->ReleaseStringUTFChars(jname, name);
+    env->ReleaseStringUTFChars(jtable, table);
+    env->ReleaseStringUTFChars(jcolumn, column);
+    updateHolder(env, jholder, 0, blob);
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobRead(
+    JNIEnv* env,
+    jobject obj,
+    jlong jBlob,
+    jint jOffset,
+    jbyteArray jDestination,
+    jint jDestinationOffset,
+    jint jLength
+) {
+    auto source = env->GetByteArrayElements(jDestination, nullptr);
+    auto result = sqlite3_blob_read(
+        reinterpret_cast<sqlite3_blob*>(jBlob),
+        source + jDestinationOffset,
+        jLength,
+        jOffset
+    );
+    env->ReleaseByteArrayElements(jDestination, source, 0);
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobReopen(
+    JNIEnv* env,
+    jobject obj,
+    jlong jblob,
+    jlong jrow
+) {
+    return sqlite3_blob_reopen(reinterpret_cast<sqlite3_blob*>(jblob), jrow);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_blobWrite(
+    JNIEnv* env,
+    jobject obj,
+    jlong jBlob,
+    jint jOffset,
+    jbyteArray jSource,
+    jint jSourceOffset,
+    jint jLength
+) {
+    auto source = env->GetByteArrayElements(jSource, nullptr);
+    auto result = sqlite3_blob_write(
+        reinterpret_cast<sqlite3_blob*>(jBlob),
+        source + jSourceOffset,
+        jLength,
+        jOffset
+    );
+    env->ReleaseByteArrayElements(jSource, source, JNI_ABORT);
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_busyTimeout(
     JNIEnv* env,
     jobject clazz,
     jlong jdb,
@@ -154,8 +269,8 @@ jni_busy_timeout(
     return sqlite3_busy_timeout(reinterpret_cast<sqlite3*>(jdb), millis);
 }
 
-JNIEXPORT static jint JNICALL
-jni_changes(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_changes(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -164,8 +279,8 @@ jni_changes(
     return sqlite3_changes(statement);
 }
 
-JNIEXPORT static jint JNICALL
-jni_clear_bindings(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_clearBindings(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -174,8 +289,8 @@ jni_clear_bindings(
     return sqlite3_clear_bindings(statement);
 }
 
-JNIEXPORT static jint JNICALL
-jni_close_v2(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_closeV2(
     JNIEnv* env,
     jobject jobj,
     jlong jdb
@@ -183,8 +298,8 @@ jni_close_v2(
     return sqlite3_close_v2(reinterpret_cast<sqlite3*>(jdb));
 }
 
-JNIEXPORT static jbyteArray JNICALL
-jni_column_blob(
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnBlob(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -196,8 +311,8 @@ jni_column_blob(
     return newByteArray(env, result, size);
 }
 
-JNIEXPORT static jint JNICALL
-jni_column_count(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnCount(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -206,8 +321,8 @@ jni_column_count(
     return sqlite3_column_count(statement);
 }
 
-JNIEXPORT static jdouble JNICALL
-jni_column_double(
+extern "C" JNIEXPORT jdouble JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnDouble(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -217,8 +332,8 @@ jni_column_double(
     return sqlite3_column_double(statement, index);
 }
 
-JNIEXPORT static jint JNICALL
-jni_column_int(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnInt(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -228,8 +343,8 @@ jni_column_int(
     return sqlite3_column_int(statement, index);
 }
 
-JNIEXPORT static jlong JNICALL
-jni_column_int64(
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnInt64(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -239,8 +354,8 @@ jni_column_int64(
     return sqlite3_column_int64(statement, index);
 }
 
-JNIEXPORT static jstring JNICALL
-jni_column_name(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnName(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -250,8 +365,8 @@ jni_column_name(
     return env->NewStringUTF(sqlite3_column_name(statement, index));
 }
 
-JNIEXPORT static jstring JNICALL
-jni_column_text(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnText(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -262,8 +377,8 @@ jni_column_text(
     return env->NewStringUTF(text);
 }
 
-JNIEXPORT static jint JNICALL
-jni_column_type(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnType(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -273,8 +388,8 @@ jni_column_type(
     return sqlite3_column_type(statement, index);
 }
 
-JNIEXPORT static jlong JNICALL
-jni_column_value(
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnValue(
     JNIEnv* env,
     jobject obj,
     jlong statement,
@@ -283,8 +398,8 @@ jni_column_value(
     return reinterpret_cast<jlong>(sqlite3_column_value(reinterpret_cast<sqlite3_stmt*>(statement), index));
 }
 
-JNIEXPORT static jlong JNICALL
-jni_db_handle(
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_databaseHandle(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -292,19 +407,21 @@ jni_db_handle(
     return reinterpret_cast<jlong>(sqlite3_db_handle(reinterpret_cast<sqlite3_stmt*>(jstatement)));
 }
 
-JNIEXPORT static jint JNICALL
-jni_db_readonly(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_databaseReadOnly(
     JNIEnv* env,
     jobject clazz,
     jlong jdb,
-    jstring jName
+    jstring jname
 ) {
-    AutoJString name(env, jName);
-    return sqlite3_db_readonly(reinterpret_cast<sqlite3*>(jdb), name);
+    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto result = sqlite3_db_readonly(reinterpret_cast<sqlite3*>(jdb), name);
+    env->ReleaseStringUTFChars(jname, name);
+    return result;
 }
 
-JNIEXPORT static jint JNICALL
-jni_db_status(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_databaseStatus(
     JNIEnv* env,
     jobject obj,
     jlong jdatabase,
@@ -319,15 +436,15 @@ jni_db_status(
         op,
         &current,
         &highWater,
-        reset ? 1 : 0
+        reset
     );
     updateHolder(env, holder, 0, &current);
     updateHolder(env, holder, 1, &highWater);
     return result;
 }
 
-JNIEXPORT static jint JNICALL
-jni_errcode(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_errorCode(
     JNIEnv* env,
     jobject clazz,
     jlong jdb
@@ -335,8 +452,8 @@ jni_errcode(
     return sqlite3_errcode(reinterpret_cast<sqlite3*>(jdb));
 }
 
-JNIEXPORT static jstring JNICALL
-jni_errmsg(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_errorMessage(
     JNIEnv* env,
     jobject clazz,
     jlong jdb
@@ -344,8 +461,8 @@ jni_errmsg(
     return env->NewStringUTF(sqlite3_errmsg(reinterpret_cast<sqlite3*>(jdb)));
 }
 
-JNIEXPORT static jstring JNICALL
-jni_expanded_sql(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_expandedSql(
     JNIEnv* env,
     jobject clazz,
     jlong jstatement
@@ -353,19 +470,21 @@ jni_expanded_sql(
     return env->NewStringUTF(sqlite3_expanded_sql(reinterpret_cast<sqlite3_stmt*>(jstatement)));
 }
 
-JNIEXPORT static jint JNICALL
-jni_exec(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_exec(
     JNIEnv* env,
     jobject jobj,
     jlong jdb,
     jstring jquery
 ) {
-    AutoJString query(env, jquery);
-    return sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), query, nullptr, nullptr, nullptr);
+    auto query = env->GetStringUTFChars(jquery, nullptr);
+    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), query, nullptr, nullptr, nullptr);
+    env->ReleaseStringUTFChars(jquery, query);
+    return result;
 }
 
-JNIEXPORT static jint JNICALL
-jni_extended_errcode(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_extendedErrorCode(
     JNIEnv* env,
     jobject clazz,
     jlong jdb
@@ -373,8 +492,8 @@ jni_extended_errcode(
     return sqlite3_extended_errcode(reinterpret_cast<sqlite3*>(jdb));
 }
 
-JNIEXPORT static jint JNICALL
-jni_extended_result_codes(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_extendedResultCodes(
     JNIEnv* env,
     jobject clazz,
     jlong jdb,
@@ -383,8 +502,8 @@ jni_extended_result_codes(
     return sqlite3_extended_result_codes(reinterpret_cast<sqlite3*>(jdb), onOff);
 }
 
-JNIEXPORT static jint JNICALL
-jni_finalize(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_finalize(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -393,8 +512,8 @@ jni_finalize(
     return sqlite3_finalize(statement);
 }
 
-JNIEXPORT static jint JNICALL
-jni_get_autocommit(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_getAutocommit(
     JNIEnv* env,
     jobject obj,
     jlong jdb
@@ -402,8 +521,8 @@ jni_get_autocommit(
     return sqlite3_get_autocommit(reinterpret_cast<sqlite3*>(jdb));
 }
 
-JNIEXPORT static jint JNICALL
-jni_key(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_key(
     JNIEnv* env,
     jobject jobj,
     jlong jdb,
@@ -414,8 +533,16 @@ jni_key(
     return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key, key.length());
 }
 
-JNIEXPORT static jlong JNICALL
-jni_last_insert_rowid(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_keywordCount(
+    JNIEnv* env,
+    jobject jobj
+) {
+    return sqlite3_keyword_count();
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_lastInsertRowId(
     JNIEnv* env,
     jobject obj,
     jlong jdb
@@ -423,39 +550,40 @@ jni_last_insert_rowid(
     return sqlite3_last_insert_rowid(reinterpret_cast<sqlite3*>(jdb));
 }
 
-JNIEXPORT static jstring JNICALL
-jni_lib_version(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_libVersion(
     JNIEnv* env,
     jobject jobj
 ) {
     return env->NewStringUTF(sqlite3_libversion());
 }
 
-JNIEXPORT static jint JNICALL
-jni_lib_version_number(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_libVersionNumber(
     JNIEnv* env,
     jobject jobj
 ) {
     return sqlite3_libversion_number();
 }
 
-JNIEXPORT static jint JNICALL
-jni_open_v2(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_openV2(
     JNIEnv* env,
     jobject jobj,
     jstring jfilename,
     jint jflags,
     jlongArray dbHolder
 ) {
-    AutoJString filename(env, jfilename);
     sqlite3* db = nullptr;
-    auto r = sqlite3_open_v2(filename, &db, jflags, nullptr);
+    auto filename = env->GetStringUTFChars(jfilename, nullptr);
+    auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
+    env->ReleaseStringUTFChars(jfilename, filename);
     updateHolder(env, dbHolder, 0, db);
-    return r;
+    return result;
 }
 
-JNIEXPORT static jlong JNICALL
-jni_prepare_v2(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     JNIEnv* env,
     jobject obj,
     jlong jdb,
@@ -463,15 +591,16 @@ jni_prepare_v2(
     jint jlength,
     jlongArray statementHolder
 ) {
-    AutoJString sql(env, jsql);
     sqlite3_stmt* statement = nullptr;
-    auto r = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
+    auto sql = env->GetStringUTFChars(jsql, nullptr);
+    auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
+    env->ReleaseStringUTFChars(jsql, sql);
     updateHolder(env, statementHolder, 0, statement);
-    return r;
+    return result;
 }
 
-JNIEXPORT static jint JNICALL
-jni_rekey(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     JNIEnv* env,
     jobject jobj,
     jlong jdb,
@@ -483,10 +612,11 @@ jni_rekey(
         return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), nullptr, key.length());
     }
     return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key, key.length());
-}   
+}
 
-JNIEXPORT static jint JNICALL
-jni_reset(
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_reset(
     JNIEnv* env,
     jobject clazz,
     jlong jstatement
@@ -494,8 +624,8 @@ jni_reset(
     return sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(jstatement));
 }
 
-JNIEXPORT static jstring JNICALL
-jni_sql(
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sql(
     JNIEnv* env,
     jobject clazz,
     jlong jstatement
@@ -503,8 +633,8 @@ jni_sql(
     return env->NewStringUTF(sqlite3_sql(reinterpret_cast<sqlite3_stmt*>(jstatement)));
 }
 
-JNIEXPORT static jint JNICALL
-jni_step(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_step(
     JNIEnv* env,
     jobject obj,
     jlong jstatement
@@ -513,8 +643,8 @@ jni_step(
     return sqlite3_step(statement);
 }
 
-JNIEXPORT static jint JNICALL
-jni_stmt_readonly(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_statementReadOnly(
     JNIEnv* env,
     jobject clazz,
     jlong jstatement
@@ -522,8 +652,8 @@ jni_stmt_readonly(
     return sqlite3_stmt_readonly(reinterpret_cast<sqlite3_stmt*>(jstatement));
 }
 
-JNIEXPORT static jint JNICALL
-jni_stmt_status(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_statementStatus(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -537,16 +667,16 @@ jni_stmt_status(
     );
 }
 
-JNIEXPORT static jint JNICALL
-jni_threadsafe(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_threadsafe(
     JNIEnv* env,
     jobject obj
 ) {
     return sqlite3_threadsafe();
 }
 
-JNIEXPORT static void JNICALL
-jni_trace_v2(
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
     JNIEnv* env,
     jobject obj,
     jlong jdb,
@@ -569,8 +699,8 @@ jni_trace_v2(
     );
 }
 
-JNIEXPORT static jlong JNICALL
-jni_value_dup(
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_valueDup(
     JNIEnv* env,
     jobject obj,
     jlong jvalue
@@ -578,8 +708,8 @@ jni_value_dup(
     return reinterpret_cast<jlong>(sqlite3_value_dup(reinterpret_cast<sqlite3_value*>(jvalue)));
 }
 
-JNIEXPORT static void JNICALL
-jni_value_free(
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_valueFree(
     JNIEnv* env,
     jobject obj,
     jlong jvalue
@@ -587,8 +717,8 @@ jni_value_free(
     sqlite3_value_free(reinterpret_cast<sqlite3_value*>(jvalue));
 }
 
-JNIEXPORT static jint JNICALL
-jni_value_from_bind(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_valueFromBind(
     JNIEnv* env,
     jobject obj,
     jlong jvalue
@@ -596,8 +726,8 @@ jni_value_from_bind(
     return sqlite3_value_frombind(reinterpret_cast<sqlite3_value*>(jvalue));
 }
 
-JNIEXPORT static jint JNICALL
-jni_wal_autocheckpoint(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_walAutoCheckpoint(
     JNIEnv* env,
     jobject obj,
     jlong jdb,
@@ -606,85 +736,36 @@ jni_wal_autocheckpoint(
     return sqlite3_wal_autocheckpoint(reinterpret_cast<sqlite3*>(jdb), pages);
 }
 
-JNIEXPORT static jint JNICALL
-jni_wal_checkpoint_v2(
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_walCheckpointV2(
     JNIEnv* env,
     jobject obj,
     jlong jdb,
-    jstring name,
+    jstring jname,
     jint mode
 ) {
-    if (env->IsSameObject(name, nullptr)) {
+    if (env->IsSameObject(jname, nullptr)) {
         return sqlite3_wal_checkpoint_v2(reinterpret_cast<sqlite3*>(jdb), nullptr, mode, nullptr, nullptr);
     }
-    return sqlite3_wal_checkpoint_v2(reinterpret_cast<sqlite3*>(jdb), AutoJString(env, name), mode, nullptr, nullptr);
+    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto result = sqlite3_wal_checkpoint_v2(
+        reinterpret_cast<sqlite3*>(jdb),
+        name,
+        mode,
+        nullptr,
+        nullptr
+    );
+    env->ReleaseStringUTFChars(jname, name);
+    return result;
 }
 
-JNIEXPORT static void JNICALL
-jni_native_init(
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     JNIEnv* env,
     jobject obj
 ) {
-   sqlite3_initialize();
+    sqlite3_initialize();
 }
-
-static const char* CLASS_PATH = "com/bloomberg/selekt/ExternalSQLite";
-
-static const JNINativeMethod kMethods[] = {
-    { const_cast<char *>("bindBlob"), const_cast<char *>("(JI[BI)I"), reinterpret_cast<void*>(jni_bind_blob) },
-    { const_cast<char *>("bindDouble"), const_cast<char *>("(JID)I"), reinterpret_cast<void*>(jni_bind_double) },
-    { const_cast<char *>("bindInt"), const_cast<char *>("(JII)I"), reinterpret_cast<void*>(jni_bind_int) },
-    { const_cast<char *>("bindInt64"), const_cast<char *>("(JIJ)I"), reinterpret_cast<void*>(jni_bind_int64) },
-    { const_cast<char *>("bindNull"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_bind_null) },
-    { const_cast<char *>("bindParameterCount"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_bind_parameter_count) },
-    { const_cast<char *>("bindText"), const_cast<char *>("(JILjava/lang/String;)I"), reinterpret_cast<void*>(jni_bind_text) },
-    { const_cast<char *>("busyTimeout"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_busy_timeout) },
-    { const_cast<char *>("changes"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_changes) },
-    { const_cast<char *>("clearBindings"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_clear_bindings) },
-    { const_cast<char *>("closeV2"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_close_v2) },
-    { const_cast<char *>("columnBlob"), const_cast<char *>("(JI)[B"), reinterpret_cast<void*>(jni_column_blob) },
-    { const_cast<char *>("columnCount"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_column_count) },
-    { const_cast<char *>("columnDouble"), const_cast<char *>("(JI)D"), reinterpret_cast<void*>(jni_column_double) },
-    { const_cast<char *>("columnInt"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_column_int) },
-    { const_cast<char *>("columnInt64"), const_cast<char *>("(JI)J"), reinterpret_cast<void*>(jni_column_int64) },
-    { const_cast<char *>("columnName"), const_cast<char *>("(JI)Ljava/lang/String;"), reinterpret_cast<void*>(jni_column_name) },
-    { const_cast<char *>("columnText"), const_cast<char *>("(JI)Ljava/lang/String;"), reinterpret_cast<void*>(jni_column_text) },
-    { const_cast<char *>("columnType"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_column_type) },
-    { const_cast<char *>("columnValue"), const_cast<char *>("(JI)J"), reinterpret_cast<void*>(jni_column_value) },
-    { const_cast<char *>("databaseHandle"), const_cast<char *>("(J)J"), reinterpret_cast<void*>(jni_db_handle) },
-    { const_cast<char *>("databaseReadOnly"), const_cast<char *>("(JLjava/lang/String;)I"), reinterpret_cast<void*>(jni_db_readonly) },
-    { const_cast<char *>("databaseStatus"), const_cast<char *>("(JIZ[I)I"), reinterpret_cast<void*>(jni_db_status) },
-    { const_cast<char *>("errorCode"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_errcode) },
-    { const_cast<char *>("errorMessage"), const_cast<char *>("(J)Ljava/lang/String;"), reinterpret_cast<void*>(jni_errmsg) },
-    { const_cast<char *>("exec"), const_cast<char *>("(JLjava/lang/String;)I"), reinterpret_cast<void*>(jni_exec) },
-    { const_cast<char *>("expandedSql"), const_cast<char *>("(J)Ljava/lang/String;"), reinterpret_cast<void*>(jni_expanded_sql) },
-    { const_cast<char *>("extendedErrorCode"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_extended_errcode) },
-    { const_cast<char *>("extendedResultCodes"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_extended_result_codes) },
-    { const_cast<char *>("finalize"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_finalize) },
-    { const_cast<char *>("getAutocommit"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_get_autocommit) },
-    { const_cast<char *>("gitCommit"), const_cast<char *>("()Ljava/lang/String;"), reinterpret_cast<void*>(jni_git_commit) },
-    { const_cast<char *>("key"), const_cast<char *>("(J[BI)I"), reinterpret_cast<void*>(jni_key) },
-    { const_cast<char *>("lastInsertRowId"), const_cast<char *>("(J)J"), reinterpret_cast<void*>(jni_last_insert_rowid) },
-    { const_cast<char *>("libVersion"), const_cast<char *>("()Ljava/lang/String;"), reinterpret_cast<void*>(jni_lib_version) },
-    { const_cast<char *>("libVersionNumber"), const_cast<char *>("()I"), reinterpret_cast<void*>(jni_lib_version_number) },
-    { const_cast<char *>("nativeInit"), const_cast<char *>("()V"), reinterpret_cast<void*>(jni_native_init) },
-    { const_cast<char *>("openV2"), const_cast<char *>("(Ljava/lang/String;I[J)I"), reinterpret_cast<void*>(jni_open_v2) },
-    { const_cast<char *>("prepareV2"), const_cast<char *>("(JLjava/lang/String;I[J)I"), reinterpret_cast<void*>(jni_prepare_v2) },
-    { const_cast<char *>("rekey"), const_cast<char *>("(J[BI)I"), reinterpret_cast<void*>(jni_rekey) },
-    { const_cast<char *>("reset"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_reset) },
-    { const_cast<char *>("sql"), const_cast<char *>("(J)Ljava/lang/String;"), reinterpret_cast<void*>(jni_sql) },
-    { const_cast<char *>("statementReadOnly"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_stmt_readonly) },
-    { const_cast<char *>("statementStatus"), const_cast<char *>("(JIZ)I"), reinterpret_cast<void*>(jni_stmt_status) },
-    { const_cast<char *>("step"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_step) },
-    { const_cast<char *>("threadsafe"), const_cast<char *>("()I"), reinterpret_cast<void*>(jni_threadsafe) },
-    { const_cast<char *>("traceV2"), const_cast<char *>("(JI)V"), reinterpret_cast<void*>(jni_trace_v2) },
-    { const_cast<char *>("valueDup"), const_cast<char *>("(J)J"), reinterpret_cast<void*>(jni_value_dup) },
-    { const_cast<char *>("valueFree"), const_cast<char *>("(J)V"), reinterpret_cast<void*>(jni_value_free) },
-    { const_cast<char *>("valueFromBind"), const_cast<char *>("(J)I"), reinterpret_cast<void*>(jni_value_from_bind) },
-    { const_cast<char *>("walAutocheckpoint"), const_cast<char *>("(JI)I"), reinterpret_cast<void*>(jni_wal_autocheckpoint) },
-    { const_cast<char *>("walCheckpointV2"), const_cast<char *>("(JLjava/lang/String;I)I"), reinterpret_cast<void*>(jni_wal_checkpoint_v2) }
-};
-static auto METHOD_COUNT = sizeof(kMethods) / sizeof(kMethods[0]);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
@@ -696,10 +777,6 @@ JNI_OnLoad(
 #pragma clang diagnostic pop
     JNIEnv* env;
     if (vm->GetEnv((void**) &env, JNI_VERSION_1_6) != JNI_OK) {
-        return JNI_ERR;
-    }
-    jclass clazz = env->FindClass(CLASS_PATH);
-    if (clazz == nullptr || env->RegisterNatives(clazz, kMethods, METHOD_COUNT) < 0) {
         return JNI_ERR;
     }
     return JNI_VERSION_1_6;

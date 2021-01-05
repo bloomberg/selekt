@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.commons.ManagedStringBuilder
-import com.bloomberg.commons.forUntil
-import com.bloomberg.commons.threadLocal
+import com.bloomberg.selekt.commons.ManagedStringBuilder
+import com.bloomberg.selekt.commons.forUntil
+import com.bloomberg.selekt.commons.threadLocal
 import java.io.Closeable
+import java.io.InputStream
+import java.io.OutputStream
 import javax.annotation.concurrent.ThreadSafe
 
 private val sharedSqlBuilder by threadLocal { ManagedStringBuilder() }
@@ -54,6 +56,12 @@ class SQLDatabase constructor(
     val isCurrentThreadSessionActive: Boolean
         get() = session.hasObject
 
+    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = batch(sql, bindArgs.asIterable())
+
+    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>) = transact {
+        BatchSQLStatement.compile(session, sql, bindArgs).execute()
+    }
+
     override fun beginDeferredTransaction() = pledge { session.beginDeferredTransaction() }
 
     override fun beginExclusiveTransaction() = pledge { session.beginExclusiveTransaction() }
@@ -81,6 +89,10 @@ class SQLDatabase constructor(
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
         compileStatement(true, sql, bindArgs).execute()
+    }
+
+    fun <T> execute(readOnly: Boolean, block: SQLDatabase.() -> T) = pledge {
+        session.execute(readOnly) { block() }
     }
 
     fun gauge() = connectionPool.gauge().run {
@@ -152,7 +164,33 @@ class SQLDatabase constructor(
     override fun query(query: ISQLQuery): ICursor = query(
         SQLQuery.create(session, query.sql, true, query.argCount).also { query.bindTo(it) })
 
+    @Suppress("Detekt.LongParameterList")
+    fun readFromBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        limit: Int,
+        stream: OutputStream
+    ): Unit = execute(true) {
+        blob(name, table, column, row, true).use { b ->
+            b.inputStream(offset, limit).use { it.copyTo(stream) }
+        }
+    }
+
     override fun setTransactionSuccessful() = pledge { session.setTransactionSuccessful() }
+
+    fun sizeOfBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long
+    ) = execute(true) {
+        blob(name, table, column, row, true).use {
+            it.size
+        }
+    }
 
     fun <T> transact(block: SQLDatabase.() -> T): T = pledge {
         session.beginImmediateTransaction()
@@ -201,11 +239,11 @@ class SQLDatabase constructor(
         values: IContentValues,
         columns: Array<out String>,
         update: String
-    ) {
+    ): Long {
         require(!values.isEmpty) { "Empty initial values." }
         require(columns.isNotEmpty()) { "Empty conflicting columns." }
         val bindArgs = arrayOfNulls<Any?>(values.size)
-        sharedSqlBuilder.use {
+        return sharedSqlBuilder.use {
             append("INSERT INTO ")
                 .append(table)
                 .append('(')
@@ -238,6 +276,20 @@ class SQLDatabase constructor(
         get() = pledge { SQLStatement.compile(session, false, "PRAGMA user_version", null).executeForInt() }
         set(value) { pledge { compileStatement(false, "PRAGMA user_version=$value", null).execute() } }
 
+    @Suppress("Detekt.LongParameterList")
+    fun writeToBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        stream: InputStream
+    ): Unit = transact {
+        blob(name, table, column, row, false).use { b ->
+            b.outputStream(offset).use { stream.copyTo(it) }
+        }
+    }
+
     override fun yieldTransaction() = pledge {
         session.yieldTransaction()
     }
@@ -248,6 +300,16 @@ class SQLDatabase constructor(
 
     override fun onReleased() {
         connectionPool.close()
+    }
+
+    private fun blob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        readOnly: Boolean
+    ) = pledge {
+        session.blob(name, table, column, row, readOnly)
     }
 
     private fun query(query: SQLQuery): ICursor = pledge {
@@ -288,7 +350,7 @@ interface IDatabase : IReadableDatabase, ISQLTransactor {
         values: IContentValues,
         columns: Array<out String>,
         update: String
-    )
+    ): Long
 
     var version: Int
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.commons.deleteDatabase
-import com.bloomberg.commons.times
+import com.bloomberg.selekt.commons.deleteDatabase
+import com.bloomberg.selekt.commons.times
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
@@ -67,8 +67,7 @@ internal class SQLDatabaseSampleTests(private val inputs: SQLSampleInputs) {
 
     private val file = File.createTempFile("test-samples", ".db").also { it.deleteOnExit() }
 
-    private val database = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration,
-        inputs.key)
+    private val database = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key)
 
     @After
     fun tearDown() {

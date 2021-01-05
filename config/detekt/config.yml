@@ -243,7 +243,7 @@ potential-bugs:
   UnreachableCode:
     active: true
   UnsafeCallOnNullableType:
-    active: true
+    active: false
   UnsafeCast:
     active: true
   UselessPostfixExpression:

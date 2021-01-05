@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.concurrent.GuardedBy
-import com.bloomberg.commons.InterruptibleSemaphore
-import com.bloomberg.commons.withTryAcquisition
+import com.bloomberg.selekt.commons.InterruptibleSemaphore
+import com.bloomberg.selekt.commons.withTrySemaphore
 
-internal class SingleObjectPool<K : Any, T : IKeyedObject<K>>(
+class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val evictionDelayMillis: Long,
@@ -48,10 +48,8 @@ internal class SingleObjectPool<K : Any, T : IKeyedObject<K>>(
         evict()
     }
 
-    override fun borrowObject(key: K) = borrowPrimaryObject()
-
     @Suppress("Detekt.UnconditionalJumpStatementInLoop")
-    override fun borrowPrimaryObject(): T {
+    override fun borrowObject(): T {
         while (!isClosed.get()) {
             try {
                 semaphore.acquire()
@@ -62,17 +60,17 @@ internal class SingleObjectPool<K : Any, T : IKeyedObject<K>>(
                 semaphore.release()
                 break
             }
-            canEvict = false
-            return obj ?: factory.makePrimaryObject().also {
-                obj = it
-                attemptScheduleEviction()
-            }
+            return acquireObject()
         }
         error("Pool is closed.")
     }
 
-    override fun gauge() = factory.gauge().run {
-        PoolGauge(createdCount - destroyedCount)
+    override fun borrowObject(key: K) = borrowObject()
+
+    fun borrowObjectOrNull() = if (semaphore.tryAcquire(0L, TimeUnit.NANOSECONDS)) {
+        acquireObject()
+    } else {
+        null
     }
 
     override fun returnObject(obj: T) {
@@ -83,11 +81,11 @@ internal class SingleObjectPool<K : Any, T : IKeyedObject<K>>(
     }
 
     internal fun evict() {
-        semaphore.withTryAcquisition {
+        semaphore.withTrySemaphore(0L, TimeUnit.NANOSECONDS) {
             if (isClosed.get()) {
                 factory.close()
             }
-            (if (isClosed.get() || canEvict && future?.isCancelled == false) obj else null)?.also {
+            (if (canEvict && future?.isCancelled == false || isClosed.get()) obj else null)?.also {
                 obj = null
                 cancelScheduledEviction()
             }.also {
@@ -95,6 +93,15 @@ internal class SingleObjectPool<K : Any, T : IKeyedObject<K>>(
             }
         }?.let {
             factory.destroyObject(it)
+        }
+    }
+
+    @GuardedBy("semaphore")
+    private fun acquireObject(): T {
+        canEvict = false
+        return obj ?: factory.makePrimaryObject().also {
+            obj = it
+            attemptScheduleEviction()
         }
     }
 

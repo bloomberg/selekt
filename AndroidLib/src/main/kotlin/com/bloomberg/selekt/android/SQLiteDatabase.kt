@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
@@ -25,6 +26,8 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import java.io.Closeable
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.Locale
 import javax.annotation.concurrent.ThreadSafe
 
@@ -65,7 +68,7 @@ class SQLiteDatabase private constructor(
             SQLiteJournalMode.MEMORY.databaseConfiguration.copy(trace = trace), null)
 
         @JvmStatic
-        fun deleteDatabase(file: File) = com.bloomberg.commons.deleteDatabase(file)
+        fun deleteDatabase(file: File) = com.bloomberg.selekt.commons.deleteDatabase(file)
     }
 
     data class Gauge(val connectionCount: Int)
@@ -138,16 +141,32 @@ class SQLiteDatabase private constructor(
     override fun close() = database.close()
 
     /**
-     * The incremental vacuum pragma causes up to N pages to be removed from the freelist. The database file is truncated
-     * by the same amount. The incremental vacuum pragma has no effect if the database is not already in incremental mode
-     * or if there are no pages on the freelist. If there are fewer on the freelist, or if `pages` is less than 1, then the
-     * entire freelist is cleared.
+     * Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
      *
-     * @param pages to remove from the freelist.
+     * Each array from the iterator must have the same length, corresponding to the number of arguments in the SQL
+     * statement. It is safe for the iterator to recycle the array with each step of an iteration.
+     *
+     * @param sql statement.
+     * @param bindArgs iterable for binding to the statement.
+     * @return the total number of changed rows, possibly with redundancy.
      */
-    fun incrementalVacuum(pages: Int) {
-        database.pragma("incremental_vacuum($pages)")
-    }
+    @Experimental
+    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>) = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement.
+     * It is safe for the sequence to recycle the array with each yield.
+     *
+     * @param sql statement.
+     * @param bindArgs sequence for binding to the statement.
+     * @return the total number of changed rows, possibly with redundancy.
+     */
+    @Experimental
+    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode.
@@ -189,6 +208,10 @@ class SQLiteDatabase private constructor(
 
     fun exec(sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
 
+    fun gauge() = database.gauge().run {
+        Gauge(connectionCount = connectionCount)
+    }
+
     /**
      * The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the
      * same number of pages. The incremental vacuum pragma has no effect if the database is not already in incremental
@@ -198,6 +221,18 @@ class SQLiteDatabase private constructor(
         database.pragma("incremental_vacuum")
     }
 
+    /**
+     * The incremental vacuum pragma causes up to N pages to be removed from the freelist. The database file is truncated
+     * by the same amount. The incremental vacuum pragma has no effect if the database is not already in incremental mode
+     * or if there are no pages on the freelist. If there are fewer on the freelist, or if `pages` is less than 1, then the
+     * entire freelist is cleared.
+     *
+     * @param pages to remove from the freelist.
+     */
+    fun incrementalVacuum(pages: Int) {
+        database.pragma("incremental_vacuum($pages)")
+    }
+
     fun insert(
         table: String,
         values: ContentValues,
@@ -205,10 +240,6 @@ class SQLiteDatabase private constructor(
     ) = database.insert(table, values.asSelektContentValues(), conflictAlgorithm)
 
     fun integrityCheck(name: String = "main") = "ok".equals(database.pragma("$name.integrity_check(1)"), true)
-
-    fun gauge() = database.gauge().run {
-        Gauge(connectionCount = connectionCount)
-    }
 
     fun query(
         distinct: Boolean,
@@ -235,6 +266,33 @@ class SQLiteDatabase private constructor(
     fun query(sql: String, selectionArgs: Array<out Any?>?) = database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
 
     fun query(query: ISQLQuery) = database.query(query).asAndroidCursor()
+
+    /**
+     * @since 0.7.4
+     */
+    @Experimental
+    fun readFromBlob(
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        limit: Int,
+        stream: OutputStream
+    ) = readFromBlob("main", table, column, row, offset, limit, stream)
+
+    /**
+     * @since 0.7.3
+     */
+    @Experimental
+    fun readFromBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        limit: Int,
+        stream: OutputStream
+    ) = database.readFromBlob(name, table, column, row, offset, limit, stream)
 
     /**
      * Setting foreign key constraints is not possible within a transaction; foreign key constraint enforcement may only be
@@ -270,7 +328,28 @@ class SQLiteDatabase private constructor(
 
     fun setTransactionSuccessful() = database.setTransactionSuccessful()
 
-    fun <T> transact(block: SQLiteDatabase.() -> T) = run {
+    /**
+     * @since 0.7.4
+     */
+    @Experimental
+    fun sizeOfBlob(
+        table: String,
+        column: String,
+        row: Long
+    ) = sizeOfBlob("main", table, column, row)
+
+    /**
+     * @since 0.7.3
+     */
+    @Experimental
+    fun sizeOfBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long
+    ) = database.sizeOfBlob(name, table, column, row)
+
+    /*TODO inline*/ fun <T> transact(block: SQLiteDatabase.() -> T) = run {
         beginImmediateTransaction()
         try {
             block(this).also { setTransactionSuccessful() }
@@ -293,6 +372,19 @@ class SQLiteDatabase private constructor(
         conflictAlgorithm
     )
 
+    @Experimental
+    fun upsert(
+        table: String,
+        values: ContentValues,
+        columns: Array<out String>,
+        update: String
+    ) = database.upsert(
+        table,
+        values.asSelektContentValues(),
+        columns,
+        update
+    )
+
     /**
      * The vacuum command rebuilds the database file, repacking it into a minimal amount of disk space.
      *
@@ -304,6 +396,35 @@ class SQLiteDatabase private constructor(
      * @link [SQLite's VACUUM](https://www.sqlite.org/lang_vacuum.html)
      */
     fun vacuum() = exec("VACUUM")
+
+    /**
+     * @link [SQLite's blob_write](https://www.sqlite.org/c3ref/blob_write.html)
+     * @since 0.7.4
+     */
+    @Experimental
+    fun writeToBlob(
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        stream: InputStream
+    ) = writeToBlob("main", table, column, row, offset, stream)
+
+    /**
+     * Modifies the contents of a blob; it is not possible to increase the size of a blob using this method.
+     *
+     * @link [SQLite's blob_write](https://www.sqlite.org/c3ref/blob_write.html)
+     * @since 0.7.3
+     */
+    @Experimental
+    fun writeToBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        offset: Int,
+        stream: InputStream
+    ) = database.writeToBlob(name, table, column, row, offset, stream)
 
     fun yieldTransaction() = database.yieldTransaction()
 

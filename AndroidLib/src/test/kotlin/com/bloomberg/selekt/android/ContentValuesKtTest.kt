@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import android.content.ContentValues
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.AbstractMap.SimpleEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -28,9 +29,82 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 internal class ContentValuesKtTest {
     @Test
-    fun asSelektContentValuesPutString() {
-        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+    fun asSelektContentValuesGetString() {
+        ContentValues().apply { put("a", "42") }.asSelektContentValues().run {
             assertFalse(entrySet.isEmpty())
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutByte() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42.toByte())
+            entrySet.contains(SimpleEntry("a", 42.toByte()))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutByteArray() {
+        val array = byteArrayOf()
+        ContentValues().asSelektContentValues().apply {
+            put("a", array)
+            entrySet.contains(SimpleEntry("a", array))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutDouble() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42.0)
+            entrySet.contains(SimpleEntry("a", 42.0))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutFloat() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42.0f)
+            entrySet.contains(SimpleEntry("a", 42.0f))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutInt() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42)
+            entrySet.contains(SimpleEntry("a", 42))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutLong() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42L)
+            entrySet.contains(SimpleEntry("a", 42L))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutNull() {
+        ContentValues().asSelektContentValues().apply {
+            putNull("a")
+            entrySet.contains(SimpleEntry("a", null))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutShort() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", 42.toShort())
+            entrySet.contains(SimpleEntry("a", 42.toShort()))
+        }
+    }
+
+    @Test
+    fun asSelektContentValuesPutString() {
+        ContentValues().asSelektContentValues().apply {
+            put("a", "42")
+            entrySet.contains(SimpleEntry("a", "42"))
         }
     }
 
@@ -52,5 +126,86 @@ internal class ContentValuesKtTest {
     @Test
     fun isNotEmpty() {
         assertFalse(ContentValues().apply { putNull("a") }.asSelektContentValues().isEmpty)
+    }
+
+    @Test
+    fun entrySetContains() {
+        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", 42)))
+        }
+    }
+
+    @Test
+    fun entrySetContainsAll() {
+        ContentValues().apply {
+            put("a", 42)
+            put("b", 43)
+        }.asSelektContentValues().run {
+            assertTrue(entrySet.containsAll(setOf(SimpleEntry("a", 42), SimpleEntry("b", 43))))
+        }
+    }
+
+    @Test
+    fun emptyEntrySetSize() {
+        ContentValues().asSelektContentValues().run {
+            assertEquals(0, entrySet.size)
+        }
+    }
+
+    @Test
+    fun entrySetSize() {
+        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+            assertEquals(1, entrySet.size)
+        }
+    }
+
+    @Test
+    fun putByte() {
+        ContentValues().apply { put("a", 42.toByte()) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", 42.toByte())))
+        }
+    }
+
+    @Test
+    fun putByteArray() {
+        val blob = byteArrayOf(42.toByte())
+        ContentValues().apply { put("a", blob) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", blob)))
+        }
+    }
+
+    @Test
+    fun putInt() {
+        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", 42)))
+        }
+    }
+
+    @Test
+    fun putLong() {
+        ContentValues().apply { put("a", 42L) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", 42L)))
+        }
+    }
+
+    @Test
+    fun putShort() {
+        ContentValues().apply { put("a", 42.toShort()) }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", 42.toShort())))
+        }
+    }
+
+    @Test
+    fun putString() {
+        ContentValues().apply { put("a", "42") }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", "42")))
+        }
+    }
+
+    @Test
+    fun putNull() {
+        ContentValues().apply { putNull("a") }.asSelektContentValues().run {
+            assertTrue(entrySet.contains(SimpleEntry("a", null)))
+        }
     }
 }

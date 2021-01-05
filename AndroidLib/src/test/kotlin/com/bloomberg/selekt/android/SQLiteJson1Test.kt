@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.commons.deleteDatabase
+import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.NULL
 import com.bloomberg.selekt.Pointer
 import com.bloomberg.selekt.SQLOpenOperation
@@ -227,7 +227,7 @@ internal class SQLiteJson1Test {
         }
     }
 
-    private fun openConnection(flags: SQLOpenOperation = SQL_OPEN_READWRITE.or(SQL_OPEN_CREATE)): Pointer {
+    private fun openConnection(flags: SQLOpenOperation = SQL_OPEN_READWRITE or SQL_OPEN_CREATE): Pointer {
         val holder = LongArray(1)
         assertEquals(SQL_OK, SQLite.openV2(file.absolutePath, flags, holder))
         return holder.first().also { assertNotEquals(NULL, it) }

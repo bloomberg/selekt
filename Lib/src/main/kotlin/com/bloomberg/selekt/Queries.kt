@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.commons.forEachByIndex
-import com.bloomberg.commons.joinTo
+import com.bloomberg.selekt.commons.forEachByIndex
+import com.bloomberg.selekt.commons.joinTo
 import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -106,6 +106,7 @@ class SimpleSQLQuery(
                 is Double -> bindDouble(index, arg)
                 is Number -> bindLong(index, arg.toLong())
                 is Boolean -> bindLong(index, if (arg) 1L else 0L)
+                is Char -> bindLong(index, arg.toLong())
                 is ByteArray -> bindBlob(index, arg)
                 else -> throw IllegalArgumentException("Cannot bind arg $arg at index $index.")
             }

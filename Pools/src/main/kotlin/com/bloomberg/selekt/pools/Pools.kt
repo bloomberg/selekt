@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,30 @@ package com.bloomberg.selekt.pools
 import java.io.Closeable
 import java.util.concurrent.ScheduledExecutorService
 
-fun <K : Any, T : IKeyedObject<K>> createObjectPool(
+fun <K : Any, T : IPooledObject<K>> createObjectPool(
     factory: IObjectFactory<T>,
     executor: ScheduledExecutorService,
     configuration: PoolConfiguration
-): IObjectPool<K, T> = when (configuration.maxTotal) {
-    1 -> SingleObjectPool(factory, executor, configuration.evictionDelayMillis, configuration.evictionIntervalMillis)
-    else -> CommonObjectPool(factory, executor, configuration)
+) = SingleObjectPool(
+    factory,
+    executor,
+    configuration.evictionDelayMillis,
+    configuration.evictionIntervalMillis
+).let {
+    when (configuration.maxTotal) {
+        1 -> TieredObjectPool(it, it, factory)
+        else -> TieredObjectPool(
+            it,
+            CommonObjectPool(factory, executor, configuration.copy(maxTotal = configuration.maxTotal - 1), it),
+            factory
+        )
+    }
 }
 
 interface IObjectPool<K : Any, T : Any> : Closeable {
+    fun borrowObject(): T
+
     fun borrowObject(key: K): T
-
-    fun borrowPrimaryObject(): T
-
-    fun gauge(): PoolGauge
 
     fun returnObject(obj: T)
 }
@@ -54,8 +63,10 @@ interface IObjectFactory<T : Any> : Closeable {
     fun validateObject(obj: T): Boolean
 }
 
-interface IKeyedObject<K> {
+interface IPooledObject<K> {
     val isPrimary: Boolean
+
+    var tag: Boolean
 
     fun matches(key: K): Boolean
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFile(getDefaultProguardFile("proguard-android-optimize.txt"))
-            proguardFile("proguard-rules.pro")
+            isMinifyEnabled = false
             consumerProguardFile("proguard-consumer-rules.pro")
         }
     }
@@ -61,7 +59,7 @@ android {
         unitTests.apply {
             if (project.hasProperty("robolectricDependencyRepoUrl")) {
                 all {
-                    systemProperty("robolectric.dependency.repo.url",
+                    it.systemProperty("robolectric.dependency.repo.url",
                         requireNotNull(project.properties["robolectricDependencyRepoUrl"]))
                 }
             }

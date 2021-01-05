@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import java.io.ByteArrayOutputStream
 import java.util.Locale
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
@@ -55,6 +56,11 @@ subprojects {
         resolutionStrategy.dependencySubstitution {
             substitute(module("com.bloomberg.selekt:selekt-android")).apply {
                 with(project(":AndroidLib"))
+                @Suppress("UnstableApiUsage")
+                because("we work with an unreleased version")
+            }
+            substitute(module("com.bloomberg.selekt:selekt-annotations")).apply {
+                with(project(":Annotations"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
@@ -111,7 +117,7 @@ subprojects {
         plugin("io.gitlab.arturbosch.detekt")
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    tasks.withType<KotlinCompile> {
         kotlinOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-Xuse-experimental=kotlin.Experimental")
@@ -198,4 +204,25 @@ tasks.register<JacocoReport>("jacocoSelektTestReport") {
         html.isEnabled = true
         xml.isEnabled = true
     }
+}
+
+tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
+    initialise()
+    description = "Verifies JaCoCo coverage bounds globally."
+    violationRules {
+        rule {
+            isEnabled = true
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.8897".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.8139".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+            }
+        }
+    }
+    mustRunAfter("jacocoSelektTestReport")
 }

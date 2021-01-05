@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.bloomberg.selekt.android
 
 import android.database.SQLException
 import android.database.sqlite.SQLiteException
-import com.bloomberg.commons.deleteDatabase
-import com.bloomberg.commons.times
+import com.bloomberg.selekt.commons.deleteDatabase
+import com.bloomberg.selekt.commons.times
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
@@ -353,8 +353,8 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     fun upsertString(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         val values = ContentValues().apply { put("bar", "hello") }
-        insert("Foo", values, ConflictAlgorithm.REPLACE)
-        upsert("Foo", values, arrayOf("bar"), "count=count+1")
+        val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(id, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
         query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
@@ -483,6 +483,17 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     }
 
     @Test
+    fun queryByChar(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)")
+        insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
+        query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x')).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals("x", it.getString(0))
+        }
+    }
+
+    @Test
     fun insertAsQuery(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)")
         query("INSERT INTO 'Foo' VALUES (42)", emptyArray()).close()
@@ -546,5 +557,11 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     @Test
     fun secureDeleteIsFast(): Unit = database.run {
         assertEquals(2, pragma("secure_delete").toInt())
+    }
+
+    @Test
+    fun batchInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
     }
 }

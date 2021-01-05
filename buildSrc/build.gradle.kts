@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+// TODO Move me.
+val kotlinVersion = "1.4.21"
 
 plugins {
     `kotlin-dsl`
@@ -41,9 +44,9 @@ gradlePlugin {
 
 dependencies {
     compileOnly(gradleApi())
-    implementation(kotlin("stdlib-jdk8"))
-    implementation(kotlin("gradle-plugin"))
-    implementation("com.android.tools.build:gradle:4.0.0")
+    implementation(kotlin("stdlib-jdk8", version = kotlinVersion))
+    implementation(kotlin("gradle-plugin", version = kotlinVersion))
+    implementation("com.android.tools.build:gradle:4.1.0")
 }
 
 tasks.withType<KotlinCompile> {

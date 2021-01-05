@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ internal class SQLPreparedStatement(
 
     fun bindNull(index: Int) {
         sqlite.bindNull(pointer, index)
+    }
+
+    fun bindZeroBlob(index: Int, length: Int) {
+        sqlite.bindZeroBlob(pointer, index, length)
     }
 
     fun clearBindings() {
