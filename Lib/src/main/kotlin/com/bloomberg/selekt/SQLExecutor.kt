@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.bloomberg.selekt
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
-@Suppress("Detekt.ComplexInterface") // Reflects SQLite3.
-internal interface SQLExecutor {
+@Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions") // Reflects SQLite3.
+internal interface SQLExecutor : BatchSQLExecutor {
     val isAutoCommit: Boolean
 
     /**
@@ -33,7 +33,18 @@ internal interface SQLExecutor {
 
     fun execute(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
 
+    fun execute(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Int
+
+    fun executeForBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long
+    ): SQLBlob
+
     fun executeForChangedRowCount(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
+
+    fun executeForChangedRowCount(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Int
 
     fun executeForCursorWindow(
         sql: String,
@@ -43,6 +54,8 @@ internal interface SQLExecutor {
 
     fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
 
+    fun executeForLastInsertedRowId(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Long
+
     fun executeForInt(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
 
     fun executeForLong(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
@@ -50,6 +63,8 @@ internal interface SQLExecutor {
     fun executeForString(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): String?
 
     fun executeWithRetry(sql: String): Int
+
+    fun executeWithRetry(sql: String, statementType: SQLStatementType): Int
 
     fun prepare(sql: String): SQLStatementInformation
 }

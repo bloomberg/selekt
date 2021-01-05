@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,19 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteException
+import com.bloomberg.selekt.commons.deleteDatabase
+import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -40,6 +44,22 @@ internal class SQLiteDatabaseWALTest {
     @Before
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
+    }
+
+    @After
+    fun tearDown() {
+        database.run {
+            try {
+                if (isOpen) {
+                    close()
+                }
+                assertFalse(isOpen)
+            } finally {
+                if (file.exists()) {
+                    assertTrue(deleteDatabase(file))
+                }
+            }
+        }
     }
 
     @Test
@@ -127,5 +147,19 @@ internal class SQLiteDatabaseWALTest {
     fun version() = database.run {
         version = 42
         assertEquals(42, version)
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertString(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+        val values = ContentValues().apply { put("bar", "hello") }
+        val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(id, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(1, it.getInt(0))
+        }
     }
 }

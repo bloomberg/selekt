@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.commons.forEachByIndex
-import com.bloomberg.commons.forUntil
+import com.bloomberg.selekt.commons.forEachByIndex
+import com.bloomberg.selekt.commons.forUntil
+import javax.annotation.Generated
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
@@ -35,11 +36,12 @@ internal class SQLConnection constructor(
     override val isAutoCommit: Boolean
         get() = sqlite.getAutocommit(pointer) != 0
 
-    override val isReadOnly = 1 == sqlite.databaseReadOnly(pointer, configuration.name).also {
-        check(it != -1) { "Database with name '${configuration.name}' is not attached." }
-    }
+    override val isReadOnly = SQL_OPEN_READONLY and flags != 0
 
     override val isPrimary = !isReadOnly
+
+    // Guarded by and exclusively used by the pool.
+    override var tag = false
 
     init {
         runCatching {
@@ -47,7 +49,7 @@ internal class SQLConnection constructor(
             sqlite.extendedResultCodes(pointer, 0)
             configuration.trace?.let { sqlite.traceV2(pointer, it()) }
             sqlite.busyTimeout(pointer, configuration.busyTimeoutMillis)
-            sqlite.exec(pointer, "PRAGMA secure_delete=FAST")
+            sqlite.exec(pointer, "PRAGMA secure_delete=${configuration.secureDelete.name}")
         }.exceptionOrNull()?.let {
             close()
             throw IllegalStateException(it)
@@ -71,9 +73,41 @@ internal class SQLConnection constructor(
         step()
     }
 
+    override fun execute(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = execute(sql, bindArgs)
+
+    override fun executeForBlob(
+        name: String,
+        table: String,
+        column: String,
+        row: Long
+    ) = longArrayOf(0L).also {
+        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) 0 else 1, it)
+    }.first().let {
+        SQLBlob(it, sqlite, isReadOnly)
+    }
+
     override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
         step()
         sqlite.changes(pointer)
+    }
+
+    override fun executeForChangedRowCount(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = executeForChangedRowCount(sql, bindArgs)
+
+    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) = withPreparedStatement(sql) {
+        bindArgs.sumBy {
+            reset()
+            bindArguments(it)
+            step()
+            sqlite.changes(pointer)
+        }
     }
 
     override fun executeForCursorWindow(
@@ -104,6 +138,12 @@ internal class SQLConnection constructor(
         sqlite.lastInsertRowId(pointer)
     }
 
+    override fun executeForLastInsertedRowId(
+        sql: String,
+        statementType: SQLStatementType,
+        bindArgs: Array<*>
+    ) = executeForLastInsertedRowId(sql, bindArgs)
+
     override fun executeForInt(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnInt(0)
@@ -123,12 +163,15 @@ internal class SQLConnection constructor(
         step(configuration.busyTimeoutMillis.toLong())
     }
 
+    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = executeWithRetry(sql)
+
     override fun matches(key: String) = preparedStatements.containsKey(key)
 
     override fun prepare(sql: String) = withPreparedStatement(sql) {
-        SQLStatementInformation(columnNames, isReadOnly, parameterCount)
+        SQLStatementInformation(isReadOnly, parameterCount, columnNames)
     }
 
+    @Generated
     private inline fun <R> withPreparedStatement(
         sql: String,
         block: SQLPreparedStatement.() -> R
@@ -140,6 +183,7 @@ internal class SQLConnection constructor(
         }
     }
 
+    @Generated
     private inline fun <R> withPreparedStatement(
         sql: String,
         bindArgs: Array<*>,
@@ -216,6 +260,7 @@ private fun SQLPreparedStatement.bindArgument(position: Int, arg: Any?) {
         is Short -> bind(position, arg.toInt())
         is Byte -> bind(position, arg.toInt())
         is ByteArray -> bind(position, arg)
+        is ZeroBlob -> bindZeroBlob(position, arg.size)
         else -> bind(position, arg.toString())
     }
 }

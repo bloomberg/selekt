@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.bloomberg.selekt
 
 import java.sql.SQLException
 
-@Suppress("Detekt.TooManyFunctions")
+@Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
 open class SQLite(
     private val sqlite: ExternalSQLite
 ) {
@@ -53,6 +53,70 @@ open class SQLite(
         statement,
         sqlite.bindText(statement, index, value)
     )
+
+    fun bindZeroBlob(
+        statement: Long,
+        index: Int,
+        length: Int
+    ) = checkBindSQLCode(
+        statement,
+        sqlite.bindZeroBlob(statement, index, length)
+    )
+
+    fun blobBytes(blob: Long) = sqlite.blobBytes(blob)
+
+    fun blobClose(blob: Long) = checkSQLCode(sqlite.blobClose(blob))
+
+    fun blobOpen(
+        db: Long,
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        flags: Int,
+        holder: LongArray
+    ) = checkSQLCode(sqlite.blobOpen(
+        db,
+        name,
+        table,
+        column,
+        row,
+        flags,
+        holder
+    ))
+
+    fun blobRead(
+        blob: Long,
+        offset: Int,
+        destination: ByteArray,
+        destinationOffset: Int,
+        length: Int
+    ) = checkSQLCode(sqlite.blobRead(
+        blob,
+        offset,
+        destination,
+        destinationOffset,
+        length
+    ))
+
+    fun blobReopen(
+        blob: Long,
+        row: Long
+    ) = checkSQLCode(sqlite.blobReopen(blob, row))
+
+    fun blobWrite(
+        blob: Long,
+        offset: Int,
+        source: ByteArray,
+        sourceOffset: Int,
+        length: Int
+    ) = checkSQLCode(sqlite.blobWrite(
+        blob,
+        offset,
+        source,
+        sourceOffset,
+        length
+    ))
 
     fun busyTimeout(db: Long, millis: Int) = checkConnectionSQLCode(db, sqlite.busyTimeout(db, millis))
 
@@ -109,6 +173,8 @@ open class SQLite(
 
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
+    fun keywordCount() = sqlite.keywordCount()
+
     fun lastInsertRowId(db: Long) = sqlite.lastInsertRowId(db)
 
     fun openV2(
@@ -151,7 +217,7 @@ open class SQLite(
 
     fun valueFromBind(value: Long) = sqlite.valueFromBind(value)
 
-    fun walAutocheckpoint(db: Long, pages: Int) = checkConnectionSQLCode(db, sqlite.walAutocheckpoint(db, pages))
+    fun walAutoCheckpoint(db: Long, pages: Int) = checkConnectionSQLCode(db, sqlite.walAutoCheckpoint(db, pages))
 
     fun walCheckpointV2(
         db: Long,

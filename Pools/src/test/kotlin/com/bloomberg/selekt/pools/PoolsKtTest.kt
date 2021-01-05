@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,18 @@ package com.bloomberg.selekt.pools
 import com.nhaarman.mockitokotlin2.mock
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ScheduledExecutorService
-import kotlin.test.assertTrue
 
 internal class PoolsKtTest {
-    private abstract class KeyedObject : IKeyedObject<Any>
+    private abstract class PooledObject : IPooledObject<Any>
     private val executor = mock<ScheduledExecutorService>()
 
     @Test
     fun createSingleObjectPool() {
-        createObjectPool(mock<IObjectFactory<KeyedObject>>(), executor,
-            PoolConfiguration(5_000L, 20_000L, maxTotal = 1)).run {
-            assertTrue(this is SingleObjectPool<Any, KeyedObject>)
-        }
+        createObjectPool(mock<IObjectFactory<PooledObject>>(), executor, PoolConfiguration(5_000L, 20_000L, maxTotal = 1))
     }
 
     @Test
     fun createMultiObjectPool() {
-        createObjectPool(mock<IObjectFactory<KeyedObject>>(), executor,
-            PoolConfiguration(5_000L, 20_000L, maxTotal = 2)).run {
-            assertTrue(this is CommonObjectPool<Any, KeyedObject>)
-        }
+        createObjectPool(mock<IObjectFactory<PooledObject>>(), executor, PoolConfiguration(5_000L, 20_000L, maxTotal = 2))
     }
 }

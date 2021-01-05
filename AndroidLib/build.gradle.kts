@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
-            abiFilters("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters.addAll(arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
     }
 
@@ -60,9 +60,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFile(getDefaultProguardFile("proguard-android-optimize.txt"))
-            proguardFile("proguard-rules.pro")
+            isMinifyEnabled = false
             consumerProguardFile("proguard-consumer-rules.pro")
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
@@ -70,7 +68,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            setPath("$rootDir/SQLite3/CMakeLists.txt")
+            path("$rootDir/SQLite3/CMakeLists.txt")
         }
     }
 
@@ -82,7 +80,7 @@ android {
         unitTests.apply {
             if (project.hasProperty("robolectricDependencyRepoUrl")) {
                 all {
-                    systemProperty("robolectric.dependency.repo.url",
+                    it.systemProperty("robolectric.dependency.repo.url",
                         requireNotNull(project.properties["robolectricDependencyRepoUrl"]))
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteMisuseException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
-import com.bloomberg.commons.deleteDatabase
+import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.NULL
 import com.bloomberg.selekt.Pointer
@@ -54,9 +54,10 @@ import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert
+import org.junit.Test
+
 import org.junit.Before
 import org.junit.Rule
-import org.junit.Test
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.Timeout
 import java.io.File
@@ -100,6 +101,9 @@ internal class SQLiteTest {
 
     private var db: Pointer = NULL
 
+    private val key = ByteArray(32) { 0x42 }
+    private val otherKey = ByteArray(32) { 0x43 }
+
     @Before
     fun setUp() {
         db = openConnection()
@@ -123,14 +127,14 @@ internal class SQLiteTest {
 
     @Test
     fun keySuccessfully() {
-        assertEquals(SQL_OK, SQLite.key(db, ByteArray(32) { 0x42 }))
+        assertEquals(SQL_OK, SQLite.key(db, key))
     }
 
     @Test
     fun keyLateThenVacuumFails() {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
-        assertEquals(SQL_OK, SQLite.key(db, ByteArray(32) { 0x42 }))
+        assertEquals(SQL_OK, SQLite.key(db, key))
         assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
             SQLite.exec(db, "VACUUM")
         }
@@ -138,18 +142,18 @@ internal class SQLiteTest {
 
     @Test
     fun openThenRekeySuccessfully() {
-        assertEquals(SQL_OK, SQLite.rekey(db, ByteArray(32) { 0x43 }))
+        assertEquals(SQL_OK, SQLite.rekey(db, otherKey))
     }
 
     @Test
     fun keyThenRekeySuccessfully() {
-        SQLite.key(db, ByteArray(32) { 0x42 })
-        assertEquals(SQL_OK, SQLite.rekey(db, ByteArray(32) { 0x43 }))
+        SQLite.key(db, key)
+        assertEquals(SQL_OK, SQLite.rekey(db, otherKey))
     }
 
     @Test(expected = SQLiteDatabaseCorruptException::class)
     fun keyConnectionThenNoKeyAnotherConnection() {
-        SQLite.key(db, ByteArray(32) { 0x42 })
+        SQLite.key(db, key)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection {
@@ -159,18 +163,18 @@ internal class SQLiteTest {
 
     @Test(expected = SQLiteDatabaseCorruptException::class)
     fun keyConnectionThenKeyIncorrectlyAnotherConnection() {
-        SQLite.key(db, ByteArray(32) { 0x42 })
+        SQLite.key(db, key)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection {
-            SQLite.key(it, ByteArray(32) { 0x43 })
+            SQLite.key(it, otherKey)
             SQLite.exec(it, "SELECT * FROM 'Foo'")
         }
     }
 
     @Test
     fun keyConnectionThenKeyCorrectlyAnotherConnection() {
-        SQLite.key(db, ByteArray(32) { 0x42 })
+        SQLite.key(db, key)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection {
@@ -182,20 +186,20 @@ internal class SQLiteTest {
     @Test
     fun keyConnectionFirstThenClose() {
         openConnection().useConnection {
-            SQLite.key(it, ByteArray(32) { 0x42 })
+            SQLite.key(it, key)
             SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
             SQLite.exec(it, "INSERT INTO 'Foo' VALUES (42)")
         }
-        SQLite.key(db, ByteArray(32) { 0x42 })
+        SQLite.key(db, key)
         SQLite.exec(db, "SELECT * FROM 'Foo'")
     }
 
     @Test
     fun wasteKeyedConnectionThenUseDifferentKey() {
         openConnection().useConnection {
-            SQLite.key(it, ByteArray(32) { 0x42 })
+            SQLite.key(it, key)
         }
-        SQLite.key(db, ByteArray(32) { 0x43 })
+        SQLite.key(db, otherKey)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
     }
 
@@ -205,7 +209,7 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection { c ->
-            SQLite.rekey(c, ByteArray(32) { 0x42 })
+            SQLite.rekey(c, key)
             prepareStatement(c, "SELECT * FROM 'Foo'").usePreparedStatement {
                 assertEquals(SQL_ROW, SQLite.step(it))
                 assertEquals(42, SQLite.columnInt(it, 0))
@@ -391,6 +395,17 @@ internal class SQLiteTest {
             Assert.assertNotEquals(NULL, this)
         }
     }
+
+    /*
+    @Test
+    fun prepareV2ThenFinalizeTwice() {
+        prepareStatement(db, "CREATE TABLE 'Foo' (bar INT)").let {
+            Assert.assertNotEquals(NULL, this)
+            SQLite.finalize(it)
+            assertThatExceptionOfType(SQLiteException::class.java).isThrownBy { SQLite.finalize(it) }
+        }
+    }
+     */
 
     @Test
     fun prepareWildcardThenColumnCount() {
@@ -803,7 +818,7 @@ internal class SQLiteTest {
     }
 
     @Test
-    fun walAutocheckpointFileSizeDefault() {
+    fun walAutoCheckpointFileSizeDefault() {
         assertEquals(SQL_OK, SQLite.exec(db, "PRAGMA journal_mode=WAL"))
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
         assertEquals(SQL_OK, SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION"))
@@ -823,10 +838,10 @@ internal class SQLiteTest {
     }
 
     @Test
-    fun walAutocheckpointNone() {
+    fun walAutoCheckpointNone() {
         assertEquals(SQL_OK, SQLite.exec(db, "PRAGMA journal_mode=WAL"))
         assertEquals(SQL_OK, SQLite.exec(db, "PRAGMA page_size=4096"))
-        assertEquals(SQL_OK, SQLite.walAutocheckpoint(db, 0))
+        assertEquals(SQL_OK, SQLite.walAutoCheckpoint(db, 0))
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
         assertEquals(SQL_OK, SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION"))
         prepareStatement(db, "INSERT INTO 'Foo' VALUES (?)").usePreparedStatement {
@@ -863,6 +878,169 @@ internal class SQLiteTest {
     @Test
     fun threadsafe() {
         assertEquals(2, SQLite.threadsafe())
+    }
+
+    @Test
+    fun closeRollsBackAutomatically(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        exec(db, "INSERT INTO 'Foo' VALUES (42)")
+        openConnection().useConnection {
+            exec(it, "BEGIN TRANSACTION")
+            exec(it, "INSERT INTO 'Foo' VALUES (43)")
+        }
+        exec(db, "BEGIN TRANSACTION")
+    }
+
+    @Test
+    fun blobOpenClose(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 0, holder),
+            errorMessage(db)
+        )
+        try {
+            assertNotEquals(0L, holder.first())
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()))
+        }
+    }
+
+    @Test
+    fun blobBytes(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 0, holder),
+            errorMessage(db)
+        )
+        try {
+            assertEquals(1, blobBytes(holder.first()))
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+        }
+    }
+
+    @Test
+    fun blobRead(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 0, holder),
+            errorMessage(db)
+        )
+        try {
+            val buffer = byteArrayOf(0)
+            assertEquals(SQL_OK, blobRead(holder.first(), 0, buffer, 0, 1))
+            assertEquals(0x42, buffer.first())
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+        }
+    }
+
+    @Test
+    fun blobModify(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 1, holder),
+            errorMessage(db)
+        )
+        try {
+            assertEquals(SQL_OK, blobWrite(holder.first(), 0, byteArrayOf(0x43), 0, 1), errorMessage(db))
+            val buffer = byteArrayOf(0)
+            assertEquals(SQL_OK, blobRead(holder.first(), 0, buffer, 0, 1), errorMessage(db))
+            assertEquals(0x43, buffer.first())
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+        }
+    }
+
+    @Test
+    fun blobWrite(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        prepareStatement(db, "INSERT INTO 'Foo' VALUES (?)").usePreparedStatement {
+            bindZeroBlob(it, 1, 2)
+            assertEquals(SQL_DONE, step(it))
+        }
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 1, holder),
+            errorMessage(db)
+        )
+        try {
+            assertEquals(SQL_OK, blobWrite(holder.first(), 0, byteArrayOf(0x42, 0x43), 0, 2), errorMessage(db))
+            val buffer = byteArrayOf(0, 0)
+            assertEquals(SQL_OK, blobRead(holder.first(), 0, buffer, 0, 2), errorMessage(db))
+            assertEquals(0x42, buffer.first())
+            assertEquals(0x43, buffer[1])
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+        }
+    }
+
+    @Test
+    fun blobReopen(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'43')")
+        val holder = longArrayOf(0L)
+        assertEquals(
+            SQL_OK,
+            blobOpen(db, "main", "Foo", "bar", 1L, 1, holder),
+            errorMessage(db)
+        )
+        try {
+            assertEquals(SQL_OK, blobReopen(holder.first(), 2), errorMessage(db))
+            val buffer = byteArrayOf(0)
+            assertEquals(SQL_OK, blobRead(holder.first(), 0, buffer, 0, 1), errorMessage(db))
+            assertEquals(0x43, buffer.first())
+        } finally {
+            assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+        }
+    }
+
+    @Test
+    fun blobWriteOnReadOnlyConnection(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        openConnection(SQL_OPEN_READONLY).useConnection {
+            assertNotEquals(0, SQLite.databaseReadOnly(it, "main"))
+            val holder = longArrayOf(0L)
+            assertThatExceptionOfType(SQLiteReadOnlyDatabaseException::class.java).isThrownBy {
+                blobOpen(it, "main", "Foo", "bar", 1L, 1, holder)
+            }
+        }
+    }
+    @Test
+    fun blobReadOnReadOnlyConnection(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar BLOB)")
+        exec(db, "INSERT INTO 'Foo' VALUES (x'42')")
+        openConnection(SQL_OPEN_READONLY).useConnection {
+            assertNotEquals(0, SQLite.databaseReadOnly(it, "main"))
+            val holder = longArrayOf(0L)
+            assertEquals(
+                SQL_OK,
+                blobOpen(db, "main", "Foo", "bar", 1L, 0, holder),
+                errorMessage(db)
+            )
+            try {
+                val buffer = byteArrayOf(0)
+                assertEquals(SQL_OK, blobRead(holder.first(), 0, buffer, 0, 1))
+                assertEquals(0x42, buffer.first())
+            } finally {
+                assertEquals(SQL_OK, blobClose(holder.first()), errorMessage(db))
+            }
+        }
     }
 
     @Test
@@ -1019,6 +1197,11 @@ internal class SQLiteTest {
                 assertEquals(0, columnInt(s, 1))
             }
         }
+    }
+
+    @Test
+    fun keywordCount(): Unit = SQLite.run {
+        assertEquals(145, keywordCount())
     }
 
     private fun openConnection(flags: SQLOpenOperation = SQL_OPEN_READWRITE or SQL_OPEN_CREATE): Pointer {

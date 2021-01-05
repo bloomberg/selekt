@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,20 @@ package com.bloomberg.selekt
 import java.util.Locale
 import javax.annotation.concurrent.ThreadSafe
 
+// Predict whether the query is likely to modify the database. Note that PRAGMA setters can be read or write: For example,
+// journal mode setting is considered a write but page size setting a read.
 private fun String.isPredictedWrite() = sqlStatementType().isPredictedWrite
 
 internal enum class SQLStatementType(
+    @JvmField
     val isPredictedWrite: Boolean = true,
+    @JvmField
     val isTransactional: Boolean = false,
+    @JvmField
     val aborts: Boolean = false,
+    @JvmField
     val commits: Boolean = false,
+    @JvmField
     val begins: Boolean = false
 ) {
     ABORT(aborts = true, isTransactional = true),
@@ -57,6 +64,39 @@ internal fun CharSequence.sqlStatementType() = trimStart(Char::isWhitespace).run
         "ATT" -> SQLStatementType.ATTACH
         "ANA", "DET" -> SQLStatementType.UNPREPARED
         else -> SQLStatementType.OTHER
+    }
+}
+
+@ThreadSafe
+internal class BatchSQLStatement private constructor(
+    private val session: ThreadLocalisedSession,
+    private val sql: String,
+    private val args: Iterable<Array<out Any?>>,
+    private val asWrite: Boolean
+) {
+    companion object {
+        fun compile(
+            session: ThreadLocalisedSession,
+            sql: String,
+            bindArgs: Iterable<Array<out Any?>>
+        ): BatchSQLStatement {
+            val predictedWrite = sql.isPredictedWrite()
+            return session.execute(predictedWrite, sql, false) {
+                it.prepare(sql)
+            }.run {
+                @Suppress("UNCHECKED_CAST")
+                BatchSQLStatement(
+                    session,
+                    sql,
+                    bindArgs,
+                    !(isReadOnly && !predictedWrite)
+                )
+            }
+        }
+    }
+
+    fun execute() = session.execute(asWrite, sql, true) {
+        it.executeForChangedRowCount(sql, args)
     }
 }
 
@@ -141,11 +181,11 @@ internal class SQLStatement private constructor(
     fun executeForInt() = session.execute(asWrite, sql, isRaw) { it.executeForInt(sql, args) }
 
     override fun executeInsert() = session.execute(asWrite, sql, isRaw) {
-        it.executeForLastInsertedRowId(sql, args)
+        it.executeForLastInsertedRowId(sql, SQLStatementType.UPDATE, args)
     }
 
     override fun executeUpdateDelete() = session.execute(asWrite, sql, isRaw) {
-        it.executeForChangedRowCount(sql, args)
+        it.executeForChangedRowCount(sql, SQLStatementType.UPDATE, args)
     }
 
     override fun simpleQueryForLong() = session.execute(asWrite, sql, isRaw) { it.executeForLong(sql, args) }
@@ -157,7 +197,7 @@ internal class SQLStatement private constructor(
 
 @Suppress("ArrayInDataClass")
 internal data class SQLStatementInformation(
-    val columnNames: Array<out String>,
     val isReadOnly: Boolean,
-    val parameterCount: Int
+    val parameterCount: Int,
+    val columnNames: Array<out String>
 )

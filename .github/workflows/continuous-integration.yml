@@ -31,6 +31,10 @@ jobs:
       run: ./gradlew detekt ktlint lintDebug
     - name: 'Unit tests'
       run: ./gradlew :AndroidLib:testDebugUnitTest :AndroidSupportLib:testDebugUnitTest :Commons:test :Lib:test :Pools:test
+    - name: 'Coverage'
+      run: |
+        ./gradlew :jacocoSelektTestReport
+        bash <(curl -s https://codecov.io/bash)
     - name: 'Build Selekt'
       run: |
         export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
@@ -40,7 +44,6 @@ jobs:
         ./gradlew :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
         ./gradlew assembleSelekt
-    - name: 'Coverage'
-      run: |
-        ./gradlew :jacocoSelektTestReport
-        bash <(curl -s https://codecov.io/bash)
+    - name: 'Verify coverage'
+      run:
+        ./gradlew :jacocoSelektCoverageVerification

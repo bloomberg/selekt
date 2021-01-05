@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ internal fun ContentValues.asSelektContentValues() = object : IContentValues {
 
             override fun hasNext() = keys.hasNext()
 
-            override fun next() = if (hasNext()) {
+            override fun next(): Map.Entry<String, Any?> = if (hasNext()) {
                 entry.apply {
                     keys.next().let {
                         internalKey = it

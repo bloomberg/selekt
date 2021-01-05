@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,53 +29,53 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
+import org.junit.Test
 import org.junit.rules.DisableOnDebug
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.junit.JUnitAsserter.assertSame
 
 internal class SingleObjectPoolTest {
     @get:Rule
-    val timeoutRule = DisableOnDebug(org.junit.rules.Timeout(10L, TimeUnit.SECONDS))
+    val timeoutRule = DisableOnDebug(org.junit.rules.Timeout(30L, TimeUnit.SECONDS))
 
-    private lateinit var pool: SingleObjectPool<String, KeyedObject>
+    private lateinit var pool: SingleObjectPool<String, PooledObject>
     private val executor = Executors.newSingleThreadScheduledExecutor {
         Thread(it).apply {
             isDaemon = true
-            priority = Thread.NORM_PRIORITY
         }
     }
 
-    @BeforeEach
+    @Before
     fun setUp() {
-        pool = SingleObjectPool(object : IObjectFactory<KeyedObject> {
-            override fun activateObject(obj: KeyedObject) = Unit
+        pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
+            override fun activateObject(obj: PooledObject) = Unit
 
             override fun close() = Unit
 
-            override fun destroyObject(obj: KeyedObject) = Unit
+            override fun destroyObject(obj: PooledObject) = Unit
 
             override fun gauge(): FactoryGauge = mock()
 
-            override fun makeObject() = KeyedObject()
+            override fun makeObject() = PooledObject()
 
             override fun makePrimaryObject() = makeObject()
 
-            override fun passivateObject(obj: KeyedObject) = Unit
+            override fun passivateObject(obj: PooledObject) = Unit
 
-            override fun validateObject(obj: KeyedObject) = true
+            override fun validateObject(obj: PooledObject) = true
         }, executor, 1_000L, 20_000L)
     }
 
-    @AfterEach
+    @After
     fun tearDown() {
         pool.close()
         executor.shutdown()
@@ -103,23 +103,22 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 5L, unit = TimeUnit.SECONDS)
-    fun scheduledEviction(): Unit = SingleObjectPool(object : IObjectFactory<KeyedObject> {
-        override fun activateObject(obj: KeyedObject) = Unit
+    fun scheduledEviction(): Unit = SingleObjectPool(object : IObjectFactory<PooledObject> {
+        override fun activateObject(obj: PooledObject) = Unit
 
         override fun close() = Unit
 
-        override fun destroyObject(obj: KeyedObject) = Unit
+        override fun destroyObject(obj: PooledObject) = Unit
 
         override fun gauge(): FactoryGauge = mock()
 
         override fun makeObject() = makePrimaryObject()
 
-        override fun makePrimaryObject() = KeyedObject()
+        override fun makePrimaryObject() = PooledObject()
 
-        override fun passivateObject(obj: KeyedObject) = Unit
+        override fun passivateObject(obj: PooledObject) = Unit
 
-        override fun validateObject(obj: KeyedObject) = true
+        override fun validateObject(obj: PooledObject) = true
     }, executor, 1_000L, 1_000L).use {
         val obj = it.borrowObject().apply { it.returnObject(this) }
         Thread.sleep(2_000L)
@@ -139,10 +138,9 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 1L, unit = TimeUnit.SECONDS)
     fun secondEvictionWhileBorrowingFails() {
-        val factory = mock<IObjectFactory<IKeyedObject<String>>>()
-        whenever(factory.makePrimaryObject()) doReturn KeyedObject()
+        val factory = mock<IObjectFactory<IPooledObject<String>>>()
+        whenever(factory.makePrimaryObject()) doReturn PooledObject()
         whenever(factory.validateObject(any())) doReturn true
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
             val obj = it.borrowObject()
@@ -159,23 +157,22 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 5L, unit = TimeUnit.SECONDS)
-    fun scheduledEvictionFailsFollowingFurtherUse(): Unit = SingleObjectPool(object : IObjectFactory<IKeyedObject<String>> {
-        override fun activateObject(obj: IKeyedObject<String>) = Unit
+    fun scheduledEvictionFailsFollowingFurtherUse(): Unit = SingleObjectPool(object : IObjectFactory<IPooledObject<String>> {
+        override fun activateObject(obj: IPooledObject<String>) = Unit
 
         override fun close() = Unit
 
-        override fun destroyObject(obj: IKeyedObject<String>) = Unit
+        override fun destroyObject(obj: IPooledObject<String>) = Unit
 
         override fun gauge(): FactoryGauge = mock()
 
         override fun makeObject() = makePrimaryObject()
 
-        override fun makePrimaryObject() = KeyedObject()
+        override fun makePrimaryObject() = PooledObject()
 
-        override fun passivateObject(obj: IKeyedObject<String>) = Unit
+        override fun passivateObject(obj: IPooledObject<String>) = Unit
 
-        override fun validateObject(obj: IKeyedObject<String>) = true
+        override fun validateObject(obj: IPooledObject<String>) = true
     }, executor, 1_000L, 1_000L).use {
         val obj = it.borrowObject().apply {
             it.returnObject(this)
@@ -194,17 +191,29 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 1L, unit = TimeUnit.SECONDS)
+    fun throwsOnCloseWhileWaiting(): Unit = pool.run {
+        val obj = borrowObject()
+        thread {
+            Thread.sleep(100L)
+            returnObject(obj)
+        }
+        close()
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            borrowObject()
+        }
+    }
+
+    @Test
     fun borrowCloseThenReturn(): Unit = pool.run {
         returnObject(borrowObject().also { close() })
     }
 
     @Test
     fun closeDestroys() {
-        val factory = mock<IObjectFactory<IKeyedObject<String>>>().apply {
+        val factory = mock<IObjectFactory<IPooledObject<String>>>().apply {
             whenever(validateObject(any())) doReturn true
         }
-        val obj = KeyedObject()
+        val obj = PooledObject()
         whenever(factory.makePrimaryObject()) doReturn obj
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
             it.borrowObject().run { it.returnObject(this) }
@@ -215,8 +224,8 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun borrowReturnBorrowCloseThenReturn() {
-        val factory = mock<IObjectFactory<IKeyedObject<String>>>()
-        val obj = KeyedObject()
+        val factory = mock<IObjectFactory<IPooledObject<String>>>()
+        val obj = PooledObject()
         whenever(factory.makePrimaryObject()) doReturn obj
         whenever(factory.validateObject(any())) doReturn true
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
@@ -232,21 +241,29 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 2L, unit = TimeUnit.SECONDS)
     fun borrowTwiceThenCloseInterrupts(): Unit = pool.run {
         borrowObject()
-        val thread = thread {
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
-                borrowObject()
-            }
+        thread {
+            Thread.sleep(100L)
+            close()
         }
-        Thread.sleep(100L)
-        close()
-        thread.join()
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            borrowObject()
+        }
     }
 
     @Test
-    @Timeout(value = 1L, unit = TimeUnit.SECONDS)
+    fun borrowOrNull(): Unit = pool.run {
+        assertNotNull(borrowObjectOrNull())
+    }
+
+    @Test
+    fun borrowOrNullIsNull(): Unit = pool.run {
+        borrowObject()
+        assertNull(borrowObjectOrNull())
+    }
+
+    @Test
     fun returnOnAnotherThread(): Unit = pool.run {
         borrowObject().let {
             thread { returnObject(it) }.join()
@@ -254,7 +271,6 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 3L, unit = TimeUnit.SECONDS)
     fun borrowEvenAfterExternalInterruptions(): Unit = pool.run {
         val obj = borrowObject()
         val thread = thread { borrowObject() }
@@ -269,7 +285,6 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 10L, unit = TimeUnit.SECONDS)
     fun concurrentAccess() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         runBlocking(Dispatchers.IO) {
@@ -287,7 +302,6 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    @Timeout(value = 10L, unit = TimeUnit.SECONDS)
     fun concurrentEvict(): Unit = pool.run {
         runBlocking(Dispatchers.IO) {
             coroutineScope {

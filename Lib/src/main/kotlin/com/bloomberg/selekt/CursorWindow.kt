@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import java.io.Closeable
+import javax.annotation.Generated
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -95,7 +96,7 @@ internal class SimpleCursorWindow : ICursorWindow {
         }
     }
 
-    override fun isNull(row: Int, column: Int) = null === get(row, column)
+    override fun isNull(row: Int, column: Int) = null == get(row, column)
 
     override fun numberOfRows() = rows.size
 
@@ -122,9 +123,11 @@ internal class SimpleCursorWindow : ICursorWindow {
     }
 
     @Suppress("NOTHING_TO_INLINE")
+    @Generated
     private inline fun get(row: Int, column: Int) = rows[row][column]
 
     @Suppress("NOTHING_TO_INLINE")
+    @Generated
     private inline fun append(value: Any?) = rows.last().add(value)
 }
 

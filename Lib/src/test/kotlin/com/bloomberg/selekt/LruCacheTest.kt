@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package com.bloomberg.selekt
 
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -28,7 +30,9 @@ import org.junit.jupiter.api.Test
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.RuleChain
 import org.junit.rules.Timeout
+import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 internal class LruCacheTest {
     @Rule
@@ -65,6 +69,14 @@ internal class LruCacheTest {
     }
 
     @Test
+    fun evictWhenEmpty() {
+        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val cache = LruCache(1, disposal)
+        cache.evict("1")
+        verify(disposal, never()).invoke(anyOrNull())
+    }
+
+    @Test
     fun evictLeastRecentlyUsed() {
         val first = Any()
         val second = Any()
@@ -86,5 +98,25 @@ internal class LruCacheTest {
         val item = cache["1", supplier]
         verify(supplier, times(1)).invoke()
         assertSame(item, cache["1", supplier])
+    }
+
+    @Test
+    fun containsFalse() {
+        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val supplier = mock<() -> Any>()
+        whenever(supplier.invoke()) doReturn Any()
+        val cache = LruCache(1, disposal)
+        cache["1", supplier]
+        assertFalse(cache.containsKey("2"))
+    }
+
+    @Test
+    fun containsTrue() {
+        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val supplier = mock<() -> Any>()
+        whenever(supplier.invoke()) doReturn Any()
+        val cache = LruCache(1, disposal)
+        cache["1", supplier]
+        assertTrue(cache.containsKey("1"))
     }
 }

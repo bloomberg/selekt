@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 fun externalSQLiteSingleton(loader: () -> Unit = { System.loadLibrary("selekt") }) =
     ExternalSQLite.Singleton(loader)
 
-@Suppress("Detekt.TooManyFunctions") // Mirrors the SQLite3 C-api.
+@Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions") // Mirrors the SQLite3 C-api.
 class ExternalSQLite private constructor(loader: () -> Unit) {
     init {
         loader()
         nativeInit()
     }
+
     internal object Singleton {
         private val isInitialised = AtomicBoolean(false)
 
@@ -34,11 +35,6 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
             check(!isInitialised.getAndSet(true)) { "Singleton is already initialised." }
             return ExternalSQLite(loader)
         }
-    }
-
-    init {
-        loader()
-        nativeInit()
     }
 
     external fun bindBlob(statement: Long, index: Int, blob: ByteArray, length: Int): SQLCode
@@ -54,6 +50,40 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
     external fun bindParameterCount(statement: Long): Int
 
     external fun bindText(statement: Long, index: Int, value: String): SQLCode
+
+    external fun bindZeroBlob(statement: Long, index: Int, length: Int): SQLCode
+
+    external fun blobBytes(blob: Long): Int
+
+    external fun blobClose(blob: Long): SQLCode
+
+    external fun blobOpen(
+        db: Long,
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        flags: Int,
+        holder: LongArray
+    ): SQLCode
+
+    external fun blobRead(
+        blob: Long,
+        offset: Int,
+        destination: ByteArray,
+        destinationOffset: Int,
+        length: Int
+    ): SQLCode
+
+    external fun blobReopen(blob: Long, row: Long): SQLCode
+
+    external fun blobWrite(
+        blob: Long,
+        offset: Int,
+        source: ByteArray,
+        sourceOffset: Int,
+        length: Int
+    ): SQLCode
 
     external fun busyTimeout(db: Long, millis: Int): SQLCode
 
@@ -112,6 +142,8 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
 
     external fun key(db: Long, key: ByteArray, length: Int): SQLCode
 
+    external fun keywordCount(): Int
+
     external fun lastInsertRowId(db: Long): Long
 
     external fun libVersion(): String
@@ -144,7 +176,7 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
 
     external fun valueFromBind(value: Long): Int
 
-    external fun walAutocheckpoint(db: Long, pages: Int): SQLCode
+    external fun walAutoCheckpoint(db: Long, pages: Int): SQLCode
 
     external fun walCheckpointV2(db: Long, name: String?, mode: Int): SQLCode
 

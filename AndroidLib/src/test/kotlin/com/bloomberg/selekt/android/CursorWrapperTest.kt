@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,8 +148,8 @@ internal class CursorWrapperTest {
 
     @Test
     fun getShort() {
-        whenever(cursor.getShort(1)) doReturn 42
-        assertEquals(42, wrapper.getShort(1))
+        whenever(cursor.getShort(1)) doReturn 42.toShort()
+        assertEquals(42.toShort(), wrapper.getShort(1))
         verify(cursor, times(1)).getShort(eq(1))
     }
 

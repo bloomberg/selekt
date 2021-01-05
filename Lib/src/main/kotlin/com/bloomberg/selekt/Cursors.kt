@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2021 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,4 +149,67 @@ internal class WindowedCursor(
     override fun position() = position
 
     override fun type(index: Int) = window.type(position, index)
+}
+
+@NotThreadSafe
+internal class ForwardCursor(
+    private val statement: SQLPreparedStatement
+) : ICursor {
+    private var closed = false
+
+    private val columnNames = statement.columnNames
+
+    override val columnCount = columnNames.size
+
+    override val count: Int
+        get() = throw UnsupportedOperationException()
+
+    override fun close() {
+        closed = true
+        statement.close()
+    }
+
+    override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }
+
+    override fun columnName(index: Int) = columnNames[index]
+
+    override fun columnNames() = columnNames
+
+    override fun getBlob(index: Int) = statement.columnBlob(index)
+
+    override fun getDouble(index: Int) = statement.columnDouble(index)
+
+    override fun getInt(index: Int) = statement.columnInt(index)
+
+    override fun getLong(index: Int) = statement.columnLong(index)
+
+    override fun getString(index: Int) = statement.columnString(index)
+
+    override fun isAfterLast() = throw UnsupportedOperationException()
+
+    override fun isBeforeFirst() = throw UnsupportedOperationException()
+
+    override fun isClosed() = closed
+
+    override fun isFirst() = throw UnsupportedOperationException()
+
+    override fun isLast() = throw UnsupportedOperationException()
+
+    override fun isNull(index: Int) = SQL_NULL == statement.columnType(index)
+
+    override fun move(offset: Int) = throw UnsupportedOperationException()
+
+    override fun moveToFirst() = throw UnsupportedOperationException()
+
+    override fun moveToLast() = throw UnsupportedOperationException()
+
+    override fun moveToNext() = SQL_ROW == statement.step()
+
+    override fun moveToPosition(position: Int) = throw UnsupportedOperationException()
+
+    override fun moveToPrevious() = throw UnsupportedOperationException()
+
+    override fun position() = throw UnsupportedOperationException()
+
+    override fun type(index: Int) = ColumnType.toColumnType(statement.columnType(index))
 }
