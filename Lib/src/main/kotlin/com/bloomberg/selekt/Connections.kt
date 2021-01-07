@@ -16,9 +16,9 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.forEachByIndex
 import com.bloomberg.selekt.commons.forUntil
-import javax.annotation.Generated
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe

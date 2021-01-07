@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.Generated
 import java.io.Closeable
-import javax.annotation.Generated
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
