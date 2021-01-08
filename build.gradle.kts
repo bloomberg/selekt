@@ -139,6 +139,12 @@ subprojects {
         exclude("**/res/**")
         exclude("**/tmp/**")
     }
+
+    pluginManager.withPlugin("jacoco") {
+        configure<JacocoPluginExtension> {
+            toolVersion = Versions.JACOCO.version
+        }
+    }
 }
 
 configure<JavaPluginExtension> {
@@ -182,10 +188,7 @@ fun JacocoReportBase.initialise() {
                 }
             }
         }
-        pluginManager.withPlugin("org.gradle.jacoco") {
-            configure<JacocoPluginExtension> {
-                toolVersion = Versions.JACOCO.version
-            }
+        pluginManager.withPlugin("jacoco") {
             pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
                 tasks.withType<JacocoReport> {
                     block(this@withType)
