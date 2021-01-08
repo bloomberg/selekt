@@ -17,12 +17,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("kotlin-android-extensions")
-}
-
-apply {
-    plugin("kotlin-android")
-    plugin("kotlin-android-extensions")
 }
 
 repositories {
@@ -53,6 +47,10 @@ android {
 
     lintOptions {
         isWarningsAsErrors = true
+    }
+
+    buildFeatures {
+        viewBinding = true
     }
 }
 

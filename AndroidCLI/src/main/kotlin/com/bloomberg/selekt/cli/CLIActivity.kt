@@ -24,16 +24,17 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.android.SQLiteDatabase
-import kotlinx.android.synthetic.main.activity_main.input
-import kotlinx.android.synthetic.main.activity_main.console
+import com.bloomberg.selekt.cli.databinding.ActivityMainBinding
 import java.lang.StringBuilder
 
 class CLIActivity : AppCompatActivity() {
     private lateinit var database: SQLiteDatabase
+    private lateinit var binding: ActivityMainBinding
+
     private val keyListener = View.OnKeyListener { _, keyCode, keyEvent ->
         if (KeyEvent.KEYCODE_ENTER == keyCode) {
             if (KeyEvent.ACTION_UP == keyEvent.action) {
-                input.text.apply {
+                binding.input.text.apply {
                     takeUnless { it.isBlank() }?.toString()?.let {
                         runCatching { executeSQL(it) }.exceptionOrNull()?.let { e -> log(e) }
                     }
@@ -49,20 +50,21 @@ class CLIActivity : AppCompatActivity() {
     @Suppress("Detekt.MagicNumber")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         database = SQLiteDatabase.openOrCreateDatabase(
             getDatabasePath("foo.db"),
             SQLiteJournalMode.WAL.databaseConfiguration.copy(trace = SQLiteTraceEventMode().enableStatement()),
             ByteArray(32) { 0x42 }
         )
         checkNotNull(supportActionBar).hide()
-        console.movementMethod = ScrollingMovementMethod()
-        input.setOnKeyListener(this@CLIActivity.keyListener)
+        binding.console.movementMethod = ScrollingMovementMethod()
+        binding.input.setOnKeyListener(this@CLIActivity.keyListener)
     }
 
     override fun onResume() {
         super.onResume()
-        input.requestFocus()
+        binding.input.requestFocus()
     }
 
     override fun onDestroy() {
@@ -70,7 +72,7 @@ class CLIActivity : AppCompatActivity() {
         database.close()
     }
 
-    private fun log(any: Any?) = console.append("\n$any")
+    private fun log(any: Any?) = binding.console.append("\n$any")
 
     private fun executeSQL(sql: String) {
         log("> $sql")
