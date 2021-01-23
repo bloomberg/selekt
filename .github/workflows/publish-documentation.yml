@@ -26,11 +26,12 @@ jobs:
           java-version: 1.8
       - name: 'Generate KDocs'
         run: ./gradlew :AndroidLib:dokkaGfm :AndroidSupportLib:dokkaGfm :ApiLib:dokkaGfm
-      - name: 'Mkdocs deploy'
+      - name: 'Populate Mkdocs fields'
         run: |
           VERSION=$(grep -hnr "versionName" gradle.properties | sed 's/.*=//')
           YEAR=$(date +'%Y')
           git fetch origin gh-pages:gh-pages
-          sed -i 's/<version>/\${VERSION}/g' docs/*.md
-          sed -i 's/<year>/\${YEAR}/g' mkdocs.yml
+          sed -i 's/<version>/${VERSION}/g' docs/*.md
+          sed -i 's/<year>/${YEAR}/g' mkdocs.yml
+      - name: 'Deploy Mkdocs'
           mkdocs gh-deploy -r origin -t material -m 'Automatic mkdocs deployment.'
