@@ -16,16 +16,16 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
 plugins {
     kotlin("jvm")
 }
 
 description = "Selekt shared API library."
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")

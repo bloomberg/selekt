@@ -18,7 +18,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.kotlin
-import org.gradle.kotlin.dsl.repositories
 
 private fun Test.configureJUnit5() {
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
@@ -27,9 +26,6 @@ private fun Test.configureJUnit5() {
 
 class SelektPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = project.run {
-        repositories {
-            jcenter()
-        }
         tasks.withType(Test::class.java) {
             systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
         }
