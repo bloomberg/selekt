@@ -20,7 +20,7 @@
         }
     }
 
-    fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key.")
 
     val databaseHelper = SQLiteOpenHelper(
         context = context.applicationContext,
@@ -51,7 +51,7 @@
         }
     }
 
-    byte[] deriveKey() {
+    private byte[] deriveKey() {
         // TODO Optional key.
     }
 
@@ -72,7 +72,7 @@
     ``` kotlin
     import com.bloomberg.selekt.android.support.buildRoomDatabase
 
-    fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key.")
 
     buildRoomDatabase(
         applicationContext,
@@ -87,7 +87,7 @@
     ``` java
     import com.bloomberg.selekt.android.support.buildRoomDatabase;
 
-    byte[] deriveKey() {
+    private byte[] deriveKey() {
         // TODO Optional key.
     }
 
@@ -104,7 +104,7 @@
 
 === "Kotlin"
     ``` kotlin
-    fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key.")
 
     SQLiteDatabase.openOrCreateDatabase(
         context.getDatabasePath("sample"),
@@ -117,7 +117,7 @@
 
 === "Java"
     ``` java
-    byte[] deriveKey() {
+    private byte[] deriveKey() {
         // TODO Optional key.
     }
 
