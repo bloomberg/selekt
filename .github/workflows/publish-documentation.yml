@@ -33,3 +33,4 @@ jobs:
           git fetch origin gh-pages:gh-pages
           sed -i 's/<version>/\${VERSION}/g' docs/*.md
           sed -i 's/<year>/\${YEAR}/g' mkdocs.yml
+          mkdocs gh-deploy -r origin -t material -m 'Automatic mkdocs deployment.'
