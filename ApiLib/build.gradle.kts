@@ -23,6 +23,7 @@ repositories {
 
 plugins {
     kotlin("jvm")
+    id("org.jetbrains.dokka")
 }
 
 description = "Selekt shared API library."

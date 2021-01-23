@@ -1,0 +1,36 @@
+# Project information
+site_name: Selekt
+site_url: https://bloomberg.github.io/selekt
+repo_name: Selekt
+repo_url: https://github.com/bloomberg/selekt
+site_description: "A Kotlin and Android wrapper over SQLCipher, providing 256-bit AES encryption of database files"
+site_author: Bloomberg L.P.
+remote_branch: gh-pages
+
+# Copyright
+copyright: Copyright &copy; <year> Bloomberg L.P.
+
+# Configuration
+theme:
+  name: material
+  language: en
+  palette:
+    scheme: slate
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+# Extensions
+markdown_extensions:
+  - codehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed
+
+nav:
+  - 'Overview': index.md
+  - 'Getting started': getting_started.md
+  - 'API':
+    - 'Android': kdoc/-android-lib/com.bloomberg.selekt.android/index.md

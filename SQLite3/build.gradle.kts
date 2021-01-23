@@ -23,6 +23,7 @@ repositories {
 
 plugins {
     kotlin("jvm")
+    id("org.jetbrains.dokka")
 }
 
 val cFlags = arrayOf(
