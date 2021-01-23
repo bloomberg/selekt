@@ -20,10 +20,15 @@ import android.content.Context
 import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.SQLiteTransactionMode
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.spy
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -117,6 +122,27 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     }
 
     @Test
+    fun transactDefault() = spy(databaseHelper.writableDatabase).run {
+        transact {
+            verify(this, times(1)).beginExclusiveTransaction()
+        }
+    }
+
+    @Test
+    fun transactExclusively() = spy(databaseHelper.writableDatabase).run {
+        transact(SQLiteTransactionMode.EXCLUSIVE) {
+            verify(this, times(1)).beginExclusiveTransaction()
+        }
+    }
+
+    @Test
+    fun transactImmediately() = spy(databaseHelper.writableDatabase).run {
+        transact(SQLiteTransactionMode.IMMEDIATE) {
+            verify(this, times(1)).beginImmediateTransaction()
+        }
+    }
+
+    @Test
     fun setImmediateTransactionSuccessful() = databaseHelper.writableDatabase.run {
         try {
             beginImmediateTransaction()
@@ -156,5 +182,39 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     @Test(expected = IllegalStateException::class)
     fun setForeignKeyConstraintsDisabledInsideTransaction() = databaseHelper.writableDatabase.transact {
         setForeignKeyConstraintsEnabled(false)
+    }
+
+    @Test
+    fun throwInTransaction() = databaseHelper.writableDatabase.run {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            transact {
+                error("Bad")
+            }
+        }
+        exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+    }
+
+    @Test
+    fun throwInNestedTransaction() = databaseHelper.writableDatabase.run {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            transact {
+                transact {
+                    error("Bad")
+                }
+            }
+        }
+        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(42))
+    }
+
+    @Test
+    fun interruptInTransaction() = databaseHelper.writableDatabase.run {
+        transact {
+            Thread.currentThread().interrupt()
+        }
+        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+        }
+        assertFalse(Thread.interrupted())
+        exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
     }
 }

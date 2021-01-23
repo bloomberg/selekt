@@ -17,7 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.annotations.Generated
-import com.bloomberg.selekt.commons.forEachByIndex
+import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -244,8 +244,8 @@ private fun SQLPreparedStatement.bindArguments(args: Array<*>) {
     require(parameterCount == args.size) {
         "Expected $parameterCount bind arguments but ${args.size} were provided."
     }
-    args.forEachByIndex { i, arg ->
-        bindArgument(i + 1, arg)
+    args.forEachByPosition { arg, i ->
+        bindArgument(i, arg)
     }
 }
 

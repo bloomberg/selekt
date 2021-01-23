@@ -92,6 +92,7 @@ description = "Selekt Android SQLite library."
 
 dependencies {
     api(selekt("api", selektVersionName))
+    compileOnly(selekt("annotations", selektVersionName))
     implementation(selekt("commons", selektVersionName))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))

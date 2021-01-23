@@ -18,6 +18,7 @@ package com.bloomberg.selekt.pools
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
@@ -33,14 +34,20 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.rules.DisableOnDebug
+import java.io.IOException
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import kotlin.test.junit.JUnitAsserter.assertSame
 
 internal class SingleObjectPoolTest {
@@ -79,6 +86,26 @@ internal class SingleObjectPoolTest {
     fun tearDown() {
         pool.close()
         executor.shutdown()
+    }
+
+    @Test
+    fun semaphoreExcessiveAcquisition() {
+        Semaphore(Int.MAX_VALUE).let {
+            it.acquire()
+            assertEquals(Int.MAX_VALUE - 1, it.availablePermits())
+            assertFalse(it.tryAcquire(Int.MAX_VALUE))
+            assertEquals(Int.MAX_VALUE - 1, it.availablePermits())
+        }
+    }
+
+    @Test
+    fun semaphoreExcessiveAcquisitionWithoutDelay() {
+        Semaphore(Int.MAX_VALUE).let {
+            it.acquire()
+            assertEquals(Int.MAX_VALUE - 1, it.availablePermits())
+            assertFalse(it.tryAcquire(Int.MAX_VALUE, 0L, TimeUnit.MILLISECONDS))
+            assertEquals(Int.MAX_VALUE - 1, it.availablePermits())
+        }
     }
 
     @Test
@@ -216,10 +243,17 @@ internal class SingleObjectPoolTest {
         val obj = PooledObject()
         whenever(factory.makePrimaryObject()) doReturn obj
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
-            it.borrowObject().run { it.returnObject(this) }
+            it.returnObject(it.borrowObject())
         }
         Thread.sleep(100L)
         verify(factory, times(1)).destroyObject(same(obj))
+    }
+
+    @Test
+    fun closeRestoresInterrupt(): Unit = pool.run {
+        Thread.currentThread().interrupt()
+        pool.close()
+        assertTrue(Thread.currentThread().isInterrupted)
     }
 
     @Test
@@ -241,7 +275,7 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    fun borrowTwiceThenCloseInterrupts(): Unit = pool.run {
+    fun borrowTwiceThenCloseNotifiesWaiters(): Unit = pool.run {
         borrowObject()
         thread {
             Thread.sleep(100L)
@@ -264,9 +298,24 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun borrowKeyedObject(): Unit = pool.run {
+        val obj = borrowObject("").also { returnObject(it) }
+        assertSame(obj, borrowObject())
+    }
+
+    @Test
     fun returnOnAnotherThread(): Unit = pool.run {
         borrowObject().let {
             thread { returnObject(it) }.join()
+        }
+    }
+
+    @Test
+    fun borrowCanBeInterrupted(): Unit = pool.run {
+        borrowObject()
+        Thread.currentThread().interrupt()
+        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            borrowObject()
         }
     }
 
@@ -282,6 +331,48 @@ internal class SingleObjectPoolTest {
         Thread.sleep(100L)
         returnObject(obj)
         thread.join()
+    }
+
+    @Test
+    fun borrowRecoversFromException() {
+        val factory = mock<IObjectFactory<IPooledObject<String>>>()
+        whenever(factory.makePrimaryObject()) doThrow IOException()
+        whenever(factory.validateObject(any())) doReturn true
+        SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
+            assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
+            assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
+        }
+    }
+
+    @Test
+    fun closeNotifiesAllWaiters(): Unit = pool.run {
+        borrowObject()
+        thread {
+            Thread.sleep(100L)
+            close()
+        }
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            borrowObject()
+        }
+    }
+
+    @Test
+    fun interruptBorrowerThenReturn(): Unit = pool.run {
+        borrowObject().let {
+            Thread.interrupted()
+            assertDoesNotThrow {
+                returnObject(it)
+            }
+        }
+    }
+
+    @Test
+    fun interruptBorrowerThenBorrow(): Unit = pool.run {
+        borrowObject()
+        Thread.currentThread().interrupt()
+        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            borrowObject()
+        }
     }
 
     @Test

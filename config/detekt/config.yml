@@ -3,8 +3,6 @@
 # Detekt doc: https://arturbosch.github.io/detekt/index.html
 # Detekt sample: https://github.com/arturbosch/detekt/blob/master/detekt-cli/src/main/resources/default-detekt-config.yml
 
-autoCorrect: false
-
 build:
   maxIssues: 1
 
@@ -58,7 +56,8 @@ complexity:
   LongParameterList:
     active: true
     ignoreDefaultParameters: false
-    threshold: 6
+    functionThreshold: 6
+    constructorThreshold: 7
   MethodOverloading:
     active: true
     threshold: 6
@@ -102,7 +101,7 @@ empty-blocks:
     active: true
   EmptyFunctionBlock:
     active: true
-    ignoreOverriddenFunctions: true
+    ignoreOverridden: true
   EmptyIfBlock:
     active: true
   EmptyInitBlock:
@@ -123,9 +122,7 @@ exceptions:
     methodNames: ',equals,finalize,hashCode,toString'
   InstanceOfCheckForException:
     active: false
-  IteratorNotThrowingNoSuchElementException:
-    active: true
-  PrintExceptionStackTrace:
+  PrintStackTrace:
     active: true
   RethrowCaughtException:
     active: false
@@ -141,7 +138,7 @@ exceptions:
     active: true
   TooGenericExceptionCaught:
     active: true
-    exceptions:
+    exceptionNames:
       - ArrayIndexOutOfBoundsException
       - Error
       - Exception
@@ -187,10 +184,11 @@ naming:
     active: true
     excludes: "**/androidTest/**,**/jmh/**,**/test/**"
     functionPattern: '[a-z$][a-zA-Z$0-9]*'
+  MatchingDeclarationName:
+    active: true
   ObjectPropertyNaming:
     active: true
     constantPattern: '[A-Za-z](_?[A-Za-z0-9])*'
-    excludeClassPattern: '$^'
     propertyPattern: '[A-Za-z](_?[A-Za-z0-9])*'
     privatePropertyPattern: '[A-Za-z](_?[A-Za-z0-9])*'
   PackageNaming:
@@ -261,9 +259,6 @@ style:
     active: false
   EqualsNullCall:
     active: true
-  ForbiddenClassName:
-    active: false
-    forbiddenName: ''
   ForbiddenComment:
     active: false
     values: 'TODO:,FIXME:,STOPSHIP:'
@@ -283,8 +278,6 @@ style:
     ignoreNumbers: '-1,0,1,2'
     ignorePropertyDeclaration: false
   MandatoryBracesIfStatements:
-    active: true
-  MatchingDeclarationName:
     active: true
   MaxLineLength:
     active: true
@@ -307,8 +300,6 @@ style:
     active: true
   OptionalWhenBraces:
     active: true
-  PackageDeclarationStyle:
-    active: false
   ProtectedMemberInFinalClass:
     active: true
   ReturnCount:

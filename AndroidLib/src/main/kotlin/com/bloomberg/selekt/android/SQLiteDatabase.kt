@@ -24,6 +24,8 @@ import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
+import com.bloomberg.selekt.SQLiteTransactionMode
+import com.bloomberg.selekt.annotations.Generated
 import java.io.Closeable
 import java.io.File
 import java.io.InputStream
@@ -349,15 +351,6 @@ class SQLiteDatabase private constructor(
         row: Long
     ) = database.sizeOfBlob(name, table, column, row)
 
-    /*TODO inline*/ fun <T> transact(block: SQLiteDatabase.() -> T) = run {
-        beginImmediateTransaction()
-        try {
-            block(this).also { setTransactionSuccessful() }
-        } finally {
-            endTransaction()
-        }
-    }
-
     fun update(
         table: String,
         values: ContentValues,
@@ -429,6 +422,33 @@ class SQLiteDatabase private constructor(
     fun yieldTransaction() = database.yieldTransaction()
 
     fun yieldTransaction(pauseMillis: Long) = database.yieldTransaction(pauseMillis)
+}
+
+/**
+ * Execute a block inside either an exclusive or an immediate database transaction. These transaction modes are the same in
+ * WAL-journal mode; in other journal modes, exclusive transaction mode prevents other connections from reading the database
+ * while the transaction is underway.
+ *
+ * @param transactionMode of the the transaction; the default is [SQLiteTransactionMode.EXCLUSIVE].
+ * @param block to transact.
+ * @return result of the transaction.
+ * @link [SQLite's transaction](https://sqlite.org/lang_transaction.html)
+ * @since 0.8.13
+ */
+@Generated
+inline fun <T> SQLiteDatabase.transact(
+    transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+    block: SQLiteDatabase.() -> T
+) {
+    when (transactionMode) {
+        SQLiteTransactionMode.EXCLUSIVE -> beginExclusiveTransaction()
+        SQLiteTransactionMode.IMMEDIATE -> beginImmediateTransaction()
+    }
+    try {
+        block(this).also { setTransactionSuccessful() }
+    } finally {
+        endTransaction()
+    }
 }
 
 private const val PAGE_SIZE = "page_size"

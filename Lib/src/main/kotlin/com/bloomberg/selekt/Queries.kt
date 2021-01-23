@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.commons.forEachByIndex
+import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.joinTo
 import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
@@ -95,7 +95,7 @@ class SimpleSQLQuery(
 
     private companion object {
         fun bind(statement: ISQLProgram, bindArgs: Array<out Any?>) {
-            bindArgs.forEachByIndex { index, arg -> bind(statement, index + 1, arg) }
+            bindArgs.forEachByPosition { arg, i -> bind(statement, i, arg) }
         }
 
         fun bind(statement: ISQLProgram, index: Int, arg: Any?) = statement.run {

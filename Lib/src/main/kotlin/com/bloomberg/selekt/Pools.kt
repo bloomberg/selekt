@@ -36,6 +36,7 @@ private val sharedExecutor = ScheduledThreadPoolExecutor(1, ThreadFactory {
         priority = Thread.NORM_PRIORITY
     }
 }).apply {
+    removeOnCancelPolicy = true
     setKeepAliveTime(
         (KEEP_ALIVE_MULTIPLIER * SQLiteJournalMode.WAL.databaseConfiguration.timeBetweenEvictionRunsMillis).toLong(),
         TimeUnit.MILLISECONDS

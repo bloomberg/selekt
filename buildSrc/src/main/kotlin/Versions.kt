@@ -27,6 +27,7 @@ enum class Versions(
     ANDROIDX_ROOM("2.2.5", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     ANDROIDX_SQLITE("2.1.0", URL("https://developer.android.com/jetpack/androidx/releases/sqlite")),
     ASSERT_J("3.15.0", URL("https://joel-costigliola.github.io/assertj")),
+    DETEKT("1.14.2", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.4.10.2", URL("https://github.com/Kotlin/dokka")),
     ESPRESSO_CORE("3.1.1",
         URL("https://android.googlesource.com/platform/frameworks/testing/+/android-support-test/espresso")),

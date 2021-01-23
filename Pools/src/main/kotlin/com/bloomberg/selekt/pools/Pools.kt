@@ -18,6 +18,7 @@ package com.bloomberg.selekt.pools
 
 import java.io.Closeable
 import java.util.concurrent.ScheduledExecutorService
+import kotlin.jvm.Throws
 
 fun <K : Any, T : IPooledObject<K>> createObjectPool(
     factory: IObjectFactory<T>,
@@ -50,12 +51,15 @@ interface IObjectPool<K : Any, T : Any> : Closeable {
 interface IObjectFactory<T : Any> : Closeable {
     fun activateObject(obj: T)
 
+    @Throws(Exception::class)
     fun destroyObject(obj: T)
 
     fun gauge(): FactoryGauge
 
+    @Throws(Exception::class)
     fun makeObject(): T
 
+    @Throws(Exception::class)
     fun makePrimaryObject(): T
 
     fun passivateObject(obj: T)
