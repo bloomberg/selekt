@@ -67,4 +67,20 @@ internal class ArraysTest {
             assertEquals("", it.toString())
         }
     }
+
+    @Test
+    fun forEachByIndex() {
+        arrayOf(42).forEachByIndex { i, it ->
+            assertEquals(0, i)
+            assertEquals(42, it)
+        }
+    }
+
+    @Test
+    fun forEachByPosition() {
+        arrayOf(42).forEachByPosition { it, i ->
+            assertEquals(1, i)
+            assertEquals(42, it)
+        }
+    }
 }

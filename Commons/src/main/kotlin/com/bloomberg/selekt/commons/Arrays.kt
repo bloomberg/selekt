@@ -16,6 +16,24 @@
 
 package com.bloomberg.selekt.commons
 
+import com.bloomberg.selekt.annotations.Generated
+
+@Generated
+inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
+    var i = 0
+    while (i < size) {
+        block(i, this[i++])
+    }
+}
+
+@Generated
+inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
+    var i = 0
+    while (i < size) {
+        block(this[i++], i)
+    }
+}
+
 fun <T, A : Appendable> Array<out T>.joinTo(buffer: A, separator: Char) = buffer.apply {
     forEachByIndex { i, it ->
         if (i > 0) {
