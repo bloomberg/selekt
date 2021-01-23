@@ -19,7 +19,7 @@ package com.bloomberg.selekt
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-@Suppress("Detekt.MethodOverloading")
+@Suppress("MethodOverloading")
 class ContentValues : IContentValues {
     private val store = mutableMapOf<String, Any?>()
 

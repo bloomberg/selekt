@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.commons
+package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
+enum class SQLiteTransactionMode {
+    EXCLUSIVE,
+    IMMEDIATE;
 
-@Generated
-inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
-    var i = 0
-    while (i < size) {
-        block(i, this[i++])
-    }
-}
-
-@Generated
-inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
-    var i = 0
-    while (i < size) {
-        block(this[i++], i)
-    }
+    val sql = "BEGIN $name"
 }

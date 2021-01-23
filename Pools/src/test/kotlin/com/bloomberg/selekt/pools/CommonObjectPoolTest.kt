@@ -29,6 +29,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.Timeout
 import java.lang.IllegalArgumentException
@@ -305,6 +306,13 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
+    fun closeRestoresInterrupt(): Unit = pool.run {
+        Thread.currentThread().interrupt()
+        close()
+        assertTrue(Thread.currentThread().isInterrupted)
+    }
+
+    @Test
     fun borrowReturnBorrowCloseThenReturn() {
         val factory = mock<IObjectFactory<PooledObject>>()
         val obj = PooledObject()
@@ -345,10 +353,40 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
+    fun awaitCanBeInterrupted(): Unit = pool.run {
+        repeat(configuration.maxTotal) { borrowObject() }
+        Thread.currentThread().interrupt()
+        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            borrowObject()
+        }
+    }
+
+    @Test
+    fun borrowCanBeInterrupted(): Unit = pool.run {
+        Thread.currentThread().interrupt()
+        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            borrowObject()
+        }
+    }
+
+    @Test
     fun returnOnAnotherThread(): Unit = pool.run {
         borrowObject().let {
             thread { returnObject(it) }.join()
         }
+    }
+
+    @Test
+    fun returnOnInterruptedThreadReturns(): Unit = pool.run {
+        borrowObject().let {
+            Thread.currentThread().interrupt()
+            assertDoesNotThrow {
+                returnObject(it)
+            }
+        }
+        Thread.interrupted()
+        assertFalse(Thread.currentThread().isInterrupted)
+        borrowObject()
     }
 
     @Test

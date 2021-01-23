@@ -62,8 +62,6 @@ class SQLDatabase constructor(
         BatchSQLStatement.compile(session, sql, bindArgs).execute()
     }
 
-    override fun beginDeferredTransaction() = pledge { session.beginDeferredTransaction() }
-
     override fun beginExclusiveTransaction() = pledge { session.beginExclusiveTransaction() }
 
     override fun beginImmediateTransaction() = pledge { session.beginImmediateTransaction() }

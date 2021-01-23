@@ -30,8 +30,6 @@ internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
     val hasObject: Boolean
         get() = session.hasObject
 
-    fun beginDeferredTransaction() = session.beginDeferredTransaction()
-
     fun beginExclusiveTransaction() = session.beginExclusiveTransaction()
 
     fun beginImmediateTransaction() = session.beginImmediateTransaction()
@@ -76,11 +74,9 @@ internal class SQLSession(
     private var successes = 0
     private lateinit var transactionSql: String
 
-    override fun beginDeferredTransaction() = begin(TransactionMode.DEFERRED)
+    override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE)
 
-    override fun beginExclusiveTransaction() = begin(TransactionMode.EXCLUSIVE)
-
-    override fun beginImmediateTransaction() = begin(TransactionMode.IMMEDIATE)
+    override fun beginImmediateTransaction() = begin(SQLiteTransactionMode.IMMEDIATE)
 
     fun beginRawTransaction(sql: String) = begin(sql)
 
@@ -143,7 +139,7 @@ internal class SQLSession(
         }
     }
 
-    private fun begin(mode: TransactionMode) = begin(mode.sql)
+    private fun begin(mode: SQLiteTransactionMode) = begin(mode.sql)
 
     private fun begin(sql: String) {
         if (depth == 0) {
@@ -389,8 +385,6 @@ private object StubCloseableSQLExecutor : CloseableSQLExecutor {
 interface ISQLTransactor {
     val inTransaction: Boolean
 
-    fun beginDeferredTransaction()
-
     fun beginExclusiveTransaction()
 
     fun beginImmediateTransaction()
@@ -454,12 +448,4 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
             pool.returnObject(this).also { obj = null }
         }
     }
-}
-
-private enum class TransactionMode {
-    DEFERRED,
-    EXCLUSIVE,
-    IMMEDIATE;
-
-    val sql = "BEGIN $name"
 }

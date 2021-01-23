@@ -18,14 +18,16 @@ package com.bloomberg.selekt.pools
 
 import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.LinkedDeque
+import com.bloomberg.selekt.commons.withLockInterruptibly
 import com.bloomberg.selekt.commons.withTryLock
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
+import kotlin.jvm.Throws
 
 class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
@@ -47,7 +49,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     @GuardedBy("lock")
     private var count = 0
     @GuardedBy("lock")
-    private var future: ScheduledFuture<*>? = null
+    private var future: Future<*>? = null
     @GuardedBy("lock")
     private var tag = false
 
@@ -55,7 +57,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         if (isClosed.getAndSet(true)) {
             return
         }
-        evict()
+        signalAllInterruptibly()
+        evictInterruptibly()
     }
 
     override fun borrowObject() = internalBorrowObject { null }
@@ -68,8 +71,9 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     @Suppress("Detekt.ReturnCount")
     @Generated
+    @Throws(InterruptedException::class)
     private inline fun internalBorrowObject(preferred: () -> T?): T {
-        lock.withLock {
+        lock.withLockInterruptibly {
             while (!isClosed.get()) {
                 preferred()?.let {
                     return it
@@ -80,11 +84,11 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                 if (count < configuration.maxTotal) {
                     attemptScheduleEviction()
                     ++count
-                    return@withLock Unit
+                    return@withLockInterruptibly Unit
                 }
                 otherPool.borrowObjectOrNull()?.let { return it }
                 do {
-                    available.awaitUninterruptibly()
+                    available.await()
                 } while (idleObjects.isEmpty && count == configuration.maxTotal)
             }
             null
@@ -101,7 +105,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             available.signal()
         }
         if (isClosed.get()) {
-            evict()
+            evictInterruptibly()
         }
     }
 
@@ -158,5 +162,23 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             configuration.evictionIntervalMillis,
             TimeUnit.MILLISECONDS
         )
+    }
+
+    private fun signalAllInterruptibly() {
+        try {
+            lock.withLockInterruptibly {
+                available.signalAll()
+            }
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+    }
+
+    private fun evictInterruptibly() {
+        try {
+            evict()
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
     }
 }

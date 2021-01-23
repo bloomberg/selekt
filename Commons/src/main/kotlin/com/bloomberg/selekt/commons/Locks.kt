@@ -17,13 +17,8 @@
 package com.bloomberg.selekt.commons
 
 import com.bloomberg.selekt.annotations.Generated
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
-
-class InterruptibleSemaphore(permits: Int, isFair: Boolean = true) : Semaphore(permits, isFair) {
-    fun interruptWaiters() = queuedThreads.forEach { it.interrupt() }
-}
 
 @Generated
 inline fun <T> Lock.withTryLock(
@@ -42,19 +37,13 @@ inline fun <T> Lock.withTryLock(
 }
 
 @Generated
-inline fun <R> Semaphore.withTrySemaphore(
-    time: Long,
-    unit: TimeUnit,
-    permits: Int = 1,
-    block: () -> R
-): R? = run {
-    if (tryAcquire(permits, time, unit)) {
-        try {
-            block()
-        } finally {
-            release(permits)
-        }
-    } else {
-        null
+inline fun <T> Lock.withLockInterruptibly(
+    action: () -> T
+): T? {
+    lockInterruptibly()
+    try {
+        return action()
+    } finally {
+        unlock()
     }
 }

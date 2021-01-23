@@ -10,6 +10,7 @@ local.properties
 
 **/generated
 **/.cxx
+**/.cxx-host
 
 **/CMakeCache.txt
 **/*.cmake

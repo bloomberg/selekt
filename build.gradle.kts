@@ -38,7 +38,7 @@ apply {
 
 plugins {
     jacoco
-    id("io.gitlab.arturbosch.detekt") version "1.1.1"
+    id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
 }
 
 jacoco {
@@ -125,11 +125,12 @@ subprojects {
         }
     }
 
-    detekt {
-        toolVersion = "1.0.0-RC16"
+    configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+        toolVersion = Versions.DETEKT.version
         input = files("src")
         config = files("${rootProject.projectDir}/config/detekt/config.yml")
-        parallel = true
+        buildUponDefaultConfig = true
+        parallel = false
         debug = false
         ignoreFailures = false
 
@@ -218,12 +219,12 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.8897".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.8990".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
             limit {
                 counter = "BRANCH"
                 value = "COVEREDRATIO"
-                minimum = "0.8139".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.8176".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
         }
     }

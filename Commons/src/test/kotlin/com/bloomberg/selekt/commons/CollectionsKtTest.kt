@@ -27,4 +27,12 @@ internal class CollectionsKtTest {
             assertEquals(42, it)
         }
     }
+
+    @Test
+    fun forEachByPosition() {
+        arrayOf(42).forEachByPosition { it, i ->
+            assertEquals(1, i)
+            assertEquals(42, it)
+        }
+    }
 }

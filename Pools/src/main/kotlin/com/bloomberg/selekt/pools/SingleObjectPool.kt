@@ -16,13 +16,10 @@
 
 package com.bloomberg.selekt.pools
 
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.concurrent.GuardedBy
-import com.bloomberg.selekt.commons.InterruptibleSemaphore
-import com.bloomberg.selekt.commons.withTrySemaphore
 
 class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
@@ -30,84 +27,83 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val evictionDelayMillis: Long,
     private val evictionIntervalMillis: Long
 ) : IObjectPool<K, T> {
-    private val isClosed = AtomicBoolean(false)
-
-    private val semaphore = InterruptibleSemaphore(1)
-    @GuardedBy("semaphore")
+    private val mutex = Mutex()
+    @GuardedBy("mutex")
     private var obj: T? = null
-    @GuardedBy("semaphore")
+    @GuardedBy("mutex")
     private var canEvict = false
-    @GuardedBy("semaphore")
-    private var future: ScheduledFuture<*>? = null
+    @GuardedBy("mutex")
+    private var future: Future<*>? = null
+
+    private val isClosed: Boolean
+        get() = mutex.isCancelled()
 
     override fun close() {
-        if (isClosed.getAndSet(true)) {
+        if (!mutex.cancel()) {
             return
         }
-        semaphore.interruptWaiters()
-        evict()
+        evictQuietly()
     }
 
-    @Suppress("Detekt.UnconditionalJumpStatementInLoop")
     override fun borrowObject(): T {
-        while (!isClosed.get()) {
-            try {
-                semaphore.acquire()
-            } catch (_: InterruptedException) {
-                continue
-            }
-            if (isClosed.get()) {
-                semaphore.release()
-                break
-            }
-            return acquireObject()
-        }
-        error("Pool is closed.")
+        mutex.lock()
+        return acquireObject()
     }
 
     override fun borrowObject(key: K) = borrowObject()
 
-    fun borrowObjectOrNull() = if (semaphore.tryAcquire(0L, TimeUnit.NANOSECONDS)) {
+    fun borrowObjectOrNull() = if (mutex.tryLock(0L, true)) {
         acquireObject()
     } else {
         null
     }
 
     override fun returnObject(obj: T) {
-        semaphore.release()
-        if (isClosed.get()) {
+        if (isClosed) {
+            evictThenUnlock()
+        } else {
+            mutex.unlock()
+        }
+    }
+
+    internal fun evict() = mutex.run {
+        if (isClosed) {
+            attemptUnparkWaiters()
+            withTryLock {
+                evictions()
+            }
+        } else {
+            withTryLock(0L, false) {
+                evictions()
+            }
+        }
+    }?.let {
+        factory.destroyObject(it)
+    }
+
+    private fun evictQuietly() {
+        try {
             evict()
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
         }
     }
 
-    internal fun evict() {
-        semaphore.withTrySemaphore(0L, TimeUnit.NANOSECONDS) {
-            if (isClosed.get()) {
-                factory.close()
-            }
-            (if (canEvict && future?.isCancelled == false || isClosed.get()) obj else null)?.also {
-                obj = null
-                cancelScheduledEviction()
-            }.also {
-                canEvict = true
-            }
-        }?.let {
-            factory.destroyObject(it)
-        }
-    }
-
-    @GuardedBy("semaphore")
+    @GuardedBy("mutex")
     private fun acquireObject(): T {
         canEvict = false
-        return obj ?: factory.makePrimaryObject().also {
+        return obj ?: runCatching { factory.makePrimaryObject() }.getOrElse {
+            mutex.unlock()
+            throw it
+        }.also {
             obj = it
             attemptScheduleEviction()
         }
     }
 
-    @GuardedBy("semaphore")
+    @GuardedBy("mutex")
     private fun attemptScheduleEviction() {
-        if (future?.isCancelled == false || evictionIntervalMillis < 0L || isClosed.get()) {
+        if (future?.isCancelled == false || evictionIntervalMillis < 0L || isClosed) {
             return
         }
         canEvict = true
@@ -119,9 +115,35 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         )
     }
 
-    @GuardedBy("semaphore")
-    private fun cancelScheduledEviction() = future?.let {
-        future = null
-        it.cancel(false)
+    @GuardedBy("mutex")
+    private fun cancelScheduledEviction() {
+        future?.let {
+            future = null
+            it.cancel(false)
+        }
+    }
+
+    @GuardedBy("mutex")
+    private fun evictions(): T? {
+        if (isClosed) {
+            factory.close()
+        }
+        return (if (canEvict && future?.isCancelled == false || isClosed) obj else null)?.also {
+            obj = null
+            cancelScheduledEviction()
+        }.also {
+            canEvict = true
+        }
+    }
+
+    @GuardedBy("mutex")
+    private fun evictThenUnlock() {
+        try {
+            evictions()
+        } finally {
+            mutex.unlock()
+        }?.let {
+            factory.destroyObject(it)
+        }
     }
 }
