@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
 plugins {
     kotlin("jvm")
 }
 
 disableKotlinCompilerAssertions()
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")

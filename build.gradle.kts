@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
-        mavenCentral()
         google()
     }
     dependencies {
@@ -31,8 +30,8 @@ buildscript {
     }
 }
 
-apply {
-    plugin("kotlin")
+repositories {
+    mavenCentral()
 }
 
 plugins {
@@ -145,11 +144,6 @@ subprojects {
             toolVersion = Versions.JACOCO.version
         }
     }
-}
-
-configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 @OptIn(ExperimentalStdlibApi::class)

@@ -18,6 +18,11 @@
 
 import java.util.Locale
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
 val archive = fileTree("$projectDir/src/main/external/").matching { include("*.tar.gz") }.min()!!
 
 tasks.register<Copy>("unpack") {

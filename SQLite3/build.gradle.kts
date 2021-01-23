@@ -16,6 +16,11 @@
 
 import java.util.Locale
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
 plugins {
     kotlin("jvm")
 }
@@ -49,11 +54,6 @@ val cFlags = arrayOf(
 )
 
 disableKotlinCompilerAssertions()
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")
