@@ -19,6 +19,7 @@ import java.util.Locale
 plugins {
     id("com.android.library")
     id("kotlin-android")
+    id("org.jetbrains.dokka")
     id("bb-jacoco-android")
 }
 

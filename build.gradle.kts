@@ -18,10 +18,12 @@
 
 import io.gitlab.arturbosch.detekt.Detekt
 import java.util.Locale
+import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
+        mavenCentral()
         google()
     }
     dependencies {
@@ -37,6 +39,7 @@ repositories {
 plugins {
     jacoco
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
+    id("org.jetbrains.dokka") version Versions.DOKKA.version
 }
 
 jacoco {
@@ -142,6 +145,24 @@ subprojects {
     pluginManager.withPlugin("jacoco") {
         configure<JacocoPluginExtension> {
             toolVersion = Versions.JACOCO.version
+        }
+    }
+
+    pluginManager.withPlugin("org.jetbrains.dokka") {
+        tasks.withType<DokkaTask>().configureEach {
+            dokkaSourceSets.named("main") {
+                sourceLink {
+                    remoteUrl.set(java.net.URL("https://github.com/bloomberg/selekt/tree/master/" +
+                        "${this@configureEach.project.name}/src/main/kotlin"))
+                    localDirectory.set(file("src/main/kotlin"))
+                }
+                includeNonPublic.set(false)
+                jdkVersion.set(JavaVersion.VERSION_1_8.majorVersion.toInt())
+                noAndroidSdkLink.set(false)
+                noJdkLink.set(false)
+                noStdlibLink.set(false)
+                outputDirectory.set(File("$rootDir/docs/kdoc"))
+            }
         }
     }
 }
