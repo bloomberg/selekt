@@ -17,14 +17,13 @@
 @file:Suppress("UnstableApiUsage")
 
 import io.gitlab.arturbosch.detekt.Detekt
-import java.io.ByteArrayOutputStream
 import java.util.Locale
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
+        mavenCentral()
         google()
-        jcenter()
     }
     dependencies {
         classpath("com.android.tools.build:gradle:${Versions.ANDROID_GRADLE_PLUGIN}")
@@ -45,7 +44,7 @@ jacoco {
     toolVersion = Versions.JACOCO.version
 }
 
-allprojects {
+subprojects {
     apply {
         plugin("selekt")
     }
@@ -151,21 +150,6 @@ subprojects {
 configure<JavaPluginExtension> {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-tasks.register("checkJavaVersion") {
-    group = "verification"
-    val javaHome = requireNotNull(System.getProperty("java.home"))
-    val stderr = ByteArrayOutputStream()
-    exec {
-        commandLine("$javaHome/bin/java", "-version")
-        errorOutput = stderr
-    }
-    val version = stderr.toString()
-    logger.quiet(version)
-    assert(Regex(".*OpenJDK.*build 1\\.8\\..*").containsMatchIn(version)) {
-        "Gradle's Java home is currently: '$javaHome'. However AdoptOpenJDK 8 is required."
-    }
 }
 
 @OptIn(ExperimentalStdlibApi::class)
