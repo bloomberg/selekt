@@ -6,6 +6,7 @@ repo_url: https://github.com/bloomberg/selekt
 site_description: "A Kotlin and Android wrapper over SQLCipher, providing 256-bit AES encryption of database files"
 site_author: Bloomberg L.P.
 remote_branch: gh-pages
+edit_uri: ""
 
 # Copyright
 copyright: Copyright &copy; <year> Bloomberg L.P.
