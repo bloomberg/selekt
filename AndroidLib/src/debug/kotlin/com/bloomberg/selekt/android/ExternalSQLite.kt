@@ -28,6 +28,8 @@ internal val sqlite = externalSQLiteSingleton {
         } catch (e: UnsatisfiedLinkError) {
             if (System.getProperty(CAN_USE_EMBEDDED_PROPERTY_KEY, null) == "true") {
                 loadEmbeddedLibrary(checkNotNull(SQLite::class.java.classLoader), "jni", it)
+            } else {
+                throw e
             }
         }
     }

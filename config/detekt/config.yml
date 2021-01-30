@@ -129,7 +129,7 @@ exceptions:
   ReturnFromFinally:
     active: true
   SwallowedException:
-    active: false # TODO Activate me.
+    active: true
   ThrowingExceptionFromFinally:
     active: true
   ThrowingExceptionInMain:
@@ -147,7 +147,7 @@ exceptions:
       - InterruptedException
       - NullPointerException
       - RuntimeException
-    allowedExceptionNameRegex: "^(_|(ignore|expected|rethrown).*)"
+    excludes: "**/androidTest/**,**/jmh/**,**/test/**"
   TooGenericExceptionThrown:
     active: true
     exceptionNames:
