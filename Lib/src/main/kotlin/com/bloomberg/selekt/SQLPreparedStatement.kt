@@ -130,9 +130,7 @@ internal class SQLPreparedStatement(
                 sqlite.throwSQLException(sqlite.databaseHandle(pointer), "${sql.sqlStatementType()}")
             }
         }
-        try {
-            Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainderMillis).nextRandom())
-        } catch (_: InterruptedException) {}
+        Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainderMillis).nextRandom())
     }
 
     private fun Long.nextRandom() = random.nextLong(this)
