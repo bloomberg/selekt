@@ -24,9 +24,15 @@ repositories {
 plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
+    `maven-publish`
 }
 
 description = "Selekt shared API library."
+
+java {
+    @Suppress("UnstableApiUsage")
+    withSourcesJar()
+}
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")
@@ -38,5 +44,19 @@ tasks.withType<KotlinCompile>().configureEach {
             "-Xinline-classes",
             "-Xopt-in=kotlin.RequiresOptIn"
         )
+    }
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn("assembleSelekt")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-api"
+        version = selektVersionName
+        from(components.getByName("java"))
+        pom { commonInitialisation(project) }
     }
 }

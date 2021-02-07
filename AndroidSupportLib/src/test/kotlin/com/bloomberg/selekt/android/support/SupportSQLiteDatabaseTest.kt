@@ -18,6 +18,7 @@ package com.bloomberg.selekt.android.support
 
 import android.content.ContentValues
 import android.database.MatrixCursor
+import android.database.sqlite.SQLiteTransactionListener
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.bloomberg.selekt.SQLiteJournalMode
@@ -81,17 +82,17 @@ internal class SupportSQLiteDatabaseTest {
     }
 
     @Test
-    fun beginTransactionWithListenerNonExclusive() {
-        assertThatExceptionOfType(NotImplementedError::class.java).isThrownBy {
-            supportDatabase.beginTransactionWithListenerNonExclusive(mock())
-        }
+    fun beginTransactionWithListener() {
+        val listener = mock<SQLiteTransactionListener>()
+        supportDatabase.beginTransactionWithListener(listener)
+        verify(database, times(1)).beginExclusiveTransactionWithListener(eq(listener.asSQLTransactionListener()))
     }
 
     @Test
-    fun beginTransactionWithListener() {
-        assertThatExceptionOfType(NotImplementedError::class.java).isThrownBy {
-            supportDatabase.beginTransactionWithListener(mock())
-        }
+    fun beginTransactionWithListenerNonExclusive() {
+        val listener = mock<SQLiteTransactionListener>()
+        supportDatabase.beginTransactionWithListenerNonExclusive(listener)
+        verify(database, times(1)).beginImmediateTransactionWithListener(eq(listener.asSQLTransactionListener()))
     }
 
     @Test

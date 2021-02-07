@@ -21,9 +21,12 @@ import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTransactionMode
+import com.bloomberg.selekt.SQLTransactionListener
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -216,5 +219,99 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
         }
         assertFalse(Thread.interrupted())
         exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+    }
+
+    @Test
+    fun exclusiveTransactionWithListenerCommit() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        verify(listener, times(1)).onBegin()
+        try {
+            setTransactionSuccessful()
+        } finally {
+            endTransaction()
+        }
+        verify(listener, times(1)).onCommit()
+        verify(listener, never()).onRollback()
+    }
+
+    @Test
+    fun exclusiveTransactionWithListenerRollback() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        verify(listener, times(1)).onBegin()
+        endTransaction()
+        verify(listener, never()).onCommit()
+        verify(listener, times(1)).onRollback()
+    }
+
+    @Test
+    fun immediateTransactionWithListenerCommit() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginImmediateTransactionWithListener(listener)
+        verify(listener, times(1)).onBegin()
+        try {
+            setTransactionSuccessful()
+        } finally {
+            endTransaction()
+        }
+        verify(listener, times(1)).onCommit()
+        verify(listener, never()).onRollback()
+    }
+
+    @Test
+    fun immediateTransactionWithListenerRollback() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginImmediateTransactionWithListener(listener)
+        verify(listener, times(1)).onBegin()
+        endTransaction()
+        verify(listener, never()).onCommit()
+        verify(listener, times(1)).onRollback()
+    }
+
+    @Test
+    fun transactionListenerIsEventuallyCleared() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        endTransaction()
+        beginExclusiveTransaction()
+        verify(listener, times(1)).onBegin()
+    }
+
+    @Test
+    fun transactionListenerNotifiedOnceInNestedTransactions() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        transact { }
+        verify(listener, times(1)).onBegin()
+        try {
+            setTransactionSuccessful()
+        } finally {
+            endTransaction()
+        }
+        verify(listener, times(1)).onCommit()
+        verify(listener, never()).onRollback()
+    }
+
+    @Test
+    fun transactionListenerNotifiedOnceInNestedTransactionRollback() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        transact { }
+        verify(listener, times(1)).onBegin()
+        endTransaction()
+        verify(listener, never()).onCommit()
+        verify(listener, times(1)).onRollback()
+    }
+
+    @Test
+    fun transactionWithListenerWillRollbackWithOnBeginThrow() = databaseHelper.writableDatabase.run {
+        val listener = mock<SQLTransactionListener>().apply {
+            whenever(onBegin()) doThrow IllegalStateException("Bad")
+        }
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            beginExclusiveTransactionWithListener(listener)
+        }
+        verify(listener, times(1)).onRollback()
     }
 }

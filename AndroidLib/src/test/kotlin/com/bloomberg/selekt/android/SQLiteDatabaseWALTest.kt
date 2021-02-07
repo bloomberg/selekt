@@ -20,8 +20,15 @@ import android.content.ContentValues
 import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Before
@@ -160,6 +167,108 @@ internal class SQLiteDatabaseWALTest {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
             assertEquals(1, it.getInt(0))
+        }
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertAsInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+        val values = ContentValues().apply {
+            put("bar", "hello")
+            put("count", 42)
+        }
+        assertEquals(1L, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        query(false, "Foo", null, null, emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals("hello", it.getString(0))
+            assertEquals(42, it.getInt(1))
+        }
+    }
+
+    @Test
+    fun transactionAsQuery(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        repeat(10) { i ->
+            query("BEGIN TRANSACTION", emptyArray()).use {
+                assertFalse(it.moveToFirst())
+            }
+            try {
+                assertTrue(isTransactionOpenedByCurrentThread)
+                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+            } finally {
+                query("END", emptyArray()).use {
+                    assertFalse(it.moveToFirst())
+                }
+            }
+            assertFalse(isTransactionOpenedByCurrentThread)
+            query("SELECT * FROM Foo", emptyArray()).use {
+                assertEquals(i + 1, it.count)
+            }
+        }
+    }
+
+    @Test
+    fun beginTransactionAsQuery(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        repeat(10) { i ->
+            query("BEGIN TRANSACTION", emptyArray()).use {
+                assertFalse(it.moveToFirst())
+            }
+            try {
+                assertTrue(isTransactionOpenedByCurrentThread)
+                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+                setTransactionSuccessful()
+            } finally {
+                endTransaction()
+            }
+            assertFalse(isTransactionOpenedByCurrentThread)
+            query("SELECT * FROM Foo", emptyArray()).use {
+                assertEquals(i + 1, it.count)
+            }
+        }
+    }
+
+    @Test
+    fun endTransactionAsQuery(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        repeat(10) { i ->
+            beginExclusiveTransaction()
+            try {
+                assertTrue(isTransactionOpenedByCurrentThread)
+                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+            } finally {
+                query("END TRANSACTION", emptyArray()).use {
+                    assertFalse(it.moveToFirst())
+                }
+            }
+            assertFalse(isTransactionOpenedByCurrentThread)
+            query("SELECT * FROM Foo", emptyArray()).use {
+                assertEquals(i + 1, it.count)
+            }
+        }
+    }
+
+    @Test
+    fun transactionWithListenerWillRollbackWithOnCommitThrow() = database.run {
+        exec("CREATE TABLE Foo (bar INT)")
+        val listener = mock<SQLTransactionListener>().apply {
+            whenever(onCommit()) doThrow IllegalStateException("Bad")
+        }
+        beginExclusiveTransactionWithListener(listener)
+        try {
+            exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+            setTransactionSuccessful()
+        } finally {
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                endTransaction()
+            }
+        }
+        verify(listener, times(1)).onCommit()
+        verify(listener, never()).onRollback()
+        query("SELECT * FROM Foo", null).use {
+            assertFalse(it.moveToFirst())
         }
     }
 }

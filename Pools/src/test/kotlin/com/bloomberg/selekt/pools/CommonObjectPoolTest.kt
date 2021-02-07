@@ -111,13 +111,13 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
-    fun lastInFirstOut() = pool.run {
+    fun firstInFirstOutUnmatched() = pool.run {
         val first = borrowObject()
         thread {
             returnObject(borrowObject())
         }.join()
         returnObject(first)
-        assertSame("Pool must return the first object.", first, borrowObject("not").also { returnObject(it) })
+        assertNotSame(first, borrowObject("not").also { returnObject(it) }, "Pool must return the first object.")
     }
 
     @Test
@@ -152,13 +152,13 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
-    fun newObjectForNewKey() = pool.run {
+    fun oldObjectForNewKey() = pool.run {
         val obj = borrowObject()
         val executor = Executors.newSingleThreadExecutor()
         val other = executor.submit<PooledObject> { borrowObject() }.get()
         returnObject(obj)
         executor.submit { returnObject(other) }.get()
-        assertNotSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must not return the same object.")
+        assertSame("Pool must not return the same object.", obj, borrowObject("not").also { returnObject(it) })
         executor.shutdown()
     }
 

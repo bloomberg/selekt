@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
@@ -32,6 +33,8 @@ import org.junit.rules.DisableOnDebug
 import org.junit.rules.Timeout
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.stubbing.Answer
+import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -95,6 +98,20 @@ internal class SQLConnectionTest {
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.checkpoint()
             verify(sqlite, times(1)).walCheckpointV2(eq(DB), isNull(), eq(SQLCheckpointMode.PASSIVE()))
+        }
+    }
+
+    @Test
+    fun prepareChecksArgumentCount() {
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer<Any> {
+            (it.arguments[2] as LongArray)[0] = 42L
+            SQL_OK
+        }
+        whenever(sqlite.bindParameterCount(any())) doReturn 1
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+                it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
+            }
         }
     }
 

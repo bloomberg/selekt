@@ -46,6 +46,8 @@ import com.bloomberg.selekt.SQL_TOO_BIG
 object Selekt {
     fun gitCommit() = sqlite.gitCommit()
 
+    fun releaseMemory() = sqlite.releaseMemory(Int.MAX_VALUE)
+
     fun sqliteLibVersion() = sqlite.libVersion()
 
     fun sqliteLibVersionNumber() = sqlite.libVersionNumber()

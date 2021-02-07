@@ -43,4 +43,9 @@ internal class SelektTest {
     fun libVersionNumber() {
         assertEquals(3_033_000, Selekt.sqliteLibVersionNumber())
     }
+
+    @Test
+    fun releaseMemory() {
+        assertTrue(Selekt.releaseMemory() >= 0)
+    }
 }

@@ -16,12 +16,7 @@
 
 package com.bloomberg.selekt
 
-import java.util.Locale
 import javax.annotation.concurrent.ThreadSafe
-
-// Predict whether the query is likely to modify the database. Note that PRAGMA setters can be read or write: For example,
-// journal mode setting is considered a write but page size setting a read.
-private fun String.isPredictedWrite() = sqlStatementType().isPredictedWrite
 
 internal enum class SQLStatementType(
     @JvmField
@@ -49,20 +44,44 @@ internal enum class SQLStatementType(
 
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 
-internal fun CharSequence.sqlStatementType() = trimStart(Char::isWhitespace).run {
+internal fun CharSequence.resolvedSqlStatementType() = trimStart(Char::isWhitespace).run {
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER
     }
-    when (substring(0, SUFFICIENT_SQL_PREFIX_LENGTH).toUpperCase(Locale.ROOT)) {
-        "SEL" -> SQLStatementType.SELECT
-        "INS", "UPD", "DEL", "REP" -> SQLStatementType.UPDATE
-        "BEG" -> SQLStatementType.BEGIN
-        "COM", "END" -> SQLStatementType.COMMIT
-        "ROL" -> SQLStatementType.ABORT // TODO what about to savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
-        "PRA" -> SQLStatementType.PRAGMA
-        "ALT", "CRE", "DRO" -> SQLStatementType.DDL
-        "ATT" -> SQLStatementType.ATTACH
-        "ANA", "DET" -> SQLStatementType.UNPREPARED
+    when (this[0].toUpperCase()) {
+        'S' -> when (this[1].toUpperCase()) {
+            'E' -> SQLStatementType.SELECT
+            else -> SQLStatementType.OTHER // SAVEPOINT, ...
+        }
+        'I', 'U' -> SQLStatementType.UPDATE
+        'D' -> when (this[2].toUpperCase()) {
+            'L' -> SQLStatementType.UPDATE // DELETE
+            'O' -> SQLStatementType.DDL
+            'T' -> SQLStatementType.UNPREPARED // DETACH
+            else -> SQLStatementType.OTHER
+        }
+        'R' -> when (this[2].toUpperCase()) {
+            'L' -> SQLStatementType.ABORT // TODO what about to savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
+            'P' -> SQLStatementType.UPDATE // REPLACE
+            else -> SQLStatementType.OTHER
+        }
+        'B' -> SQLStatementType.BEGIN
+        'C' -> when (this[1].toUpperCase()) {
+            'O' -> SQLStatementType.COMMIT
+            'R' -> SQLStatementType.DDL // CREATE
+            else -> SQLStatementType.OTHER
+        }
+        'E' -> when (this[1].toUpperCase()) {
+            'N' -> SQLStatementType.COMMIT
+            else -> SQLStatementType.OTHER
+        }
+        'P' -> SQLStatementType.PRAGMA
+        'A' -> when (this[1].toUpperCase()) {
+            'L' -> SQLStatementType.DDL // ALTER
+            'T' -> SQLStatementType.ATTACH
+            'N' -> SQLStatementType.UNPREPARED
+            else -> SQLStatementType.OTHER
+        }
         else -> SQLStatementType.OTHER
     }
 }
@@ -71,31 +90,32 @@ internal fun CharSequence.sqlStatementType() = trimStart(Char::isWhitespace).run
 internal class BatchSQLStatement private constructor(
     private val session: ThreadLocalisedSession,
     private val sql: String,
-    private val args: Iterable<Array<out Any?>>,
-    private val asWrite: Boolean
+    private val args: Sequence<Array<out Any?>>
 ) {
     companion object {
         fun compile(
             session: ThreadLocalisedSession,
             sql: String,
-            bindArgs: Iterable<Array<out Any?>>
+            bindArgs: Sequence<Array<out Any?>>
         ): BatchSQLStatement {
-            val predictedWrite = sql.isPredictedWrite()
-            return session.execute(predictedWrite, sql, false) {
+            require(SQLStatementType.UPDATE == sql.resolvedSqlStatementType()) {
+                "Only batched updates are permitted."
+            }
+            return session.execute(true, sql) {
                 it.prepare(sql)
             }.run {
+                check(!isReadOnly) { "Prepared statement for batching must not be read-only." }
                 @Suppress("UNCHECKED_CAST")
                 BatchSQLStatement(
                     session,
                     sql,
-                    bindArgs,
-                    !(isReadOnly && !predictedWrite)
+                    bindArgs
                 )
             }
         }
     }
 
-    fun execute() = session.execute(asWrite, sql, true) {
+    internal fun execute() = session.execute(true, sql) {
         it.executeForChangedRowCount(sql, args)
     }
 }
@@ -103,42 +123,71 @@ internal class BatchSQLStatement private constructor(
 @ThreadSafe
 internal class SQLStatement private constructor(
     private val session: ThreadLocalisedSession,
-    private val isRaw: Boolean,
     private val sql: String,
+    private val statementType: SQLStatementType,
     private val args: Array<Any?>,
     private val asWrite: Boolean
 ) : ISQLStatement {
     companion object {
-        @Suppress("UNCHECKED_CAST")
-        fun compileTrustedWrite(
+        fun execute(
+            session: ThreadLocalisedSession,
+            sql: String,
+            statementType: SQLStatementType,
+            bindArgs: Array<out Any?>
+        ) = session.execute(statementType.isPredictedWrite, sql) {
+            it.execute(sql, bindArgs)
+        }
+
+        fun executeForInt(
+            session: ThreadLocalisedSession,
+            sql: String,
+            statementType: SQLStatementType,
+            bindArgs: Array<out Any?>
+        ) = session.execute(statementType.isPredictedWrite, sql) {
+            it.executeForInt(sql, bindArgs)
+        }
+
+        fun executeForString(
+            session: ThreadLocalisedSession,
+            sql: String,
+            statementType: SQLStatementType,
+            bindArgs: Array<out Any?>
+        ) = session.execute(statementType.isPredictedWrite, sql) {
+            it.executeForString(sql, bindArgs)
+        }
+
+        fun executeInsert(
             session: ThreadLocalisedSession,
             sql: String,
             bindArgs: Array<out Any?>
-        ) = SQLStatement(
-            session,
-            false,
-            sql,
-            bindArgs as Array<Any?>,
-            true
-        )
+        ) = session.execute(true, sql) {
+            it.executeForLastInsertedRowId(sql, bindArgs)
+        }
+
+        fun executeUpdateDelete(
+            session: ThreadLocalisedSession,
+            sql: String,
+            bindArgs: Array<out Any?>
+        ) = session.execute(true, sql) {
+            it.executeForChangedRowCount(sql, bindArgs)
+        }
 
         fun compile(
             session: ThreadLocalisedSession,
-            isRaw: Boolean,
             sql: String,
+            statementType: SQLStatementType,
             bindArgs: Array<out Any?>?
         ): SQLStatement {
-            val predictedWrite = sql.isPredictedWrite()
-            return session.execute(predictedWrite, sql, false) {
+            return session.execute(statementType.isPredictedWrite, sql) {
                 it.prepare(sql)
             }.run {
                 @Suppress("UNCHECKED_CAST")
                 SQLStatement(
                     session,
-                    isRaw,
                     sql,
+                    statementType,
                     bindArgs?.copyOfRange(0, parameterCount) as Array<Any?>? ?: arrayOfNulls<Any?>(parameterCount),
-                    !(isReadOnly && !predictedWrite)
+                    !(isReadOnly && !statementType.isPredictedWrite)
                 )
             }
         }
@@ -164,10 +213,6 @@ internal class SQLStatement private constructor(
         bind(index, value)
     }
 
-    private fun bind(index: Int, value: Any?) {
-        args[index - 1] = value
-    }
-
     override fun clearBindings() {
         args.fill(null)
     }
@@ -175,24 +220,28 @@ internal class SQLStatement private constructor(
     override fun close() = Unit
 
     override fun execute() {
-        session.execute(asWrite, sql, isRaw) { it.execute(sql, args) }
+        session.executeSafely(asWrite, sql, statementType, Unit) { it.execute(sql, args) }
     }
 
-    fun executeForInt() = session.execute(asWrite, sql, isRaw) { it.executeForInt(sql, args) }
-
-    override fun executeInsert() = session.execute(asWrite, sql, isRaw) {
-        it.executeForLastInsertedRowId(sql, SQLStatementType.UPDATE, args)
+    override fun executeInsert(): Long = session.executeSafely(asWrite, sql, statementType, -1L) {
+        it.executeForLastInsertedRowId(sql, args)
     }
 
-    override fun executeUpdateDelete() = session.execute(asWrite, sql, isRaw) {
-        it.executeForChangedRowCount(sql, SQLStatementType.UPDATE, args)
+    override fun executeUpdateDelete() = session.executeSafely(asWrite, sql, statementType, 0) {
+        it.executeForChangedRowCount(sql, args)
     }
 
-    override fun simpleQueryForLong() = session.execute(asWrite, sql, isRaw) { it.executeForLong(sql, args) }
+    override fun simpleQueryForLong() = session.executeSafely(asWrite, sql, statementType, -1L) {
+        it.executeForLong(sql, args)
+    }
 
-    fun executeForString() = session.execute(asWrite, sql, isRaw) { it.executeForString(sql, args) }
+    override fun simpleQueryForString() = session.executeSafely(asWrite, sql, statementType, null) {
+        it.executeForString(sql, args)
+    }
 
-    override fun simpleQueryForString() = executeForString()
+    private fun bind(index: Int, value: Any?) {
+        args[index - 1] = value
+    }
 }
 
 @Suppress("ArrayInDataClass")

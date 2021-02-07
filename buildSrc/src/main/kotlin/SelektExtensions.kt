@@ -18,6 +18,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.publish.maven.MavenPom
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.ByteArrayOutputStream
@@ -58,6 +59,9 @@ fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
 
 fun Project.isRelease() = "true" == properties["release"]
 
+val MavenPublication.selektGroupId: String
+    get() = "com.bloomberg.selekt"
+
 val Project.selektVersionName: String
     get() = "${properties["selekt.versionName"]}${if (isRelease()) "" else "-SNAPSHOT"}"
 
@@ -76,11 +80,45 @@ fun Project.disableKotlinCompilerAssertions() {
 }
 
 fun MavenPom.commonInitialisation(project: Project) {
-    @Suppress("UnstableApiUsage")
+    ciManagement {
+        name.set("GitHub Actions")
+        url.set("https://github.com/bloomberg/selekt/actions")
+    }
+    developers {
+        developer {
+            id.set("kennethshackleton")
+            email.set("kshackleton1@bloomberg.net")
+            name.set("Kenneth J. Shackleton")
+            organization.set("Bloomberg LP")
+            organizationUrl.set("https://www.bloomberg.com")
+        }
+        developer {
+            id.set("xouabita")
+            email.set("aabita@bloomberg.net")
+            name.set("Alexandre Abita")
+            organization.set("Bloomberg LP")
+            organizationUrl.set("https://www.bloomberg.com")
+        }
+    }
+    inceptionYear.set("2019")
+    issueManagement {
+        system.set("GitHub")
+        url.set("https://github.com/bloomberg/Selekt/issues")
+    }
+    licenses {
+        license {
+            distribution.set("repo")
+            name.set("The Apache Software License, Version 2.0")
+            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+        }
+    }
+    organization {
+        name.set("Bloomberg LP")
+    }
     scm {
-        connection.set("https://github.com/bloomberg/Selekt.git")
-        developerConnection.set("https://github.com/bloomberg/Selekt.git")
+        connection.set("git@github.com:bloomberg/selekt.git")
+        developerConnection.set("git@github.com:bloomberg/selekt.git")
         tag.set(project.gitCommit())
-        url.set("https://github.com/bloomberg/Selekt.git")
+        url.set("https://github.com/bloomberg/Selekt")
     }
 }

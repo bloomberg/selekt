@@ -33,8 +33,6 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun execute(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
 
-    fun execute(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Int
-
     fun executeForBlob(
         name: String,
         table: String,
@@ -42,9 +40,10 @@ internal interface SQLExecutor : BatchSQLExecutor {
         row: Long
     ): SQLBlob
 
-    fun executeForChangedRowCount(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
-
-    fun executeForChangedRowCount(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Int
+    fun executeForChangedRowCount(
+        sql: String,
+        bindArgs: Array<*> = EMPTY_ARRAY
+    ): Int
 
     fun executeForCursorWindow(
         sql: String,
@@ -54,8 +53,6 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
 
-    fun executeForLastInsertedRowId(sql: String, statementType: SQLStatementType, bindArgs: Array<*> = EMPTY_ARRAY): Long
-
     fun executeForInt(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
 
     fun executeForLong(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
@@ -63,8 +60,6 @@ internal interface SQLExecutor : BatchSQLExecutor {
     fun executeForString(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): String?
 
     fun executeWithRetry(sql: String): Int
-
-    fun executeWithRetry(sql: String, statementType: SQLStatementType): Int
 
     fun prepare(sql: String): SQLStatementInformation
 }

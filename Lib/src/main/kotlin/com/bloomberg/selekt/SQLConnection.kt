@@ -73,12 +73,6 @@ internal class SQLConnection constructor(
         step()
     }
 
-    override fun execute(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = execute(sql, bindArgs)
-
     override fun executeForBlob(
         name: String,
         table: String,
@@ -95,19 +89,14 @@ internal class SQLConnection constructor(
         sqlite.changes(pointer)
     }
 
-    override fun executeForChangedRowCount(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = executeForChangedRowCount(sql, bindArgs)
-
-    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) = withPreparedStatement(sql) {
-        bindArgs.sumBy {
+    override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>) = withPreparedStatement(sql) {
+        val changes = sqlite.totalChanges(pointer)
+        bindArgs.forEach {
             reset()
             bindArguments(it)
             step()
-            sqlite.changes(pointer)
         }
+        sqlite.totalChanges(pointer) - changes
     }
 
     override fun executeForCursorWindow(
@@ -138,12 +127,6 @@ internal class SQLConnection constructor(
         sqlite.lastInsertRowId(pointer)
     }
 
-    override fun executeForLastInsertedRowId(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = executeForLastInsertedRowId(sql, bindArgs)
-
     override fun executeForInt(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnInt(0)
@@ -162,8 +145,6 @@ internal class SQLConnection constructor(
     override fun executeWithRetry(sql: String) = withPreparedStatement(sql) {
         step(configuration.busyTimeoutMillis.toLong())
     }
-
-    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = executeWithRetry(sql)
 
     override fun matches(key: String) = preparedStatements.containsKey(key)
 

@@ -23,11 +23,17 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
     jacoco
+    `maven-publish`
 }
 
 description = "Selekt Commons library."
 
 disableKotlinCompilerAssertions()
+
+java {
+    @Suppress("UnstableApiUsage")
+    withSourcesJar()
+}
 
 dependencies {
     compileOnly(selekt("annotations", selektVersionName))
@@ -35,4 +41,19 @@ dependencies {
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")
+    dependsOn("sourcesJar")
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn("assembleSelekt")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-commons"
+        version = selektVersionName
+        from(components.getByName("java"))
+        pom { commonInitialisation(project) }
+    }
 }

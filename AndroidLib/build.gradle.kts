@@ -20,6 +20,7 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
     id("org.jetbrains.dokka")
+    id("bb-android-maven-publish")
     id("bb-jacoco-android")
 }
 
@@ -63,7 +64,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            consumerProguardFile("proguard-consumer-rules.pro")
+            consumerProguardFile("consumer-rules.pro")
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
@@ -71,22 +72,6 @@ android {
     externalNativeBuild {
         cmake {
             path("$rootDir/SQLite3/CMakeLists.txt")
-        }
-    }
-
-    lintOptions {
-        isWarningsAsErrors = true
-    }
-
-    testOptions {
-        unitTests.apply {
-            if (project.hasProperty("robolectricDependencyRepoUrl")) {
-                all {
-                    it.systemProperty("robolectric.dependency.repo.url",
-                        requireNotNull(project.properties["robolectricDependencyRepoUrl"]))
-                }
-            }
-            isIncludeAndroidResources = true
         }
     }
 }
@@ -100,10 +85,6 @@ dependencies {
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
     testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")
-}
-
-tasks.register("assembleSelekt") {
-    dependsOn("assembleRelease")
 }
 
 tasks.register<Copy>("copyJniLibs") {
@@ -120,5 +101,32 @@ afterEvaluate {
     arrayOf("debug", "release").forEach {
         @UseExperimental(ExperimentalStdlibApi::class)
         tasks.getByName("pre${it.capitalize(Locale.US)}UnitTestBuild").dependsOn("buildHostSQLite")
+    }
+}
+
+tasks.register("assembleSelekt") {
+    dependsOn("assembleRelease")
+    dependsOn("sourcesJar")
+}
+
+tasks.register<Jar>("sourcesJar") {
+    from(android.sourceSets["main"].java.srcDirs)
+    setProperty("archiveBaseName", "selekt")
+    setProperty("archiveClassifier", "sources")
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn("assembleSelekt")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-android"
+        version = android.defaultConfig.versionName
+        from(components.getByName("aar"))
+        pom { commonInitialisation(project) }
+        artifact("$buildDir/outputs/aar/AndroidLib-release.aar")
+        artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
     }
 }

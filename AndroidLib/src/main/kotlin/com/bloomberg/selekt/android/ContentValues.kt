@@ -30,6 +30,7 @@ private class ContentValuesEntry : Map.Entry<String, Any?> {
         get() = internalValue
 }
 
+@Suppress("Detekt.MethodOverloading")
 internal fun ContentValues.asSelektContentValues() = object : IContentValues {
     override val isEmpty: Boolean
         get() = this@asSelektContentValues.size() == 0

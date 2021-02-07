@@ -22,29 +22,30 @@ import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
+private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray())
 
 @NotThreadSafe
 internal class SQLQuery private constructor(
     private val session: ThreadLocalisedSession,
     private val sql: String,
-    private val isRaw: Boolean,
+    private val statementType: SQLStatementType,
     private val bindArgs: Array<Any?>
 ) : IQuery {
     companion object {
         fun create(
             session: ThreadLocalisedSession,
             sql: String,
-            isRaw: Boolean,
+            statementType: SQLStatementType,
             argsCount: Int
-        ) = SQLQuery(session, sql, isRaw, arrayOfNulls(argsCount))
+        ) = SQLQuery(session, sql, statementType, arrayOfNulls(argsCount))
 
         @Suppress("UNCHECKED_CAST")
         fun create(
             session: ThreadLocalisedSession,
             sql: String,
-            isRaw: Boolean,
+            statementType: SQLStatementType,
             args: Array<out Any?>
-        ) = SQLQuery(session, sql, isRaw, args.copyOf() as Array<Any?>)
+        ) = SQLQuery(session, sql, statementType, args.copyOf() as Array<Any?>)
     }
 
     override fun bindBlob(index: Int, value: ByteArray) = bind(index, value)
@@ -67,16 +68,28 @@ internal class SQLQuery private constructor(
     // TODO Ever need to prepare again after execute, prepare_v2 will auto-recompile on step picking up any schema change?
     override fun fill(
         window: ICursorWindow
-    ) = session.execute(false, sql, isRaw) {
-        it.prepare(sql).apply {
-            if (isReadOnly) {
-                it.executeForCursorWindow(sql, bindArgs, window)
-                return@fill this
+    ): SQLStatementInformation {
+        val information = session.executeSafely(
+            statementType.isPredictedWrite,
+            sql,
+            statementType,
+            EMPTY_SQL_STATEMENT_INFORMATION
+        ) {
+            it.prepare(sql).apply {
+                if (isReadOnly) {
+                    it.executeForCursorWindow(sql, bindArgs, window)
+                    return@fill this
+                }
             }
         }
-    }.apply {
-        session.execute(true, sql, isRaw) {
-            it.executeForCursorWindow(sql, bindArgs, window)
+        return if (information !== EMPTY_SQL_STATEMENT_INFORMATION) {
+            session.executeSafely(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
+                it.executeForCursorWindow(sql, bindArgs, window)
+            }
+            information
+        } else {
+            // Query was resolved as transactional(!!)
+            EMPTY_SQL_STATEMENT_INFORMATION
         }
     }
 

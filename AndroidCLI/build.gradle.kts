@@ -47,10 +47,6 @@ android {
         }
     }
 
-    lintOptions {
-        isWarningsAsErrors = true
-    }
-
     buildFeatures {
         viewBinding = true
     }

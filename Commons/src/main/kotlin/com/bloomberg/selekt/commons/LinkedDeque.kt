@@ -42,12 +42,28 @@ class LinkedDeque<T> {
     val isEmpty: Boolean
         get() = first == null
 
-    fun pollFirst() = first?.let {
-        first = it.next
-        if (it === last) {
-            last = null
+    val hasSizeOne: Boolean
+        get() = first === last && first != null
+
+    @Generated
+    inline fun pollFirst(predicate: (T) -> Boolean): T? {
+        var head = first
+        while (head != null) {
+            if (predicate(head.item)) {
+                unlink(head)
+                return head.item
+            }
+            head = head.next
+        }
+        return null
+    }
+
+    fun pollLast() = last?.let {
+        last = it.previous
+        if (it === first) {
+            first = null
         } else {
-            it.next!!.previous = null
+            it.previous!!.next = null
         }
         it.item
     }
@@ -64,19 +80,6 @@ class LinkedDeque<T> {
 
     fun reverseMutableIterator(): MutableIterator<T> = last.let {
         if (it != null) LinkedDequeReversedIterator(this, it) else emptyIterator
-    }
-
-    @Generated
-    inline fun pollFirst(predicate: (T) -> Boolean): T? {
-        var head = first
-        while (head != null) {
-            if (predicate(head.item)) {
-                unlink(head)
-                return head.item
-            }
-            head = head.next
-        }
-        return null
     }
 
     @PublishedApi

@@ -25,17 +25,17 @@ import kotlin.test.assertTrue
 
 internal class LinkedDequeTest {
     @Test
-    fun putFirstThenPollFirst() {
+    fun putLastThenPollLast() {
         LinkedDeque<Any>().apply {
             val obj = Any()
             putFirst(obj)
-            assertSame(obj, pollFirst())
+            assertSame(obj, pollLast())
         }
     }
 
     @Test
-    fun pollFirstNull() {
-        assertNull(LinkedDeque<Any>().pollFirst())
+    fun pollLastNull() {
+        assertNull(LinkedDeque<Any>().pollLast())
     }
 
     @Test
@@ -44,14 +44,31 @@ internal class LinkedDequeTest {
     }
 
     @Test
-    fun pollFirstInOrder() {
+    fun hasSizeOneFalseWhenEmpty() {
+        assertFalse(LinkedDeque<Any>().hasSizeOne)
+    }
+
+    @Test
+    fun hasSizeOneFalseWhenTwo() {
+        assertFalse(LinkedDeque<Any>().apply {
+            repeat(2) { putFirst(Any()) }
+        }.hasSizeOne)
+    }
+
+    @Test
+    fun hasSizeOneTrue() {
+        assertTrue(LinkedDeque<Any>().apply { putFirst(Any()) }.hasSizeOne)
+    }
+
+    @Test
+    fun pollLastInOrder() {
         LinkedDeque<Any>().apply {
             val one = Any()
             val two = Any()
             putFirst(one)
             putFirst(two)
-            assertSame(two, pollFirst())
-            assertSame(one, pollFirst())
+            assertSame(one, pollLast())
+            assertSame(two, pollLast())
         }
     }
 
@@ -154,8 +171,8 @@ internal class LinkedDequeTest {
                 iterator.next()
                 iterator.remove()
             }
-            assertSame(two, pollFirst())
-            assertSame(one, pollFirst())
+            assertSame(one, pollLast())
+            assertSame(two, pollLast())
         }
     }
 }
