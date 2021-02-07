@@ -16,6 +16,20 @@
 
 package com.bloomberg.selekt
 
-internal interface BatchSQLExecutor {
-    fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>): Int
+interface SQLTransactionListener {
+    /**
+     * Called immediately after the transaction begins.
+     */
+    fun onBegin()
+
+    /**
+     * Called immediately before committing the transaction. If the transaction commit fails the listener will not be
+     * notified of the subsequent rollback event.
+     */
+    fun onCommit()
+
+    /**
+     * Called immediately before rolling back the transaction.
+     */
+    fun onRollback()
 }

@@ -20,13 +20,34 @@ import android.content.ContentValues
 import android.database.sqlite.SQLiteTransactionListener
 import android.os.CancellationSignal
 import android.util.Pair
+import androidx.annotation.VisibleForTesting
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQuery
+import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
 import java.util.Locale
 
 internal fun SQLiteDatabase.asSupportSQLiteDatabase(): SupportSQLiteDatabase = SupportSQLiteDatabase(this)
+
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+internal fun SQLiteTransactionListener.asSQLTransactionListener(): SQLTransactionListener =
+    WrappedSQLiteTransactionListener(this)
+
+private class WrappedSQLiteTransactionListener(
+    private val listener: SQLiteTransactionListener
+) : SQLTransactionListener {
+    override fun onBegin() = listener.onBegin()
+
+    override fun onCommit() = listener.onCommit()
+
+    override fun onRollback() = listener.onRollback()
+
+    override fun equals(other: Any?) = this === other ||
+        other is WrappedSQLiteTransactionListener && listener == other.listener
+
+    override fun hashCode() = listener.hashCode()
+}
 
 private class SupportSQLiteDatabase constructor(
     private val database: SQLiteDatabase
@@ -35,9 +56,11 @@ private class SupportSQLiteDatabase constructor(
 
     override fun beginTransactionNonExclusive() = database.beginImmediateTransaction()
 
-    override fun beginTransactionWithListenerNonExclusive(transactionListener: SQLiteTransactionListener) = TODO()
+    override fun beginTransactionWithListener(listener: SQLiteTransactionListener) =
+        database.beginExclusiveTransactionWithListener(listener.asSQLTransactionListener())
 
-    override fun beginTransactionWithListener(transactionListener: SQLiteTransactionListener) = TODO()
+    override fun beginTransactionWithListenerNonExclusive(listener: SQLiteTransactionListener) =
+        database.beginImmediateTransactionWithListener(listener.asSQLTransactionListener())
 
     override fun close() = database.close()
 

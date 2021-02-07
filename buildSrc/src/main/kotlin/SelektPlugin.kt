@@ -57,6 +57,22 @@ class SelektPlugin : Plugin<Project> {
                         add(name, "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                     }
                 }
+                androidExtension().apply {
+                    lintOptions {
+                        isWarningsAsErrors = true
+                    }
+                    testOptions {
+                        unitTests.apply {
+                            if (project.hasProperty("robolectricDependencyRepoUrl")) {
+                                all {
+                                    it.systemProperty("robolectric.dependency.repo.url",
+                                        requireNotNull(project.properties["robolectricDependencyRepoUrl"]))
+                                }
+                            }
+                            isIncludeAndroidResources = true
+                        }
+                    }
+                }
             }
             arrayOf("java", "org.jetbrains.kotlin.jvm", "com.android.library").forEach { id ->
                 withPlugin(id) {

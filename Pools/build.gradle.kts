@@ -23,6 +23,7 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
     jacoco
+    `maven-publish`
 }
 
 description = "Selekt Pools library."
@@ -34,8 +35,9 @@ dependencies {
 
 disableKotlinCompilerAssertions()
 
-tasks.register("assembleSelekt") {
-    dependsOn("assemble")
+java {
+    @Suppress("UnstableApiUsage")
+    withSourcesJar()
 }
 
 tasks.withType<JacocoReport>().configureEach {
@@ -43,5 +45,23 @@ tasks.withType<JacocoReport>().configureEach {
         csv.isEnabled = false
         html.isEnabled = true
         xml.isEnabled = true
+    }
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn("assembleSelekt")
+}
+
+tasks.register("assembleSelekt") {
+    dependsOn("assemble")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-pools"
+        version = selektVersionName
+        from(components.getByName("java"))
+        pom { commonInitialisation(project) }
     }
 }

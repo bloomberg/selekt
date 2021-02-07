@@ -78,7 +78,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                 preferred()?.let {
                     return it
                 }
-                idleObjects.pollFirst()?.let {
+                idleObjects.pollLast()?.let {
                     return it
                 }
                 if (count < configuration.maxTotal) {
@@ -155,7 +155,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         if (future?.isCancelled == false || configuration.evictionIntervalMillis < 0L || isClosed.get()) {
             return
         }
-        tag = !tag
         future = executor.scheduleAtFixedRate(
             ::evict,
             configuration.evictionDelayMillis,

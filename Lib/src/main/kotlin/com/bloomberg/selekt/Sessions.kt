@@ -32,7 +32,13 @@ internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
 
     fun beginExclusiveTransaction() = session.beginExclusiveTransaction()
 
+    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
+        session.beginExclusiveTransactionWithListener(listener)
+
     fun beginImmediateTransaction() = session.beginImmediateTransaction()
+
+    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
+        session.beginImmediateTransactionWithListener(listener)
 
     fun blob(
         name: String,
@@ -60,25 +66,39 @@ internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
     internal inline fun <R> execute(
         primary: Boolean,
         sql: String,
-        mustValidate: Boolean,
         block: (SQLExecutor) -> R
-    ) = session.execute(primary, sql, mustValidate, block)
+    ): R = session.execute(primary, sql, block)
+
+    @Generated
+    internal inline fun <R> executeSafely(
+        primary: Boolean,
+        sql: String,
+        statementType: SQLStatementType,
+        signal: R,
+        block: (SQLExecutor) -> R
+    ) = session.execute(primary, sql, statementType, signal, block)
 }
 
 @NotThreadSafe
 internal class SQLSession(
     pool: SQLExecutorPool
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
-    private val proxy = SQLExecutorProxy(this)
     private var depth = 0
     private var successes = 0
     private lateinit var transactionSql: String
+    private var transactionListener: SQLTransactionListener? = null
 
-    override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE)
+    override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
 
-    override fun beginImmediateTransaction() = begin(SQLiteTransactionMode.IMMEDIATE)
+    override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
+        begin(SQLiteTransactionMode.EXCLUSIVE, listener)
 
-    fun beginRawTransaction(sql: String) = begin(sql)
+    override fun beginImmediateTransaction() = begin(SQLiteTransactionMode.IMMEDIATE, null)
+
+    override fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
+        begin(SQLiteTransactionMode.IMMEDIATE, listener)
+
+    fun beginRawTransaction(sql: String) = begin(sql, null)
 
     fun blob(
         name: String,
@@ -117,7 +137,7 @@ internal class SQLSession(
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(transactionSql)
+        internalBegin(transactionSql, transactionListener)
         return true
     }
 
@@ -125,38 +145,49 @@ internal class SQLSession(
     internal inline fun <R> execute(
         primary: Boolean,
         sql: String,
-        mustValidate: Boolean,
+        statementType: SQLStatementType,
+        signal: R,
         block: (SQLExecutor) -> R
-    ) = execute(primary, sql) {
-        if (mustValidate) {
-            try {
-                block(proxy.apply { executor = it })
-            } finally {
-                proxy.reset()
-            }
-        } else {
-            block(it)
+    ): R = execute(primary, sql) {
+        if (!statementType.isTransactional) {
+            return block(it)
         }
+        when {
+            statementType.begins -> beginRawTransaction(sql)
+            statementType.commits -> {
+                setTransactionSuccessful()
+                endTransaction()
+            }
+            statementType.aborts -> endTransaction()
+            else -> error("Unrecognised statement type: $statementType")
+        }
+        signal
     }
 
-    private fun begin(mode: SQLiteTransactionMode) = begin(mode.sql)
+    private fun begin(
+        mode: SQLiteTransactionMode,
+        listener: SQLTransactionListener?
+    ) = begin(mode.sql, listener)
 
-    private fun begin(sql: String) {
+    private fun begin(sql: String, listener: SQLTransactionListener?) {
         if (depth == 0) {
-            internalBegin(sql)
+            internalBegin(sql, listener)
         }
         ++depth
     }
 
-    private fun internalBegin(sql: String) {
-        transactionSql = sql
+    private fun internalBegin(sql: String, listener: SQLTransactionListener?) {
         retain(true, sql).runCatching {
-            executeWithRetry(sql, SQLStatementType.BEGIN)
+            executeWithRetry(sql)
+            listener?.onBegin()
         }.exceptionOrNull()?.let {
             rollbackQuietly()
             release()
+            listener?.onRollback()
             throw it
         }
+        transactionSql = sql
+        transactionListener = listener
     }
 
     private fun internalEnd() {
@@ -172,14 +203,28 @@ internal class SQLSession(
         }
     }
 
-    private fun commit() = execute(true, "END") {
-        runCatching { it.executeWithRetry("END", SQLStatementType.COMMIT) }.exceptionOrNull()?.let {
-            rollbackQuietly()
-            throw it
+    private fun commit() {
+        execute(true, "END") {
+            runCatching {
+                transactionListener?.also { transactionListener = null }?.onCommit()
+                it.executeWithRetry("END")
+            }.exceptionOrNull()?.let {
+                rollbackQuietly()
+                throw it
+            }
         }
     }
 
-    private fun rollback() = execute(false, "ROLLBACK") { it.execute("ROLLBACK", SQLStatementType.ABORT) }
+    private fun rollback() {
+        val listener = transactionListener?.also { transactionListener = null }
+        execute(false, "ROLLBACK") { executor ->
+            try {
+                listener?.onRollback()
+            } finally {
+                executor.execute("ROLLBACK")
+            }
+        }
+    }
 
     private fun rollbackQuietly() {
         runCatching { rollback() }
@@ -188,206 +233,16 @@ internal class SQLSession(
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }
 }
 
-internal class SQLExecutorProxy(
-    private val session: SQLSession
-) : CloseableSQLExecutor {
-    internal var executor: CloseableSQLExecutor = StubCloseableSQLExecutor
-
-    @Generated
-    private inline fun <R> internalExecute(
-        sql: String,
-        defaultValue: R,
-        block: () -> R
-    ) = internalExecute(sql, sql.sqlStatementType(), defaultValue, block)
-
-    @Generated
-    private inline fun <R> internalExecute(
-        sql: String,
-        statementType: SQLStatementType,
-        defaultValue: R,
-        block: () -> R
-    ) = session.run {
-        statementType.let {
-            if (!it.isTransactional) {
-                return block()
-            }
-            when {
-                it.begins -> beginRawTransaction(sql)
-                it.commits -> {
-                    setTransactionSuccessful()
-                    endTransaction()
-                }
-                it.aborts -> endTransaction()
-                else -> error("Unrecognised transactional statement type: $it")
-            }
-            defaultValue
-        }
-    }
-
-    internal fun reset() {
-        executor = StubCloseableSQLExecutor
-    }
-
-    override val isAutoCommit: Boolean
-        get() = executor.isAutoCommit
-
-    override val isPrimary: Boolean
-        get() = executor.isPrimary
-
-    override var tag: Boolean
-        get() = executor.tag
-        set(value) { executor.tag = value }
-
-    override val isReadOnly: Boolean
-        get() = executor.isReadOnly
-
-    override fun checkpoint(name: String?, mode: SQLCheckpointMode) = executor.checkpoint(name, mode)
-
-    override fun close() = executor.close()
-
-    override fun execute(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0) {
-        executor.execute(sql, bindArgs)
-    }
-
-    override fun execute(sql: String, statementType: SQLStatementType, bindArgs: Array<*>) = internalExecute(
-        sql,
-        statementType,
-        0
-    ) {
-        executor.execute(sql, statementType, bindArgs)
-    }
-
-    override fun executeForBlob(name: String, table: String, column: String, row: Long) =
-        executor.executeForBlob(name, table, column, row)
-
-    override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0) {
-        executor.executeForChangedRowCount(sql, bindArgs)
-    }
-
-    override fun executeForChangedRowCount(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = internalExecute(sql, statementType, 0) {
-        executor.executeForChangedRowCount(sql, statementType, bindArgs)
-    }
-
-    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) = internalExecute(sql, 0) {
-        executor.executeForChangedRowCount(sql, bindArgs)
-    }
-
-    override fun executeForCursorWindow(sql: String, bindArgs: Array<*>, window: ICursorWindow) =
-        internalExecute(sql, Unit) { executor.executeForCursorWindow(sql, bindArgs, window) }
-
-    override fun executeForInt(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0) {
-        executor.executeForInt(sql, bindArgs)
-    }
-
-    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0L) {
-        executor.executeForLastInsertedRowId(sql, bindArgs)
-    }
-
-    override fun executeForLastInsertedRowId(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = internalExecute(sql, statementType, 0L) {
-        executor.executeForLastInsertedRowId(sql, statementType, bindArgs)
-    }
-
-    override fun executeForLong(sql: String, bindArgs: Array<*>) = internalExecute(sql, 0L) {
-        executor.executeForLong(sql, bindArgs)
-    }
-
-    override fun executeForString(sql: String, bindArgs: Array<*>) = internalExecute(sql, null) {
-        executor.executeForString(sql, bindArgs)
-    }
-
-    override fun executeWithRetry(sql: String) = internalExecute(sql, 0) {
-        executor.executeWithRetry(sql)
-    }
-
-    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = internalExecute(sql, statementType, 0) {
-        executor.executeWithRetry(sql, statementType)
-    }
-
-    override fun matches(key: String) = executor.matches(key)
-
-    override fun prepare(sql: String) = executor.prepare(sql)
-}
-
-private object StubCloseableSQLExecutor : CloseableSQLExecutor {
-    override val isAutoCommit: Boolean
-        get() = throw UnsupportedOperationException()
-
-    override val isPrimary: Boolean
-        get() = throw UnsupportedOperationException()
-
-    override var tag: Boolean
-        get() = throw UnsupportedOperationException()
-        set(@Suppress("UNUSED_PARAMETER") value) = throw UnsupportedOperationException()
-
-    override val isReadOnly: Boolean
-        get() = throw UnsupportedOperationException()
-
-    override fun checkpoint(name: String?, mode: SQLCheckpointMode) = throw UnsupportedOperationException()
-
-    override fun close() = throw UnsupportedOperationException()
-
-    override fun execute(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun execute(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = throw UnsupportedOperationException()
-
-    override fun executeForBlob(name: String, table: String, column: String, row: Long) =
-        throw UnsupportedOperationException()
-
-    override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun executeForChangedRowCount(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = throw UnsupportedOperationException()
-
-    override fun executeForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>) =
-        throw UnsupportedOperationException()
-
-    override fun executeForCursorWindow(sql: String, bindArgs: Array<*>, window: ICursorWindow) =
-        throw UnsupportedOperationException()
-
-    override fun executeForInt(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun executeForLastInsertedRowId(
-        sql: String,
-        statementType: SQLStatementType,
-        bindArgs: Array<*>
-    ) = throw UnsupportedOperationException()
-
-    override fun executeForLong(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun executeForString(sql: String, bindArgs: Array<*>) = throw UnsupportedOperationException()
-
-    override fun executeWithRetry(sql: String) = throw UnsupportedOperationException()
-
-    override fun executeWithRetry(sql: String, statementType: SQLStatementType) = throw UnsupportedOperationException()
-
-    override fun matches(key: String) = throw UnsupportedOperationException()
-
-    override fun prepare(sql: String) = throw UnsupportedOperationException()
-}
-
 interface ISQLTransactor {
     val inTransaction: Boolean
 
     fun beginExclusiveTransaction()
 
+    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener)
+
     fun beginImmediateTransaction()
+
+    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener)
 
     fun endTransaction()
 

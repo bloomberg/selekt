@@ -123,8 +123,27 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun earlyInitialEvictionFails() = pool.run {
+        val obj = borrowObject().also { returnObject(it) }
+        evict()
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+    }
+
+    @Test
+    fun evictionAfterSuccessfulEvictionFails() = pool.run {
+        val one = borrowObject().also { returnObject(it) }
+        evict()
+        evict()
+        val two = borrowObject().also { returnObject(it) }
+        assertNotSame(one, two)
+        evict()
+        assertSame(two, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+    }
+
+    @Test
     fun newObjectAfterSuccessfulEviction() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
+        evict()
         evict()
         assertNotSame(obj, borrowObject().also { returnObject(it) }, "Pool must not return the same object.")
     }
@@ -146,9 +165,9 @@ internal class SingleObjectPoolTest {
         override fun passivateObject(obj: PooledObject) = Unit
 
         override fun validateObject(obj: PooledObject) = true
-    }, executor, 1_000L, 1_000L).use {
+    }, executor, 500L, 500L).use {
         val obj = it.borrowObject().apply { it.returnObject(this) }
-        Thread.sleep(2_000L)
+        Thread.sleep(1_500L)
         assertNotSame(obj, it.borrowObject(), "Object was not evicted.")
     }
 
@@ -250,9 +269,9 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    fun closeRestoresInterrupt(): Unit = pool.run {
+    fun closePreservesInterrupt(): Unit = pool.run {
         Thread.currentThread().interrupt()
-        pool.close()
+        assertDoesNotThrow { close() }
         assertTrue(Thread.currentThread().isInterrupted)
     }
 

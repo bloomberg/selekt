@@ -22,9 +22,13 @@ import com.bloomberg.selekt.commons.threadLocal
 import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.streams.asSequence
 
 private val sharedSqlBuilder by threadLocal { ManagedStringBuilder() }
+
+private val EMPTY_ARRAY = emptyArray<Any?>()
 
 /**
  * The use of ThreadLocal underpins [SQLDatabase]'s thread-safety.
@@ -56,37 +60,54 @@ class SQLDatabase constructor(
     val isCurrentThreadSessionActive: Boolean
         get() = session.hasObject
 
-    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = batch(sql, bindArgs.asIterable())
-
-    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>) = transact {
+    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = transact {
         BatchSQLStatement.compile(session, sql, bindArgs).execute()
+    }
+
+    fun batch(sql: String, bindArgs: Stream<Array<out Any?>>) = transact {
+        BatchSQLStatement.compile(session, sql, bindArgs.asSequence()).execute()
     }
 
     override fun beginExclusiveTransaction() = pledge { session.beginExclusiveTransaction() }
 
+    override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {
+        session.beginExclusiveTransactionWithListener(listener)
+    }
+
     override fun beginImmediateTransaction() = pledge { session.beginImmediateTransaction() }
 
-    override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(true, sql, bindArgs)
+    override fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) {
+        session.beginImmediateTransactionWithListener(listener)
+    }
 
-    private fun compileStatement(isRaw: Boolean, sql: String, bindArgs: Array<out Any?>?): ISQLStatement =
-        SQLStatement.compile(session, isRaw, sql, bindArgs)
+    override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(
+        sql,
+        sql.resolvedSqlStatementType(),
+        bindArgs
+    )
+
+    private fun compileStatement(
+        sql: String,
+        sqlStatementType: SQLStatementType,
+        bindArgs: Array<out Any?>?
+    ): ISQLStatement = SQLStatement.compile(session, sql, sqlStatementType, bindArgs)
 
     override fun delete(
         table: String,
         whereClause: String,
         whereArgs: Array<out Any?>
     ) = pledge {
-        compileStatement(
-            false,
+        SQLStatement.executeUpdateDelete(
+            session,
             "DELETE FROM $table${if (whereClause.isNotEmpty()) " WHERE $whereClause" else ""}",
             whereArgs
-        ).executeUpdateDelete()
+        )
     }
 
     override fun endTransaction() = pledge { session.endTransaction() }
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
-        compileStatement(true, sql, bindArgs).execute()
+        compileStatement(sql, sql.resolvedSqlStatementType(), bindArgs).execute()
     }
 
     fun <T> execute(readOnly: Boolean, block: SQLDatabase.() -> T) = pledge {
@@ -120,16 +141,22 @@ class SQLDatabase constructor(
             append(") VALUES (?")
                 .apply { repeat(bindArgs.size - 1) { append(",?") } }
                 .append(')')
-            SQLStatement.compileTrustedWrite(session, toString(), bindArgs)
-        }.executeInsert()
+                .toString()
+            SQLStatement.executeInsert(session, toString(), bindArgs)
+        }
     }
 
     fun pragma(key: String) = pledge {
-        requireNotNull(compileStatement(false, "PRAGMA $key", null).simpleQueryForString())
+        requireNotNull(SQLStatement.executeForString(
+            session,
+            "PRAGMA $key",
+            SQLStatementType.PRAGMA,
+            EMPTY_ARRAY
+        ))
     }
 
     fun pragma(key: String, value: Any) = pledge {
-        SQLStatement.compile(session, false, "PRAGMA $key=$value", null).executeForString()
+        SQLStatement.executeForString(session, "PRAGMA $key=$value", SQLStatementType.PRAGMA, EMPTY_ARRAY)
     }
 
     override fun query(
@@ -151,16 +178,16 @@ class SQLDatabase constructor(
             .orderBy(orderBy)
             .limit(limit)
             .toString()
-            .let { query(SQLQuery.create(session, it, false, selectionArgs)) }
+            .let { query(SQLQuery.create(session, it, SQLStatementType.SELECT, selectionArgs)) }
     }
 
     override fun query(
         sql: String,
         selectionArgs: Array<out Any?>
-    ): ICursor = query(SQLQuery.create(session, sql, true, selectionArgs))
+    ): ICursor = query(SQLQuery.create(session, sql, sql.resolvedSqlStatementType(), selectionArgs))
 
     override fun query(query: ISQLQuery): ICursor = query(
-        SQLQuery.create(session, query.sql, true, query.argCount).also { query.bindTo(it) })
+        SQLQuery.create(session, query.sql, query.sql.resolvedSqlStatementType(), query.argCount).also { query.bindTo(it) })
 
     @Suppress("Detekt.LongParameterList")
     fun readFromBlob(
@@ -191,7 +218,7 @@ class SQLDatabase constructor(
     }
 
     fun <T> transact(block: SQLDatabase.() -> T): T = pledge {
-        session.beginImmediateTransaction()
+        session.beginExclusiveTransaction()
         try {
             block(this).also { session.setTransactionSuccessful() }
         } finally {
@@ -228,8 +255,8 @@ class SQLDatabase constructor(
             if (whereClause.isNotEmpty()) {
                 append(" WHERE ").append(whereClause)
             }
-            SQLStatement.compileTrustedWrite(session, toString(), bindArgs)
-        }.executeUpdateDelete()
+            SQLStatement.executeUpdateDelete(session, toString(), bindArgs)
+        }
     }
 
     override fun upsert(
@@ -250,7 +277,7 @@ class SQLDatabase constructor(
                 append(key)
                 bindArgs[0] = value
             }
-            repeat(values.size - 1) {
+            1.forUntil(values.size) {
                 append(',')
                 iterator.next().run {
                     append(key)
@@ -266,13 +293,27 @@ class SQLDatabase constructor(
             }
             append(") DO UPDATE SET ")
                 .append(update)
-            SQLStatement.compileTrustedWrite(session, toString(), bindArgs)
-        }.executeInsert()
+            SQLStatement.executeInsert(session, toString(), bindArgs)
+        }
     }
 
     override var version: Int
-        get() = pledge { SQLStatement.compile(session, false, "PRAGMA user_version", null).executeForInt() }
-        set(value) { pledge { compileStatement(false, "PRAGMA user_version=$value", null).execute() } }
+        get() = pledge {
+            SQLStatement.executeForInt(
+                session,
+                "PRAGMA user_version",
+                SQLStatementType.PRAGMA,
+                EMPTY_ARRAY
+            )
+        }
+        set(value) = pledge {
+            SQLStatement.execute(
+                session,
+                "PRAGMA user_version=$value",
+                SQLStatementType.PRAGMA,
+                EMPTY_ARRAY
+            )
+        }
 
     @Suppress("Detekt.LongParameterList")
     fun writeToBlob(

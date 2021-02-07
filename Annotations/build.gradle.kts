@@ -21,10 +21,31 @@ repositories {
 
 plugins {
     kotlin("jvm")
+    `maven-publish`
+}
+
+java {
+    @Suppress("UnstableApiUsage")
+    withSourcesJar()
 }
 
 disableKotlinCompilerAssertions()
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")
+    dependsOn("sourcesJar")
+}
+
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    dependsOn("assembleSelekt")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-annotations"
+        version = selektVersionName
+        from(components.getByName("java"))
+        pom { commonInitialisation(project) }
+    }
 }

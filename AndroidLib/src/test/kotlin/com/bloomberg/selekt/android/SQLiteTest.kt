@@ -780,6 +780,16 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun databaseReleaseMemory() {
+        assertTrue(SQLite.databaseReleaseMemory(db) >= 0)
+    }
+
+    @Test
+    fun releaseMemory() {
+        assertTrue(SQLite.releaseMemory(Int.MAX_VALUE) >= 0)
+    }
+
+    @Test
     fun valueFreeDup() {
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)"))
         prepareStatement(db, "SELECT bar FROM 'Foo' WHERE bar=?").usePreparedStatement {
@@ -1187,6 +1197,22 @@ internal class SQLiteTest {
             assertEquals(SQL_DONE, step(it))
             assertEquals(1, statementStatus(it, 6, false))
         }
+    }
+
+    @Test
+    fun changes() = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        exec(db, "INSERT INTO 'Foo' VALUES (42)")
+        exec(db, "INSERT INTO 'Foo' VALUES (43)")
+        assertEquals(1, changes(db))
+    }
+
+    @Test
+    fun totalChanges() = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        exec(db, "INSERT INTO 'Foo' VALUES (42)")
+        exec(db, "INSERT INTO 'Foo' VALUES (43)")
+        assertEquals(2, totalChanges(db))
     }
 
     @Test

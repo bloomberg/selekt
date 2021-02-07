@@ -24,6 +24,7 @@ repositories {
 plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
+    `maven-publish`
 }
 
 val cFlags = arrayOf(
@@ -55,6 +56,29 @@ val cFlags = arrayOf(
 )
 
 disableKotlinCompilerAssertions()
+
+java {
+    @Suppress("UnstableApiUsage")
+    withSourcesJar()
+}
+
+tasks.register("assembleSelekt") {
+    dependsOn("assemble")
+}
+
+tasks.withType<AbstractPublishToMaven> {
+    dependsOn("assembleSelekt")
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        groupId = selektGroupId
+        artifactId = "selekt-seesqlite3"
+        version = selektVersionName
+        from(components.getByName("java"))
+        pom { commonInitialisation(project) }
+    }
+}
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")

@@ -273,10 +273,9 @@ extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_changes(
     JNIEnv* env,
     jobject obj,
-    jlong jstatement
+    jlong jdb
 ) {
-    auto statement = reinterpret_cast<sqlite3*>(jstatement);
-    return sqlite3_changes(statement);
+    return sqlite3_changes(reinterpret_cast<sqlite3*>(jdb));
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -418,6 +417,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseReadOnly(
     auto result = sqlite3_db_readonly(reinterpret_cast<sqlite3*>(jdb), name);
     env->ReleaseStringUTFChars(jname, name);
     return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_databaseReleaseMemory(
+    JNIEnv* env,
+    jobject clazz,
+    jlong jdb
+) {
+    return sqlite3_db_release_memory(reinterpret_cast<sqlite3*>(jdb));
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -614,6 +622,14 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key, key.length());
 }
 
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_releaseMemory(
+    JNIEnv* env,
+    jobject clazz,
+    jint bytes
+) {
+    return sqlite3_release_memory(bytes);
+}
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_reset(
@@ -673,6 +689,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_threadsafe(
     jobject obj
 ) {
     return sqlite3_threadsafe();
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_totalChanges(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb
+) {
+    return sqlite3_total_changes(reinterpret_cast<sqlite3*>(jdb));
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -762,8 +787,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_walCheckpointV2(
 extern "C" JNIEXPORT void JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     JNIEnv* env,
-    jobject obj
+    jobject obj,
+    jlong jSoftHeapLimit
 ) {
+    sqlite3_soft_heap_limit64(jSoftHeapLimit);
     sqlite3_initialize();
 }
 

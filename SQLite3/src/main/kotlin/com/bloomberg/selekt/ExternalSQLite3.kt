@@ -18,22 +18,33 @@ package com.bloomberg.selekt
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-fun externalSQLiteSingleton(loader: () -> Unit = { System.loadLibrary("selekt") }) =
-    ExternalSQLite.Singleton(loader)
+private const val DEFAULT_SOFT_HEAP_LIMIT = 32 * 1024 * 1024L
+
+data class SQLiteConfiguration(
+    val softHeapLimit: Long = DEFAULT_SOFT_HEAP_LIMIT
+)
+
+fun externalSQLiteSingleton(
+    configuration: SQLiteConfiguration = SQLiteConfiguration(),
+    loader: () -> Unit = { System.loadLibrary("selekt") }
+) = ExternalSQLite.Singleton(configuration, loader)
 
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions") // Mirrors the SQLite3 C-api.
-class ExternalSQLite private constructor(loader: () -> Unit) {
+class ExternalSQLite private constructor(
+    configuration: SQLiteConfiguration,
+    loader: () -> Unit
+) {
     init {
         loader()
-        nativeInit()
+        nativeInit(configuration.softHeapLimit)
     }
 
     internal object Singleton {
         private val isInitialised = AtomicBoolean(false)
 
-        operator fun invoke(loader: () -> Unit): ExternalSQLite {
+        operator fun invoke(configuration: SQLiteConfiguration, loader: () -> Unit): ExternalSQLite {
             check(!isInitialised.getAndSet(true)) { "Singleton is already initialised." }
-            return ExternalSQLite(loader)
+            return ExternalSQLite(configuration, loader)
         }
     }
 
@@ -115,6 +126,8 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
 
     external fun databaseReadOnly(db: Long, name: String): Int
 
+    external fun databaseReleaseMemory(db: Long): Int
+
     external fun databaseStatus(
         db: Long,
         options: Int,
@@ -156,6 +169,8 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
 
     external fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
 
+    external fun releaseMemory(bytes: Int): Int
+
     external fun reset(statement: Long): SQLCode
 
     external fun sql(statement: Long): String
@@ -167,6 +182,8 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
     external fun step(statement: Long): SQLCode
 
     external fun threadsafe(): Int
+
+    external fun totalChanges(db: Long): Int
 
     external fun traceV2(db: Long, flag: Int)
 
@@ -180,5 +197,5 @@ class ExternalSQLite private constructor(loader: () -> Unit) {
 
     external fun walCheckpointV2(db: Long, name: String?, mode: Int): SQLCode
 
-    private external fun nativeInit()
+    private external fun nativeInit(softHeapLimit: Long)
 }

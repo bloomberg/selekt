@@ -127,7 +127,7 @@ internal class SQLPreparedStatement(
         val nowNanos = System.nanoTime()
         val remainderMillis = (expireAtMillis - nowNanos / NANOS_PER_MILLI).also {
             if (it < 1L) {
-                sqlite.throwSQLException(sqlite.databaseHandle(pointer), "${sql.sqlStatementType()}")
+                sqlite.throwSQLException(sqlite.databaseHandle(pointer), "${sql.resolvedSqlStatementType()}")
             }
         }
         Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainderMillis).nextRandom())

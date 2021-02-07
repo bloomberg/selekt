@@ -21,16 +21,19 @@ import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.SQLiteTransactionMode
 import com.bloomberg.selekt.annotations.Generated
+import org.intellij.lang.annotations.Language
 import java.io.Closeable
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
+import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 
 /**
@@ -143,32 +146,38 @@ class SQLiteDatabase private constructor(
     override fun close() = database.close()
 
     /**
-     * Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The
-     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
-     *
-     * Each array from the iterator must have the same length, corresponding to the number of arguments in the SQL
-     * statement. It is safe for the iterator to recycle the array with each step of an iteration.
-     *
-     * @param sql statement.
-     * @param bindArgs iterable for binding to the statement.
-     * @return the total number of changed rows, possibly with redundancy.
-     */
-    @Experimental
-    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>) = database.batch(sql, bindArgs)
-
-    /**
-     * Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
      * prototypical use case is for database modifications inside a tight loop to which this is optimised.
      *
      * Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement.
      * It is safe for the sequence to recycle the array with each yield.
      *
+     * The transaction is not committed by this method until the sequence ends. For long sequences you may wish to yield
+     * the transaction periodically.
+     *
      * @param sql statement.
      * @param bindArgs sequence for binding to the statement.
-     * @return the total number of changed rows, possibly with redundancy.
+     * @return the number of rows affected.
      */
     @Experimental
-    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = database.batch(sql, bindArgs)
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>) = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array from the stream must have the same length, corresponding to the number of arguments in the SQL
+     * statement. It is safe for the stream to recycle the array with each step of an iteration.
+     *
+     * The transaction is not committed by this method until the stream closes. For long streams you may wish to yield
+     * the transaction periodically.
+     *
+     * @param sql statement.
+     * @param bindArgs stream for binding to the statement.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Stream<Array<out Any?>>) = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode.
@@ -183,6 +192,9 @@ class SQLiteDatabase private constructor(
      */
     fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
 
+    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
+        database.beginExclusiveTransactionWithListener(listener)
+
     /**
      * Begins a transaction in immediate mode. Prefer [transact] whenever possible.
      *
@@ -195,6 +207,9 @@ class SQLiteDatabase private constructor(
      * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
      */
     fun beginImmediateTransaction() = database.beginImmediateTransaction()
+
+    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
+        database.beginImmediateTransactionWithListener(listener)
 
     fun compileStatement(sql: String) = database.compileStatement(sql)
 

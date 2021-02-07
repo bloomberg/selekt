@@ -148,6 +148,8 @@ open class SQLite(
 
     fun databaseReadOnly(db: Long, name: String) = sqlite.databaseReadOnly(db, name)
 
+    fun databaseReleaseMemory(db: Long) = sqlite.databaseReleaseMemory(db)
+
     fun databaseStatus(
         db: Long,
         options: Int,
@@ -191,6 +193,8 @@ open class SQLite(
 
     fun rekey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rekey(db, key, key.size))
 
+    fun releaseMemory(bytes: Int) = sqlite.releaseMemory(bytes)
+
     fun reset(statement: Long) = checkStatementSQLCode(statement, sqlite.reset(statement))
 
     fun sql(statement: Long) = sqlite.sql(statement)
@@ -208,6 +212,8 @@ open class SQLite(
     fun stepWithoutThrowing(statement: Long) = sqlite.step(statement)
 
     fun threadsafe() = sqlite.threadsafe()
+
+    fun totalChanges(db: Long) = sqlite.totalChanges(db)
 
     fun traceV2(db: Long, flag: Int) = sqlite.traceV2(db, flag)
 

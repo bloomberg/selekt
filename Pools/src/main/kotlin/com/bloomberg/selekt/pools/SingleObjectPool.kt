@@ -42,7 +42,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         if (!mutex.cancel()) {
             return
         }
-        evictQuietly()
+        evict()
     }
 
     override fun borrowObject(): T {
@@ -59,6 +59,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     override fun returnObject(obj: T) {
+        canEvict = false
         if (isClosed) {
             evictThenUnlock()
         } else {
@@ -68,6 +69,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     internal fun evict() = mutex.run {
         if (isClosed) {
+            factory.close()
             attemptUnparkWaiters()
             withTryLock {
                 evictions()
@@ -81,18 +83,12 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         factory.destroyObject(it)
     }
 
-    private fun evictQuietly() {
-        try {
-            evict()
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-        }
-    }
-
     @GuardedBy("mutex")
     private fun acquireObject(): T {
-        canEvict = false
-        return obj ?: runCatching { factory.makePrimaryObject() }.getOrElse {
+        return obj ?: runCatching {
+            canEvict = false
+            factory.makePrimaryObject()
+        }.getOrElse {
             mutex.unlock()
             throw it
         }.also {
@@ -106,7 +102,6 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         if (future?.isCancelled == false || evictionIntervalMillis < 0L || isClosed) {
             return
         }
-        canEvict = true
         future = executor.scheduleAtFixedRate(
             ::evict,
             evictionDelayMillis,
@@ -125,9 +120,6 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("mutex")
     private fun evictions(): T? {
-        if (isClosed) {
-            factory.close()
-        }
         return (if (canEvict && future?.isCancelled == false || isClosed) obj else null)?.also {
             obj = null
             cancelScheduledEviction()

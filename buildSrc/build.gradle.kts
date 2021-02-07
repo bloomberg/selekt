@@ -17,7 +17,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // TODO Move me.
-val kotlinVersion = "1.4.21"
+val kotlinVersion = "1.4.30"
 
 plugins {
     `kotlin-dsl`
@@ -35,6 +35,10 @@ gradlePlugin {
         create("Selekt Plugin") {
             id = "selekt"
             implementationClass = "SelektPlugin"
+        }
+        create("Android Maven Publish Plugin") {
+            id = "bb-android-maven-publish"
+            implementationClass = "AndroidMavenPublishPlugin"
         }
         create("Bloomberg JaCoCo Android Plugin") {
             id = "bb-jacoco-android"
