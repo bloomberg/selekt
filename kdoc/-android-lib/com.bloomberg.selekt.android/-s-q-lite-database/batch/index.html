@@ -16,7 +16,7 @@
         <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-database/batch/">
       
       <link rel="shortcut icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.2.5">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.2.8">
     
     
       
@@ -24,10 +24,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.15aa0b43.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.cb6bc1d0.min.css">
       
         
-        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.75751829.min.css">
+        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.39b8e14a.min.css">
         
       
     
@@ -200,7 +200,6 @@
       
       
 
-
   
   
   
@@ -216,7 +215,6 @@
       
       
 
-
   
   
   
@@ -231,7 +229,6 @@
       
       
       
-
 
   
   
@@ -347,41 +344,14 @@
 <h1 id="batch">batch</h1>
 <p>[androidJvm]<br />
 Content<br />
-fun <a href="./">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-iterable/index.html">Iterable</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br />
-More info  </p>
-<p>Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
-<p>Each array from the iterator must have the same length, corresponding to the number of arguments in the SQL statement. It is safe for the iterator to recycle the array with each step of an iteration.</p>
-<h4 id="return">Return</h4>
-<p>the total number of changed rows, possibly with redundancy.</p>
-<h2 id="parameters">Parameters</h2>
-<p>androidJvm  </p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Summary</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>bindArgs</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>iterable for binding to the statement.<br><br></td>
-</tr>
-<tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>sql</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>statement.<br><br></td>
-</tr>
-</tbody>
-</table>
-<p>[androidJvm]<br />
-Content<br />
 fun <a href="./">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br />
 More info  </p>
-<p>Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
+<p>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
 <p>Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement. It is safe for the sequence to recycle the array with each yield.</p>
-<h4 id="return_1">Return</h4>
-<p>the total number of changed rows, possibly with redundancy.</p>
-<h2 id="parameters_1">Parameters</h2>
+<p>The transaction is not committed by this method until the sequence ends. For long sequences you may wish to yield the transaction periodically.</p>
+<h4 id="return">Return</h4>
+<p>the number of rows affected.</p>
+<h2 id="parameters">Parameters</h2>
 <p>androidJvm  </p>
 <table>
 <thead>
@@ -398,6 +368,35 @@ More info  </p>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>sql</td>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>statement.<br><br></td>
+</tr>
+</tbody>
+</table>
+<p>[androidJvm]<br />
+Content<br />
+fun <a href="./">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://developer.android.com/reference/kotlin/java/util/stream/Stream.html">Stream</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br />
+More info  </p>
+<p>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
+<p>Each array from the stream must have the same length, corresponding to the number of arguments in the SQL statement. It is safe for the stream to recycle the array with each step of an iteration.</p>
+<p>The transaction is not committed by this method until the stream closes. For long streams you may wish to yield the transaction periodically.</p>
+<h4 id="return_1">Return</h4>
+<p>the number of rows affected.</p>
+<h2 id="parameters_1">Parameters</h2>
+<p>androidJvm  </p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>bindArgs</td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>stream for binding to the statement.<br><br></td>
+</tr>
+<tr>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>sql</td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>statement.<br><br></td>
 </tr>
 </tbody>
 </table>
@@ -436,15 +435,15 @@ More info  </p>
       
     </div>
     
-      <script src="../../../../../assets/javascripts/vendor.93c04032.min.js"></script>
-      <script src="../../../../../assets/javascripts/bundle.83e5331e.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      <script src="../../../../../assets/javascripts/vendor.18f0862e.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.994580cf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
       
       <script>
         app = initialize({
           base: "../../../../..",
           features: [],
           search: Object.assign({
-            worker: "../../../../../assets/javascripts/worker/search.8c7e0a7e.min.js"
+            worker: "../../../../../assets/javascripts/worker/search.9c0e82ba.min.js"
           }, typeof search !== "undefined" && search)
         })
       </script>

@@ -16,7 +16,7 @@
         <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-database/">
       
       <link rel="shortcut icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.2.5">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.2.8">
     
     
       
@@ -24,10 +24,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.15aa0b43.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.cb6bc1d0.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.75751829.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.39b8e14a.min.css">
         
       
     
@@ -200,7 +200,6 @@
       
       
 
-
   
   
   
@@ -216,7 +215,6 @@
       
       
 
-
   
   
   
@@ -231,7 +229,6 @@
       
       
       
-
 
   
   
@@ -379,16 +376,24 @@
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><a href="batch/">batch</a></td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-iterable/index.html">Iterable</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br>More info  <br>Transacts to the database in immediate mode a batch of queries with the same underlying SQL statement.  <br><br><br></td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><a href="batch/">batch</a></td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://developer.android.com/reference/kotlin/java/util/stream/Stream.html">Stream</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br>More info  <br>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement.  <br><br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransaction/#/PointingToDeclaration/"></a><a href="begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransaction/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="begin-exclusive-transaction/">beginExclusiveTransaction</a>()  <br>More info  <br>Begins a transaction in exclusive mode.  <br><br><br></td>
 </tr>
 <tr>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a><a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a></td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: SQLTransactionListener)  <br><br><br></td>
+</tr>
+<tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransaction/#/PointingToDeclaration/"></a><a href="begin-immediate-transaction/">beginImmediateTransaction</a></td>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransaction/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="begin-immediate-transaction/">beginImmediateTransaction</a>()  <br>More info  <br>Begins a transaction in immediate mode.  <br><br><br></td>
+</tr>
+<tr>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a><a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a></td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: SQLTransactionListener)  <br><br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/close/#/PointingToDeclaration/"></a><a href="close/">close</a></td>
@@ -407,8 +412,8 @@
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/endTransaction/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="end-transaction/">endTransaction</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a name="kotlin/Any/equals/#kotlin.Any?/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">equals</a></td>
-<td><a name="kotlin/Any/equals/#kotlin.Any?/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open operator fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
+<td><a name="kotlin/Any/equals/#kotlin.Any?/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">equals</a></td>
+<td><a name="kotlin/Any/equals/#kotlin.Any?/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open operator fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/exec/#kotlin.String/PointingToDeclaration/"></a><a href="exec/">exec</a></td>
@@ -419,8 +424,8 @@
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/gauge/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="gauge/">gauge</a>(): <a href="-gauge/">SQLiteDatabase.Gauge</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a name="kotlin/Any/hashCode/#/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">hashCode</a></td>
-<td><a name="kotlin/Any/hashCode/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
+<td><a name="kotlin/Any/hashCode/#/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">hashCode</a></td>
+<td><a name="kotlin/Any/hashCode/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/incrementalVacuum/#/PointingToDeclaration/"></a><a href="incremental-vacuum/">incrementalVacuum</a></td>
@@ -459,8 +464,8 @@
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/sizeOfBlob/#kotlin.String#kotlin.String#kotlin.Long/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>fun <a href="size-of-blob/">sizeOfBlob</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, column: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, row: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br>fun <a href="size-of-blob/">sizeOfBlob</a>(name: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, column: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, row: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a name="kotlin/Any/toString/#/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">toString</a></td>
-<td><a name="kotlin/Any/toString/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-417697445">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>  <br><br><br></td>
+<td><a name="kotlin/Any/toString/#/PointingToDeclaration/"></a><a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">toString</a></td>
+<td><a name="kotlin/Any/toString/#/PointingToDeclaration/"></a>[androidJvm]  <br>Content  <br>open fun <a href="../-i-s-q-lite-open-helper/-configuration/#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1749678891">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>  <br><br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/update/#kotlin.String#android.content.ContentValues#kotlin.String?#kotlin.Array[kotlin.Any?]?#com.bloomberg.selekt.android.ConflictAlgorithm/PointingToDeclaration/"></a><a href="update/">update</a></td>
@@ -589,15 +594,15 @@
       
     </div>
     
-      <script src="../../../../assets/javascripts/vendor.93c04032.min.js"></script>
-      <script src="../../../../assets/javascripts/bundle.83e5331e.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      <script src="../../../../assets/javascripts/vendor.18f0862e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.994580cf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
       
       <script>
         app = initialize({
           base: "../../../..",
           features: [],
           search: Object.assign({
-            worker: "../../../../assets/javascripts/worker/search.8c7e0a7e.min.js"
+            worker: "../../../../assets/javascripts/worker/search.9c0e82ba.min.js"
           }, typeof search !== "undefined" && search)
         })
       </script>
