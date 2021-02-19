@@ -142,7 +142,6 @@ class SQLDatabase constructor(
             append(") VALUES (?")
                 .apply { repeat(bindArgs.size - 1) { append(",?") } }
                 .append(')')
-                .toString()
             SQLStatement.executeInsert(session, toString(), bindArgs)
         }
     }
