@@ -78,19 +78,21 @@ internal class SQLDatabaseTest {
     }
 
     @Test
-    fun nestedTransaction() = database.transact {
-        transact { }
-    }.also { verifyCommit() }
-
-    @Test
-    fun nestedTransactions() = database.transact {
+    fun nestedTransaction() = database.apply {
         transact { transact { } }
     }.also { verifyCommit() }
 
     @Test
+    fun nestedTransactions() = database.apply {
+        transact { transact { transact { } }
+    }.also { verifyCommit() } }
+
+    @Test
     fun badNestedTransactionThenGoodTransaction() {
         assertThatExceptionOfType(Exception::class.java).isThrownBy {
-            database.transact { transact { error("uh-oh") } }
+            database.apply {
+                transact { transact { error("uh-oh") } }
+            }
         }
         verifyRollback()
         database.transact { }

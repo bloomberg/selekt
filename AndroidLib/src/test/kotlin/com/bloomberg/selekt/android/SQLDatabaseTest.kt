@@ -24,6 +24,7 @@ import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SimpleSQLQuery
+import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert
@@ -147,6 +148,15 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     }
 
     @Test
+    fun executeInsertNumberCompileStatementThrows(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)", arrayOf(mock<Number>()))
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            statement.executeInsert()
+        }
+    }
+
+    @Test
     fun executeUpdateDeleteCompileStatement(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -187,9 +197,41 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     }
 
     @Test
+    fun insertByteWithOnConflict(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42.toByte()) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertDoubleWithOnConflict(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar DOUBLE)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42.0) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
     fun insertIntWithOnConflict(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertLongWithOnConflict(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42L) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertShortWithOnConflict(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42.toShort()) }
         val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
@@ -328,7 +370,49 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     }
 
     @Test
-    fun insertAsCompiledStatement(): Unit = database.run {
+    fun insertDoubleAsCompiledStatement(): Unit = database.run {
+        val value = 42.0
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        statement.bindDouble(1, value)
+        assertEquals(1L, statement.executeInsert())
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(value, it.getDouble(0))
+        }
+    }
+
+    @Test
+    fun insertIntAsCompiledStatement(): Unit = database.run {
+        val value = 42
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        statement.bindInt(1, value)
+        assertEquals(1L, statement.executeInsert())
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(value, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun insertNullAsCompiledStatement(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        statement.bindString(1, "knock me out")
+        statement.bindNull(1)
+        assertEquals(1L, statement.executeInsert())
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertTrue(it.isNull(0))
+        }
+    }
+
+    @Test
+    fun insertStringAsCompiledStatement(): Unit = database.run {
         val text = "greetings"
         exec("CREATE TABLE 'Foo' (bar TEXT)")
         val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
@@ -342,10 +426,38 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     }
 
     @Test
-    fun insertAsCompiledStatementWithTableBind(): Unit = database.run {
+    fun insertStringAsCompiledStatementWithTableBind(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)")
         assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
             compileStatement("INSERT INTO ? VALUES (?)")
+        }
+    }
+
+    @Test
+    fun clearCompiledStatement(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        statement.bindString(1, "abc")
+        statement.clearBindings()
+        assertEquals(1L, statement.executeInsert())
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertTrue(it.isNull(0))
+        }
+    }
+
+    @Test
+    fun closeCompiledStatementClears(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        statement.bindString(1, "abc")
+        statement.close()
+        assertEquals(1L, statement.executeInsert())
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertTrue(it.isNull(0))
         }
     }
 
@@ -486,10 +598,8 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     fun queryByChar(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)")
         insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
-        query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x')).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals("x", it.getString(0))
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x'))
         }
     }
 
@@ -516,6 +626,15 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
             assertEquals(43, it.getInt(0))
             assertFalse(it.moveToNext())
         }
+    }
+
+    @Test
+    fun simpleQueryForLong(): Unit = database.run {
+        val value = 42L
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(value))
+        val statement = compileStatement("SELECT * FROM 'Foo' LIMIT 1")
+        assertEquals(value, statement.simpleQueryForLong())
     }
 
     @Test
@@ -563,5 +682,20 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     fun batchInsert(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
+    }
+
+    @Test
+    fun insertOneHundredUnboundThenOneBound(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)")
+        repeat(100) { exec("INSERT INTO 'Foo' VALUES ($it)") }
+        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(200))
+        query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            repeat(100) {
+                assertTrue(cursor.moveToNext())
+                assertEquals(it, cursor.getInt(0))
+            }
+            assertTrue(cursor.moveToNext())
+            assertEquals(200, cursor.getInt(0))
+        }
     }
 }

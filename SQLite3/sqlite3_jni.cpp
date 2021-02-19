@@ -305,9 +305,16 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnBlob(
     jint index
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    // sqlite3_column_blob returns null for a zero-length blob.
+    // ref: https://www.sqlite.org/c3ref/column_blob.html
     auto result = sqlite3_column_blob(statement, index);
-    auto size = sqlite3_column_bytes(statement, index);
-    return newByteArray(env, result, size);
+    if (result) {
+        auto size = sqlite3_column_bytes(statement, index);
+        if (size > 0) {
+            return newByteArray(env, result, size);
+        }
+    }
+    return nullptr;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -529,6 +536,14 @@ Java_com_bloomberg_selekt_ExternalSQLite_getAutocommit(
     return sqlite3_get_autocommit(reinterpret_cast<sqlite3*>(jdb));
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_hardHeapLimit64(
+    JNIEnv* env,
+    jobject obj
+) {
+    return sqlite3_hard_heap_limit64(-1);
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_key(
     JNIEnv* env,
@@ -572,6 +587,14 @@ Java_com_bloomberg_selekt_ExternalSQLite_libVersionNumber(
     jobject jobj
 ) {
     return sqlite3_libversion_number();
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_memoryUsed(
+    JNIEnv* env,
+    jobject jobj
+) {
+    return sqlite3_memory_used();
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -640,6 +663,14 @@ Java_com_bloomberg_selekt_ExternalSQLite_reset(
     return sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(jstatement));
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_softHeapLimit64(
+    JNIEnv* env,
+    jobject obj
+) {
+    return sqlite3_soft_heap_limit64(-1);
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_sql(
     JNIEnv* env,
@@ -657,6 +688,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_step(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     return sqlite3_step(statement);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_statementBusy(
+    JNIEnv* env,
+    jobject clazz,
+    jlong jstatement
+) {
+    return sqlite3_stmt_busy(reinterpret_cast<sqlite3_stmt*>(jstatement));
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -790,8 +830,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     jobject obj,
     jlong jSoftHeapLimit
 ) {
-    sqlite3_soft_heap_limit64(jSoftHeapLimit);
     sqlite3_initialize();
+    sqlite3_soft_heap_limit64(jSoftHeapLimit);
+    LOG_D("SQLite3 has soft heap limit %llu bytes.", sqlite3_soft_heap_limit64(-1));
+    LOG_D("SQLite3 has hard heap limit %llu bytes.", sqlite3_hard_heap_limit64(-1));
 }
 
 #pragma clang diagnostic push

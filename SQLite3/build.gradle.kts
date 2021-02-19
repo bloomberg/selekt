@@ -73,7 +73,7 @@ tasks.withType<AbstractPublishToMaven> {
 publishing {
     publications.register<MavenPublication>("main") {
         groupId = selektGroupId
-        artifactId = "selekt-seesqlite3"
+        artifactId = "selekt-sqlite3"
         version = selektVersionName
         from(components.getByName("java"))
         pom { commonInitialisation(project) }

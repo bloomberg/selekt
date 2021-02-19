@@ -75,15 +75,17 @@ open class SQLite(
         row: Long,
         flags: Int,
         holder: LongArray
-    ) = checkSQLCode(sqlite.blobOpen(
+    ) = checkConnectionSQLCode(
         db,
-        name,
-        table,
-        column,
-        row,
-        flags,
-        holder
-    ))
+        sqlite.blobOpen(
+            db,
+            name,
+            table,
+            column,
+            row,
+            flags,
+            holder
+        ))
 
     fun blobRead(
         blob: Long,
@@ -173,11 +175,15 @@ open class SQLite(
 
     fun getAutocommit(db: Long) = sqlite.getAutocommit(db)
 
+    fun hardHeapLimit64() = sqlite.hardHeapLimit64()
+
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
     fun keywordCount() = sqlite.keywordCount()
 
     fun lastInsertRowId(db: Long) = sqlite.lastInsertRowId(db)
+
+    fun memoryUsed() = sqlite.memoryUsed()
 
     fun openV2(
         path: String,
@@ -197,7 +203,11 @@ open class SQLite(
 
     fun reset(statement: Long) = checkStatementSQLCode(statement, sqlite.reset(statement))
 
+    fun softHeapLimit64() = sqlite.softHeapLimit64()
+
     fun sql(statement: Long) = sqlite.sql(statement)
+
+    fun statementBusy(statement: Long) = sqlite.statementBusy(statement)
 
     fun statementReadOnly(statement: Long) = sqlite.statementReadOnly(statement)
 
@@ -272,7 +282,4 @@ open class SQLite(
         }
         throwSQLException(databaseHandle(statement))
     }
-
-    private fun extendedErrorMessage(db: Long) = "Code ${errorCode(db)}; Extended code ${extendedErrorCode(db)}; " +
-        "Message: ${errorMessage(db)}"
 }

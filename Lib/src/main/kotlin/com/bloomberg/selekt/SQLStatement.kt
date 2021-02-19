@@ -88,24 +88,22 @@ internal fun CharSequence.resolvedSqlStatementType() = trimStart(Char::isWhitesp
 
 @ThreadSafe
 internal class BatchSQLStatement private constructor(
-    private val session: ThreadLocalisedSession,
+    private val session: ThreadLocalSession,
     private val sql: String,
     private val args: Sequence<Array<out Any?>>
 ) {
     companion object {
         fun compile(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             bindArgs: Sequence<Array<out Any?>>
         ): BatchSQLStatement {
             require(SQLStatementType.UPDATE == sql.resolvedSqlStatementType()) {
                 "Only batched updates are permitted."
             }
-            return session.execute(true, sql) {
+            return session.get().execute(true, sql) {
                 it.prepare(sql)
             }.run {
-                check(!isReadOnly) { "Prepared statement for batching must not be read-only." }
-                @Suppress("UNCHECKED_CAST")
                 BatchSQLStatement(
                     session,
                     sql,
@@ -115,14 +113,14 @@ internal class BatchSQLStatement private constructor(
         }
     }
 
-    internal fun execute() = session.execute(true, sql) {
+    internal fun execute() = session.get().execute(true, sql) {
         it.executeForChangedRowCount(sql, args)
     }
 }
 
 @ThreadSafe
 internal class SQLStatement private constructor(
-    private val session: ThreadLocalisedSession,
+    private val session: ThreadLocalSession,
     private val sql: String,
     private val statementType: SQLStatementType,
     private val args: Array<Any?>,
@@ -130,55 +128,55 @@ internal class SQLStatement private constructor(
 ) : ISQLStatement {
     companion object {
         fun execute(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.execute(statementType.isPredictedWrite, sql) {
+        ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.execute(sql, bindArgs)
         }
 
         fun executeForInt(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.execute(statementType.isPredictedWrite, sql) {
+        ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.executeForInt(sql, bindArgs)
         }
 
         fun executeForString(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.execute(statementType.isPredictedWrite, sql) {
+        ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.executeForString(sql, bindArgs)
         }
 
         fun executeInsert(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             bindArgs: Array<out Any?>
-        ) = session.execute(true, sql) {
+        ) = session.get().execute(true, sql) {
             it.executeForLastInsertedRowId(sql, bindArgs)
         }
 
         fun executeUpdateDelete(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             bindArgs: Array<out Any?>
-        ) = session.execute(true, sql) {
+        ) = session.get().execute(true, sql) {
             it.executeForChangedRowCount(sql, bindArgs)
         }
 
         fun compile(
-            session: ThreadLocalisedSession,
+            session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>?
         ): SQLStatement {
-            return session.execute(statementType.isPredictedWrite, sql) {
+            return session.get().execute(statementType.isPredictedWrite, sql) {
                 it.prepare(sql)
             }.run {
                 @Suppress("UNCHECKED_CAST")
@@ -201,6 +199,10 @@ internal class SQLStatement private constructor(
         bind(index, value)
     }
 
+    override fun bindInt(index: Int, value: Int) {
+        bind(index, value)
+    }
+
     override fun bindLong(index: Int, value: Long) {
         bind(index, value)
     }
@@ -217,25 +219,27 @@ internal class SQLStatement private constructor(
         args.fill(null)
     }
 
-    override fun close() = Unit
-
-    override fun execute() {
-        session.executeSafely(asWrite, sql, statementType, Unit) { it.execute(sql, args) }
+    override fun close() {
+        clearBindings()
     }
 
-    override fun executeInsert(): Long = session.executeSafely(asWrite, sql, statementType, -1L) {
+    override fun execute() {
+        session.get().execute(asWrite, sql, statementType, Unit) { it.execute(sql, args) }
+    }
+
+    override fun executeInsert(): Long = session.get().execute(asWrite, sql, statementType, -1L) {
         it.executeForLastInsertedRowId(sql, args)
     }
 
-    override fun executeUpdateDelete() = session.executeSafely(asWrite, sql, statementType, 0) {
+    override fun executeUpdateDelete() = session.get().execute(asWrite, sql, statementType, 0) {
         it.executeForChangedRowCount(sql, args)
     }
 
-    override fun simpleQueryForLong() = session.executeSafely(asWrite, sql, statementType, -1L) {
+    override fun simpleQueryForLong() = session.get().execute(asWrite, sql, statementType, -1L) {
         it.executeForLong(sql, args)
     }
 
-    override fun simpleQueryForString() = session.executeSafely(asWrite, sql, statementType, null) {
+    override fun simpleQueryForString() = session.get().execute(asWrite, sql, statementType, null) {
         it.executeForString(sql, args)
     }
 

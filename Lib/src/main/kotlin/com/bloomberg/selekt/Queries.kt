@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.joinTo
+import org.intellij.lang.annotations.Language
 import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -25,24 +26,24 @@ private val EMPTY_ARRAY = emptyArray<Any?>()
 private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray())
 
 @NotThreadSafe
-internal class SQLQuery private constructor(
-    private val session: ThreadLocalisedSession,
+internal class SQLQuery internal constructor(
+    private val session: ThreadLocalSession,
     private val sql: String,
     private val statementType: SQLStatementType,
     private val bindArgs: Array<Any?>
 ) : IQuery {
     companion object {
         fun create(
-            session: ThreadLocalisedSession,
-            sql: String,
+            session: ThreadLocalSession,
+            @Language("RoomSql") sql: String,
             statementType: SQLStatementType,
             argsCount: Int
         ) = SQLQuery(session, sql, statementType, arrayOfNulls(argsCount))
 
         @Suppress("UNCHECKED_CAST")
         fun create(
-            session: ThreadLocalisedSession,
-            sql: String,
+            session: ThreadLocalSession,
+            @Language("RoomSql") sql: String,
             statementType: SQLStatementType,
             args: Array<out Any?>
         ) = SQLQuery(session, sql, statementType, args.copyOf() as Array<Any?>)
@@ -51,6 +52,8 @@ internal class SQLQuery private constructor(
     override fun bindBlob(index: Int, value: ByteArray) = bind(index, value)
 
     override fun bindDouble(index: Int, value: Double) = bind(index, value)
+
+    override fun bindInt(index: Int, value: Int) = bind(index, value)
 
     override fun bindLong(index: Int, value: Long) = bind(index, value)
 
@@ -62,14 +65,16 @@ internal class SQLQuery private constructor(
         bindArgs.fill(null)
     }
 
-    override fun close() = Unit
+    override fun close() {
+        clearBindings()
+    }
 
     // TODO Return unit instead? Move populating cursor column names to a cursor factory or similar, always after step?
     // TODO Ever need to prepare again after execute, prepare_v2 will auto-recompile on step picking up any schema change?
     override fun fill(
         window: ICursorWindow
     ): SQLStatementInformation {
-        val information = session.executeSafely(
+        val information = session.get().execute(
             statementType.isPredictedWrite,
             sql,
             statementType,
@@ -83,7 +88,7 @@ internal class SQLQuery private constructor(
             }
         }
         return if (information !== EMPTY_SQL_STATEMENT_INFORMATION) {
-            session.executeSafely(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
+            session.get().execute(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
                 it.executeForCursorWindow(sql, bindArgs, window)
             }
             information
@@ -99,7 +104,7 @@ internal class SQLQuery private constructor(
 }
 
 class SimpleSQLQuery(
-    override val sql: String,
+    @Language("RoomSql") override val sql: String,
     private val bindArgs: Array<out Any?> = EMPTY_ARRAY
 ) : ISQLQuery {
     override val argCount = bindArgs.size
@@ -115,13 +120,14 @@ class SimpleSQLQuery(
             when (arg) {
                 null -> bindNull(index)
                 is String -> bindString(index, arg)
+                is Int -> bindInt(index, arg)
+                is Long -> bindLong(index, arg)
                 is Float -> bindDouble(index, arg.toDouble())
                 is Double -> bindDouble(index, arg)
-                is Number -> bindLong(index, arg.toLong())
-                is Boolean -> bindLong(index, if (arg) 1L else 0L)
-                is Char -> bindLong(index, arg.toLong())
+                is Short -> bindInt(index, arg.toInt())
+                is Byte -> bindInt(index, arg.toInt())
                 is ByteArray -> bindBlob(index, arg)
-                else -> throw IllegalArgumentException("Cannot bind arg $arg at index $index.")
+                else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at index $index.")
             }
         }
     }

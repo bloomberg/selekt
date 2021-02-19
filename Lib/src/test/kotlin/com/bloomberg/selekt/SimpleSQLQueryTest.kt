@@ -21,15 +21,23 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
 
 internal class SimpleSQLQueryTest {
     @Test
+    fun bindAny() {
+        assertThrows<IllegalArgumentException> {
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(Any())).bindTo(mock())
+        }
+    }
+
+    @Test
     fun bindByte() {
         mock<ISQLProgram>().let {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42.toByte())).bindTo(it)
-            verify(it, times(1)).bindLong(eq(1), eq(42L))
+            verify(it, times(1)).bindInt(eq(1), eq(42))
         }
     }
 
@@ -43,18 +51,23 @@ internal class SimpleSQLQueryTest {
     }
 
     @Test
-    fun bindBoolean() {
-        mock<ISQLProgram>().let {
-            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(true)).bindTo(it)
-            verify(it, times(1)).bindLong(eq(1), eq(1L))
+    fun bindBooleanTrue() {
+        assertThrows<IllegalArgumentException> {
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(true)).bindTo(mock())
+        }
+    }
+
+    @Test
+    fun bindBooleanFalse() {
+        assertThrows<IllegalArgumentException> {
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(false)).bindTo(mock())
         }
     }
 
     @Test
     fun bindChar() {
-        mock<ISQLProgram>().let {
-            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42.toChar())).bindTo(it)
-            verify(it, times(1)).bindLong(eq(1), eq(42L))
+        assertThrows<IllegalArgumentException> {
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf('a')).bindTo(mock())
         }
     }
 
@@ -77,8 +90,8 @@ internal class SimpleSQLQueryTest {
     @Test
     fun bindInt() {
         mock<ISQLProgram>().let {
-            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42L)).bindTo(it)
-            verify(it, times(1)).bindLong(eq(1), eq(42L))
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42)).bindTo(it)
+            verify(it, times(1)).bindInt(eq(1), eq(42))
         }
     }
 
@@ -99,10 +112,19 @@ internal class SimpleSQLQueryTest {
     }
 
     @Test
+    fun bindNumber() {
+        mock<ISQLProgram>().let {
+            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+                SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(mock<Number>())).bindTo(it)
+            }
+        }
+    }
+
+    @Test
     fun bindShort() {
         mock<ISQLProgram>().let {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42.toShort())).bindTo(it)
-            verify(it, times(1)).bindLong(eq(1), eq(42L))
+            verify(it, times(1)).bindInt(eq(1), eq(42))
         }
     }
 
@@ -111,13 +133,6 @@ internal class SimpleSQLQueryTest {
         mock<ISQLProgram>().let {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf("a")).bindTo(it)
             verify(it, times(1)).bindString(eq(1), eq("a"))
-        }
-    }
-
-    @Test
-    fun bindAny() {
-        assertThrows<IllegalArgumentException> {
-            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(Any())).bindTo(mock())
         }
     }
 }

@@ -24,14 +24,18 @@ import javax.annotation.concurrent.NotThreadSafe
 @NotThreadSafe
 internal class SQLConnection constructor(
     path: String,
-    internal val sqlite: SQLite,
+    private val sqlite: SQLite,
     private val configuration: DatabaseConfiguration,
     flags: Int,
     private val random: IRandom,
     key: Key?
 ) : CloseableSQLExecutor {
     private val pointer = sqlite.open(path, flags)
-    private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) { it.close() }
+    private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
+        it.close()
+        pooledPreparedStatement = it
+    }
+    private var pooledPreparedStatement: SQLPreparedStatement? = null
 
     override val isAutoCommit: Boolean
         get() = sqlite.getAutocommit(pointer) != 0
@@ -115,7 +119,7 @@ internal class SQLConnection constructor(
                         ColumnType.FLOAT.sqlDataType -> put(columnDouble(it))
                         ColumnType.NULL.sqlDataType -> putNull()
                         ColumnType.BLOB.sqlDataType -> put(columnBlob(it))
-                        else -> put(columnString(it))
+                        else -> error("Unrecognised column type for column $it.")
                     }
                 }
             }
@@ -152,6 +156,11 @@ internal class SQLConnection constructor(
         SQLStatementInformation(isReadOnly, parameterCount, columnNames)
     }
 
+    override fun releaseMemory() {
+        preparedStatements.evictAll()
+        sqlite.databaseReleaseMemory(pointer)
+    }
+
     @Generated
     private inline fun <R> withPreparedStatement(
         sql: String,
@@ -174,9 +183,17 @@ internal class SQLConnection constructor(
         block()
     }
 
-    // TODO Handle re-entrant queries (via triggers!) where statement is going to be in use already!
     private fun acquirePreparedStatement(sql: String) = preparedStatements[
-        sql, { SQLPreparedStatement(sqlite.prepare(pointer, sql), sql, sqlite, random) }
+        sql, {
+            val pointer = sqlite.prepare(pointer, sql)
+            pooledPreparedStatement.let {
+                if (it != null) {
+                    SQLPreparedStatement.recycle(it, pointer, sql).also { pooledPreparedStatement = null }
+                } else {
+                    SQLPreparedStatement(pointer, sql, sqlite, random)
+                }
+            }
+        }
     ]
 
     private fun releasePreparedStatement(preparedStatement: SQLPreparedStatement) {
@@ -201,9 +218,7 @@ internal class SQLConnection constructor(
             // optimize pragma runs so that it does not consume too many CPU cycles. The constant "400" can be adjusted as
             // needed. Values between 100 and 1000 work well for most applications.
             // See: https://www.sqlite.org/lang_analyze.html
-            if (isReadOnly) {
-                sqlite.exec(pointer, "PRAGMA analysis_limit=100")
-            }
+            sqlite.exec(pointer, "PRAGMA analysis_limit=100")
             sqlite.exec(pointer, "PRAGMA optimize")
         }
     }
@@ -242,7 +257,7 @@ private fun SQLPreparedStatement.bindArgument(position: Int, arg: Any?) {
         is Byte -> bind(position, arg.toInt())
         is ByteArray -> bind(position, arg)
         is ZeroBlob -> bindZeroBlob(position, arg.size)
-        else -> bind(position, arg.toString())
+        else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
     }
 }
 

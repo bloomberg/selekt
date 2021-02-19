@@ -26,11 +26,24 @@ private const val MAX_PAUSE_MILLIS = 100L
 @NotThreadSafe
 @Suppress("Detekt.TooManyFunctions")
 internal class SQLPreparedStatement(
-    private val pointer: Long,
-    val sql: String,
+    private var pointer: Pointer,
+    private var rawSql: String,
     private val sqlite: SQLite,
     private val random: IRandom
 ) : Closeable {
+    companion object {
+        fun recycle(
+            preparedStatement: SQLPreparedStatement,
+            pointer: Long,
+            sql: String
+        ) = preparedStatement.apply {
+            this.pointer = pointer
+            this.rawSql = sql
+            this.parameterCount = sqlite.bindParameterCount(pointer)
+            this.isReadOnly = sqlite.statementReadOnly(pointer) != 0
+        }
+    }
+
     val columnCount: Int
         get() = sqlite.columnCount(pointer)
 
@@ -47,9 +60,14 @@ internal class SQLPreparedStatement(
      *
      * @Link [SQLite's stmt_readonly](https://www.sqlite.org/c3ref/stmt_readonly.html)
      */
-    val isReadOnly = sqlite.statementReadOnly(pointer) != 0
+    var isReadOnly = sqlite.statementReadOnly(pointer) != 0
+        private set
 
-    val parameterCount = sqlite.bindParameterCount(pointer)
+    var parameterCount = sqlite.bindParameterCount(pointer)
+        private set
+
+    val sql: String
+        get() = rawSql
 
     fun bind(index: Int, value: ByteArray) {
         sqlite.bindBlob(pointer, index, value)
@@ -85,6 +103,8 @@ internal class SQLPreparedStatement(
 
     override fun close() {
         sqlite.finalize(pointer)
+        pointer = NULL
+        rawSql = ""
     }
 
     fun columnBlob(index: Int) = sqlite.columnBlob(pointer, index)
@@ -100,6 +120,8 @@ internal class SQLPreparedStatement(
     fun columnString(index: Int) = sqlite.columnText(pointer, index)
 
     fun columnType(index: Int) = sqlite.columnType(pointer, index)
+
+    fun isBusy() = sqlite.statementBusy(pointer) != 0
 
     fun reset() {
         sqlite.reset(pointer)

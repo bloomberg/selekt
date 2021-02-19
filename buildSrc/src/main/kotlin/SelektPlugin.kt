@@ -17,6 +17,7 @@
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.kotlin
 
 private fun Test.configureJUnit5() {
@@ -30,7 +31,7 @@ class SelektPlugin : Plugin<Project> {
             systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
         }
         pluginManager.apply {
-            withPlugin("org.jetbrains.kotlin.jvm") {
+            withPlugin("java") {
                 dependencies.apply {
                     configurations.getByName("implementation") {
                         add(name, kotlin("stdlib-jdk8:${Versions.KOTLIN}"))
@@ -47,6 +48,11 @@ class SelektPlugin : Plugin<Project> {
                 tasks.withType(Test::class.java) {
                     useJUnitPlatform()
                     configureJUnit5()
+                }
+                tasks.withType(Jar::class.java).configureEach {
+                    metaInf {
+                        from("$rootDir/LICENSE")
+                    }
                 }
             }
             withPlugin("com.android.library") {
@@ -74,7 +80,7 @@ class SelektPlugin : Plugin<Project> {
                     }
                 }
             }
-            arrayOf("java", "org.jetbrains.kotlin.jvm", "com.android.library").forEach { id ->
+            arrayOf("java", "com.android.library").forEach { id ->
                 withPlugin(id) {
                     dependencies.apply {
                         configurations.findByName("compileOnly")?.apply {

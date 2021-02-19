@@ -47,10 +47,6 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-tasks.withType<AbstractPublishToMaven>().configureEach {
-    dependsOn("assembleSelekt")
-}
-
 publishing {
     publications.register<MavenPublication>("main") {
         groupId = selektGroupId

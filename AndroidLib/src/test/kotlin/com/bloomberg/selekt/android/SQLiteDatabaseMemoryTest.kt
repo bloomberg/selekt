@@ -49,10 +49,13 @@ internal class SQLiteDatabaseMemoryTest {
     }
 
     @Test
-    fun vacuum(): Unit = database.transact<Unit> {
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-    }.also { database.vacuum() }
+    fun vacuum(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar INT)")
+            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        }
+        database.vacuum()
+    }
 
     @Test
     fun version() {

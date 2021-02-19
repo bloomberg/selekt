@@ -36,10 +36,6 @@ tasks.register("assembleSelekt") {
     dependsOn("sourcesJar")
 }
 
-tasks.withType<AbstractPublishToMaven>().configureEach {
-    dependsOn("assembleSelekt")
-}
-
 publishing {
     publications.register<MavenPublication>("main") {
         groupId = selektGroupId

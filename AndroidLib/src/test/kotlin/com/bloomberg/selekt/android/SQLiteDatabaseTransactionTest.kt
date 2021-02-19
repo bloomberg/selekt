@@ -18,16 +18,15 @@ package com.bloomberg.selekt.android
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTransactionMode
-import com.bloomberg.selekt.SQLTransactionListener
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -105,8 +104,10 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     }
 
     @Test
-    fun isConnectionHeldByCurrentThreadInTransaction() = databaseHelper.writableDatabase.transact {
-        assertTrue(isConnectionHeldByCurrentThread)
+    fun isConnectionHeldByCurrentThreadInTransaction() = databaseHelper.writableDatabase.run {
+        transact {
+            assertTrue(isConnectionHeldByCurrentThread)
+        }
     }
 
     @Test
@@ -115,8 +116,10 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     }
 
     @Test
-    fun isTransactionOpenedByCurrentThreadInTransaction() = databaseHelper.writableDatabase.transact {
-        assertTrue(isTransactionOpenedByCurrentThread)
+    fun isTransactionOpenedByCurrentThreadInTransaction() = databaseHelper.writableDatabase.run {
+        transact {
+            assertTrue(isTransactionOpenedByCurrentThread)
+        }
     }
 
     @Test
@@ -125,30 +128,33 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     }
 
     @Test
-    fun transactDefault() = spy(databaseHelper.writableDatabase).run {
+    fun transactDefault() = databaseHelper.writableDatabase.run {
         transact {
-            verify(this, times(1)).beginExclusiveTransaction()
+            assertTrue(isTransactionOpenedByCurrentThread)
         }
+        assertFalse(isTransactionOpenedByCurrentThread)
     }
 
     @Test
-    fun transactExclusively() = spy(databaseHelper.writableDatabase).run {
+    fun transactExclusively() = databaseHelper.writableDatabase.run {
         transact(SQLiteTransactionMode.EXCLUSIVE) {
-            verify(this, times(1)).beginExclusiveTransaction()
+            assertTrue(isTransactionOpenedByCurrentThread)
         }
+        assertFalse(isTransactionOpenedByCurrentThread)
     }
 
     @Test
-    fun transactImmediately() = spy(databaseHelper.writableDatabase).run {
+    fun transactImmediately() = databaseHelper.writableDatabase.run {
         transact(SQLiteTransactionMode.IMMEDIATE) {
-            verify(this, times(1)).beginImmediateTransaction()
+            assertTrue(isTransactionOpenedByCurrentThread)
         }
+        assertFalse(isTransactionOpenedByCurrentThread)
     }
 
     @Test
     fun setImmediateTransactionSuccessful() = databaseHelper.writableDatabase.run {
+        beginImmediateTransaction()
         try {
-            beginImmediateTransaction()
             assertTrue(isTransactionOpenedByCurrentThread)
             setTransactionSuccessful()
         } finally {
@@ -159,8 +165,8 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
 
     @Test
     fun setExclusiveTransactionSuccessful() = databaseHelper.writableDatabase.run {
+        beginExclusiveTransaction()
         try {
-            beginExclusiveTransaction()
             assertTrue(isTransactionOpenedByCurrentThread)
             setTransactionSuccessful()
         } finally {
@@ -169,22 +175,37 @@ internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
         assertFalse(isTransactionOpenedByCurrentThread)
     }
 
+    @Test
+    fun setTransactionSuccessfulTwiceThrows(): Unit = databaseHelper.writableDatabase.run {
+        beginExclusiveTransaction()
+        setTransactionSuccessful()
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            setTransactionSuccessful()
+        }
+    }
+
     @Test(expected = SQLiteException::class)
-    fun vacuumInsideTransaction() = databaseHelper.writableDatabase.transact { vacuum() }
+    fun vacuumInsideTransaction() = databaseHelper.writableDatabase.run { transact { vacuum() } }
 
     @Test(expected = IllegalStateException::class)
-    fun setJournalModeInsideTransaction(): Unit = databaseHelper.writableDatabase.transact {
-        setJournalMode(if (SQLiteJournalMode.WAL == journalMode) SQLiteJournalMode.DELETE else SQLiteJournalMode.WAL)
+    fun setJournalModeInsideTransaction(): Unit = databaseHelper.writableDatabase.run {
+        transact {
+            setJournalMode(if (SQLiteJournalMode.WAL == journalMode) SQLiteJournalMode.DELETE else SQLiteJournalMode.WAL)
+        }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun setForeignKeyConstraintsEnabledInsideTransaction() = databaseHelper.writableDatabase.transact {
-        setForeignKeyConstraintsEnabled(true)
+    fun setForeignKeyConstraintsEnabledInsideTransaction() = databaseHelper.writableDatabase.run {
+        transact {
+            setForeignKeyConstraintsEnabled(true)
+        }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun setForeignKeyConstraintsDisabledInsideTransaction() = databaseHelper.writableDatabase.transact {
-        setForeignKeyConstraintsEnabled(false)
+    fun setForeignKeyConstraintsDisabledInsideTransaction() = databaseHelper.writableDatabase.run {
+        transact {
+            setForeignKeyConstraintsEnabled(false)
+        }
     }
 
     @Test

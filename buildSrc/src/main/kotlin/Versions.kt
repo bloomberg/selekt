@@ -42,7 +42,7 @@ enum class Versions(
     MOCKITO_ANDROID("3.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_CORE("3.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("2.1.0", URL("https://github.com/nhaarman/mockito-kotlin")),
-    ROBOLECTRIC("4.4", URL("https://github.com/robolectric/robolectric"));
+    ROBOLECTRIC("4.5.1", URL("https://github.com/robolectric/robolectric"));
 
     override fun toString() = version
 

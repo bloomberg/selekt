@@ -100,7 +100,7 @@ internal class SimpleCursorWindow : ICursorWindow {
 
     override fun numberOfRows() = rows.size
 
-    override fun put(value: ByteArray) = append(value)
+    override fun put(value: ByteArray?) = append(value)
 
     override fun put(value: Double) = append(value)
 
@@ -155,7 +155,7 @@ internal interface ICursorWindow : Closeable {
 
     fun numberOfRows(): Int
 
-    fun put(value: ByteArray): Boolean
+    fun put(value: ByteArray?): Boolean
 
     fun put(value: Double): Boolean
 

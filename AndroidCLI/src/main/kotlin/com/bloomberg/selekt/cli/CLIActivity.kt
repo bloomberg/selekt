@@ -21,9 +21,11 @@ import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.android.SQLiteDatabase
+import com.bloomberg.selekt.android.Selekt
 import com.bloomberg.selekt.cli.databinding.ActivityMainBinding
 import java.lang.StringBuilder
 
@@ -48,15 +50,22 @@ class CLIActivity : AppCompatActivity() {
     }
 
     @Suppress("Detekt.MagicNumber")
+    @OptIn(Experimental::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Selekt.registerComponentCallbackWith(application)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         database = SQLiteDatabase.openOrCreateDatabase(
             getDatabasePath("foo.db"),
-            SQLiteJournalMode.WAL.databaseConfiguration.copy(trace = SQLiteTraceEventMode().enableStatement()),
+            SQLiteJournalMode.WAL.databaseConfiguration.copy(
+                trace = SQLiteTraceEventMode().enableClose()
+                    .enableStatement()
+            ),
             ByteArray(32) { 0x42 }
-        )
+        ).apply {
+            exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
+        }
         checkNotNull(supportActionBar).hide()
         binding.console.movementMethod = ScrollingMovementMethod()
         binding.input.setOnKeyListener(this@CLIActivity.keyListener)
@@ -67,8 +76,10 @@ class CLIActivity : AppCompatActivity() {
         binding.input.requestFocus()
     }
 
+    @OptIn(Experimental::class)
     override fun onDestroy() {
         super.onDestroy()
+        Selekt.unregisterComponentCallbackFrom(application)
         database.close()
     }
 

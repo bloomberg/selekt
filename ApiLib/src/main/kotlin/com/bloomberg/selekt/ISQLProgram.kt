@@ -36,6 +36,14 @@ interface ISQLProgram : Closeable {
     fun bindDouble(index: Int, value: Double)
 
     /**
+     * Bind an integer value to this statement. The value remains bound until [clearBindings] is called.
+     *
+     * @param index The 1-based index to the parameter to bind.
+     * @param value The value to bind.
+     */
+    fun bindInt(index: Int, value: Int)
+
+    /**
      * Bind a long value to this statement. The value remains bound until [clearBindings] is called.
      *
      * @param index The 1-based index to the parameter to bind.

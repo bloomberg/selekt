@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.pools.FactoryGauge
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.IObjectFactory
 import com.bloomberg.selekt.pools.PoolConfiguration
@@ -86,10 +85,6 @@ private class SQLConnectionFactory(
         obj.close().also {
             ++destroyedCount
         }
-    }
-
-    override fun gauge() = synchronized(busyLock) {
-        FactoryGauge(createdCount, destroyedCount)
     }
 
     override fun makeObject() = synchronized(busyLock) {

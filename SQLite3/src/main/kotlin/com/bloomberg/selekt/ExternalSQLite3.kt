@@ -18,7 +18,7 @@ package com.bloomberg.selekt
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-private const val DEFAULT_SOFT_HEAP_LIMIT = 32 * 1024 * 1024L
+private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
 
 data class SQLiteConfiguration(
     val softHeapLimit: Long = DEFAULT_SOFT_HEAP_LIMIT
@@ -104,7 +104,7 @@ class ExternalSQLite private constructor(
 
     external fun closeV2(db: Long): SQLCode
 
-    external fun columnBlob(statement: Long, index: Int): ByteArray
+    external fun columnBlob(statement: Long, index: Int): ByteArray?
 
     external fun columnCount(statement: Long): Int
 
@@ -153,6 +153,8 @@ class ExternalSQLite private constructor(
 
     external fun gitCommit(): String
 
+    external fun hardHeapLimit64(): Long
+
     external fun key(db: Long, key: ByteArray, length: Int): SQLCode
 
     external fun keywordCount(): Int
@@ -162,6 +164,8 @@ class ExternalSQLite private constructor(
     external fun libVersion(): String
 
     external fun libVersionNumber(): Int
+
+    external fun memoryUsed(): Long
 
     external fun openV2(path: String, flags: Int, dbHolder: LongArray): SQLCode
 
@@ -173,7 +177,11 @@ class ExternalSQLite private constructor(
 
     external fun reset(statement: Long): SQLCode
 
+    external fun softHeapLimit64(): Long
+
     external fun sql(statement: Long): String
+
+    external fun statementBusy(statement: Long): Int
 
     external fun statementReadOnly(statement: Long): Int
 

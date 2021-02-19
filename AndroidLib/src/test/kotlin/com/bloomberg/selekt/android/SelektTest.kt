@@ -16,6 +16,12 @@
 
 package com.bloomberg.selekt.android
 
+import android.app.Application
+import com.bloomberg.selekt.Experimental
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.DisableOnDebug
@@ -44,8 +50,14 @@ internal class SelektTest {
         assertEquals(3_033_000, Selekt.sqliteLibVersionNumber())
     }
 
+    @OptIn(Experimental::class)
     @Test
-    fun releaseMemory() {
-        assertTrue(Selekt.releaseMemory() >= 0)
+    fun registerComponentCallback() {
+        mock<Application>().apply {
+            Selekt.registerComponentCallbackWith(this)
+            verify(this, times(1)).registerComponentCallbacks(same(MemoryComponentCallback))
+            Selekt.unregisterComponentCallbackFrom(this)
+            verify(this, times(1)).unregisterComponentCallbacks(same(MemoryComponentCallback))
+        }
     }
 }

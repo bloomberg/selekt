@@ -70,18 +70,8 @@ subprojects {
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
-            substitute(module("com.bloomberg.selekt:selekt-commons")).apply {
-                with(project(":Commons"))
-                @Suppress("UnstableApiUsage")
-                because("we work with an unreleased version")
-            }
             substitute(module("com.bloomberg.selekt:selekt-java")).apply {
                 with(project(":Lib"))
-                @Suppress("UnstableApiUsage")
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg.selekt:selekt-pools")).apply {
-                with(project(":Pools"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
@@ -218,12 +208,12 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.9314".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.9596".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
             limit {
                 counter = "BRANCH"
                 value = "COVEREDRATIO"
-                minimum = "0.8348".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.8805".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
         }
     }

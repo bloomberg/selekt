@@ -23,8 +23,8 @@ interface SQLTransactionListener {
     fun onBegin()
 
     /**
-     * Called immediately before committing the transaction. If the transaction commit fails the listener will not be
-     * notified of the subsequent rollback event.
+     * Called immediately before committing the transaction. If the transaction commit fails the listener will be notified
+     * of the subsequent rollback event.
      */
     fun onCommit()
 

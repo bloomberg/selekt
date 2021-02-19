@@ -53,7 +53,3 @@ dependencies {
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
     implementation("com.android.tools.build:gradle:4.1.0")
 }
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
-}

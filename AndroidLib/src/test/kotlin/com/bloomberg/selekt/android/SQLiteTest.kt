@@ -203,25 +203,53 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
     }
 
-    /*
     @Test
-    fun noKeyConnectionThenReKeyAnotherConnection() {
-        SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
-        SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
-        openConnection().useConnection { c ->
-            SQLite.rekey(c, key)
-            prepareStatement(c, "SELECT * FROM 'Foo'").usePreparedStatement {
-                assertEquals(SQL_ROW, SQLite.step(it))
-                assertEquals(42, SQLite.columnInt(it, 0))
-            }
-        }
-        openConnection().useConnection { c ->
-            assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
-                prepareStatement(c, "SELECT * FROM 'Foo'").usePreparedStatement {}
+    fun softHeapLimitIsPositive() {
+        assertEquals(8 * 1_024 * 1_024L, SQLite.softHeapLimit64())
+    }
+
+    @Test
+    fun hardHeapLimitIsPositive() {
+        assertEquals(0L, SQLite.hardHeapLimit64())
+    }
+
+    @Test
+    fun memoryUsed() {
+        assertTrue(sqlite.memoryUsed() >= 0L)
+    }
+
+    @Test
+    fun closeConnectionTwiceDoesNotThrow() {
+        openConnection().let {
+            SQLite.closeV2(it)
+            assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+                SQLite.closeV2(it)
             }
         }
     }
-     */
+
+    @Test
+    fun closeConnectionThenUse() {
+        openConnection().let {
+            SQLite.closeV2(it)
+            assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+                SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
+            }
+        }
+    }
+
+    @Test
+    fun useConnectionThenCloseThenUse() {
+        openConnection().let {
+            SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
+            prepareStatement(it, "INSERT INTO Foo VALUES (42)").usePreparedStatement { _ ->
+                SQLite.closeV2(it)
+                assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+                    prepareStatement(it, "INSERT INTO Foo VALUES (43)").usePreparedStatement { }
+                }
+            }
+        }
+    }
 
     @Test
     fun secureDeleteFast() {
@@ -1196,6 +1224,18 @@ internal class SQLiteTest {
         prepareStatement(db, "BEGIN TRANSACTION").usePreparedStatement {
             assertEquals(SQL_DONE, step(it))
             assertEquals(1, statementStatus(it, 6, false))
+        }
+    }
+
+    @Test
+    fun statementBusy() = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        exec(db, "INSERT INTO 'Foo' VALUES (42)")
+        exec(db, "INSERT INTO 'Foo' VALUES (43)")
+        prepareStatement(db, "SELECT * FROM 'Foo'").usePreparedStatement {
+            assertEquals(0, statementBusy(it))
+            assertEquals(SQL_ROW, step(it))
+            assertEquals(1, statementBusy(it))
         }
     }
 
