@@ -21,6 +21,7 @@ import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -230,16 +231,20 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
     }
 
     @Test
-    fun transactionOnlyRead(): Unit = database.transact {
-        repeat(3) {
-            query("SELECT * FROM Foo", emptyArray())
+    fun transactionOnlyRead(): Unit = database.run {
+        transact {
+            repeat(3) {
+                query("SELECT * FROM Foo", emptyArray())
+            }
         }
     }
 
     @Test
-    fun transactionReadThenWrite(): Unit = database.transact {
-        query("SELECT * FROM Foo", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+    fun transactionReadThenWrite(): Unit = database.run {
+        transact {
+            query("SELECT * FROM Foo", emptyArray())
+            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        }
     }
 
     @Test
@@ -330,6 +335,20 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
         }
         query("SELECT * FROM Foo", emptyArray()).use {
             assertEquals(2, it.count)
+        }
+    }
+
+    @Test
+    fun yieldTransactionThrows(): Unit = database.run {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            yieldTransaction()
+        }
+    }
+
+    @Test
+    fun yieldTransactionWithPauseThrows(): Unit = database.run {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            yieldTransaction(100L)
         }
     }
 }

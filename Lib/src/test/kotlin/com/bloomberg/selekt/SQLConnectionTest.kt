@@ -22,6 +22,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isNull
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -70,6 +71,34 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun constructionChecksNull() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 0L
+            0
+        }
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
+        }
+    }
+
+    @Test
+    fun prepareChecksNull() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 0L
+            0
+        }
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).apply {
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                prepare("INSERT INTO Foo VALUES (?)")
+            }
+        }
+    }
+
+    @Test
     fun isAutoCommit1() {
         whenever(sqlite.getAutocommit(any())) doReturn 1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
@@ -111,6 +140,16 @@ internal class SQLConnectionTest {
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
                 it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
+            }
+        }
+    }
+
+    @Test
+    fun connectionRejectsUnrecognisedColumnType() {
+        whenever(sqlite.columnType(any(), any())) doReturn -1
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
             }
         }
     }

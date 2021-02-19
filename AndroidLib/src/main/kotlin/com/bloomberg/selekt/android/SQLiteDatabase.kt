@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
+import android.util.Log
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.ISQLQuery
@@ -26,15 +27,38 @@ import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.SQLiteTransactionMode
-import com.bloomberg.selekt.annotations.Generated
+import com.bloomberg.selekt.pools.Priority
 import org.intellij.lang.annotations.Language
 import java.io.Closeable
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
-import java.util.stream.Stream
+import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
+
+internal object SQLiteDatabaseRegistry {
+    private val lock = Any()
+    @GuardedBy("lock")
+    private val store = mutableSetOf<SQLiteDatabase>()
+
+    fun register(database: SQLiteDatabase) = synchronized(lock) {
+        check(store.add(database)) { "Failed to register a database, ${store.count()} registered." }
+    }
+
+    fun unregister(database: SQLiteDatabase) = synchronized(lock) {
+        check(store.remove(database)) { "Failed to unregister a database, ${store.count()} registered." }
+    }
+
+    fun releaseMemory(priority: Priority) {
+        synchronized(lock) { store.toList() }.run {
+            forEach {
+                it.releaseMemory(priority)
+            }
+            Log.d(Selekt.TAG, "Released resources from ${count()} databases.")
+        }
+    }
+}
 
 /**
  * @since v0.1.0.
@@ -76,7 +100,9 @@ class SQLiteDatabase private constructor(
         fun deleteDatabase(file: File) = com.bloomberg.selekt.commons.deleteDatabase(file)
     }
 
-    data class Gauge(val connectionCount: Int)
+    init {
+        SQLiteDatabaseRegistry.register(this)
+    }
 
     /**
      * Auto-vacuuming is only possible if the database stores some additional information that allows each database page to
@@ -143,7 +169,11 @@ class SQLiteDatabase private constructor(
         get() = database.version
         set(value) { database.version = value }
 
-    override fun close() = database.close()
+    override fun close() {
+        database.use {
+            SQLiteDatabaseRegistry.unregister(this)
+        }
+    }
 
     /**
      * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
@@ -152,32 +182,15 @@ class SQLiteDatabase private constructor(
      * Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement.
      * It is safe for the sequence to recycle the array with each yield.
      *
-     * The transaction is not committed by this method until the sequence ends. For long sequences you may wish to yield
-     * the transaction periodically.
+     * The transaction is not committed by this method until the sequence ends. For long sequences you may therefore wish
+     * to yield the transaction periodically.
      *
      * @param sql statement.
-     * @param bindArgs sequence for binding to the statement.
+     * @param bindArgs sequence of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
     @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>) = database.batch(sql, bindArgs)
-
-    /**
-     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
-     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
-     *
-     * Each array from the stream must have the same length, corresponding to the number of arguments in the SQL
-     * statement. It is safe for the stream to recycle the array with each step of an iteration.
-     *
-     * The transaction is not committed by this method until the stream closes. For long streams you may wish to yield
-     * the transaction periodically.
-     *
-     * @param sql statement.
-     * @param bindArgs stream for binding to the statement.
-     * @return the number of rows affected.
-     */
-    @Experimental
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Stream<Array<out Any?>>) = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode.
@@ -190,9 +203,9 @@ class SQLiteDatabase private constructor(
      *
      * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
      */
-    fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
+    internal fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
 
-    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
+    internal fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
         database.beginExclusiveTransactionWithListener(listener)
 
     /**
@@ -206,12 +219,12 @@ class SQLiteDatabase private constructor(
      *
      * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
      */
-    fun beginImmediateTransaction() = database.beginImmediateTransaction()
+    internal fun beginImmediateTransaction() = database.beginImmediateTransaction()
 
-    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
+    internal fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
         database.beginImmediateTransactionWithListener(listener)
 
-    fun compileStatement(sql: String) = database.compileStatement(sql)
+    fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
 
     fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
         database.delete(
@@ -219,15 +232,11 @@ class SQLiteDatabase private constructor(
             whereClause.orEmpty(),
             whereArgs.orEmpty())
 
-    fun endTransaction() = database.endTransaction()
+    internal fun endTransaction() = database.endTransaction()
 
-    fun exec(sql: String) = database.exec(sql)
+    fun exec(@Language("RoomSql") sql: String) = database.exec(sql)
 
-    fun exec(sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
-
-    fun gauge() = database.gauge().run {
-        Gauge(connectionCount = connectionCount)
-    }
+    fun exec(@Language("RoomSql") sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
 
     /**
      * The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the
@@ -280,7 +289,8 @@ class SQLiteDatabase private constructor(
         limit
     ).asAndroidCursor()
 
-    fun query(sql: String, selectionArgs: Array<out Any?>?) = database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
+    fun query(@Language("RoomSql") sql: String, selectionArgs: Array<out Any?>?) =
+        database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
 
     fun query(query: ISQLQuery) = database.query(query).asAndroidCursor()
 
@@ -310,6 +320,10 @@ class SQLiteDatabase private constructor(
         limit: Int,
         stream: OutputStream
     ) = database.readFromBlob(name, table, column, row, offset, limit, stream)
+
+    internal fun releaseMemory(priority: Priority) {
+        database.releaseMemory(priority)
+    }
 
     /**
      * Setting foreign key constraints is not possible within a transaction; foreign key constraint enforcement may only be
@@ -343,7 +357,7 @@ class SQLiteDatabase private constructor(
         database.pragma(PAGE_SIZE, 1 shl value)
     }
 
-    fun setTransactionSuccessful() = database.setTransactionSuccessful()
+    internal fun setTransactionSuccessful() = database.setTransactionSuccessful()
 
     /**
      * @since 0.7.4
@@ -365,6 +379,24 @@ class SQLiteDatabase private constructor(
         column: String,
         row: Long
     ) = database.sizeOfBlob(name, table, column, row)
+
+    /**
+     * Execute a block inside either an exclusive or an immediate database transaction. These transaction modes are the
+     * same in WAL-journal mode; in other journal modes, exclusive transaction mode prevents other connections from reading
+     * the database while the transaction is underway.
+     *
+     * Performing write operations within the block on this database on a thread other than the calling thread can result
+     * in deadlock.
+     *
+     * @param transactionMode of the transaction; the default is [SQLiteTransactionMode.EXCLUSIVE].
+     * @param block to transact.
+     * @return result of the transaction.
+     * @link [SQLite's transaction](https://sqlite.org/lang_transaction.html)
+     */
+    fun <T> transact(
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        block: () -> T
+    ) = database.transact(transactionMode, block)
 
     fun update(
         table: String,
@@ -437,33 +469,6 @@ class SQLiteDatabase private constructor(
     fun yieldTransaction() = database.yieldTransaction()
 
     fun yieldTransaction(pauseMillis: Long) = database.yieldTransaction(pauseMillis)
-}
-
-/**
- * Execute a block inside either an exclusive or an immediate database transaction. These transaction modes are the same in
- * WAL-journal mode; in other journal modes, exclusive transaction mode prevents other connections from reading the database
- * while the transaction is underway.
- *
- * @param transactionMode of the the transaction; the default is [SQLiteTransactionMode.EXCLUSIVE].
- * @param block to transact.
- * @return result of the transaction.
- * @link [SQLite's transaction](https://sqlite.org/lang_transaction.html)
- * @since 0.8.13
- */
-@Generated
-inline fun <T> SQLiteDatabase.transact(
-    transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
-    block: SQLiteDatabase.() -> T
-) {
-    when (transactionMode) {
-        SQLiteTransactionMode.EXCLUSIVE -> beginExclusiveTransaction()
-        SQLiteTransactionMode.IMMEDIATE -> beginImmediateTransaction()
-    }
-    try {
-        block(this).also { setTransactionSuccessful() }
-    } finally {
-        endTransaction()
-    }
 }
 
 private const val PAGE_SIZE = "page_size"

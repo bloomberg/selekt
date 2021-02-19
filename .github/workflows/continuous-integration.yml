@@ -30,7 +30,7 @@ jobs:
     - name: 'Analyse'
       run: ./gradlew detekt ktlint lintDebug
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :AndroidSupportLib:testDebugUnitTest :Commons:test :Lib:test :Pools:test
+      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Coverage'
       run: |
         ./gradlew :jacocoSelektTestReport

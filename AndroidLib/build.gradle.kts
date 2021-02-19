@@ -22,6 +22,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("bb-android-maven-publish")
     id("bb-jacoco-android")
+    kotlin("kapt")
 }
 
 repositories {
@@ -64,7 +65,6 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            consumerProguardFile("consumer-rules.pro")
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
@@ -81,10 +81,13 @@ description = "Selekt Android SQLite library."
 dependencies {
     api(selekt("api", selektVersionName))
     compileOnly(selekt("annotations", selektVersionName))
-    implementation(selekt("commons", selektVersionName))
+    compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
     testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")
+    testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
+    testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
+    kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
 }
 
 tasks.register<Copy>("copyJniLibs") {
@@ -113,10 +116,6 @@ tasks.register<Jar>("sourcesJar") {
     from(android.sourceSets["main"].java.srcDirs)
     setProperty("archiveBaseName", "selekt")
     setProperty("archiveClassifier", "sources")
-}
-
-tasks.withType<AbstractPublishToMaven>().configureEach {
-    dependsOn("assembleSelekt")
 }
 
 publishing {

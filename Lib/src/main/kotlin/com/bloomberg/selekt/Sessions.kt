@@ -17,70 +17,47 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.annotations.Generated
-import com.bloomberg.selekt.commons.threadLocal
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.TieredObjectPool
 import javax.annotation.concurrent.NotThreadSafe
 
 internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
 
-internal class ThreadLocalisedSession(pool: SQLExecutorPool) {
-    private val session by threadLocal { SQLSession(pool) }
+internal class ThreadLocalSession(
+    private val pool: SQLExecutorPool
+) {
+    private val threadLocal = object : ThreadLocal<SQLSession>() {
+        override fun initialValue() = SQLSession(this@ThreadLocalSession, pool)
+    }
+    private var transactingSession: SQLSession? = null
+    private var transactingThread: Thread? = null
 
-    val hasObject: Boolean
-        get() = session.hasObject
+    internal fun get(): SQLSession = transactingElseGet()
 
-    fun beginExclusiveTransaction() = session.beginExclusiveTransaction()
+    internal fun onTransactionBegin() {
+        threadLocal.apply {
+            transactingSession = threadLocal.get()
+            transactingThread = Thread.currentThread()
+        }
+    }
 
-    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
-        session.beginExclusiveTransactionWithListener(listener)
+    internal fun onTransactionEnd() {
+        threadLocal.apply {
+            transactingSession = null
+            transactingThread = null
+        }
+    }
 
-    fun beginImmediateTransaction() = session.beginImmediateTransaction()
-
-    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
-        session.beginImmediateTransactionWithListener(listener)
-
-    fun blob(
-        name: String,
-        table: String,
-        column: String,
-        row: Long,
-        readOnly: Boolean
-    ) = session.blob(name, table, column, row, readOnly)
-
-    fun endTransaction() = session.endTransaction()
-
-    val inTransaction: Boolean
-        get() = session.inTransaction
-
-    @Generated
-    inline fun <T> execute(readOnly: Boolean, block: () -> T) = session.execute(!readOnly) { block() }
-
-    fun setTransactionSuccessful() = session.setTransactionSuccessful()
-
-    fun yieldTransaction() = session.yieldTransaction()
-
-    fun yieldTransaction(pauseMillis: Long) = session.yieldTransaction(pauseMillis)
-
-    @Generated
-    internal inline fun <R> execute(
-        primary: Boolean,
-        sql: String,
-        block: (SQLExecutor) -> R
-    ): R = session.execute(primary, sql, block)
-
-    @Generated
-    internal inline fun <R> executeSafely(
-        primary: Boolean,
-        sql: String,
-        statementType: SQLStatementType,
-        signal: R,
-        block: (SQLExecutor) -> R
-    ) = session.execute(primary, sql, statementType, signal, block)
+    private fun transactingElseGet(): SQLSession = if (transactingThread === Thread.currentThread()) {
+        transactingSession!!
+    } else {
+        threadLocal.get()
+    }
 }
 
 @NotThreadSafe
 internal class SQLSession(
+    private val parent: ThreadLocalSession,
     pool: SQLExecutorPool
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
     private var depth = 0
@@ -179,15 +156,17 @@ internal class SQLSession(
     private fun internalBegin(sql: String, listener: SQLTransactionListener?) {
         retain(true, sql).runCatching {
             executeWithRetry(sql)
-            listener?.onBegin()
+            listener?.let {
+                transactionListener = it
+                it.onBegin()
+            }
         }.exceptionOrNull()?.let {
             rollbackQuietly()
             release()
-            listener?.onRollback()
             throw it
         }
         transactionSql = sql
-        transactionListener = listener
+        parent.onTransactionBegin()
     }
 
     private fun internalEnd() {
@@ -199,14 +178,16 @@ internal class SQLSession(
                 rollback()
             }
         } finally {
+            parent.onTransactionEnd()
+            transactionListener = null
             release()
         }
     }
 
     private fun commit() {
-        execute(true, "END") {
+        execute(true) {
             runCatching {
-                transactionListener?.also { transactionListener = null }?.onCommit()
+                transactionListener?.onCommit()
                 it.executeWithRetry("END")
             }.exceptionOrNull()?.let {
                 rollbackQuietly()
@@ -216,12 +197,11 @@ internal class SQLSession(
     }
 
     private fun rollback() {
-        val listener = transactionListener?.also { transactionListener = null }
-        execute(false, "ROLLBACK") { executor ->
+        execute(false) {
             try {
-                listener?.onRollback()
+                transactionListener?.onRollback()
             } finally {
-                executor.execute("ROLLBACK")
+                it.execute("ROLLBACK")
             }
         }
     }

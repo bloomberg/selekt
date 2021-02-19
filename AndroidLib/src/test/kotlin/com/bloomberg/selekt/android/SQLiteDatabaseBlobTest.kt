@@ -66,11 +66,37 @@ internal class SQLiteDatabaseBlobTest {
     }
 
     @Test
+    fun sizeOfEmptyBlob(): Unit = database.run {
+        val expectedSize = 0
+        exec("CREATE TABLE 'Foo' (data BLOB)")
+        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(ZeroBlob(0)))
+        assertEquals(expectedSize, sizeOfBlob("Foo", "data", 1L))
+    }
+
+    @Test
     fun sizeOfBlob(): Unit = database.run {
         val expectedSize = 42
         exec("CREATE TABLE 'Foo' (data BLOB)")
         exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(ZeroBlob(expectedSize)))
         assertEquals(expectedSize, sizeOfBlob("Foo", "data", 1L))
+    }
+
+    @Test
+    fun emptyBlob(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (identifier TEXT PRIMARY KEY, data BLOB)")
+        val identifier = "abc"
+        exec("INSERT INTO 'Foo' VALUES (?, ?)", arrayOf(identifier, ZeroBlob(0)))
+        val row = query("SELECT rowid FROM 'Foo' WHERE identifier=?", arrayOf(identifier)).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            it.getLong(0)
+        }
+        assertEquals(1L, row)
+        byteArrayOf().inputStream().use { writeToBlob("Foo", "data", row, 0, it) }
+        ByteArrayOutputStream(0).use {
+            readFromBlob("Foo", "data", row, 0, 0, it)
+            assertTrue(it.toByteArray().isEmpty())
+        }
     }
 
     @Test

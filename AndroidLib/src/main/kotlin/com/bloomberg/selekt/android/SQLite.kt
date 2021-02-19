@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.android
 
+import android.app.Application
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.database.sqlite.SQLiteCantOpenDatabaseException
@@ -27,6 +28,7 @@ import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteMisuseException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
+import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQL_AUTH
 import com.bloomberg.selekt.SQL_BUSY
@@ -44,13 +46,34 @@ import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_TOO_BIG
 
 object Selekt {
+    internal const val TAG = "SLKT"
+
     fun gitCommit() = sqlite.gitCommit()
 
-    fun releaseMemory() = sqlite.releaseMemory(Int.MAX_VALUE)
+    /**
+     * Allow Selekt to register a component callback with an Application, allowing Selekt to respond to important memory
+     * pressure events during the Application's lifecycle.
+     *
+     * @param application with which to register the callback.
+     * @since 0.10.0
+     */
+    @Experimental
+    fun registerComponentCallbackWith(application: Application) =
+        application.registerComponentCallbacks(MemoryComponentCallback)
 
     fun sqliteLibVersion() = sqlite.libVersion()
 
     fun sqliteLibVersionNumber() = sqlite.libVersionNumber()
+
+    /**
+     * Allow Selekt to unregister its component callback from an Application.
+     *
+     * @param application from which to unregister the callback.
+     * @since 0.10.0
+     */
+    @Experimental
+    fun unregisterComponentCallbackFrom(application: Application) =
+        application.unregisterComponentCallbacks(MemoryComponentCallback)
 }
 
 internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {

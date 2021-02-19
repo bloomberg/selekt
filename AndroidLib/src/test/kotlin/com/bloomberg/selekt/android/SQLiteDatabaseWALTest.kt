@@ -25,7 +25,6 @@ import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -103,6 +102,13 @@ internal class SQLiteDatabaseWALTest {
     }
 
     @Test
+    fun setMaximumSize(): Unit = database.run {
+        val size = 65_536L
+        setMaximumSize(size)
+        assertEquals(size, maximumSize)
+    }
+
+    @Test
     fun integrityCheckMain(): Unit = database.run {
         assertTrue(integrityCheck("main"))
     }
@@ -154,6 +160,22 @@ internal class SQLiteDatabaseWALTest {
     fun version() = database.run {
         version = 42
         assertEquals(42, version)
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertRejectsEmptyValues(): Unit = database.run {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            upsert("Foo", ContentValues(), arrayOf("bar"), "")
+        }
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertRejectsEmptyColumns(): Unit = database.run {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            upsert("Foo", ContentValues().apply { put("bar", "hello") }, emptyArray(), "")
+        }
     }
 
     @OptIn(Experimental::class)
@@ -266,9 +288,18 @@ internal class SQLiteDatabaseWALTest {
             }
         }
         verify(listener, times(1)).onCommit()
-        verify(listener, never()).onRollback()
+        verify(listener, times(1)).onRollback()
         query("SELECT * FROM Foo", null).use {
             assertFalse(it.moveToFirst())
+        }
+    }
+
+    @Test
+    fun execUpsertBoundStringThrows(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+        exec("INSERT INTO 'Foo' VALUES ('hello', 0)")
+        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
+            exec("INSERT INTO 'Foo' VALUES ('hello', 0) ON CONFLICT DO UPDATE SET ?", arrayOf("count=count+1"))
         }
     }
 }

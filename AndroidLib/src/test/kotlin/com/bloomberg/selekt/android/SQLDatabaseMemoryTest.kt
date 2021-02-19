@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -102,6 +103,16 @@ internal class SQLDatabaseMemoryTest {
         transact {
             exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             val values = ContentValues().apply { put("bar", 42) }
+            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+            assertEquals(1L, rowId)
+        }
+    }
+
+    @Test
+    fun insertLongWithOnConflict(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+            val values = ContentValues().apply { put("bar", 42L) }
             val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
             assertEquals(1L, rowId)
         }
@@ -191,6 +202,22 @@ internal class SQLDatabaseMemoryTest {
         }
     }
 
+    @Test
+    fun insertEmptyBlobWithOnConflict(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+            val values = ContentValues().apply { put("bar", byteArrayOf()) }
+            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+            assertEquals(1L, rowId)
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+                assertEquals(1, it.count)
+                assertTrue(it.moveToFirst())
+                val blob = it.getBlob(0)
+                assertNull(blob)
+            }
+        }
+    }
+
     @Test(expected = IllegalStateException::class)
     fun execAfterDatabaseHasClosed(): Unit = database.run {
         close()
@@ -199,7 +226,7 @@ internal class SQLDatabaseMemoryTest {
     }
 
     @Test
-    fun query(): Unit = database.run {
+    fun queryInt(): Unit = database.run {
         transact {
             exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -208,6 +235,51 @@ internal class SQLDatabaseMemoryTest {
                 assertEquals(0, it.columnIndex("bar"))
                 assertTrue(it.moveToFirst())
                 assertEquals(42, it.getInt(0))
+                assertFalse(it.moveToNext())
+            }
+        }
+    }
+
+    @Test
+    fun queryLong(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+            insert("Foo", ContentValues().apply { put("bar", 42L) }, ConflictAlgorithm.REPLACE)
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+                assertEquals(1, it.count)
+                assertEquals(0, it.columnIndex("bar"))
+                assertTrue(it.moveToFirst())
+                assertEquals(42L, it.getLong(0))
+                assertFalse(it.moveToNext())
+            }
+        }
+    }
+
+    @Test
+    fun queryMaxLong(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+            insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) }, ConflictAlgorithm.REPLACE)
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+                assertEquals(1, it.count)
+                assertEquals(0, it.columnIndex("bar"))
+                assertTrue(it.moveToFirst())
+                assertEquals(Long.MAX_VALUE, it.getLong(0))
+                assertFalse(it.moveToNext())
+            }
+        }
+    }
+
+    @Test
+    fun queryMinLong(): Unit = database.run {
+        transact {
+            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+            insert("Foo", ContentValues().apply { put("bar", Long.MIN_VALUE) }, ConflictAlgorithm.REPLACE)
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+                assertEquals(1, it.count)
+                assertEquals(0, it.columnIndex("bar"))
+                assertTrue(it.moveToFirst())
+                assertEquals(Long.MIN_VALUE, it.getLong(0))
                 assertFalse(it.moveToNext())
             }
         }

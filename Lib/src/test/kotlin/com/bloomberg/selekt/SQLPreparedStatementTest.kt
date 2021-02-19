@@ -19,13 +19,18 @@ package com.bloomberg.selekt
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 private const val POINTER = 42L
 private const val DB = 43L
@@ -96,5 +101,33 @@ internal class SQLPreparedStatementTest {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             statement.step(-1L)
         }
+    }
+
+    @Test
+    fun isBusyTrue() {
+        val sqlite = mock<SQLite>().apply {
+            whenever(databaseHandle(any())) doReturn DB
+            whenever(statementBusy(any())) doReturn 1
+        }
+        assertTrue(SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
+    }
+
+    @Test
+    fun isBusyFalse() {
+        val sqlite = mock<SQLite>().apply {
+            whenever(databaseHandle(any())) doReturn DB
+            whenever(statementBusy(any())) doReturn 0
+        }
+        assertFalse(SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
+    }
+
+    @Test
+    fun columnName() {
+        val sqlite = mock<SQLite>().apply {
+            whenever(databaseHandle(any())) doReturn DB
+            whenever(columnName(any(), any())) doReturn "foo"
+        }
+        assertEquals("foo", SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).columnName(0))
+        verify(sqlite, times(1)).columnName(eq(POINTER), eq(0))
     }
 }

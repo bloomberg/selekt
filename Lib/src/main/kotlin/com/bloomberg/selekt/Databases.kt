@@ -18,17 +18,22 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.ManagedStringBuilder
 import com.bloomberg.selekt.commons.forUntil
-import com.bloomberg.selekt.commons.threadLocal
+import com.bloomberg.selekt.pools.Priority
 import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
-import java.util.stream.Stream
+import java.lang.StringBuilder
 import javax.annotation.concurrent.ThreadSafe
-import kotlin.streams.asSequence
-
-private val sharedSqlBuilder by threadLocal { ManagedStringBuilder() }
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
+
+private object SharedSqlBuilder {
+    private val threadLocal = object : ThreadLocal<ManagedStringBuilder>() {
+        override fun initialValue() = ManagedStringBuilder()
+    }
+
+    inline fun <T> use(block: StringBuilder.() -> T) = threadLocal.get().use { block(this) }
+}
 
 /**
  * The use of ThreadLocal underpins [SQLDatabase]'s thread-safety.
@@ -50,34 +55,28 @@ class SQLDatabase constructor(
     random: IRandom = CommonThreadLocalRandom
 ) : IDatabase, SharedCloseable() {
     private val connectionPool = openConnectionPool(path, sqlite, configuration, random, key)
-    private val session = ThreadLocalisedSession(connectionPool)
-
-    data class Gauge(val connectionCount: Int)
+    private val session = ThreadLocalSession(connectionPool)
 
     override val inTransaction: Boolean
-        get() = session.inTransaction
+        get() = session.get().inTransaction
 
     val isCurrentThreadSessionActive: Boolean
-        get() = session.hasObject
+        get() = session.get().hasObject
 
     fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>) = transact {
         BatchSQLStatement.compile(session, sql, bindArgs).execute()
     }
 
-    fun batch(sql: String, bindArgs: Stream<Array<out Any?>>) = transact {
-        BatchSQLStatement.compile(session, sql, bindArgs.asSequence()).execute()
-    }
-
-    override fun beginExclusiveTransaction() = pledge { session.beginExclusiveTransaction() }
+    override fun beginExclusiveTransaction() = pledge { session.get().beginExclusiveTransaction() }
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {
-        session.beginExclusiveTransactionWithListener(listener)
+        session.get().beginExclusiveTransactionWithListener(listener)
     }
 
-    override fun beginImmediateTransaction() = pledge { session.beginImmediateTransaction() }
+    override fun beginImmediateTransaction() = pledge { session.get().beginImmediateTransaction() }
 
-    override fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) {
-        session.beginImmediateTransactionWithListener(listener)
+    override fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) = pledge {
+        session.get().beginImmediateTransactionWithListener(listener)
     }
 
     override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(
@@ -90,7 +89,9 @@ class SQLDatabase constructor(
         sql: String,
         sqlStatementType: SQLStatementType,
         bindArgs: Array<out Any?>?
-    ): ISQLStatement = SQLStatement.compile(session, sql, sqlStatementType, bindArgs)
+    ): ISQLStatement = pledge {
+        SQLStatement.compile(session, sql, sqlStatementType, bindArgs)
+    }
 
     override fun delete(
         table: String,
@@ -104,18 +105,18 @@ class SQLDatabase constructor(
         )
     }
 
-    override fun endTransaction() = pledge { session.endTransaction() }
+    override fun endTransaction() = pledge { session.get().endTransaction() }
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
-        compileStatement(sql, sql.resolvedSqlStatementType(), bindArgs).execute()
+        compileStatement(
+            sql,
+            sql.resolvedSqlStatementType(),
+            bindArgs
+        ).execute()
     }
 
     fun <T> execute(readOnly: Boolean, block: SQLDatabase.() -> T) = pledge {
-        session.execute(readOnly) { block() }
-    }
-
-    fun gauge() = connectionPool.gauge().run {
-        Gauge(connectionCount = count)
+        session.get().execute(readOnly) { block() }
     }
 
     override fun insert(
@@ -124,7 +125,7 @@ class SQLDatabase constructor(
         conflictAlgorithm: IConflictAlgorithm
     ) = pledge {
         require(!values.isEmpty) { "Empty initial values." }
-        sharedSqlBuilder.use {
+        SharedSqlBuilder.use {
             append("INSERT")
                 .append(conflictAlgorithm.sql)
                 .append("INTO ")
@@ -169,7 +170,7 @@ class SQLDatabase constructor(
         having: String?,
         orderBy: String?,
         limit: Int?
-    ) = sharedSqlBuilder.use {
+    ) = SharedSqlBuilder.use {
         selectColumns(columns, distinct)
             .fromTable(table)
             .where(selection)
@@ -204,7 +205,11 @@ class SQLDatabase constructor(
         }
     }
 
-    override fun setTransactionSuccessful() = pledge { session.setTransactionSuccessful() }
+    fun releaseMemory(priority: Priority) {
+        connectionPool.clear(priority)
+    }
+
+    override fun setTransactionSuccessful() = pledge { session.get().setTransactionSuccessful() }
 
     fun sizeOfBlob(
         name: String,
@@ -217,10 +222,17 @@ class SQLDatabase constructor(
         }
     }
 
-    fun <T> transact(block: SQLDatabase.() -> T): T = pledge {
-        session.beginExclusiveTransaction()
+    fun <T> transact(
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        block: () -> T
+    ): T = pledge {
+        val session = session.get()
+        when (transactionMode) {
+            SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
+            SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
+        }
         try {
-            block(this).also { session.setTransactionSuccessful() }
+            block().also { session.setTransactionSuccessful() }
         } finally {
             session.endTransaction()
         }
@@ -236,7 +248,7 @@ class SQLDatabase constructor(
         require(!values.isEmpty) { "Empty values." }
         val valuesSize = values.size
         val iterator = values.entrySet.iterator()
-        sharedSqlBuilder.use {
+        SharedSqlBuilder.use {
             append("UPDATE")
                 .append(conflictAlgorithm.sql)
                 .append(table)
@@ -264,11 +276,11 @@ class SQLDatabase constructor(
         values: IContentValues,
         columns: Array<out String>,
         update: String
-    ): Long {
+    ) = pledge {
         require(!values.isEmpty) { "Empty initial values." }
         require(columns.isNotEmpty()) { "Empty conflicting columns." }
         val bindArgs = arrayOfNulls<Any?>(values.size)
-        return sharedSqlBuilder.use {
+        SharedSqlBuilder.use {
             append("INSERT INTO ")
                 .append(table)
                 .append('(')
@@ -330,11 +342,11 @@ class SQLDatabase constructor(
     }
 
     override fun yieldTransaction() = pledge {
-        session.yieldTransaction()
+        session.get().yieldTransaction()
     }
 
     override fun yieldTransaction(pauseMillis: Long) = pledge {
-        session.yieldTransaction(pauseMillis)
+        session.get().yieldTransaction(pauseMillis)
     }
 
     override fun onReleased() {
@@ -348,7 +360,7 @@ class SQLDatabase constructor(
         row: Long,
         readOnly: Boolean
     ) = pledge {
-        session.blob(name, table, column, row, readOnly)
+        session.get().blob(name, table, column, row, readOnly)
     }
 
     private fun query(query: SQLQuery): ICursor = pledge {

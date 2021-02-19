@@ -38,18 +38,12 @@ java {
 dependencies {
     compileOnly(selekt("annotations", selektVersionName))
     implementation(selekt("api", selektVersionName))
-    implementation(selekt("commons", selektVersionName))
-    implementation(selekt("pools", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
 }
 
 tasks.register("assembleSelekt") {
     dependsOn("assemble")
     dependsOn("sourcesJar")
-}
-
-tasks.withType<AbstractPublishToMaven>().configureEach {
-    dependsOn("assembleSelekt")
 }
 
 publishing {
