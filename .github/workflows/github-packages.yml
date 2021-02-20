@@ -1,8 +1,4 @@
-name: 'Nightly Publication'
-
-#on:
-#  schedule:
-#    - cron:  '0 0 * * *'
+name: 'GitHub Publication'
 
 on:
   push:
