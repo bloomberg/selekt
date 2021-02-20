@@ -60,7 +60,7 @@ fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
 fun Project.isRelease() = "true" == properties["release"]
 
 val MavenPublication.selektGroupId: String
-    get() = "com.bloomberg.selekt"
+    get() = "com.bloomberg"
 
 val Project.selektVersionName: String
     get() = "${properties["selekt.versionName"]}${if (isRelease()) "" else "-SNAPSHOT"}"
