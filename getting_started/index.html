@@ -351,6 +351,18 @@
   
 
           
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kdoc/-android-lib/com.bloomberg.selekt.android.support/" class="md-nav__link">
+        Room
+      </a>
+    </li>
+  
+
+          
         </ul>
       </nav>
     </li>
@@ -459,30 +471,30 @@
 <h2 id="getting-a-database">Getting a database</h2>
 <h3 id="using-an-open-helper">Using an open helper</h3>
 <div class="tabbed-set" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><label for="__tabbed_1_1">Kotlin</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="k">object</span> <span class="nc">MyOpenHelperCallback</span> <span class="p">:</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="n">Callback</span> <span class="p">{</span>
-    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">database</span><span class="p">:</span> <span class="n">SQLiteDatabase</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">database</span><span class="p">.</span><span class="n">exec</span><span class="p">(</span><span class="s">&quot;CREATE TABLE &#39;Foo&#39; (bar INT)&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">object</span> <span class="nc">MyOpenHelperCallback</span> <span class="p">:</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Callback</span> <span class="p">{</span>
+    <span class="kd">override</span> <span class="kd">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">database</span><span class="p">:</span> <span class="n">SQLiteDatabase</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">database</span><span class="p">.</span><span class="na">exec</span><span class="p">(</span><span class="s">&quot;CREATE TABLE &#39;Foo&#39; (bar INT)&quot;</span><span class="p">)</span>
     <span class="p">}</span>
 
-    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onUpgrade</span><span class="p">(</span>
+    <span class="kd">override</span> <span class="kd">fun</span> <span class="nf">onUpgrade</span><span class="p">(</span>
         <span class="n">database</span><span class="p">:</span> <span class="n">SQLiteDatabase</span><span class="p">,</span>
-        <span class="n">oldVersion</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span>
-        <span class="n">newVersion</span><span class="p">:</span> <span class="n">Int</span>
+        <span class="n">oldVersion</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span>
+        <span class="n">newVersion</span><span class="p">:</span> <span class="kt">Int</span>
     <span class="p">)</span> <span class="p">{</span>
         <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Migrate database.&quot;</span><span class="p">)</span>
     <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="k">private</span> <span class="k">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray</span><span class="p">?</span> <span class="p">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
+<span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
 
-<span class="k">val</span> <span class="py">databaseHelper</span> <span class="p">=</span> <span class="n">SQLiteOpenHelper</span><span class="p">(</span>
-    <span class="n">context</span> <span class="p">=</span> <span class="n">context</span><span class="p">.</span><span class="n">applicationContext</span><span class="p">,</span>
-    <span class="n">configuration</span> <span class="p">=</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="n">Configuration</span><span class="p">(</span>
-        <span class="n">callback</span> <span class="p">=</span> <span class="n">MyOpenHelperCallback</span><span class="p">,</span>
-        <span class="n">key</span> <span class="p">=</span> <span class="n">deriveKey</span><span class="p">(),</span>
-        <span class="n">name</span> <span class="p">=</span> <span class="s">&quot;sample&quot;</span>
+<span class="kd">val</span> <span class="nv">databaseHelper</span> <span class="o">=</span> <span class="n">SQLiteOpenHelper</span><span class="p">(</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
+    <span class="n">configuration</span> <span class="o">=</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Configuration</span><span class="p">(</span>
+        <span class="n">callback</span> <span class="o">=</span> <span class="n">MyOpenHelperCallback</span><span class="p">,</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">deriveKey</span><span class="p">(),</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;sample&quot;</span>
     <span class="p">),</span>
-    <span class="n">version</span> <span class="p">=</span> <span class="m">3</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="m">3</span>
 <span class="p">)</span>
 </code></pre></div>
 </div>
@@ -523,13 +535,13 @@
 <div class="tabbed-set" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><label for="__tabbed_2_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="k">import</span> <span class="nn">com.bloomberg.selekt.android.support.buildRoomDatabase</span>
 
-<span class="k">private</span> <span class="k">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray</span><span class="p">?</span> <span class="p">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
+<span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
 
 <span class="n">buildRoomDatabase</span><span class="p">(</span>
     <span class="n">applicationContext</span><span class="p">,</span>
-    <span class="n">MyAppDatabase</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">,</span>
+    <span class="n">MyAppDatabase</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">,</span>
     <span class="s">&quot;sample&quot;</span><span class="p">,</span>
-    <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="n">WAL</span><span class="p">,</span>
+    <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span>
     <span class="n">deriveKey</span><span class="p">()</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -553,14 +565,14 @@
 </div>
 <h3 id="directly">Directly</h3>
 <div class="tabbed-set" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><label for="__tabbed_3_1">Kotlin</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="k">private</span> <span class="k">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray</span><span class="p">?</span> <span class="p">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
 
-<span class="n">SQLiteDatabase</span><span class="p">.</span><span class="n">openOrCreateDatabase</span><span class="p">(</span>
-    <span class="n">context</span><span class="p">.</span><span class="n">getDatabasePath</span><span class="p">(</span><span class="s">&quot;sample&quot;</span><span class="p">),</span>
-    <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="n">WAL</span><span class="p">.</span><span class="n">databaseConfiguration</span><span class="p">,</span>
+<span class="n">SQLiteDatabase</span><span class="p">.</span><span class="na">openOrCreateDatabase</span><span class="p">(</span>
+    <span class="n">context</span><span class="p">.</span><span class="na">getDatabasePath</span><span class="p">(</span><span class="s">&quot;sample&quot;</span><span class="p">),</span>
+    <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">.</span><span class="na">databaseConfiguration</span><span class="p">,</span>
     <span class="n">deriveKey</span><span class="p">()</span>
-<span class="p">).</span><span class="n">apply</span> <span class="p">{</span>
-    <span class="n">exec</span><span class="p">(</span><span class="s">&quot;PRAGMA journal_mode=${SQLiteJournalMode.WAL}&quot;</span><span class="p">)</span>
+<span class="p">).</span><span class="na">apply</span> <span class="p">{</span>
+    <span class="n">exec</span><span class="p">(</span><span class="s">&quot;PRAGMA journal_mode=</span><span class="si">${</span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="si">}</span><span class="s">&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
 </div>
@@ -581,15 +593,15 @@
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-the-database">Querying the database</h3>
 <div class="tabbed-set" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><label for="__tabbed_4_1">Kotlin</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="n">databaseHelper</span><span class="p">.</span><span class="n">writableDatabase</span><span class="p">.</span><span class="n">run</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="n">databaseHelper</span><span class="p">.</span><span class="na">writableDatabase</span><span class="p">.</span><span class="na">run</span> <span class="p">{</span>
     <span class="n">insertWithOnConflict</span><span class="p">(</span>
         <span class="s">&quot;Foo&quot;</span><span class="p">,</span>
-        <span class="n">ContentValues</span><span class="p">().</span><span class="n">apply</span> <span class="p">{</span> <span class="n">put</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">,</span> <span class="m">42</span><span class="p">)</span> <span class="p">},</span>
-        <span class="n">ConflictAlgorithm</span><span class="p">.</span><span class="n">REPLACE</span>
+        <span class="n">ContentValues</span><span class="p">().</span><span class="na">apply</span> <span class="p">{</span> <span class="n">put</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">,</span> <span class="m">42</span><span class="p">)</span> <span class="p">},</span>
+        <span class="n">ConflictAlgorithm</span><span class="p">.</span><span class="na">REPLACE</span>
     <span class="p">)</span>
-    <span class="n">query</span><span class="p">(</span><span class="k">false</span><span class="p">,</span> <span class="s">&quot;Foo&quot;</span><span class="p">,</span> <span class="n">arrayOf</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">),</span> <span class="k">null</span><span class="p">,</span> <span class="k">null</span><span class="p">).</span><span class="n">use</span> <span class="p">{</span>
-        <span class="n">it</span><span class="p">.</span><span class="n">moveToFirst</span><span class="p">()</span>
-        <span class="n">println</span><span class="p">(</span><span class="n">it</span><span class="p">.</span><span class="n">getInt</span><span class="p">(</span><span class="m">0</span><span class="p">))</span>
+    <span class="n">query</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span> <span class="s">&quot;Foo&quot;</span><span class="p">,</span> <span class="n">arrayOf</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">),</span> <span class="kc">null</span><span class="p">,</span> <span class="kc">null</span><span class="p">).</span><span class="na">use</span> <span class="p">{</span>
+        <span class="nb">it</span><span class="p">.</span><span class="na">moveToFirst</span><span class="p">()</span>
+        <span class="n">println</span><span class="p">(</span><span class="nb">it</span><span class="p">.</span><span class="na">getInt</span><span class="p">(</span><span class="m">0</span><span class="p">))</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -665,7 +677,7 @@
       <div class="md-footer-copyright">
         
           <div class="md-footer-copyright__highlight">
-            Copyright &copy; 2021 Bloomberg L.P.
+            Copyright &copy; ${YEAR} Bloomberg L.P.
           </div>
         
         Made with

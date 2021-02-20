@@ -263,6 +263,18 @@
   
 
           
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../com.bloomberg.selekt.android.support/" class="md-nav__link">
+        Room
+      </a>
+    </li>
+  
+
+          
         </ul>
       </nav>
     </li>
@@ -305,26 +317,6 @@
     Parameters
   </a>
   
-    <nav class="md-nav" aria-label="Parameters">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#return_1" class="md-nav__link">
-    Return
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#parameters_1" class="md-nav__link">
-    Parameters
-  </a>
-  
 </li>
       
     </ul>
@@ -348,7 +340,7 @@ fun <a href="./">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/s
 More info  </p>
 <p>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
 <p>Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement. It is safe for the sequence to recycle the array with each yield.</p>
-<p>The transaction is not committed by this method until the sequence ends. For long sequences you may wish to yield the transaction periodically.</p>
+<p>The transaction is not committed by this method until the sequence ends. For long sequences you may therefore wish to yield the transaction periodically.</p>
 <h4 id="return">Return</h4>
 <p>the number of rows affected.</p>
 <h2 id="parameters">Parameters</h2>
@@ -363,40 +355,11 @@ More info  </p>
 <tbody>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>bindArgs</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>sequence for binding to the statement.<br><br></td>
+<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>sequence of standard type arguments for binding to the statement.<br><br></td>
 </tr>
 <tr>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>sql</td>
 <td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>statement.<br><br></td>
-</tr>
-</tbody>
-</table>
-<p>[androidJvm]<br />
-Content<br />
-fun <a href="./">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://developer.android.com/reference/kotlin/java/util/stream/Stream.html">Stream</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br />
-More info  </p>
-<p>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</p>
-<p>Each array from the stream must have the same length, corresponding to the number of arguments in the SQL statement. It is safe for the stream to recycle the array with each step of an iteration.</p>
-<p>The transaction is not committed by this method until the stream closes. For long streams you may wish to yield the transaction periodically.</p>
-<h4 id="return_1">Return</h4>
-<p>the number of rows affected.</p>
-<h2 id="parameters_1">Parameters</h2>
-<p>androidJvm  </p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Summary</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>bindArgs</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>stream for binding to the statement.<br><br></td>
-</tr>
-<tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a>sql</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/"></a><br><br>statement.<br><br></td>
 </tr>
 </tbody>
 </table>
@@ -420,7 +383,7 @@ More info  </p>
       <div class="md-footer-copyright">
         
           <div class="md-footer-copyright__highlight">
-            Copyright &copy; 2021 Bloomberg L.P.
+            Copyright &copy; ${YEAR} Bloomberg L.P.
           </div>
         
         Made with

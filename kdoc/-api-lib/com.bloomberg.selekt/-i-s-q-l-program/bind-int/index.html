@@ -13,14 +13,14 @@
         <meta name="author" content="Bloomberg L.P.">
       
       
-        <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-database/begin-immediate-transaction-with-listener/">
+        <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-i-s-q-l-program/bind-int/">
       
       <link rel="shortcut icon" href="../../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.2.8">
     
     
       
-        <title>Begin immediate transaction with listener - Selekt</title>
+        <title>Bind int - Selekt</title>
       
     
     
@@ -66,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#beginimmediatetransactionwithlistener" class="md-skip">
+        <a href="#bindint" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
         <div class="md-header-nav__topic">
           <span class="md-ellipsis">
             
-              Begin immediate transaction with listener
+              Bind int
             
           </span>
         </div>
@@ -256,8 +256,20 @@
   
   
     <li class="md-nav__item">
-      <a href="../../" class="md-nav__link">
+      <a href="../../../../-android-lib/com.bloomberg.selekt.android/" class="md-nav__link">
         Android
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../-android-lib/com.bloomberg.selekt.android.support/" class="md-nav__link">
+        Room
       </a>
     </li>
   
@@ -287,6 +299,21 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    Parameters
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -298,11 +325,33 @@
               
                 
                 
-                <p>//<a href="../../../">AndroidLib</a>/<a href="../../">com.bloomberg.selekt.android</a>/<a href="../">SQLiteDatabase</a>/<a href="./">beginImmediateTransactionWithListener</a></p>
-<h1 id="beginimmediatetransactionwithlistener">beginImmediateTransactionWithListener</h1>
-<p>[androidJvm]<br />
+                <p>//<a href="../../../">ApiLib</a>/<a href="../../">com.bloomberg.selekt</a>/<a href="../">ISQLProgram</a>/<a href="./">bindInt</a></p>
+<h1 id="bindint">bindInt</h1>
+<p>[jvm]<br />
 Content<br />
-fun <a href="./">beginImmediateTransactionWithListener</a>(listener: SQLTransactionListener)  </p>
+abstract fun <a href="./">bindInt</a>(index: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>, value: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>)<br />
+More info  </p>
+<p>Bind an integer value to this statement. The value remains bound until <a href="../clear-bindings/">clearBindings</a> is called.</p>
+<h2 id="parameters">Parameters</h2>
+<p>jvm  </p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a name="com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.Int#kotlin.Int/PointingToDeclaration/"></a>index</td>
+<td><a name="com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.Int#kotlin.Int/PointingToDeclaration/"></a><br><br>The 1-based index to the parameter to bind.<br><br></td>
+</tr>
+<tr>
+<td><a name="com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.Int#kotlin.Int/PointingToDeclaration/"></a>value</td>
+<td><a name="com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.Int#kotlin.Int/PointingToDeclaration/"></a><br><br>The value to bind.<br><br></td>
+</tr>
+</tbody>
+</table>
                 
               
               
@@ -323,7 +372,7 @@ fun <a href="./">beginImmediateTransactionWithListener</a>(listener: SQLTransact
       <div class="md-footer-copyright">
         
           <div class="md-footer-copyright__highlight">
-            Copyright &copy; 2021 Bloomberg L.P.
+            Copyright &copy; ${YEAR} Bloomberg L.P.
           </div>
         
         Made with

@@ -2,4 +2,5 @@ $dokka.format:gfm-v1
 $dokka.linkExtension:md
 
 com.bloomberg.selekt.android
+com.bloomberg.selekt.android.support
 
