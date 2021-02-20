@@ -14,6 +14,8 @@ jobs:
     name: 'GitHub Pages'
     runs-on: ubuntu-latest
     steps:
+      - name: 'Set current year'
+        run: echo "YEAR=$(date +'%Y')" >> $GITHUB_ENV
       - name: 'Install system packages'
         run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
       - name: 'Install Build Tools'
@@ -45,8 +47,6 @@ jobs:
       - name: 'Mkdocs'
         run: |
           git fetch origin gh-pages:gh-pages
-          sed -i 's/<year>/${YEAR}/g' docs/*.md
-          sed -i 's/<year>/${YEAR}/g' mkdocs.yml
+          sed -i 's/<year>/${{ env.YEAR }}/g' docs/*.md
+          sed -i 's/<year>/${{ env.YEAR }}/g' mkdocs.yml
           mkdocs gh-deploy -m 'Automatic mkdocs deployment.'
-        env:
-          YEAR: $(date +'%Y')
