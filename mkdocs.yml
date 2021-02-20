@@ -35,3 +35,4 @@ nav:
   - 'Getting started': getting_started.md
   - 'API':
     - 'Android': kdoc/-android-lib/com.bloomberg.selekt.android/index.md
+    - 'Room': kdoc/-android-lib/com.bloomberg.selekt.android.support/index.md
