@@ -1,0 +1,51 @@
+name: 'Publish Documentation'
+
+#on:
+#  schedule:
+#    - cron:  '0 0 * * *'
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pipeline:
+    name: 'GitHub Pages'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Install system packages'
+        run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+      - name: 'Install Build Tools'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'build-tools;30.0.0'
+      - name: 'Install CMake'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.10.2.4988404'
+      - name: 'Install NDK'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.3.6528147'
+      - name: 'Install Android SDK'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'platforms;android-30'
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - run: pip install mkdocs-material
+      - name: 'Configure local.properties'
+        run: >
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties &&
+          echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
+      - name: 'Dokka'
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
+          ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
+      - name: 'Mkdocs'
+        run: |
+          YEAR=$(date +'%Y')
+          git fetch origin gh-pages:gh-pages
+          sed -i 's/<year>/${YEAR}/g' docs/*.md
+          sed -i 's/<year>/${YEAR}/g' mkdocs.yml
+          mkdocs gh-deploy -m 'Automatic mkdocs deployment.'
