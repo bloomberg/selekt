@@ -49,4 +49,4 @@ jobs:
           sed -i 's/<year>/${YEAR}/g' mkdocs.yml
           mkdocs gh-deploy -m 'Automatic mkdocs deployment.'
         env:
-          YEAR=$(date +'%Y')
+          YEAR: $(date +'%Y')
