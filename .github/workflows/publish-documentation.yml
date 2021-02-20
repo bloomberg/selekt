@@ -44,8 +44,9 @@ jobs:
           ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
       - name: 'Mkdocs'
         run: |
-          YEAR=$(date +'%Y')
           git fetch origin gh-pages:gh-pages
           sed -i 's/<year>/${YEAR}/g' docs/*.md
           sed -i 's/<year>/${YEAR}/g' mkdocs.yml
           mkdocs gh-deploy -m 'Automatic mkdocs deployment.'
+        env:
+          YEAR=$(date +'%Y')
