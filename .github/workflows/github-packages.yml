@@ -1,0 +1,49 @@
+name: 'Nightly Publication'
+
+#on:
+#  schedule:
+#    - cron:  '0 0 * * *'
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pipeline:
+    name: 'Publication'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Install system packages'
+        run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+      - name: 'Install Build Tools'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'build-tools;30.0.0'
+      - name: 'Install CMake'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.10.2.4988404'
+      - name: 'Install NDK'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.3.6528147'
+      - name: 'Install Android SDK'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'platforms;android-30'
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: 'Configure local.properties'
+        run: >
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties &&
+          echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
+      - name: 'Build Selekt'
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
+          ./gradlew :OpenSSL:assembleArm64-v8a
+          ./gradlew :OpenSSL:assembleArmeabi-v7a
+          ./gradlew :OpenSSL:assembleX86
+          ./gradlew :OpenSSL:assembleX86_64
+          ./gradlew :SQLite3:amalgamate
+          ./gradlew assembleSelekt
+      - name: 'Publish to GitHub Packages'
+        run: ./gradlew publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
