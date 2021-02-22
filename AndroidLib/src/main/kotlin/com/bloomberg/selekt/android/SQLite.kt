@@ -17,27 +17,35 @@
 package com.bloomberg.selekt.android
 
 import android.app.Application
+import android.database.sqlite.SQLiteAbortException
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.database.sqlite.SQLiteCantOpenDatabaseException
+import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteDatabaseLockedException
 import android.database.sqlite.SQLiteDatatypeMismatchException
 import android.database.sqlite.SQLiteDiskIOException
 import android.database.sqlite.SQLiteException
+import android.database.sqlite.SQLiteFullException
 import android.database.sqlite.SQLiteMisuseException
+import android.database.sqlite.SQLiteOutOfMemoryException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
 import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.SQLCode
+import com.bloomberg.selekt.SQL_ABORT
 import com.bloomberg.selekt.SQL_AUTH
 import com.bloomberg.selekt.SQL_BUSY
 import com.bloomberg.selekt.SQL_CANT_OPEN
+import com.bloomberg.selekt.SQL_CONSTRAINT
 import com.bloomberg.selekt.SQL_CORRUPT
+import com.bloomberg.selekt.SQL_FULL
 import com.bloomberg.selekt.SQL_IO_ERROR
 import com.bloomberg.selekt.SQL_LOCKED
 import com.bloomberg.selekt.SQL_MISMATCH
 import com.bloomberg.selekt.SQL_MISUSE
+import com.bloomberg.selekt.SQL_NOMEM
 import com.bloomberg.selekt.SQL_NOT_A_DATABASE
 import com.bloomberg.selekt.SQL_NOT_FOUND
 import com.bloomberg.selekt.SQL_OK
@@ -92,9 +100,13 @@ internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
             SQL_CORRUPT, SQL_NOT_A_DATABASE -> SQLiteDatabaseCorruptException(exceptionMessage)
             SQL_MISUSE -> SQLiteMisuseException(exceptionMessage)
             SQL_LOCKED -> SQLiteTableLockedException(exceptionMessage)
+            SQL_NOMEM -> SQLiteOutOfMemoryException(exceptionMessage)
             SQL_NOT_FOUND, SQL_AUTH, SQL_CANT_OPEN -> SQLiteCantOpenDatabaseException(exceptionMessage)
             SQL_MISMATCH -> SQLiteDatatypeMismatchException(exceptionMessage)
-            SQL_TOO_BIG -> SQLiteBlobTooBigException(message)
+            SQL_ABORT -> SQLiteAbortException(exceptionMessage)
+            SQL_CONSTRAINT -> SQLiteConstraintException(exceptionMessage)
+            SQL_TOO_BIG -> SQLiteBlobTooBigException(exceptionMessage)
+            SQL_FULL -> SQLiteFullException(exceptionMessage)
             SQL_RANGE -> SQLiteBindOrColumnIndexOutOfRangeException(exceptionMessage)
             else -> SQLiteException(exceptionMessage)
         }

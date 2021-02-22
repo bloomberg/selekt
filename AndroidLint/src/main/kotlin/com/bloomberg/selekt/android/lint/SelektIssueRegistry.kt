@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-rootProject.name = "Selekt"
+package com.bloomberg.selekt.android.lint
 
-include(":AndroidCLI")
-include(":AndroidLib")
-include(":AndroidLint")
-include(":Annotations")
-include(":ApiLib")
-include(":Lib")
-include(":OpenSSL")
-include(":SQLite3")
+import com.android.tools.lint.client.api.IssueRegistry
+import com.android.tools.lint.detector.api.CURRENT_API
+import com.android.tools.lint.detector.api.Issue
+
+class SelektIssueRegistry : IssueRegistry() {
+    override val issues: List<Issue> = emptyList()
+
+    override val api: Int = CURRENT_API
+}

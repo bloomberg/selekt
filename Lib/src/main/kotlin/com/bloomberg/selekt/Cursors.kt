@@ -175,15 +175,15 @@ internal class ForwardCursor(
 
     override fun columnNames() = columnNames
 
-    override fun getBlob(index: Int) = statement.columnBlob(index)
+    override fun getBlob(index: Int) = statement.columnBlob(index + 1)
 
-    override fun getDouble(index: Int) = statement.columnDouble(index)
+    override fun getDouble(index: Int) = statement.columnDouble(index + 1)
 
-    override fun getInt(index: Int) = statement.columnInt(index)
+    override fun getInt(index: Int) = statement.columnInt(index + 1)
 
-    override fun getLong(index: Int) = statement.columnLong(index)
+    override fun getLong(index: Int) = statement.columnLong(index + 1)
 
-    override fun getString(index: Int) = statement.columnString(index)
+    override fun getString(index: Int) = statement.columnString(index + 1)
 
     override fun isAfterLast() = throw UnsupportedOperationException()
 
@@ -195,7 +195,7 @@ internal class ForwardCursor(
 
     override fun isLast() = throw UnsupportedOperationException()
 
-    override fun isNull(index: Int) = SQL_NULL == statement.columnType(index)
+    override fun isNull(index: Int) = SQL_NULL == statement.columnType(index + 1)
 
     override fun move(offset: Int) = throw UnsupportedOperationException()
 
@@ -211,5 +211,5 @@ internal class ForwardCursor(
 
     override fun position() = throw UnsupportedOperationException()
 
-    override fun type(index: Int) = ColumnType.toColumnType(statement.columnType(index))
+    override fun type(index: Int) = ColumnType.toColumnType(statement.columnType(index + 1))
 }

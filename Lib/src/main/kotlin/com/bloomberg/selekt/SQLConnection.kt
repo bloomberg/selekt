@@ -89,8 +89,11 @@ internal class SQLConnection constructor(
     }
 
     override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
-        step()
-        sqlite.changes(pointer)
+        if (SQL_DONE == step()) {
+            sqlite.changes(pointer)
+        } else {
+            -1
+        }
     }
 
     override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>) = withPreparedStatement(sql) {
@@ -98,7 +101,9 @@ internal class SQLConnection constructor(
         bindArgs.forEach {
             reset()
             bindArguments(it)
-            step()
+            if (SQL_DONE != step()) {
+                return@withPreparedStatement -1
+            }
         }
         sqlite.totalChanges(pointer) - changes
     }
@@ -127,8 +132,11 @@ internal class SQLConnection constructor(
     }
 
     override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
-        step()
-        sqlite.lastInsertRowId(pointer)
+        if (SQL_DONE == step() && sqlite.changes(pointer) > 0) {
+            sqlite.lastInsertRowId(pointer)
+        } else {
+            -1L
+        }
     }
 
     override fun executeForInt(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
