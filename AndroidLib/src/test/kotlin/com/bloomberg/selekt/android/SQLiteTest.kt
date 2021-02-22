@@ -16,15 +16,19 @@
 
 package com.bloomberg.selekt.android
 
+import android.database.sqlite.SQLiteAbortException
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.database.sqlite.SQLiteCantOpenDatabaseException
+import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteDatabaseLockedException
 import android.database.sqlite.SQLiteDatatypeMismatchException
 import android.database.sqlite.SQLiteDiskIOException
 import android.database.sqlite.SQLiteException
+import android.database.sqlite.SQLiteFullException
 import android.database.sqlite.SQLiteMisuseException
+import android.database.sqlite.SQLiteOutOfMemoryException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
 import com.bloomberg.selekt.commons.deleteDatabase
@@ -32,15 +36,19 @@ import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.NULL
 import com.bloomberg.selekt.Pointer
 import com.bloomberg.selekt.SQLOpenOperation
+import com.bloomberg.selekt.SQL_ABORT
 import com.bloomberg.selekt.SQL_AUTH
 import com.bloomberg.selekt.SQL_BUSY
 import com.bloomberg.selekt.SQL_CANT_OPEN
+import com.bloomberg.selekt.SQL_CONSTRAINT
 import com.bloomberg.selekt.SQL_CORRUPT
 import com.bloomberg.selekt.SQL_DONE
+import com.bloomberg.selekt.SQL_FULL
 import com.bloomberg.selekt.SQL_IO_ERROR
 import com.bloomberg.selekt.SQL_LOCKED
 import com.bloomberg.selekt.SQL_MISMATCH
 import com.bloomberg.selekt.SQL_MISUSE
+import com.bloomberg.selekt.SQL_NOMEM
 import com.bloomberg.selekt.SQL_NOT_A_DATABASE
 import com.bloomberg.selekt.SQL_NOT_FOUND
 import com.bloomberg.selekt.SQL_OK
@@ -715,6 +723,13 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun exceptionForErrorAbort() {
+        assertThatExceptionOfType(SQLiteAbortException::class.java).isThrownBy {
+            SQLite.throwSQLException(SQL_ABORT, SQL_ABORT, "")
+        }
+    }
+
+    @Test
     fun exceptionForErrorAuth() {
         assertThatExceptionOfType(SQLiteCantOpenDatabaseException::class.java).isThrownBy {
             SQLite.throwSQLException(SQL_AUTH, SQL_AUTH, "")
@@ -736,9 +751,23 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun exceptionForErrorConstraint() {
+        assertThatExceptionOfType(SQLiteConstraintException::class.java).isThrownBy {
+            SQLite.throwSQLException(SQL_CONSTRAINT, SQL_CONSTRAINT, "")
+        }
+    }
+
+    @Test
     fun exceptionForErrorCorrupt() {
         assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
             SQLite.throwSQLException(SQL_CORRUPT, SQL_CORRUPT, "")
+        }
+    }
+
+    @Test
+    fun exceptionForErrorFull() {
+        assertThatExceptionOfType(SQLiteFullException::class.java).isThrownBy {
+            SQLite.throwSQLException(SQL_FULL, SQL_FULL, "")
         }
     }
 
@@ -760,6 +789,13 @@ internal class SQLiteTest {
     fun exceptionForErrorMisuse() {
         assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
             SQLite.throwSQLException(SQL_MISUSE, SQL_MISUSE, "")
+        }
+    }
+
+    @Test
+    fun exceptionForErrorNoMemory() {
+        assertThatExceptionOfType(SQLiteOutOfMemoryException::class.java).isThrownBy {
+            SQLite.throwSQLException(SQL_NOMEM, SQL_NOMEM, "")
         }
     }
 

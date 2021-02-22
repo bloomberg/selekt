@@ -218,7 +218,7 @@ internal class SQLiteDatabaseWALTest {
             }
             try {
                 assertTrue(isTransactionOpenedByCurrentThread)
-                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+                exec("INSERT INTO 'Foo' VALUES (42)")
             } finally {
                 query("END", emptyArray()).use {
                     assertFalse(it.moveToFirst())
@@ -240,7 +240,7 @@ internal class SQLiteDatabaseWALTest {
             }
             try {
                 assertTrue(isTransactionOpenedByCurrentThread)
-                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+                exec("INSERT INTO 'Foo' VALUES (42)")
                 setTransactionSuccessful()
             } finally {
                 endTransaction()
@@ -259,7 +259,7 @@ internal class SQLiteDatabaseWALTest {
             beginExclusiveTransaction()
             try {
                 assertTrue(isTransactionOpenedByCurrentThread)
-                exec("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+                exec("INSERT INTO 'Foo' VALUES (42)")
             } finally {
                 query("END TRANSACTION", emptyArray()).use {
                     assertFalse(it.moveToFirst())

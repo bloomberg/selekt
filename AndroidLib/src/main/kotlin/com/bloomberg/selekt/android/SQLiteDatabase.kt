@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
+import androidx.annotation.Size
 import android.util.Log
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.Experimental
@@ -236,7 +237,7 @@ class SQLiteDatabase private constructor(
 
     fun exec(@Language("RoomSql") sql: String) = database.exec(sql)
 
-    fun exec(@Language("RoomSql") sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
+    fun exec(@Language("RoomSql") sql: String, @Size(min = 1) bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
 
     /**
      * The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the

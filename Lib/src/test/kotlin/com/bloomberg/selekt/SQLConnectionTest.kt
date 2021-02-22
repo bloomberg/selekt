@@ -36,6 +36,7 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.stubbing.Answer
 import java.lang.IllegalArgumentException
+import kotlin.test.assertEquals
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -151,6 +152,73 @@ internal class SQLConnectionTest {
             assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
                 it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
             }
+        }
+    }
+
+    @Test
+    fun executeForLastInsertedRowIdChecksDone() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
+        }
+    }
+
+    @Test
+    fun executeForLastInsertedRowIdChecksChanges() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_DONE
+        whenever(sqlite.changes(any())) doReturn 0
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
+        }
+    }
+
+    @Test
+    fun executeForChangedRowCountChecksDone() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.changes(any())) doReturn 0
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)"))
+        }
+    }
+
+    @Test
+    fun batchExecuteForChangedRowCountChecksDone() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.changes(any())) doReturn 0
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray<Int>())))
         }
     }
 
