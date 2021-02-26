@@ -17,7 +17,6 @@
 @file:Suppress("UnstableApiUsage")
 
 import io.gitlab.arturbosch.detekt.Detekt
-import java.net.URI
 import java.util.Locale
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -142,11 +141,21 @@ subprojects {
     pluginManager.withPlugin("maven-publish") {
         configure<PublishingExtension> {
             repositories.maven {
-                name = "GitHubPackages"
-                url = URI("https://maven.pkg.github.com/bloomberg/selekt")
+                name = "OSSSonatype"
+                url = resolvedOSSSonatypeURI()
                 credentials {
-                    username = System.getenv("GITHUB_ACTOR")
-                    password = System.getenv("GITHUB_TOKEN")
+                    username = project.properties["ossrh.username"].toString()
+                    password = project.properties["ossrh.password"].toString()
+                }
+            }
+        }
+    }
+
+    pluginManager.withPlugin("signing") {
+        configure<SigningExtension> {
+            project.afterEvaluate {
+                configure<PublishingExtension> {
+                    publications.forEach { sign(it) }
                 }
             }
         }

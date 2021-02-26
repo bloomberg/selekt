@@ -24,6 +24,7 @@ plugins {
     id("org.jetbrains.dokka")
     jacoco
     `maven-publish`
+    signing
 }
 
 description = "Selekt core library."

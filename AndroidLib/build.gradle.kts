@@ -23,6 +23,7 @@ plugins {
     id("bb-android-maven-publish")
     id("bb-jacoco-android")
     kotlin("kapt")
+    signing
 }
 
 repositories {
