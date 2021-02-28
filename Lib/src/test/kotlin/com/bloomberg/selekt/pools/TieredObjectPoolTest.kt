@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.pools
 
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
@@ -46,11 +45,18 @@ internal class TieredObjectPoolTest {
     }
 
     @Test
-    fun borrowSecondaryObject() {
+    fun borrowSecondaryObjectKeyed() {
         val key = ""
         pool.borrowObject(key)
         verifyZeroInteractions(singleObjectPool)
-        verify(commonObjectPool, times(1)).borrowObject(eq(key))
+        verify(commonObjectPool, times(1)).borrowObject(same(key))
+    }
+
+    @Test
+    fun borrowSecondaryObject() {
+        pool.borrowObject()
+        verifyZeroInteractions(singleObjectPool)
+        verify(commonObjectPool, times(1)).borrowObject()
     }
 
     @Test

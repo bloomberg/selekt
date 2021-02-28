@@ -110,11 +110,13 @@ internal class SQLSession(
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
+        val sql = transactionSql
+        val listener = transactionListener
         internalEnd()
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(transactionSql, transactionListener)
+        internalBegin(sql, listener)
         return true
     }
 
@@ -179,6 +181,7 @@ internal class SQLSession(
             }
         } finally {
             parent.onTransactionEnd()
+            transactionSql = ""
             transactionListener = null
             release()
         }

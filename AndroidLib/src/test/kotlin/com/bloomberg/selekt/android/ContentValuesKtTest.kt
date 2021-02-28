@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -136,12 +137,44 @@ internal class ContentValuesKtTest {
     }
 
     @Test
+    fun entrySetDoesNotContainKey() {
+        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+            assertFalse(entrySet.contains(SimpleEntry("b", 42)))
+        }
+    }
+
+    @Test
+    fun entrySetDoesNotContainValue() {
+        ContentValues().apply { put("a", 42) }.asSelektContentValues().run {
+            assertFalse(entrySet.contains(SimpleEntry("a", 43)))
+        }
+    }
+
+    @Test
     fun entrySetContainsAll() {
         ContentValues().apply {
             put("a", 42)
             put("b", 43)
         }.asSelektContentValues().run {
             assertTrue(entrySet.containsAll(setOf(SimpleEntry("a", 42), SimpleEntry("b", 43))))
+        }
+    }
+
+    @Test
+    fun entrySetDoesNotContainAll() {
+        ContentValues().apply {
+            put("a", 42)
+            put("b", 43)
+        }.asSelektContentValues().run {
+            assertFalse(entrySet.containsAll(setOf(SimpleEntry("a", 42), SimpleEntry("c", 44))))
+        }
+    }
+
+    @Test
+    fun iteratorNextThrows() {
+        val iterator = ContentValues().asSelektContentValues().entrySet.iterator()
+        assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
+            iterator.next()
         }
     }
 

@@ -20,7 +20,12 @@ import android.database.SQLException
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Before
@@ -350,5 +355,29 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
         assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
             yieldTransaction(100L)
         }
+    }
+
+    @Test
+    fun yieldTransactionRestoresTransactionListener(): Unit = database.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        yieldTransaction()
+        setTransactionSuccessful()
+        endTransaction()
+        verify(listener, times(2)).onCommit()
+        verify(listener, never()).onRollback()
+    }
+
+    @Test
+    fun yieldTransactionMultipleRestoresTransactionListener(): Unit = database.run {
+        val listener = mock<SQLTransactionListener>()
+        beginExclusiveTransactionWithListener(listener)
+        repeat(100) {
+            yieldTransaction()
+        }
+        setTransactionSuccessful()
+        endTransaction()
+        verify(listener, times(101)).onCommit()
+        verify(listener, never()).onRollback()
     }
 }

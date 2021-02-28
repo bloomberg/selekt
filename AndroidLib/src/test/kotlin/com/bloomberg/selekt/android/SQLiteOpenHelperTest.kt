@@ -68,6 +68,22 @@ internal class SQLiteOpenHelperTest {
     }
 
     @Test
+    fun constructorDefaultArguments() {
+        SQLiteOpenHelper(
+            targetContext,
+            ISQLiteOpenHelper.Configuration(
+                callback = mock(),
+                key = ByteArray(32) { 0x42 },
+                name = file.name
+            ),
+            1
+        ).apply {
+            assertSame(SQLiteJournalMode.WAL, writableDatabase.journalMode)
+            assertEquals(file.name, databaseName)
+        }
+    }
+
+    @Test
     fun zeroVersionThrows() {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             createHelper(0, mock())
