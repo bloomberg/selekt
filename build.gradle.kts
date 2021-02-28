@@ -222,12 +222,12 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.9645".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.9684".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
             limit {
                 counter = "BRANCH"
                 value = "COVEREDRATIO"
-                minimum = "0.8847".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+                minimum = "0.9055".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
             }
         }
     }

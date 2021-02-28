@@ -19,6 +19,7 @@ package com.bloomberg.selekt.commons
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 internal class IterableExtensionsTest {
     @Test
@@ -34,6 +35,11 @@ internal class IterableExtensionsTest {
     @Test
     fun bothEmptyCartesianProduct() {
         assertEquals(emptyList(), (emptyList<Int>() * emptyList<Int>()).toList())
+    }
+
+    @Test
+    fun hasNextEmptyIterable() {
+        assertFalse(emptyIterable<Any>().iterator().hasNext())
     }
 
     @Test
