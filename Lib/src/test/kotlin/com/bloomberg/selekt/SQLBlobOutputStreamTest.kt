@@ -40,6 +40,33 @@ internal class SQLBlobOutputStreamTest {
     }
 
     @Test
+    fun outputStreamChecksOffset() {
+        BlobOutputStream(mock()).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                write(ByteArray(1), -1, 1)
+            }
+        }
+    }
+
+    @Test
+    fun outputStreamChecksLength() {
+        BlobOutputStream(mock()).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                write(ByteArray(1), 0, -1)
+            }
+        }
+    }
+
+    @Test
+    fun outputStreamChecksUpperBounds() {
+        BlobOutputStream(mock()).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                write(ByteArray(1), 1, 1)
+            }
+        }
+    }
+
+    @Test
     fun writeToReadOnlyBlob() {
         mock<SQLBlob>().apply {
             whenever(readOnly) doReturn true

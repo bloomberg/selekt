@@ -74,7 +74,7 @@ internal class SimpleSQLQueryTest {
     @Test
     fun bindDouble() {
         mock<ISQLProgram>().let {
-            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42.0f)).bindTo(it)
+            SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(42.0)).bindTo(it)
             verify(it, times(1)).bindDouble(eq(1), eq(42.0))
         }
     }

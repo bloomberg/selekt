@@ -206,6 +206,22 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun executeForBlobReadOnly() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer Answer {
+            (it.arguments[6] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, SQL_OPEN_READONLY, CommonThreadLocalRandom, null).use {
+            assertTrue(it.executeForBlob("main", "Foo", "bar", 42L).readOnly)
+        }
+    }
+
+    @Test
     fun batchExecuteForChangedRowCountChecksDone() {
         whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
@@ -219,6 +235,49 @@ internal class SQLConnectionTest {
         whenever(sqlite.changes(any())) doReturn 0
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray<Int>())))
+        }
+    }
+
+    @Test
+    fun connectionChecksWindowAllocation() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.columnCount(any())) doReturn 1
+        whenever(sqlite.columnType(any(), any())) doReturn -1
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
+            }.withMessage("Failed to allocate a window row.")
+        }
+    }
+
+    @Test
+    fun connectionChecksSqlColumnType() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.columnCount(any())) doReturn 1
+        whenever(sqlite.columnType(any(), any())) doReturn -1
+        val cursorWindow = mock<ICursorWindow>().apply {
+            whenever(allocateRow()) doReturn true
+        }
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), cursorWindow)
+            }.withMessage("Unrecognised column type for column 0.")
         }
     }
 

@@ -47,6 +47,48 @@ internal class SQLBlobInputStreamTest {
     }
 
     @Test
+    fun inputStreamChecksOffset() {
+        BlobInputStream(mock()).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                read(ByteArray(1), -1, 1)
+            }
+        }
+    }
+
+    @Test
+    fun inputStreamChecksLength() {
+        BlobInputStream(mock()).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                read(ByteArray(1), 0, -1)
+            }
+        }
+    }
+
+    @Test
+    fun inputStreamChecksUpperBounds() {
+        val blob = mock<SQLBlob>().apply {
+            whenever(size) doReturn 1
+        }
+        BlobInputStream(blob).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                read(ByteArray(1), 2, 1)
+            }
+        }
+    }
+
+    @Test
+    fun inputStreamChecksDestinationSize() {
+        val blob = mock<SQLBlob>().apply {
+            whenever(size) doReturn 2
+        }
+        BlobInputStream(blob).run {
+            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+                read(ByteArray(1), 0, 2)
+            }
+        }
+    }
+
+    @Test
     fun readFromNegativeStart() {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             BlobInputStream(mock(), start = -1)

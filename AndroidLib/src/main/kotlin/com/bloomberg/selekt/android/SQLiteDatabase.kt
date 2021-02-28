@@ -77,7 +77,7 @@ class SQLiteDatabase private constructor(
             key: ByteArray?
         ) = SQLiteDatabase(
             SQLDatabase(
-                file?.path ?: "file::memory:",
+                file.let { if (it != null) it.path else "file::memory:" },
                 SQLite,
                 configuration,
                 key,
