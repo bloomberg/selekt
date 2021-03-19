@@ -38,7 +38,7 @@ enum class Versions(
     JUNIT5("5.7.0", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.5.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.4.30", URL("https://github.com/JetBrains/kotlin")),
-    KOTLIN_COROUTINES("1.4.2", URL("https://github.com/Kotlin/kotlinx.coroutines")),
+    KOTLIN_COROUTINES("1.4.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KTLINT("0.35.0", URL("https://github.com/pinterest/ktlint")),
     MOCKITO_ANDROID("3.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_CORE("3.0.0", URL("https://github.com/mockito/mockito")),
