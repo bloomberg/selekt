@@ -341,7 +341,7 @@ class SQLiteDatabase private constructor(
         check(!isTransactionOpenedByCurrentThread) { "Journal mode cannot be changed within a transaction." }
         val nextMode = SQLiteJournalMode.valueOf(requireNotNull(database.pragma("journal_mode", mode))
             .toUpperCase(Locale.US))
-        check(mode == nextMode) { "Failed to set journal mode to $mode, mode is $nextMode." }
+        check(mode === nextMode) { "Failed to set journal mode to $mode, mode is $nextMode." }
     }
 
     /**
@@ -469,6 +469,13 @@ class SQLiteDatabase private constructor(
 
     fun yieldTransaction() = database.yieldTransaction()
 
+    /**
+     * Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful
+     * thus far and committed, do not call [setTransactionSuccessful]. When this method returns a new transaction will have
+     * been created but not yet marked as successful.
+     *
+     * The yielding transaction can be nested.
+     */
     fun yieldTransaction(pauseMillis: Long) = database.yieldTransaction(pauseMillis)
 }
 
