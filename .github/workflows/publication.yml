@@ -50,11 +50,12 @@ jobs:
         tar -xvjf secring.tar.bzip2
         rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
+      env:
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        GPG_DIR: /tmp/gpg
+        GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
+        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
       run: |
-        ./gradlew publish \
-          -Possrh.password="${{ secrets.OSSRH_PASSWORD }}" \
-          -Possrh.username="${{ secrets.OSSRH_USERNAME }}" \
-          -Psigning.secretKeyRingFile=/tmp/gpg/trustdb.gpg \
-          -Psigning.password="${{ secrets.GPG_KEY_PASSPHRASE }}" \
-          -Psigning.keyId="${${{ secrets.GPG_KEY_ID }}:(-8)}"
+        ./publish_ossrh.sh
         rm -rf /tmp/gpg
