@@ -47,7 +47,7 @@ jobs:
       run: |
         mkdir /tmp/gpg && cd "$_"
         echo "${{ secrets.GPG_DIRECTORY }}" | base64 --decode > secring.tar.bzip2
-        tar -xvjf secring.tar.bzip2
+        tar -xjf secring.tar.bzip2
         rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
       run: |
