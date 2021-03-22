@@ -27,42 +27,19 @@ internal class ThreadLocalSession(
     private val pool: SQLExecutorPool
 ) {
     private val threadLocal = object : ThreadLocal<SQLSession>() {
-        override fun initialValue() = SQLSession(this@ThreadLocalSession, pool)
-    }
-    private var transactingSession: SQLSession? = null
-    private var transactingThread: Thread? = null
-
-    internal fun get(): SQLSession = transactingElseGet()
-
-    internal fun onTransactionBegin() {
-        threadLocal.apply {
-            transactingSession = threadLocal.get()
-            transactingThread = Thread.currentThread()
-        }
+        override fun initialValue() = SQLSession(pool)
     }
 
-    internal fun onTransactionEnd() {
-        threadLocal.apply {
-            transactingSession = null
-            transactingThread = null
-        }
-    }
-
-    private fun transactingElseGet(): SQLSession = if (transactingThread === Thread.currentThread()) {
-        transactingSession!!
-    } else {
-        threadLocal.get()
-    }
+    internal fun get(): SQLSession = threadLocal.get()
 }
 
 @NotThreadSafe
 internal class SQLSession(
-    private val parent: ThreadLocalSession,
     pool: SQLExecutorPool
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
     private var depth = 0
     private var successes = 0
-    private lateinit var transactionSql: String
+    private var transactionSql: String = ""
     private var transactionListener: SQLTransactionListener? = null
 
     override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
@@ -110,6 +87,8 @@ internal class SQLSession(
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
+        val currentDepth = depth
+        val currentSuccesses = successes
         val sql = transactionSql
         val listener = transactionListener
         internalEnd()
@@ -117,6 +96,8 @@ internal class SQLSession(
             Thread.sleep(pauseMillis)
         }
         internalBegin(sql, listener)
+        depth = currentDepth
+        successes = currentSuccesses
         return true
     }
 
@@ -164,11 +145,11 @@ internal class SQLSession(
             }
         }.exceptionOrNull()?.let {
             rollbackQuietly()
+            clearTransactionState()
             release()
             throw it
         }
         transactionSql = sql
-        parent.onTransactionBegin()
     }
 
     private fun internalEnd() {
@@ -176,13 +157,10 @@ internal class SQLSession(
             if (successes == 0) {
                 commit()
             } else {
-                successes = 0
                 rollback()
             }
         } finally {
-            parent.onTransactionEnd()
-            transactionSql = ""
-            transactionListener = null
+            clearTransactionState()
             release()
         }
     }
@@ -214,6 +192,13 @@ internal class SQLSession(
     }
 
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }
+
+    private fun clearTransactionState() {
+        depth = 0
+        successes = 0
+        transactionSql = ""
+        transactionListener = null
+    }
 }
 
 interface ISQLTransactor {

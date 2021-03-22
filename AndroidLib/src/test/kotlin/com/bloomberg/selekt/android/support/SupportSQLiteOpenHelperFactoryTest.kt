@@ -26,6 +26,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
@@ -44,6 +45,13 @@ import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+
+private fun <T : RoomDatabase> buildRoomDatabase(
+    context: Context,
+    klass: Class<T>
+) = Room.databaseBuilder(context, klass, "app")
+    .openHelperFactory(createSupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, ByteArray(32) { 0x42 }))
+    .build()
 
 @Database(entities = [User::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
@@ -67,7 +75,7 @@ interface UserDao {
 }
 
 @RunWith(RobolectricTestRunner::class)
-internal class RoomKtTest {
+internal class SupportSQLiteOpenHelperFactoryTest {
     @get:Rule
     val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
 
@@ -75,13 +83,9 @@ internal class RoomKtTest {
     private val context = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
-    private val key = ByteArray(32) { 0x42 }
     private val database = buildRoomDatabase(
         context,
-        AppDatabase::class.java,
-        "app",
-        SQLiteJournalMode.WAL,
-        key
+        AppDatabase::class.java
     )
 
     @After
@@ -111,7 +115,7 @@ internal class RoomKtTest {
     @Test
     fun journalMode() {
         database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
-        SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, key).use {
+        SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, ByteArray(32) { 0x42 }).use {
             assertEquals(SQLiteJournalMode.WAL, it.journalMode)
         }
     }

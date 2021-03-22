@@ -24,7 +24,7 @@ import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.android.SQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteOpenParams
 
-internal fun createSupportSQLiteOpenHelperFactory(
+fun createSupportSQLiteOpenHelperFactory(
     journalMode: SQLiteJournalMode,
     key: ByteArray?
 ): SupportSQLiteOpenHelper.Factory = SupportSQLiteOpenHelperFactory(journalMode, key)

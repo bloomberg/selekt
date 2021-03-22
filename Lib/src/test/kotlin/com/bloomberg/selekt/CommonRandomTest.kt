@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.android.support
+package com.bloomberg.selekt
 
-import android.content.Context
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import com.bloomberg.selekt.SQLiteJournalMode
+import org.junit.jupiter.api.Test
+import kotlin.test.assertTrue
 
-fun <T : RoomDatabase> buildRoomDatabase(
-    context: Context,
-    klass: Class<T>,
-    name: String,
-    journalMode: SQLiteJournalMode,
-    key: ByteArray?
-) = Room.databaseBuilder(context, klass, name)
-    .openHelperFactory(createSupportSQLiteOpenHelperFactory(journalMode, key))
-    .build()
+internal class CommonRandomTest {
+    @Test
+    fun upperBound() {
+        repeat(1_000) {
+            assertTrue(CommonRandom.nextLong(42L) < 42L)
+        }
+    }
+
+    @Test
+    fun lowerBound() {
+        repeat(1_000) {
+            assertTrue(CommonRandom.nextLong(42L) >= 0L)
+        }
+    }
+}
