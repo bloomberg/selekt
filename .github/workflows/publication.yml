@@ -4,6 +4,7 @@ name: 'Publication'
 #  release:
 #    types: [published]
 
+# TODO Remove.
 on:
   push:
     branches:
@@ -14,6 +15,14 @@ jobs:
     name: 'Publish'
     runs-on: ubuntu-latest
     steps:
+    - name: 'Prepare GPG'
+      run: |
+        mkdir /tmp/gpg && cd "$_"
+        echo "${{ secrets.GPG_DIRECTORY }}" | base64 --decode > secring.tar.bzip2
+        echo $(pwd)
+        ls -la
+        tar -xvjf secring.tar.bzip2
+        rm secring.tar.bzip2
     - name: 'Install system packages'
       run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
     - name: 'Install Build Tools'
@@ -45,12 +54,10 @@ jobs:
         ./gradlew assembleSelekt
     - name: 'Publish to Maven Central'
       run: |
-        mkdir ~/.gradle
-        echo "${{ secrets.SIGNING_KEY_RING_FILE }}" | base64 --decode > ~/.gradle/secring.gpg
         ./gradlew publish \
           -Possrh.username=${{ secrets.OSSRH_USERNAME }} \
           -Possrh.password=${{ secrets.OSSRH_PASSWORD }} \
-          -Psigning.secretKeyRingFile=~/.gradle/secring.gpg \
-          -Psigning.password=${{ secrets.SIGNING_PASSWORD }} \
-          -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }}
-        rm ~/.gradle/secring.gpg
+          -Psigning.secretKeyRingFile=$(ls /tmp/gpg/*.gpg | head -1) \
+          -Psigning.password=${{ secrets.GPG_KEY_PASSPHRASE }} \
+          -Psigning.keyId=${${{ secrets.GPG_KEY_ID }}:(-8)}
+        rm -rf /tmp/gpg
