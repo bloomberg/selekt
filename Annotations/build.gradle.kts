@@ -22,6 +22,7 @@ repositories {
 plugins {
     kotlin("jvm")
     `maven-publish`
+    signing
 }
 
 java {

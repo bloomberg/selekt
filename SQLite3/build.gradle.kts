@@ -25,6 +25,7 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
     `maven-publish`
+    signing
 }
 
 val cFlags = arrayOf(

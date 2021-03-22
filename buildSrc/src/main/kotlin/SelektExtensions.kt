@@ -22,6 +22,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.ByteArrayOutputStream
+import java.net.URI
 import java.nio.charset.StandardCharsets
 
 fun DependencyHandler.androidX(module: String, suffix: String? = null, version: String? = null): Any =
@@ -58,6 +59,12 @@ fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
 }
 
 fun Project.isRelease() = "true" == properties["release"]
+
+fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
+    "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+} else {
+    "https://oss.sonatype.org/content/repositories/snapshots"
+})
 
 val MavenPublication.selektGroupId: String
     get() = "com.bloomberg"

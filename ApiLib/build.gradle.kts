@@ -25,6 +25,7 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
     `maven-publish`
+    signing
 }
 
 description = "Selekt shared API library."
