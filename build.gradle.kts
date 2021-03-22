@@ -153,6 +153,7 @@ subprojects {
 
     pluginManager.withPlugin("signing") {
         configure<SigningExtension> {
+            useGpgCmd()
             project.afterEvaluate {
                 configure<PublishingExtension> {
                     publications.forEach { sign(it) }
