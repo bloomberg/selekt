@@ -67,10 +67,6 @@ tasks.register("assembleSelekt") {
     dependsOn("assemble")
 }
 
-tasks.withType<AbstractPublishToMaven> {
-    dependsOn("assembleSelekt")
-}
-
 publishing {
     publications.register<MavenPublication>("main") {
         groupId = selektGroupId
