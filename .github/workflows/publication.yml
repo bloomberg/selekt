@@ -53,7 +53,7 @@ jobs:
       run: |
         echo "signing.gnupg.homeDir=/tmp/gpg" >> gradle.properties
         echo "signing.gnupg.keyName=${{ secrets.GPG_KEY_ID }}" >> gradle.properties
-        echo "signing.gnupg.passphrase='${{ secrets.GPG_KEY_PASSPHRASE }}'" >> gradle.properties
+        echo "signing.gnupg.passphrase=${{ secrets.GPG_KEY_PASSPHRASE }}" >> gradle.properties
         ./gradlew publish \
           -Possrh.password="${{ secrets.OSSRH_PASSWORD }}" \
           -Possrh.username="${{ secrets.OSSRH_USERNAME }}"
