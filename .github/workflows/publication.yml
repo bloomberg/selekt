@@ -51,9 +51,9 @@ jobs:
         rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
       run: |
-        echo "signing.gnupg.homeDir=/tmp/gpg" >> gradle.properties
-        echo "signing.gnupg.keyName=${{ secrets.GPG_KEY_ID }}" >> gradle.properties
-        echo "signing.gnupg.passphrase=${{ secrets.GPG_KEY_PASSPHRASE }}" >> gradle.properties
         ./gradlew publish \
+          -Psigning.gnupg.homeDir=/tmp/gpg \
+          -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
+          -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
           -Possrh.password="${{ secrets.OSSRH_PASSWORD }}" \
           -Possrh.username="${{ secrets.OSSRH_USERNAME }}"
