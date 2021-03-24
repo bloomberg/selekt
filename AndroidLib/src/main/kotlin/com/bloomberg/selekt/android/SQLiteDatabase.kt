@@ -17,8 +17,9 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
-import androidx.annotation.Size
 import android.util.Log
+import androidx.annotation.IntRange
+import androidx.annotation.Size
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.ISQLQuery
@@ -476,7 +477,7 @@ class SQLiteDatabase private constructor(
      *
      * The yielding transaction can be nested.
      */
-    fun yieldTransaction(pauseMillis: Long) = database.yieldTransaction(pauseMillis)
+    fun yieldTransaction(@IntRange(from = 0L) pauseMillis: Long) = database.yieldTransaction(pauseMillis)
 }
 
 private const val PAGE_SIZE = "page_size"
