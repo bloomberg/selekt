@@ -57,3 +57,7 @@ jobs:
           -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
           -Possrh.password="${{ secrets.OSSRH_PASSWORD }}" \
           -Possrh.username="${{ secrets.OSSRH_USERNAME }}"
+    - name: 'Clean-up'
+      if: ${{ always() }}
+      run:
+        rm -rf /tmp/gpg      
