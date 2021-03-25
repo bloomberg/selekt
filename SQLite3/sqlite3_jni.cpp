@@ -764,6 +764,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
     );
 }
 
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_transactionState(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb
+) {
+    return sqlite3_txn_state(reinterpret_cast<sqlite3*>(jdb), nullptr);
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_valueDup(
     JNIEnv* env,

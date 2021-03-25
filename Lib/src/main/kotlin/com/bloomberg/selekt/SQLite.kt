@@ -227,6 +227,8 @@ open class SQLite(
 
     fun traceV2(db: Long, flag: Int) = sqlite.traceV2(db, flag)
 
+    fun transactionState(db: Long) = sqlite.transactionState(db)
+
     fun valueDup(value: Long) = sqlite.valueDup(value)
 
     fun valueFree(value: Long) = sqlite.valueFree(value)

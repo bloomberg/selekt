@@ -195,6 +195,8 @@ class ExternalSQLite private constructor(
 
     external fun traceV2(db: Long, flag: Int)
 
+    external fun transactionState(db: Long): Int
+
     external fun valueDup(value: Long): Long
 
     external fun valueFree(value: Long)

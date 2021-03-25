@@ -950,6 +950,30 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun transactionStateNone() {
+        assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
+        assertEquals(0, SQLite.transactionState(db))
+    }
+
+    @Test
+    fun transactionStateRead() {
+        assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
+        assertEquals(SQL_OK, SQLite.exec(db, "BEGIN TRANSACTION"))
+        prepareStatement(db, "SELECT * FROM 'Foo'").usePreparedStatement {
+            assertEquals(SQL_DONE, SQLite.step(it))
+        }
+        assertEquals(1, SQLite.transactionState(db))
+    }
+
+    @Test
+    fun transactionStateWrite() {
+        assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
+        assertEquals(SQL_OK, SQLite.exec(db, "BEGIN TRANSACTION"))
+        assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES ('abc')"))
+        assertEquals(2, SQLite.transactionState(db))
+    }
+
+    @Test
     fun threadsafe() {
         assertEquals(2, SQLite.threadsafe())
     }
