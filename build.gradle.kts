@@ -66,27 +66,27 @@ subprojects {
 subprojects {
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("com.bloomberg.selekt:selekt-android")).apply {
+            substitute(module("com.bloomberg:selekt-android")).apply {
                 with(project(":AndroidLib"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
-            substitute(module("com.bloomberg.selekt:selekt-annotations")).apply {
+            substitute(module("com.bloomberg:selekt-annotations")).apply {
                 with(project(":Annotations"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
-            substitute(module("com.bloomberg.selekt:selekt-api")).apply {
+            substitute(module("com.bloomberg:selekt-api")).apply {
                 with(project(":ApiLib"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
-            substitute(module("com.bloomberg.selekt:selekt-java")).apply {
+            substitute(module("com.bloomberg:selekt-java")).apply {
                 with(project(":Lib"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
-            substitute(module("com.bloomberg.selekt:selekt-sqlite3")).apply {
+            substitute(module("com.bloomberg:selekt-sqlite3")).apply {
                 with(project(":SQLite3"))
                 @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")

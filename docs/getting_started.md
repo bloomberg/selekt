@@ -1,5 +1,29 @@
 ## Integration
 
+### Gradle
+
+=== "Kotlin"
+    ``` kotlin
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation("com.bloomberg:selekt-android:<version>")
+    }
+    ```
+
+=== "Groovy"
+    ``` groovy
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation('com.bloomberg:selekt-android:<version>')
+    }
+    ```
+
 ## Getting a database
 
 ### Using an open helper

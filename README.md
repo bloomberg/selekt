@@ -2,6 +2,7 @@
 
 [![Coverage Status](https://codecov.io/gh/bloomberg/selekt/branch/main/graph/badge.svg)](https://codecov.io/gh/bloomberg/selekt)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+[![Maven Central](https://img.shields.io/maven-central/v/com.bloomberg/selekt-android.svg)](https://search.maven.org/artifact/com.bloomberg/selekt-android)
 
 Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zetetic.net/sqlcipher/), an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3.
 
@@ -22,29 +23,7 @@ Selekt sits somewhere between the two: Selekt also uses SQLCipher to encrypt dat
 
 ## Quick Start
 
-### Creating a database with an open helper
-
-```kt
-object MyOpenHelperCallback : ISQLiteOpenHelper.Callback {
-    override fun onCreate(database: SQLiteDatabase) {
-        database.exec("CREATE TABLE 'Foo' (bar INT)")
-    }
-
-    override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-}
-
-fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
-
-val databaseHelper = SQLiteOpenHelper(
-    context = context.applicationContext,
-    configuration = ISQLiteOpenHelper.Configuration(
-        callback = MyOpenHelperCallback,
-        key = deriveKey(),
-        name = "sample"
-    ),
-    version = 3
-)
-```
+Please refer to the [main documentation](https://bloomberg.github.io/selekt/getting_started/).
 
 ## Contributions
 
