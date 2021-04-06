@@ -1,13 +1,8 @@
 name: 'Publication'
 
-#on:
-#  release:
-#    types: [published]
-
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
   publish:
@@ -52,6 +47,7 @@ jobs:
     - name: 'Publish to OSSRH'
       run: |
         ./gradlew publish \
+          -Prelease=true \
           -Psigning.gnupg.homeDir=/tmp/gpg \
           -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
           -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
