@@ -107,4 +107,11 @@ internal class SQLiteDatabaseBatchTest {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(Any())))
         }
     }
+
+    @Test
+    fun batchRequiresUpdate(): Unit = database.run {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            batch("SELECT * FROM Foo", sequence { })
+        }
+    }
 }

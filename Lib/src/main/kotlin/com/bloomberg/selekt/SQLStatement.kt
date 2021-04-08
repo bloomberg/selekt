@@ -87,38 +87,6 @@ internal fun CharSequence.resolvedSqlStatementType() = trimStart(Char::isWhitesp
 }
 
 @ThreadSafe
-internal class BatchSQLStatement private constructor(
-    private val session: ThreadLocalSession,
-    private val sql: String,
-    private val args: Sequence<Array<out Any?>>
-) {
-    companion object {
-        fun compile(
-            session: ThreadLocalSession,
-            sql: String,
-            bindArgs: Sequence<Array<out Any?>>
-        ): BatchSQLStatement {
-            require(SQLStatementType.UPDATE == sql.resolvedSqlStatementType()) {
-                "Only batched updates are permitted."
-            }
-            return session.get().execute(true, sql) {
-                it.prepare(sql)
-            }.run {
-                BatchSQLStatement(
-                    session,
-                    sql,
-                    bindArgs
-                )
-            }
-        }
-    }
-
-    internal fun execute() = session.get().execute(true, sql) {
-        it.executeForChangedRowCount(sql, args)
-    }
-}
-
-@ThreadSafe
 internal class SQLStatement private constructor(
     private val session: ThreadLocalSession,
     private val sql: String,
@@ -134,6 +102,19 @@ internal class SQLStatement private constructor(
             bindArgs: Array<out Any?>
         ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.execute(sql, bindArgs)
+        }
+
+        fun execute(
+            session: ThreadLocalSession,
+            sql: String,
+            bindArgs: Sequence<Array<out Any?>>
+        ): Int {
+            require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) {
+                "Only batched updates are permitted."
+            }
+            return session.get().execute(true, sql) {
+                it.executeForChangedRowCount(sql, bindArgs)
+            }
         }
 
         fun executeForInt(
