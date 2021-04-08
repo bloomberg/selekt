@@ -60,6 +60,8 @@ disableKotlinCompilerAssertions()
 
 java {
     @Suppress("UnstableApiUsage")
+    withJavadocJar()
+    @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
 
@@ -73,7 +75,10 @@ publishing {
         artifactId = "selekt-sqlite3"
         version = selektVersionName
         from(components.getByName("java"))
-        pom { commonInitialisation(project) }
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt Java SQLite interface library.")
+        }
     }
 }
 

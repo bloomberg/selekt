@@ -27,11 +27,11 @@ plugins {
     signing
 }
 
-description = "Selekt core library."
-
 disableKotlinCompilerAssertions()
 
 java {
+    @Suppress("UnstableApiUsage")
+    withJavadocJar()
     @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
@@ -53,6 +53,9 @@ publishing {
         artifactId = "selekt-java"
         version = selektVersionName
         from(components.getByName("java"))
-        pom { commonInitialisation(project) }
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt core library.")
+        }
     }
 }

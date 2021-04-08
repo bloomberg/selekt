@@ -28,9 +28,9 @@ plugins {
     signing
 }
 
-description = "Selekt shared API library."
-
 java {
+    @Suppress("UnstableApiUsage")
+    withJavadocJar()
     @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
@@ -54,6 +54,9 @@ publishing {
         artifactId = "selekt-api"
         version = selektVersionName
         from(components.getByName("java"))
-        pom { commonInitialisation(project) }
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt shared API library.")
+        }
     }
 }

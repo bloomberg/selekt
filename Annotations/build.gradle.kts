@@ -27,6 +27,8 @@ plugins {
 
 java {
     @Suppress("UnstableApiUsage")
+    withJavadocJar()
+    @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
 
@@ -43,6 +45,9 @@ publishing {
         artifactId = "selekt-annotations"
         version = selektVersionName
         from(components.getByName("java"))
-        pom { commonInitialisation(project) }
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt annotations library.")
+        }
     }
 }
