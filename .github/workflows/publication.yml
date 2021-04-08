@@ -54,7 +54,7 @@ jobs:
           -PsonatypePassword="${{ secrets.OSSRH_PASSWORD }}" \
           -PsonatypeUsername="${{ secrets.OSSRH_USERNAME }}" \
           publishToSonatype \
-          closeSonatypeStagingRepository
+          closeAndReleaseSonatypeStagingRepository
     - name: 'Clean-up'
       if: ${{ always() }}
       run:
