@@ -96,14 +96,14 @@ fun MavenPom.commonInitialisation(project: Project) {
             email.set("kshackleton1@bloomberg.net")
             name.set("Kenneth J. Shackleton")
             organization.set("Bloomberg LP")
-            organizationUrl.set("https://www.bloomberg.com")
+            organizationUrl.set("https://github.com/bloomberg")
         }
         developer {
             id.set("xouabita")
             email.set("aabita@bloomberg.net")
             name.set("Alexandre Abita")
             organization.set("Bloomberg LP")
-            organizationUrl.set("https://www.bloomberg.com")
+            organizationUrl.set("https://github.com/bloomberg")
         }
     }
     inceptionYear.set("2019")
@@ -120,6 +120,7 @@ fun MavenPom.commonInitialisation(project: Project) {
     }
     organization {
         name.set("Bloomberg LP")
+        url.set("https://www.bloomberg.com")
     }
     scm {
         connection.set("git@github.com:bloomberg/selekt.git")
@@ -127,4 +128,5 @@ fun MavenPom.commonInitialisation(project: Project) {
         tag.set(project.gitCommit())
         url.set("https://github.com/bloomberg/Selekt")
     }
+    url.set("https://github.com/bloomberg/selekt")
 }

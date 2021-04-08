@@ -26,11 +26,11 @@ plugins {
     signing
 }
 
-description = "Selekt Android Lint library."
-
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+    @Suppress("UnstableApiUsage")
+    withJavadocJar()
     @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
@@ -52,6 +52,9 @@ publishing {
         artifactId = "selekt-android-lint"
         version = selektVersionName
         from(components.getByName("java"))
-        pom { commonInitialisation(project) }
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt Android Lint library.")
+        }
     }
 }

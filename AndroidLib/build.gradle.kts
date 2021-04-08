@@ -76,8 +76,6 @@ android {
     }
 }
 
-description = "Selekt Android SQLite library."
-
 dependencies {
     api(selekt("api", selektVersionName))
     compileOnly(selekt("annotations", selektVersionName))
@@ -125,7 +123,10 @@ afterEvaluate {
             artifactId = "selekt-android"
             version = android.defaultConfig.versionName
             from(components["release"])
-            pom { commonInitialisation(project) }
+            pom {
+                commonInitialisation(project)
+                description.set("Selekt Android SQLite library.")
+            }
             artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
         }.also {
             signing { sign(it) }
