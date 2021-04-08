@@ -20,6 +20,7 @@ import android.content.ContentValues
 import android.util.Log
 import androidx.annotation.IntRange
 import androidx.annotation.Size
+import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.ISQLQuery
@@ -82,7 +83,7 @@ class SQLiteDatabase private constructor(
                 SQLite,
                 configuration,
                 key,
-                randomCompat
+                CommonThreadLocalRandom
             ),
             file
         )
@@ -192,7 +193,7 @@ class SQLiteDatabase private constructor(
      * @return the number of rows affected.
      */
     @Experimental
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>) = database.batch(sql, bindArgs)
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode.
