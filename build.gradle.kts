@@ -39,7 +39,18 @@ repositories {
 plugins {
     jacoco
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
+    id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
+}
+
+group = selektGroupId
+version = selektVersionName
+logger.quiet("Group: $group; Version: $version")
+
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
 }
 
 jacoco {
@@ -135,19 +146,6 @@ subprojects {
     pluginManager.withPlugin("jacoco") {
         configure<JacocoPluginExtension> {
             toolVersion = Versions.JACOCO.version
-        }
-    }
-
-    pluginManager.withPlugin("maven-publish") {
-        configure<PublishingExtension> {
-            repositories.maven {
-                name = "OSSSonatype"
-                url = resolvedOSSSonatypeURI()
-                credentials {
-                    username = project.properties["ossrh.username"].toString()
-                    password = project.properties["ossrh.password"].toString()
-                }
-            }
         }
     }
 
