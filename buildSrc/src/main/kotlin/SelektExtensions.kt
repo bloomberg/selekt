@@ -18,7 +18,6 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.publish.maven.MavenPom
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.ByteArrayOutputStream
@@ -66,7 +65,7 @@ fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
     "https://oss.sonatype.org/content/repositories/snapshots"
 })
 
-val MavenPublication.selektGroupId: String
+val Project.selektGroupId: String
     get() = "com.bloomberg"
 
 val Project.selektVersionName: String

@@ -1,8 +1,13 @@
 name: 'Publication'
 
+#on:
+#  release:
+#    types: [published]
+
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
 
 jobs:
   publish:
@@ -46,13 +51,13 @@ jobs:
         rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
       run: |
-        ./gradlew publish \
-          -Prelease=true \
+        ./gradlew \
           -Psigning.gnupg.homeDir=/tmp/gpg \
           -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
           -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
-          -Possrh.password="${{ secrets.OSSRH_PASSWORD }}" \
-          -Possrh.username="${{ secrets.OSSRH_USERNAME }}"
+          -PsonatypePassword="${{ secrets.OSSRH_PASSWORD }}" \
+          -PsonatypeUsername="${{ secrets.OSSRH_USERNAME }}" \
+          publishToSonatype closeSonatypeStagingRepository
     - name: 'Clean-up'
       if: ${{ always() }}
       run:

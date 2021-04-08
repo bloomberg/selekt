@@ -20,10 +20,10 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
     id("org.jetbrains.dokka")
-    id("bb-android-maven-publish")
     id("bb-jacoco-android")
     kotlin("kapt")
     signing
+    `maven-publish`
 }
 
 repositories {
@@ -40,7 +40,6 @@ android {
         minSdkVersion(21)
         versionCode = 1
         versionName = selektVersionName
-        logger.quiet("Version name is: $versionName")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -119,14 +118,17 @@ tasks.register<Jar>("sourcesJar") {
     setProperty("archiveClassifier", "sources")
 }
 
-publishing {
-    publications.register<MavenPublication>("main") {
-        groupId = selektGroupId
-        artifactId = "selekt-android"
-        version = android.defaultConfig.versionName
-        from(components.getByName("aar"))
-        pom { commonInitialisation(project) }
-        artifact("$buildDir/outputs/aar/AndroidLib-release.aar")
-        artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
+afterEvaluate {
+    publishing {
+        publications.create<MavenPublication>("main") {
+            groupId = selektGroupId
+            artifactId = "selekt-android"
+            version = android.defaultConfig.versionName
+            from(components["release"])
+            pom { commonInitialisation(project) }
+            artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
+        }.also {
+            signing { sign(it) }
+        }
     }
 }

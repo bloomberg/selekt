@@ -36,10 +36,6 @@ gradlePlugin {
             id = "selekt"
             implementationClass = "SelektPlugin"
         }
-        create("Android Maven Publish Plugin") {
-            id = "bb-android-maven-publish"
-            implementationClass = "AndroidMavenPublishPlugin"
-        }
         create("Bloomberg JaCoCo Android Plugin") {
             id = "bb-jacoco-android"
             implementationClass = "JacocoAndroidPlugin"
