@@ -53,7 +53,9 @@ jobs:
           -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
           -PsonatypePassword="${{ secrets.OSSRH_PASSWORD }}" \
           -PsonatypeUsername="${{ secrets.OSSRH_USERNAME }}" \
-          publishToSonatype closeSonatypeStagingRepository
+          --info \
+          publishToSonatype \
+          closeSonatypeStagingRepository
     - name: 'Clean-up'
       if: ${{ always() }}
       run:
