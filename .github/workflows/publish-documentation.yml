@@ -39,9 +39,12 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
           ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
+      - name: 'Set version'
+        run: echo "VERSION=$(grep -hnr 'versionName' gradle.properties | sed 's/.*=//')" >> $GITHUB_ENV
       - name: 'Mkdocs'
         run: |
           git fetch origin gh-pages:gh-pages
           sed -i 's/<year>/${{ env.YEAR }}/g' docs/*.md
           sed -i 's/<year>/${{ env.YEAR }}/g' mkdocs.yml
+          sed -i 's/<version>/${{ env.VERSION }}/g' docs/*.md
           mkdocs gh-deploy -m 'Automatic mkdocs deployment.'

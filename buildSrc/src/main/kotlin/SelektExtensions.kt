@@ -31,7 +31,7 @@ fun DependencyHandler.kotlinX(module: String, version: String? = null): Any =
     "org.jetbrains.kotlinx:kotlinx-$module${version?.let { ":$version" } ?: ""}"
 
 fun DependencyHandler.selekt(module: String, version: String? = null): Any =
-    "com.bloomberg.selekt:selekt-$module${version?.let { ":$version" } ?: ""}"
+    "com.bloomberg:selekt-$module${version?.let { ":$version" } ?: ""}"
 
 val <T> NamedDomainObjectContainer<T>.debug: T get() = requireNotNull(getByName("debug"))
 
@@ -128,5 +128,5 @@ fun MavenPom.commonInitialisation(project: Project) {
         tag.set(project.gitCommit())
         url.set("https://github.com/bloomberg/Selekt")
     }
-    url.set("https://github.com/bloomberg/selekt")
+    url.set("https://bloomberg.github.io/selekt/")
 }
