@@ -87,7 +87,7 @@ fun Project.disableKotlinCompilerAssertions() {
 
 fun MavenPom.commonInitialisation(project: Project) {
     ciManagement {
-        name.set("GitHub Actions")
+        name.set("Selekt")
         url.set("https://github.com/bloomberg/selekt/actions")
     }
     developers {
