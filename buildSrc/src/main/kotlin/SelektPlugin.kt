@@ -51,7 +51,9 @@ class SelektPlugin : Plugin<Project> {
                 }
                 tasks.withType(Jar::class.java).configureEach {
                     metaInf {
-                        from("$rootDir/LICENSE")
+                        arrayOf("LICENSE", "SQLCIPHER_LICENSE").forEach {
+                            from("$rootDir/$it")
+                        }
                     }
                 }
             }
