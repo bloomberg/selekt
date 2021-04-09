@@ -126,6 +126,12 @@ afterEvaluate {
             pom {
                 commonInitialisation(project)
                 description.set("Selekt Android SQLite library.")
+                licenses {
+                    license {
+                        name.set("Zetetic LLC")
+                        url.set("https://www.zetetic.net/sqlcipher/license")
+                    }
+                }
             }
             artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
         }.also {
