@@ -128,6 +128,10 @@ afterEvaluate {
                 description.set("Selekt Android SQLite library.")
                 licenses {
                     license {
+                        name.set("Dual OpenSSL and SSLeay License")
+                        url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
+                    }
+                    license {
                         name.set("Zetetic LLC")
                         url.set("https://www.zetetic.net/sqlcipher/license")
                     }
