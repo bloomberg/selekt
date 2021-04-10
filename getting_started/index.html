@@ -249,6 +249,19 @@
     Integration
   </a>
   
+    <nav class="md-nav" aria-label="Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gradle" class="md-nav__link">
+    Gradle
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -394,6 +407,19 @@
     Integration
   </a>
   
+    <nav class="md-nav" aria-label="Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gradle" class="md-nav__link">
+    Gradle
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -466,9 +492,31 @@
                   <h1>Getting started</h1>
                 
                 <h2 id="integration">Integration</h2>
+<h3 id="gradle">Gradle</h3>
+<div class="tabbed-set" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><label for="__tabbed_1_1">Kotlin</label><div class="tabbed-content">
+<div class="highlight"><pre><span></span><code><span class="n">repositories</span> <span class="p">{</span>
+    <span class="n">mavenCentral</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="n">dependencies</span> <span class="p">{</span>
+    <span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.bloomberg:selekt-android:0.12.3&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><label for="__tabbed_1_2">Groovy</label><div class="tabbed-content">
+<div class="highlight"><pre><span></span><code><span class="n">repositories</span> <span class="o">{</span>
+    <span class="n">mavenCentral</span><span class="o">()</span>
+<span class="o">}</span>
+
+<span class="n">dependencies</span> <span class="o">{</span>
+    <span class="n">implementation</span><span class="o">(</span><span class="s1">&#39;com.bloomberg:selekt-android:0.12.3&#39;</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div>
+</div>
+</div>
 <h2 id="getting-a-database">Getting a database</h2>
 <h3 id="using-an-open-helper">Using an open helper</h3>
-<div class="tabbed-set" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><label for="__tabbed_1_1">Kotlin</label><div class="tabbed-content">
+<div class="tabbed-set" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><label for="__tabbed_2_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kd">object</span> <span class="nc">MyOpenHelperCallback</span> <span class="p">:</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Callback</span> <span class="p">{</span>
     <span class="kd">override</span> <span class="kd">fun</span> <span class="nf">onCreate</span><span class="p">(</span><span class="n">database</span><span class="p">:</span> <span class="n">SQLiteDatabase</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">database</span><span class="p">.</span><span class="na">exec</span><span class="p">(</span><span class="s">&quot;CREATE TABLE &#39;Foo&#39; (bar INT)&quot;</span><span class="p">)</span>
@@ -496,7 +544,7 @@
 <span class="p">)</span>
 </code></pre></div>
 </div>
-<input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><label for="__tabbed_1_2">Java</label><div class="tabbed-content">
+<input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><label for="__tabbed_2_2">Java</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kd">class</span> <span class="nc">MyOpenHelperCallback</span> <span class="kd">implements</span> <span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Callback</span> <span class="p">{</span>
     <span class="nd">@Override</span>
     <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="p">(</span><span class="kd">final</span> <span class="n">SQLiteDatabase</span> <span class="n">database</span><span class="p">)</span> <span class="p">{</span>
@@ -530,7 +578,7 @@
 </div>
 </div>
 <h3 id="using-room">Using Room</h3>
-<div class="tabbed-set" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><label for="__tabbed_2_1">Kotlin</label><div class="tabbed-content">
+<div class="tabbed-set" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><label for="__tabbed_3_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="k">import</span> <span class="nn">com.bloomberg.selekt.android.support.buildRoomDatabase</span>
 
 <span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
@@ -544,7 +592,7 @@
 <span class="p">)</span>
 </code></pre></div>
 </div>
-<input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><label for="__tabbed_2_2">Java</label><div class="tabbed-content">
+<input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><label for="__tabbed_3_2">Java</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">com.bloomberg.selekt.android.support.buildRoomDatabase</span><span class="p">;</span>
 
 <span class="kd">private</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">deriveKey</span><span class="p">()</span> <span class="p">{</span>
@@ -562,7 +610,7 @@
 </div>
 </div>
 <h3 id="directly">Directly</h3>
-<div class="tabbed-set" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><label for="__tabbed_3_1">Kotlin</label><div class="tabbed-content">
+<div class="tabbed-set" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><label for="__tabbed_4_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key.&quot;</span><span class="p">)</span>
 
 <span class="n">SQLiteDatabase</span><span class="p">.</span><span class="na">openOrCreateDatabase</span><span class="p">(</span>
@@ -574,7 +622,7 @@
 <span class="p">}</span>
 </code></pre></div>
 </div>
-<input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><label for="__tabbed_3_2">Java</label><div class="tabbed-content">
+<input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><label for="__tabbed_4_2">Java</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">deriveKey</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// TODO Optional key.</span>
 <span class="p">}</span>
@@ -590,7 +638,7 @@
 </div>
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-the-database">Querying the database</h3>
-<div class="tabbed-set" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><label for="__tabbed_4_1">Kotlin</label><div class="tabbed-content">
+<div class="tabbed-set" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><label for="__tabbed_5_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="n">databaseHelper</span><span class="p">.</span><span class="na">writableDatabase</span><span class="p">.</span><span class="na">run</span> <span class="p">{</span>
     <span class="n">insertWithOnConflict</span><span class="p">(</span>
         <span class="s">&quot;Foo&quot;</span><span class="p">,</span>
@@ -604,7 +652,7 @@
 <span class="p">}</span>
 </code></pre></div>
 </div>
-<input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><label for="__tabbed_4_2">Java</label><div class="tabbed-content">
+<input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><label for="__tabbed_5_2">Java</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="kd">final</span> <span class="n">SQLiteDatabase</span> <span class="n">database</span> <span class="o">=</span> <span class="n">databaseHelper</span><span class="p">.</span><span class="na">getWritableDatabase</span><span class="p">();</span>
 <span class="kd">final</span> <span class="n">ContentValues</span> <span class="n">values</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ContentValues</span><span class="p">();</span>
 <span class="n">values</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
