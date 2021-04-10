@@ -11,7 +11,7 @@ Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zet
 - [Rationale](#rationale)
 - [Quick start](#quick-start)
 - [Contributions](#contributions)
-- [License](#license)
+- [Licenses](#licenses)
 - [Code of Conduct](#code-of-conduct)
 - [Security Vulnerability Reporting](#security-vulnerability-reporting)
 
@@ -36,9 +36,9 @@ We welcome issue reports [here](../../issues); be sure to choose the proper issu
 Before sending a [Pull Request](../../pulls), please make sure you read our
 [Contribution Guidelines](https://github.com/bloomberg/.github/blob/master/CONTRIBUTING.md).
 
-## License
+## Licenses
 
-Please read the [LICENSE](LICENSE) file.
+Please read the [LICENSE](LICENSE) and [SQLCIPHER_LICENSE](SQLCIPHER_LICENSE) files.
 
 ## Code of Conduct
 

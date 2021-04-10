@@ -20,7 +20,7 @@
     }
 
     dependencies {
-        implementation('com.bloomberg:selekt-android:<version>')
+        implementation 'com.bloomberg:selekt-android:<version>'
     }
     ```
 
@@ -44,7 +44,7 @@
         }
     }
 
-    private fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
 
     val databaseHelper = SQLiteOpenHelper(
         context = context.applicationContext,
@@ -76,7 +76,7 @@
     }
 
     private byte[] deriveKey() {
-        // TODO Optional key.
+        // TODO Optional key, must be exactly 32-bytes long.
     }
 
     final SQLiteOpenHelper databaseHelper = new SQLiteOpenHelper(
@@ -94,41 +94,43 @@
 
 === "Kotlin"
     ``` kotlin
-    import com.bloomberg.selekt.android.support.buildRoomDatabase
+    import com.bloomberg.selekt.android.support.createSupportSQLiteOpenHelperFactory
 
-    private fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
 
-    buildRoomDatabase(
-        applicationContext,
-        MyAppDatabase::class.java,
-        "sample",
+    provate val factory = createSupportSQLiteOpenHelperFactory(
         SQLiteJournalMode.WAL,
         deriveKey()
     )
+
+    val database = Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
+        .openHelperFactory(factory)
+        .build()
     ```
 
 === "Java"
     ``` java
-    import com.bloomberg.selekt.android.support.buildRoomDatabase;
+    import com.bloomberg.selekt.android.support.SupportSQLiteOpenHelperKt;
 
     private byte[] deriveKey() {
-        // TODO Optional key.
+        // TODO Optional key, must be exactly 32-bytes long.
     }
 
-    buildRoomDatabase(
-        applicationContext,
-        MyAppDatabase.class,
-        "sample.db",
-        SQLiteJournalMode.WAL,
-        deriveKey()
-    )
+    provate SupportSQLiteOpenHelper.Factory factory =
+        SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
+            SQLiteJournalMode.WAL,
+            deriveKey())
+
+    final RoomDatabase database = Room.databaseBuilder(context, MyAppDatabase.class, "app")
+        .openHelperFactory(factory)
+        .build()
     ```
 
 ### Directly
 
 === "Kotlin"
     ``` kotlin
-    private fun deriveKey(): ByteArray? = TODO("Optional key.")
+    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
 
     SQLiteDatabase.openOrCreateDatabase(
         context.getDatabasePath("sample"),
@@ -142,7 +144,7 @@
 === "Java"
     ``` java
     private byte[] deriveKey() {
-        // TODO Optional key.
+        // TODO Optional key, must be exactly 32-bytes long.
     }
 
     final SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(
