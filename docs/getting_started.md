@@ -87,7 +87,7 @@
             deriveKey(),
             "sample"
         )
-    )
+    );
     ```
 
 ### Using Room
@@ -110,8 +110,6 @@
 
 === "Java"
     ``` java
-    import com.bloomberg.selekt.android.support.SupportSQLiteOpenHelperKt;
-
     private byte[] deriveKey() {
         // TODO Optional key, must be exactly 32-bytes long.
     }
@@ -119,11 +117,11 @@
     provate SupportSQLiteOpenHelper.Factory factory =
         SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
             SQLiteJournalMode.WAL,
-            deriveKey())
+            deriveKey());
 
     final RoomDatabase database = Room.databaseBuilder(context, MyAppDatabase.class, "app")
         .openHelperFactory(factory)
-        .build()
+        .build();
     ```
 
 ### Directly
