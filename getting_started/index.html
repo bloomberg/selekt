@@ -573,7 +573,7 @@
         <span class="n">deriveKey</span><span class="p">(),</span>
         <span class="s">&quot;sample&quot;</span>
     <span class="p">)</span>
-<span class="p">)</span>
+<span class="p">);</span>
 </code></pre></div>
 </div>
 </div>
@@ -594,20 +594,18 @@
 </code></pre></div>
 </div>
 <input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><label for="__tabbed_3_2">Java</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">com.bloomberg.selekt.android.support.SupportSQLiteOpenHelperKt</span><span class="p">;</span>
-
-<span class="kd">private</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">deriveKey</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">deriveKey</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// TODO Optional key, must be exactly 32-bytes long.</span>
 <span class="p">}</span>
 
 <span class="n">provate</span> <span class="n">SupportSQLiteOpenHelper</span><span class="p">.</span><span class="na">Factory</span> <span class="n">factory</span> <span class="o">=</span>
     <span class="n">SupportSQLiteOpenHelperKt</span><span class="p">.</span><span class="na">createSupportSQLiteOpenHelperFactory</span><span class="p">(</span>
         <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span>
-        <span class="n">deriveKey</span><span class="p">())</span>
+        <span class="n">deriveKey</span><span class="p">());</span>
 
 <span class="kd">final</span> <span class="n">RoomDatabase</span> <span class="n">database</span> <span class="o">=</span> <span class="n">Room</span><span class="p">.</span><span class="na">databaseBuilder</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">MyAppDatabase</span><span class="p">.</span><span class="na">class</span><span class="p">,</span> <span class="s">&quot;app&quot;</span><span class="p">)</span>
     <span class="p">.</span><span class="na">openHelperFactory</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
-    <span class="p">.</span><span class="na">build</span><span class="p">()</span>
+    <span class="p">.</span><span class="na">build</span><span class="p">();</span>
 </code></pre></div>
 </div>
 </div>
