@@ -4,7 +4,7 @@
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Maven Central](https://img.shields.io/maven-central/v/com.bloomberg/selekt-android.svg)](https://search.maven.org/artifact/com.bloomberg/selekt-android)
 
-Selekt is a Kotlin and familiar Android wrapper over [SQLCipher](https://www.zetetic.net/sqlcipher/), an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3.
+Selekt is a Kotlin and familiar Android wrapper over the community edition of [SQLCipher](https://www.zetetic.net/sqlcipher/open-source/), an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3.
 
 ## Menu
 
