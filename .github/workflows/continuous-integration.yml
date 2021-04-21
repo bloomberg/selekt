@@ -34,7 +34,7 @@ jobs:
     - name: 'Coverage'
       run: |
         ./gradlew :jacocoSelektTestReport
-        ./scripts/publish_coverage.sh
+        bash scripts/publish_coverage.sh
     - name: 'Build Selekt'
       run: |
         export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
