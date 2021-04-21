@@ -44,7 +44,8 @@
         }
     }
 
-    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
+    private fun deriveKey(): ByteArray? = TODO(
+        "Optional key, must be exactly 32-bytes long.")
 
     val databaseHelper = SQLiteOpenHelper(
         context = context.applicationContext,
@@ -94,9 +95,8 @@
 
 === "Kotlin"
     ``` kotlin
-    import com.bloomberg.selekt.android.support.createSupportSQLiteOpenHelperFactory
-
-    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
+    private fun deriveKey(): ByteArray? = TODO(
+        "Optional key, must be exactly 32-bytes long.")
 
     provate val factory = createSupportSQLiteOpenHelperFactory(
         SQLiteJournalMode.WAL,
@@ -128,7 +128,8 @@
 
 === "Kotlin"
     ``` kotlin
-    private fun deriveKey(): ByteArray? = TODO("Optional key, must be exactly 32-bytes long.")
+    private fun deriveKey(): ByteArray? = TODO(
+        "Optional key, must be exactly 32-bytes long.")
 
     SQLiteDatabase.openOrCreateDatabase(
         context.getDatabasePath("sample"),
