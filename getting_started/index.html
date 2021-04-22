@@ -534,7 +534,8 @@
     <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
+<span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span>
+    <span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
 
 <span class="kd">val</span> <span class="nv">databaseHelper</span> <span class="o">=</span> <span class="n">SQLiteOpenHelper</span><span class="p">(</span>
     <span class="n">context</span> <span class="o">=</span> <span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
@@ -582,9 +583,8 @@
 </div>
 <h3 id="using-room">Using Room</h3>
 <div class="tabbed-set" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><label for="__tabbed_3_1">Kotlin</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="k">import</span> <span class="nn">com.bloomberg.selekt.android.support.createSupportSQLiteOpenHelperFactory</span>
-
-<span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span>
+    <span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
 
 <span class="n">provate</span> <span class="kd">val</span> <span class="nv">factory</span> <span class="o">=</span> <span class="n">createSupportSQLiteOpenHelperFactory</span><span class="p">(</span>
     <span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span>
@@ -614,7 +614,8 @@
 </div>
 <h3 id="directly">Directly</h3>
 <div class="tabbed-set" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><label for="__tabbed_4_1">Kotlin</label><div class="tabbed-content">
-<div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span> <span class="kd">fun</span> <span class="nf">deriveKey</span><span class="p">():</span> <span class="n">ByteArray? </span><span class="o">=</span> <span class="n">TODO</span><span class="p">(</span>
+    <span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
 
 <span class="n">SQLiteDatabase</span><span class="p">.</span><span class="na">openOrCreateDatabase</span><span class="p">(</span>
     <span class="n">context</span><span class="p">.</span><span class="na">getDatabasePath</span><span class="p">(</span><span class="s">&quot;sample&quot;</span><span class="p">),</span>
