@@ -57,8 +57,6 @@ interface IObjectPool<K : Any, T : Any> : Closeable {
 }
 
 interface IObjectFactory<T : Any> : Closeable {
-    fun activateObject(obj: T)
-
     @Throws(Exception::class)
     fun destroyObject(obj: T)
 
@@ -67,10 +65,6 @@ interface IObjectFactory<T : Any> : Closeable {
 
     @Throws(Exception::class)
     fun makePrimaryObject(): T
-
-    fun passivateObject(obj: T)
-
-    fun validateObject(obj: T): Boolean
 }
 
 interface IPooledObject<K> {

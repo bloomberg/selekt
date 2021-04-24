@@ -154,7 +154,7 @@ internal class Mutex {
         }
     }
 
-    private fun isThisHead() = waiters.peek() == Thread.currentThread()
+    private fun isThisHead() = waiters.peek() === Thread.currentThread()
 
     private companion object {
         // Reduce the risk of "lost unpark" due to class loading.

@@ -64,8 +64,6 @@ internal class SingleObjectPoolTest {
     @Before
     fun setUp() {
         pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
-            override fun activateObject(obj: PooledObject) = Unit
-
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
@@ -73,10 +71,6 @@ internal class SingleObjectPoolTest {
             override fun makeObject() = PooledObject()
 
             override fun makePrimaryObject() = makeObject()
-
-            override fun passivateObject(obj: PooledObject) = Unit
-
-            override fun validateObject(obj: PooledObject) = true
         }, executor, 1_000L, 20_000L)
     }
 
@@ -148,8 +142,6 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun scheduledEviction(): Unit = SingleObjectPool(object : IObjectFactory<PooledObject> {
-        override fun activateObject(obj: PooledObject) = Unit
-
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
@@ -157,10 +149,6 @@ internal class SingleObjectPoolTest {
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
-
-        override fun passivateObject(obj: PooledObject) = Unit
-
-        override fun validateObject(obj: PooledObject) = true
     }, executor, 500L, 500L).use {
         val obj = it.borrowObject().apply { it.returnObject(this) }
         Thread.sleep(1_500L)
@@ -183,7 +171,6 @@ internal class SingleObjectPoolTest {
     fun secondEvictionWhileBorrowingFails() {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         whenever(factory.makePrimaryObject()) doReturn PooledObject()
-        whenever(factory.validateObject(any())) doReturn true
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
             val obj = it.borrowObject()
             it.returnObject(obj)
@@ -200,8 +187,6 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun scheduledEvictionFailsFollowingFurtherUse(): Unit = SingleObjectPool(object : IObjectFactory<IPooledObject<String>> {
-        override fun activateObject(obj: IPooledObject<String>) = Unit
-
         override fun close() = Unit
 
         override fun destroyObject(obj: IPooledObject<String>) = Unit
@@ -209,10 +194,6 @@ internal class SingleObjectPoolTest {
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
-
-        override fun passivateObject(obj: IPooledObject<String>) = Unit
-
-        override fun validateObject(obj: IPooledObject<String>) = true
     }, executor, 1_000L, 1_000L).use {
         val obj = it.borrowObject().apply {
             it.returnObject(this)
@@ -250,9 +231,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun closeDestroys() {
-        val factory = mock<IObjectFactory<IPooledObject<String>>>().apply {
-            whenever(validateObject(any())) doReturn true
-        }
+        val factory = mock<IObjectFactory<IPooledObject<String>>>()
         val obj = PooledObject()
         whenever(factory.makePrimaryObject()) doReturn obj
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
@@ -274,7 +253,6 @@ internal class SingleObjectPoolTest {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         val obj = PooledObject()
         whenever(factory.makePrimaryObject()) doReturn obj
-        whenever(factory.validateObject(any())) doReturn true
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
             it.borrowObject()
             it.returnObject(obj)
@@ -350,7 +328,6 @@ internal class SingleObjectPoolTest {
     fun borrowRecoversFromException() {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         whenever(factory.makePrimaryObject()) doThrow IOException()
-        whenever(factory.validateObject(any())) doReturn true
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
             assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
             assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
@@ -439,8 +416,6 @@ internal class SingleObjectPoolTest {
     fun clearLowPriorityReleasesMemoryFromEach() {
         val obj = mock<PooledObject>()
         SingleObjectPool(object : IObjectFactory<PooledObject> {
-            override fun activateObject(obj: PooledObject) = Unit
-
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
@@ -448,10 +423,6 @@ internal class SingleObjectPoolTest {
             override fun makeObject() = obj
 
             override fun makePrimaryObject() = obj
-
-            override fun passivateObject(obj: PooledObject) = Unit
-
-            override fun validateObject(obj: PooledObject) = true
         }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
             it.borrowObject().apply { it.returnObject(this) }
             it.clear(Priority.LOW)
