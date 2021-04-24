@@ -63,8 +63,6 @@ internal class CommonObjectPoolTest {
     @Before
     fun setUp() {
         val factory = object : IObjectFactory<PooledObject> {
-            override fun activateObject(obj: PooledObject) = Unit
-
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
@@ -72,10 +70,6 @@ internal class CommonObjectPoolTest {
             override fun makePrimaryObject() = PooledObject(isPrimary = true)
 
             override fun makeObject() = PooledObject()
-
-            override fun passivateObject(obj: PooledObject) = Unit
-
-            override fun validateObject(obj: PooledObject) = true
         }
         pool = CommonObjectPool(
             factory,
@@ -233,8 +227,6 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun scheduledEviction(): Unit = CommonObjectPool(object : IObjectFactory<PooledObject> {
-        override fun activateObject(obj: PooledObject) = Unit
-
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
@@ -242,10 +234,6 @@ internal class CommonObjectPoolTest {
         override fun makePrimaryObject() = PooledObject(isPrimary = true)
 
         override fun makeObject() = PooledObject()
-
-        override fun passivateObject(obj: PooledObject) = Unit
-
-        override fun validateObject(obj: PooledObject) = true
     }, executor, configuration.copy(
         evictionDelayMillis = 0L,
         evictionIntervalMillis = 50L
@@ -257,8 +245,6 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun scheduledEvictionFailsWithUse() = CommonObjectPool(object : IObjectFactory<PooledObject> {
-        override fun activateObject(obj: PooledObject) = Unit
-
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
@@ -266,10 +252,6 @@ internal class CommonObjectPoolTest {
         override fun makePrimaryObject() = PooledObject(isPrimary = true)
 
         override fun makeObject() = PooledObject()
-
-        override fun passivateObject(obj: PooledObject) = Unit
-
-        override fun validateObject(obj: PooledObject) = true
     }, executor, configuration.copy(evictionIntervalMillis = 200L), other).use {
         val obj = it.borrowObject().apply {
             it.returnObject(this)
@@ -292,7 +274,6 @@ internal class CommonObjectPoolTest {
         val factory = mock<IObjectFactory<PooledObject>>()
         val obj = PooledObject()
         whenever(factory.makeObject()) doReturn obj
-        whenever(factory.validateObject(any())) doReturn true
         CommonObjectPool(factory, executor, configuration, other).use {
             it.borrowObject().run { it.returnObject(this) }
         }
@@ -443,8 +424,6 @@ internal class CommonObjectPoolTest {
     fun clearLowPriorityReleasesMemoryFromEach() {
         val obj = mock<PooledObject>()
         SingleObjectPool(object : IObjectFactory<PooledObject> {
-            override fun activateObject(obj: PooledObject) = Unit
-
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
@@ -452,10 +431,6 @@ internal class CommonObjectPoolTest {
             override fun makeObject() = obj
 
             override fun makePrimaryObject() = obj
-
-            override fun passivateObject(obj: PooledObject) = Unit
-
-            override fun validateObject(obj: PooledObject) = true
         }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
             it.borrowObject().apply { it.returnObject(this) }
             it.clear(Priority.LOW)
@@ -481,8 +456,6 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
     fun setUp() {
         pool = CommonObjectPool(
             object : IObjectFactory<PooledObject> {
-                override fun activateObject(obj: PooledObject) = Unit
-
                 override fun close() = Unit
 
                 override fun destroyObject(obj: PooledObject) = Unit
@@ -490,10 +463,6 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
                 override fun makePrimaryObject() = PooledObject(isPrimary = true)
 
                 override fun makeObject() = PooledObject()
-
-                override fun passivateObject(obj: PooledObject) = Unit
-
-                override fun validateObject(obj: PooledObject) = true
             },
             Executors.newSingleThreadScheduledExecutor {
                 Thread(it).apply {

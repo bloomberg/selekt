@@ -75,8 +75,6 @@ private class SQLConnectionFactory(
     private var createdCount = 0
     private var destroyedCount = 0
 
-    override fun activateObject(obj: CloseableSQLExecutor) = Unit
-
     override fun close() {
         key?.zero()
     }
@@ -98,10 +96,4 @@ private class SQLConnectionFactory(
             ++createdCount
         }
     }
-
-    override fun passivateObject(obj: CloseableSQLExecutor) {
-        runCatching { obj.execute("ROLLBACK") }
-    }
-
-    override fun validateObject(obj: CloseableSQLExecutor) = obj.isAutoCommit
 }
