@@ -119,8 +119,9 @@
             SQLiteJournalMode.WAL,
             deriveKey());
 
-    final RoomDatabase database = Room.databaseBuilder(context, MyAppDatabase.class, "app")
-        .openHelperFactory(factory)
+    final RoomDatabase database = Room.databaseBuilder(
+        context, MyAppDatabase.class, "app"
+    ).openHelperFactory(factory)
         .build();
     ```
 
