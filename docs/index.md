@@ -1,4 +1,4 @@
-Selekt is a Kotlin and familiar Android wrapper over the community edition of SQLCipher, an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3.
+Selekt is a Kotlin and familiar Android wrapper over the community edition of SQLCipher, an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3: When enabled for WAL-journal mode, "readers do not block writers and a writer does not block readers. Reading and writing can proceed concurrently."
 
 ## Licenses
 
