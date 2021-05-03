@@ -16,15 +16,69 @@
 
 package com.bloomberg.selekt.commons
 
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import java.io.File
 import java.nio.file.Files
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 internal class DatabaseKtTest {
+    private val parent = Files.createTempDirectory("foo").toFile().also { it.deleteOnExit() }
+
+    @AfterEach
+    fun tearDown() {
+        assertTrue(parent.deleteRecursively())
+    }
+
+    @Test
+    fun deleteDatabase() {
+        arrayOf(
+            "db",
+            "db-journal",
+            "db-shm",
+            "db-wal"
+        ).forEach {
+            Files.createFile(File("${parent.absolutePath}/$it").toPath())
+        }
+        Files.createFile(File("${parent.absolutePath}/db-mj-bar").toPath())
+        assertEquals(false, parent.listFiles { f -> f.name.startsWith("db") }?.isEmpty())
+        deleteDatabase(File("${parent.absolutePath}/db"))
+        assertEquals(true, parent.listFiles { f -> f.name.startsWith("db") }?.isEmpty())
+    }
+
     @Test
     fun deleteDatabaseDirectory() {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            deleteDatabase(Files.createTempDirectory("foo").toFile().also { it.deleteOnExit() })
+            deleteDatabase(parent)
+        }
+    }
+
+    @Test
+    fun deleteDatabaseWithoutParent() {
+        mock<File>().apply {
+            whenever(isFile) doReturn true
+        }.let {
+            assertDoesNotThrow {
+                deleteDatabase(it)
+            }
+        }
+    }
+
+    @Test
+    fun deleteDatabaseWithoutParentFile() {
+        mock<File>().apply {
+            whenever(isFile) doReturn true
+            whenever(parentFile) doReturn File("foo")
+        }.let {
+            assertDoesNotThrow {
+                deleteDatabase(it)
+            }
         }
     }
 }

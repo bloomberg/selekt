@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 0.12.6
+
+### Fixes
+
+* Fix convenience method for deleting database files, and extend its test coverage.
+* Use the `ColumnType`-enum directly when converting to an Android Cursor column type. This increases code coverage by removing a branch we cannot test.
+* Appeal instead to a Java-cast in Queries when casting an array, Kotlin's `as` results in a generated null-check branch which won't be encountered here and can't be tested. This increases code coverage.
+* Reduce the number of logical branches in the pool implementations, simplifying these implementations and increasing their test coverage.
+
 ## Version 0.12.5
 
 ### Fixes

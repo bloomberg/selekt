@@ -261,6 +261,21 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
+    fun evictionNegativeIntervalFails() = CommonObjectPool(object : IObjectFactory<PooledObject> {
+        override fun close() = Unit
+
+        override fun destroyObject(obj: PooledObject) = Unit
+
+        override fun makeObject() = makePrimaryObject()
+
+        override fun makePrimaryObject() = PooledObject()
+    }, executor, configuration.copy(evictionIntervalMillis = -1L, evictionDelayMillis = 100L), other).use {
+        val obj = it.borrowObject().apply { it.returnObject(this) }
+        Thread.sleep(500L)
+        assertSame(obj, it.borrowObject().apply { it.returnObject(this) }, "Pool must return the same object.")
+    }
+
+    @Test
     fun throwsOnBorrowAfterClose(): Unit = pool.run {
         close()
         assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {

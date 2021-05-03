@@ -20,20 +20,14 @@ import android.database.AbstractCursor
 import android.database.Cursor
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
-import com.bloomberg.selekt.SQL_BLOB
-import com.bloomberg.selekt.SQL_FLOAT
-import com.bloomberg.selekt.SQL_INTEGER
-import com.bloomberg.selekt.SQL_NULL
-import com.bloomberg.selekt.SQL_TEXT
 import javax.annotation.concurrent.NotThreadSafe
 
-private fun ColumnType.asAndroidCursorFieldType() = when (sqlDataType) {
-    SQL_TEXT -> Cursor.FIELD_TYPE_STRING
-    SQL_INTEGER -> Cursor.FIELD_TYPE_INTEGER
-    SQL_NULL -> Cursor.FIELD_TYPE_NULL
-    SQL_FLOAT -> Cursor.FIELD_TYPE_FLOAT
-    SQL_BLOB -> Cursor.FIELD_TYPE_BLOB
-    else -> error("Unrecognised column type: $sqlDataType")
+private fun ColumnType.asAndroidCursorFieldType() = when (this) {
+    ColumnType.STRING -> Cursor.FIELD_TYPE_STRING
+    ColumnType.INTEGER -> Cursor.FIELD_TYPE_INTEGER
+    ColumnType.NULL -> Cursor.FIELD_TYPE_NULL
+    ColumnType.FLOAT -> Cursor.FIELD_TYPE_FLOAT
+    ColumnType.BLOB -> Cursor.FIELD_TYPE_BLOB
 }
 
 internal fun ICursor.asAndroidCursor(): Cursor = CursorWrapper(this)

@@ -133,6 +133,21 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun evictionNegativeIntervalFails() = SingleObjectPool(object : IObjectFactory<PooledObject> {
+        override fun close() = Unit
+
+        override fun destroyObject(obj: PooledObject) = Unit
+
+        override fun makeObject() = makePrimaryObject()
+
+        override fun makePrimaryObject() = PooledObject()
+    }, executor, 100L, -1L).use {
+        val obj = it.borrowObject().apply { it.returnObject(this) }
+        Thread.sleep(500L)
+        assertSame(obj, it.borrowObject().apply { it.returnObject(this) }, "Pool must return the same object.")
+    }
+
+    @Test
     fun newObjectAfterSuccessfulEviction() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         evict()
