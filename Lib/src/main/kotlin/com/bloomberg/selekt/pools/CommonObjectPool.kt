@@ -186,11 +186,12 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }
 
-    private infix fun T.shouldBeRemovedAt(priority: Priority?): Boolean {
-        fun T.isIdle() = this@isIdle.tag != this@CommonObjectPool.tag
-        return priority == null && isIdle() && future?.isCancelled == false ||
-            !priority.isHigh() && isIdle() ||
+    private infix fun T.shouldBeRemovedAt(
+        priority: Priority?
+    ) = (this@shouldBeRemovedAt.tag != this@CommonObjectPool.tag).let {
+        priority == null && it && future?.isCancelled == false ||
             isClosed.get() ||
-            priority.isHigh()
+            priority.isHigh() ||
+            it
     }
 }

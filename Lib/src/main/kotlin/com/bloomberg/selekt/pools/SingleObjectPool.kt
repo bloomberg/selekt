@@ -149,9 +149,10 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }
 
-    private infix fun T.shouldBeRemovedAt(priority: Priority?) =
-        priority == null && canEvict && future?.isCancelled == false ||
-            !priority.isHigh() && canEvict ||
+    private infix fun T.shouldBeRemovedAt(priority: Priority?) = canEvict.let {
+        priority == null && it && future?.isCancelled == false ||
             isClosed ||
-            priority.isHigh()
+            priority.isHigh() ||
+            it
+    }
 }

@@ -281,6 +281,14 @@ internal class SQLConnectionTest {
         }
     }
 
+    @Test
+    fun releaseMemory() {
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.releaseMemory()
+            verify(sqlite, times(1)).databaseReleaseMemory(any())
+        }
+    }
+
     private companion object {
         const val DB = 1L
     }

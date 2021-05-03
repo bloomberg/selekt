@@ -46,7 +46,7 @@ internal class SQLQuery internal constructor(
             @Language("RoomSql") sql: String,
             statementType: SQLStatementType,
             args: Array<out Any?>
-        ) = SQLQuery(session, sql, statementType, args.copyOf() as Array<Any?>)
+        ) = SQLQuery(session, sql, statementType, Array<Any?>::class.java.cast(args.copyOf()))
     }
 
     override fun bindBlob(index: Int, value: ByteArray) = bind(index, value)

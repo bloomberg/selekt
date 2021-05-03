@@ -88,13 +88,12 @@ private class SupportSQLiteDatabase constructor(
 
     override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<out Any>) = database.exec(sql, bindArgs)
 
-    override fun getAttachedDbs() = sequence<Pair<String, String>> {
-        database.query("PRAGMA database_list", null).use {
-            while (it.moveToNext()) {
-                yield(Pair(it.getString(1), it.getString(2)))
-            }
+    override fun getAttachedDbs() = database.query("PRAGMA database_list", null).use {
+        List<Pair<String, String>>(it.count) { _ ->
+            it.moveToNext()
+            Pair(it.getString(1), it.getString(2))
         }
-    }.toList()
+    }
 
     override fun getMaximumSize() = database.maximumSize
 
