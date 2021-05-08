@@ -55,6 +55,15 @@ class SelektPlugin : Plugin<Project> {
                     }
                 }
             }
+            withPlugin("com.android.application") {
+                androidExtension().apply {
+                    lintOptions {
+                        isWarningsAsErrors = true
+                        // FIXME Remove when all dependencies are available elsewhere.
+                        disable("JcenterRepositoryObsolete")
+                    }
+                }
+            }
             withPlugin("com.android.library") {
                 dependencies.apply {
                     configurations.getByName("androidTestImplementation") {
@@ -66,6 +75,8 @@ class SelektPlugin : Plugin<Project> {
                 androidExtension().apply {
                     lintOptions {
                         isWarningsAsErrors = true
+                        // FIXME Remove when all dependencies are available elsewhere.
+                        disable("JcenterRepositoryObsolete")
                     }
                     testOptions {
                         unitTests.apply {

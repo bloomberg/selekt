@@ -72,6 +72,7 @@ android {
     externalNativeBuild {
         cmake {
             path("$rootDir/SQLite3/CMakeLists.txt")
+            version = Versions.CMAKE.version
         }
     }
 }

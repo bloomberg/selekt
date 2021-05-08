@@ -14,9 +14,9 @@ jobs:
       - name: 'Install system packages'
         run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
       - name: 'Install Build Tools'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'build-tools;30.0.0'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'build-tools;30.0.3'
       - name: 'Install CMake'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.10.2.4988404'
+        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.18.1'
       - name: 'Install NDK'
         run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.3.6528147'
       - name: 'Install Android SDK'
@@ -34,7 +34,8 @@ jobs:
       - name: 'Configure local.properties'
         run: >
           echo "sdk.dir=${ANDROID_HOME}" > local.properties &&
-          echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
+          echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties &&
+          echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
       - name: 'Dokka'
         run: |
           export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
