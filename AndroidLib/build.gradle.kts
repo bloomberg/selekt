@@ -100,7 +100,6 @@ tasks.register<Task>("buildHostSQLite") {
 
 afterEvaluate {
     arrayOf("debug", "release").forEach {
-        @UseExperimental(ExperimentalStdlibApi::class)
         tasks.getByName("pre${it.capitalize(Locale.US)}UnitTestBuild").dependsOn("buildHostSQLite")
     }
 }

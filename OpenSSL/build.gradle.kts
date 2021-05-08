@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:UseExperimental(ExperimentalStdlibApi::class)
-
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
 import java.util.Locale
