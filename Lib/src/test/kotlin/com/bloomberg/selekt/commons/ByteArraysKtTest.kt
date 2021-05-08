@@ -14,33 +14,17 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt
+package com.bloomberg.selekt.commons
 
-import com.bloomberg.selekt.annotations.Generated
-import com.bloomberg.selekt.commons.zero
+import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
-private const val KEY_SIZE = 32
-
-internal class Key(value: ByteArray) {
-    init {
-        require(KEY_SIZE == value.size) { "Key must be 32 bytes in size." }
-    }
-
-    private val lock = Any()
-    private val value: ByteArray = value.copyOf()
-
-    fun zero() = synchronized(lock) {
-        value.fill(0)
-    }
-
-    @Generated
-    inline fun <R> use(action: (ByteArray) -> R) = synchronized(lock) {
-        value.copyOf()
-    }.let {
-        try {
-            action(it)
-        } finally {
+internal class ByteArraysKtTest {
+    @Test
+    fun zero() {
+        byteArrayOf(0x42).let {
             it.zero()
+            assertEquals(0, it.first())
         }
     }
 }

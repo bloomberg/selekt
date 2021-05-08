@@ -197,6 +197,8 @@ open class SQLite(
         statementHolder: LongArray
     ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
 
+    fun rawKey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rawKey(db, key, key.size))
+
     fun rekey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rekey(db, key, key.size))
 
     fun releaseMemory(bytes: Int) = sqlite.releaseMemory(bytes)
