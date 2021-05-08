@@ -33,7 +33,10 @@ class JacocoAndroidPlugin : Plugin<Project> {
                     else -> error("Unrecognised Android project type for project '$name'.")
                 }.all {
                     val testTask = this@run.tasks.unitTestTask(this@all).apply {
-                        jacocoTaskExtension().isIncludeNoLocationClasses = true
+                        jacocoTaskExtension().let {
+                            it.isIncludeNoLocationClasses = true
+                            it.excludes = listOf("jdk.internal.*")
+                        }
                     }
                     tasks.register(
                         "jacocoTest${name.capitalize(Locale.US)}UnitTestReport",
