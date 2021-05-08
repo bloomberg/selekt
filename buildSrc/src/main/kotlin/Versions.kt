@@ -20,14 +20,15 @@ enum class Versions(
     val version: String,
     private val url: URL
 ) {
-    ANDROID_BUILD_TOOLS("30.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("4.1.3", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_BUILD_TOOLS("30.0.3", URL("https://developer.android.com/studio/releases/build-tools")),
+    ANDROID_GRADLE_PLUGIN("4.2.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.0-alpha07", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_SDK("30", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.2.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.2.5", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     ANDROIDX_SQLITE("2.1.0", URL("https://developer.android.com/jetpack/androidx/releases/sqlite")),
     ASSERT_J("3.15.0", URL("https://joel-costigliola.github.io/assertj")),
+    CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.14.2", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.4.10.2", URL("https://github.com/Kotlin/dokka")),
     ESPRESSO_CORE("3.1.1",
