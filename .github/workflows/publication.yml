@@ -26,13 +26,16 @@ jobs:
       with:
         java-version: 1.8
     - name: 'Configure local.properties'
-      run: >
-        echo "sdk.dir=${ANDROID_HOME}" > local.properties &&
-        echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties &&
+      run: |
+        echo "sdk.dir=${ANDROID_HOME}" > local.properties
+        echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
         echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
+    - name: 'Unit tests'
+      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Build Selekt'
       run: |
         export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
+        ./gradlew clean
         ./gradlew :OpenSSL:assembleArm64-v8a
         ./gradlew :OpenSSL:assembleArmeabi-v7a
         ./gradlew :OpenSSL:assembleX86
