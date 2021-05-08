@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.12.7
+
+### Fixes
+
+* Move the creation of the database connection keying SQL-statement string from the JVM into the JNI.
+
+### Dependencies
+
+* Android Gradle plugin 4.2.0.
+* CMake 3.18.1.
+
 ## Version 0.12.6
 
 ### Fixes
