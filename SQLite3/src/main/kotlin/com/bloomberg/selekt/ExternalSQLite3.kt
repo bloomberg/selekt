@@ -171,6 +171,8 @@ class ExternalSQLite private constructor(
 
     external fun prepareV2(db: Long, sql: String, length: Int, statementHolder: LongArray): SQLCode
 
+    external fun rawKey(db: Long, key: ByteArray, length: Int): SQLCode
+
     external fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
 
     external fun releaseMemory(bytes: Int): Int

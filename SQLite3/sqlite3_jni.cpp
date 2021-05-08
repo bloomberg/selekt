@@ -631,6 +631,32 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_rawKey(
+    JNIEnv* env,
+    jobject jobj,
+    jlong jdb,
+    jbyteArray jkey,
+    jint keyLength
+) {
+    AutoJByteArray key(env, jkey, keyLength);
+    std::string prefix = "PRAGMA key=\"x'";
+    std::string suffix = "'\"";
+    size_t const length = prefix.length() + (2 * keyLength) + suffix.length();
+    char sql[length + 1];
+    sql[length] = 0;
+    std::strcpy(sql, prefix.c_str());
+    int i;
+    char * const hex = sql + prefix.length();
+    for (i = 0; i < keyLength; ++i) {
+        std::sprintf(hex + (2 * i), "%02x", key[i]);
+    }
+    std::strcpy(sql + length - suffix.length(), suffix.c_str());
+    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
+    std::fill(sql, sql + length + 1, 0);
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     JNIEnv* env,
     jobject jobj,
