@@ -63,7 +63,7 @@ private fun DatabaseConfiguration.toPoolConfiguration() = PoolConfiguration(
 )
 
 @ThreadSafe
-private class SQLConnectionFactory(
+internal class SQLConnectionFactory(
     private val path: String,
     private val sqlite: SQLite,
     private val configuration: DatabaseConfiguration,
@@ -72,28 +72,19 @@ private class SQLConnectionFactory(
 ) : IObjectFactory<CloseableSQLExecutor> {
     private val busyLock = Any()
 
-    private var createdCount = 0
-    private var destroyedCount = 0
-
     override fun close() {
         key?.zero()
     }
 
     override fun destroyObject(obj: CloseableSQLExecutor) = synchronized(busyLock) {
-        obj.close().also {
-            ++destroyedCount
-        }
+        obj.close()
     }
 
     override fun makeObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key).also {
-            ++createdCount
-        }
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key)
     }
 
     override fun makePrimaryObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
-            ++createdCount
-        }
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key)
     }
 }

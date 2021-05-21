@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame

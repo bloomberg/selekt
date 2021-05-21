@@ -24,7 +24,7 @@ import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SimpleSQLQuery
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert

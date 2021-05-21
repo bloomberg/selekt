@@ -21,7 +21,7 @@ enum class Versions(
     private val url: URL
 ) {
     ANDROID_BUILD_TOOLS("30.0.3", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("4.2.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_GRADLE_PLUGIN("4.2.1", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.0-alpha07", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_SDK("30", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.2.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
@@ -33,7 +33,7 @@ enum class Versions(
     DOKKA("1.4.10.2", URL("https://github.com/Kotlin/dokka")),
     ESPRESSO_CORE("3.1.1",
         URL("https://android.googlesource.com/platform/frameworks/testing/+/android-support-test/espresso")),
-    JACOCO("0.8.6", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
+    JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.1", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.7.0", URL("https://junit.org/junit5/")),
@@ -41,9 +41,8 @@ enum class Versions(
     KOTLIN("1.4.32", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_COROUTINES("1.4.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KTLINT("0.35.0", URL("https://github.com/pinterest/ktlint")),
-    MOCKITO_ANDROID("3.0.0", URL("https://github.com/mockito/mockito")),
-    MOCKITO_CORE("3.0.0", URL("https://github.com/mockito/mockito")),
-    MOCKITO_KOTLIN("2.1.0", URL("https://github.com/nhaarman/mockito-kotlin")),
+    MOCKITO("3.9.0", URL("https://github.com/mockito/mockito")),
+    MOCKITO_KOTLIN("3.2.0", URL("https://github.com/nhaarman/mockito-kotlin")),
     NEXUS_PLUGIN("1.0.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     ROBOLECTRIC("4.5.1", URL("https://github.com/robolectric/robolectric"));
 

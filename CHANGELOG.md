@@ -1,6 +1,28 @@
 Change Log
 ==========
 
+## Version 0.13.0
+
+### Fixes
+
+* Throw if we try to make a connection when the connection factory is closed.
+* Scheduled eviction from the connection pool respects any cancellation of the eviction future.
+* In `Mutex` only ever test the remaining available waiting time if the specified wait interval was non-negative to begin with.
+* In `CommonObjectPool` decrement the internal connection count if making a connection should result in a thrown exception.
+* In `CommonObjectPool` increment the internal connection count and then attempt to schedule for eviction, rather than the other way round.
+
+### Features
+
+* Support Java 11.
+
+### Dependencies
+
+* Android Gradle Plugin 4.2.1.
+* Gradle 7.0.2.
+* JaCoCo 0.8.7.
+* Mockito 3.9.0.
+* Mockito-Kotlin 3.2.0.
+
 ## Version 0.12.7
 
 ### Fixes

@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.android
+package com.bloomberg.selekt
 
-import android.database.sqlite.SQLiteException
-import org.mockito.kotlin.mock
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
-internal class SQLiteOpenHelperCallbackTest {
+internal class SQLConnectionFactoryTest {
     @Test
-    fun downgradeThrowsByDefault() {
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
-            object : ISQLiteOpenHelper.Callback {
-                override fun onCreate(database: SQLiteDatabase) = Unit
+    fun closeThenMakePrimaryThrows() {
+        SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
+            close()
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                makePrimaryObject()
+            }
+        }
+    }
 
-                override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-            }.onDowngrade(mock(), 1, 0)
+    @Test
+    fun closeThenMakeThrows() {
+        SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
+            close()
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                makeObject()
+            }
         }
     }
 }

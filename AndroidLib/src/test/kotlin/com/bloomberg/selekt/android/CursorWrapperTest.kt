@@ -19,11 +19,11 @@ package com.bloomberg.selekt.android
 import android.database.Cursor
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 import org.junit.Before
@@ -50,7 +50,7 @@ internal class CursorWrapperTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         doReturn(emptyArray<String>()).whenever(cursor).columnNames()
         wrapper = cursor.asAndroidCursor()
     }

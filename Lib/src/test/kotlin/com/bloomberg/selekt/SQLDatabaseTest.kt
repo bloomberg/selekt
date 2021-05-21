@@ -16,23 +16,22 @@
 
 package com.bloomberg.selekt
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.Rule
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.Rule
 import org.junit.jupiter.api.Test
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.RuleChain
 import org.junit.rules.Timeout
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import kotlin.IllegalStateException
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -55,7 +54,7 @@ internal class SQLDatabaseTest {
 
     @BeforeEach
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         whenever(sqlite.openV2(any(), any(), any())).thenAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0

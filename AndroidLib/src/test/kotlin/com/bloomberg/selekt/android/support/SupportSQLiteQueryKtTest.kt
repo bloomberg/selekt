@@ -18,13 +18,13 @@ package com.bloomberg.selekt.android.support
 
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.bloomberg.selekt.ISQLProgram
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.atLeastOnce
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
@@ -37,7 +37,7 @@ internal class SupportSQLiteQueryKtTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         doReturn(42).whenever(query).argCount
         doReturn("SELECT * FROM Foo").whenever(query).sql
     }

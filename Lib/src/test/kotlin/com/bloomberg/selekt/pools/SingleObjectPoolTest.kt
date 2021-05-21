@@ -16,15 +16,6 @@
 
 package com.bloomberg.selekt.pools
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -36,8 +27,20 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.rules.DisableOnDebug
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.same
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import org.mockito.stubbing.Answer
 import java.io.IOException
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -350,6 +353,28 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun evictionFailsIfCancelled() {
+        val executor = object : ScheduledExecutorService by this@SingleObjectPoolTest.executor {
+            override fun scheduleAtFixedRate(
+                command: Runnable,
+                initialDelay: Long,
+                period: Long,
+                unit: TimeUnit
+            ) = this@SingleObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).also {
+                it.cancel(false)
+            }
+        }
+        SingleObjectPool(mock<IObjectFactory<PooledObject>>().apply {
+            whenever(makePrimaryObject()) doAnswer Answer { PooledObject() }
+        }, executor, 1_000L, 20_000L).use {
+            val obj = it.borrowObject().apply { it.returnObject(this) }
+            it.evict()
+            it.evict()
+            assertSame(obj, it.borrowObject())
+        }
+    }
+
+    @Test
     fun closeNotifiesAllWaiters(): Unit = pool.run {
         borrowObject()
         thread {
@@ -358,6 +383,28 @@ internal class SingleObjectPoolTest {
         }
         assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
             borrowObject()
+        }
+    }
+
+    @Test
+    fun borrowAsClosingDoesNotScheduleEviction() {
+        @Suppress("JoinDeclarationAndAssignment")
+        lateinit var pool: SingleObjectPool<String, PooledObject>
+        val executor = mock<ScheduledExecutorService>()
+        pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
+            override fun close() = Unit
+
+            override fun destroyObject(obj: PooledObject) = Unit
+
+            override fun makeObject() = PooledObject().also {
+                pool.close()
+            }
+
+            override fun makePrimaryObject() = makeObject()
+        }, executor, 1_000L, 20_000L)
+        pool.use {
+            it.borrowObject()
+            verify(executor, never()).scheduleAtFixedRate(any(), any(), any(), any())
         }
     }
 
@@ -428,6 +475,15 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun clearLowPriorityAfterEvictionAttemptClearsIdle(): Unit = pool.run {
+        val obj = borrowObject().also { returnObject(it) }
+        evict()
+        clear(Priority.LOW)
+        Thread.sleep(200L)
+        assertNotSame(obj, borrowObject())
+    }
+
+    @Test
     fun clearLowPriorityReleasesMemoryFromEach() {
         val obj = mock<PooledObject>()
         SingleObjectPool(object : IObjectFactory<PooledObject> {
@@ -443,6 +499,32 @@ internal class SingleObjectPoolTest {
             it.clear(Priority.LOW)
             Thread.sleep(200L)
             verify(obj, times(1)).releaseMemory()
+        }
+    }
+
+    @Test
+    fun evictLowPriorityWhenEmptyDoesNotThrow(): Unit = pool.run {
+        assertDoesNotThrow {
+            evict(Priority.LOW)
+        }
+    }
+
+    @Test
+    fun factoryDestroyObjectIOExceptionPropagates() {
+        val obj = mock<PooledObject>()
+        SingleObjectPool(object : IObjectFactory<PooledObject> {
+            override fun close() = Unit
+
+            override fun destroyObject(obj: PooledObject) = throw IOException("Oh no!")
+
+            override fun makeObject() = obj
+
+            override fun makePrimaryObject() = obj
+        }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
+            it.borrowObject().apply { it.returnObject(this) }
+            assertThatExceptionOfType(IOException::class.java).isThrownBy {
+                it.evict(Priority.HIGH)
+            }
         }
     }
 }

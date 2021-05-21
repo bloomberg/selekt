@@ -16,14 +16,14 @@
 
 package com.bloomberg.selekt
 
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.same
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 internal class SimpleSQLQueryTest {
     @Test

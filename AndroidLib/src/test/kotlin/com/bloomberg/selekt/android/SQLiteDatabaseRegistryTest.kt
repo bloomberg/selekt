@@ -16,20 +16,29 @@
 
 package com.bloomberg.selekt.android
 
-import android.database.sqlite.SQLiteException
-import org.mockito.kotlin.mock
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Test
+import org.mockito.kotlin.mock
 
-internal class SQLiteOpenHelperCallbackTest {
+internal class SQLiteDatabaseRegistryTest {
     @Test
-    fun downgradeThrowsByDefault() {
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
-            object : ISQLiteOpenHelper.Callback {
-                override fun onCreate(database: SQLiteDatabase) = Unit
+    fun registeringTwiceThrows() {
+        mock<SQLiteDatabase>().let {
+            SQLiteDatabaseRegistry.register(it)
+            try {
+                assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                    SQLiteDatabaseRegistry.register(it)
+                }
+            } finally {
+                SQLiteDatabaseRegistry.unregister(it)
+            }
+        }
+    }
 
-                override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-            }.onDowngrade(mock(), 1, 0)
+    @Test
+    fun unregisterThrows() {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            SQLiteDatabaseRegistry.unregister(mock())
         }
     }
 }

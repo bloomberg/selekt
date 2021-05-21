@@ -50,8 +50,7 @@ abstract class SharedCloseable : Closeable {
     }
 
     private companion object {
-        const val RETAIN_COUNT = "retainCount"
         val retainCountUpdater: AtomicIntegerFieldUpdater<SharedCloseable> = AtomicIntegerFieldUpdater.newUpdater(
-            SharedCloseable::class.java, RETAIN_COUNT)
+            SharedCloseable::class.java, "retainCount")
     }
 }

@@ -133,11 +133,12 @@ internal class Mutex {
             } else if (isCancellable && isCancelled()) {
                 removeThisWaiterNotifyingNext()
                 cancellationError()
-            }
-            remainingNanos = (deadlineNanos - System.nanoTime()).also {
-                if (it <= 0L) {
-                    removeThisWaiterNotifyingNext()
-                    return false
+            } else if (intervalNanos > 0L) {
+                remainingNanos = (deadlineNanos - System.nanoTime()).also {
+                    if (it <= 0L) {
+                        removeThisWaiterNotifyingNext()
+                        return false
+                    }
                 }
             }
         }
@@ -161,13 +162,11 @@ internal class Mutex {
         @Suppress("unused")
         private val ensureLoaded: Class<*> = LockSupport::class.java
 
-        const val IS_LOCKED = "isLocked"
         val isLockedUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java, IS_LOCKED)
+            Mutex::class.java, "isLocked")
 
-        const val IS_CANCELLED = "isCancelled"
         val isCancelledUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java, IS_CANCELLED)
+            Mutex::class.java, "isCancelled")
 
         fun cancellationError(): Nothing = error("Mutex received cancellation signal.")
     }

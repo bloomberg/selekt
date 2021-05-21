@@ -88,11 +88,10 @@ internal class BlobInputStream(
         destination: ByteArray,
         offset: Int,
         length: Int
-    ): Int {
-        if (offset < 0 || length < 0) {
-            throw ArrayIndexOutOfBoundsException("Offset: $offset; length: $length")
-        }
-        return available().let {
+    ) = if (offset < 0 || length < 0) {
+        throw ArrayIndexOutOfBoundsException("Offset: $offset; length: $length")
+    } else {
+        available().let {
             if (it > 0) {
                 minOf(it, length).also { len ->
                     if (offset + len > destination.size) {

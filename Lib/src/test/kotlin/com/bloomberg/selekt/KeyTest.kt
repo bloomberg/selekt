@@ -14,22 +14,35 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.android.support
+package com.bloomberg.selekt
 
-import androidx.sqlite.db.SupportSQLiteOpenHelper
-import org.mockito.kotlin.mock
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotSame
 
-internal class SupportSQLiteOpenHelperKtTest {
+internal class KeyTest {
     @Test
-    fun asSelektConfigurationNullNameThrows() {
-        SupportSQLiteOpenHelper.Configuration.builder(mock())
-            .callback(mock())
-            .build()
-            .let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-                it.asSelektConfiguration(byteArrayOf())
+    fun makesCopy() {
+        val raw = ByteArray(32) { 0x42 }
+        Key(raw).use {
+            assertEquals(raw.first(), it.first())
+            assertEquals(raw.size, it.size)
+            assertNotSame(raw, it)
+        }
+    }
+
+    @Test
+    fun zerosAfterUse() {
+        assertEquals(0, Key(ByteArray(32) { 0x42 }).use { it }.first())
+    }
+
+    @Test
+    fun zeroThenUseThrows() {
+        Key(ByteArray(32) { 0x42 }).apply {
+            zero()
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                use {}
             }
         }
     }
