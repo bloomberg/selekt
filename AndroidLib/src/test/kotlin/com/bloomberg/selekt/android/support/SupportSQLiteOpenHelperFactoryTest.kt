@@ -30,10 +30,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Rule

@@ -18,10 +18,10 @@ package com.bloomberg.selekt.android
 
 import android.app.Application
 import com.bloomberg.selekt.Experimental
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.same
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.DisableOnDebug

@@ -110,7 +110,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("mutex")
     private fun attemptScheduleEviction() {
-        if (future?.isCancelled == false || evictionIntervalMillis < 0L || isClosed) {
+        if (evictionIntervalMillis < 0L || isClosed) {
             return
         }
         future = executor.scheduleAtFixedRate(
@@ -149,10 +149,6 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }
 
-    private infix fun T.shouldBeRemovedAt(priority: Priority?) = canEvict.let {
-        priority == null && it && future?.isCancelled == false ||
-            isClosed ||
-            priority.isHigh() ||
-            it
-    }
+    private infix fun T.shouldBeRemovedAt(priority: Priority?) =
+        canEvict && (priority != null || !future!!.isCancelled) || isClosed || priority.isHigh()
 }

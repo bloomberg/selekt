@@ -82,8 +82,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                     return it
                 }
                 if (count < configuration.maxTotal) {
-                    attemptScheduleEviction()
                     ++count
+                    attemptScheduleEviction()
                     return@withLockInterruptibly Unit
                 }
                 otherPool.borrowObjectOrNull()?.let { return it }
@@ -93,7 +93,13 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             }
             null
         }?.let {
-            return factory.makeObject()
+            return runCatching { factory.makeObject() }.getOrElse {
+                lock.withLock {
+                    --count
+                    available.signal()
+                }
+                throw it
+            }
         }
         error("Pool is closed.")
     }
@@ -189,9 +195,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private infix fun T.shouldBeRemovedAt(
         priority: Priority?
     ) = (this@shouldBeRemovedAt.tag != this@CommonObjectPool.tag).let {
-        priority == null && it && future?.isCancelled == false ||
-            isClosed.get() ||
-            priority.isHigh() ||
-            it
+        it && (priority != null || !future!!.isCancelled) || isClosed.get() || priority.isHigh()
     }
 }

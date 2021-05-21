@@ -16,28 +16,27 @@
 
 package com.bloomberg.selekt
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isNull
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.BeforeEach
 import org.junit.Rule
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.Timeout
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
-import java.lang.IllegalArgumentException
-import kotlin.test.assertEquals
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -56,7 +55,7 @@ internal class SQLConnectionTest {
 
     @BeforeEach
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        MockitoAnnotations.openMocks(this)
         whenever(sqlite.openV2(any(), any(), any())).thenAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
@@ -203,6 +202,66 @@ internal class SQLConnectionTest {
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)"))
         }
+    }
+
+    @Test
+    fun executeForInt() {
+        val value = 7
+        val statement = 43L
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = statement
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.columnInt(any(), any())) doReturn value
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(value, it.executeForInt("SELECT * FROM Foo LIMIT 1"))
+        }
+        verify(sqlite, times(1)).columnInt(eq(statement), eq(0))
+    }
+
+    @Test
+    fun executeForLong() {
+        val value = 7L
+        val statement = 43L
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = statement
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.columnInt64(any(), any())) doReturn value
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(value, it.executeForLong("SELECT * FROM Foo LIMIT 1"))
+        }
+        verify(sqlite, times(1)).columnInt64(eq(statement), eq(0))
+    }
+
+    @Test
+    fun executeForString() {
+        val text = "hello"
+        val statement = 43L
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = statement
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.columnText(any(), any())) doReturn text
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(text, it.executeForString("SELECT * FROM Foo LIMIT 1"))
+        }
+        verify(sqlite, times(1)).columnText(eq(statement), eq(0))
     }
 
     @Test

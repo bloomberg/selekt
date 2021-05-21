@@ -69,7 +69,7 @@ class SelektPlugin : Plugin<Project> {
                     configurations.getByName("androidTestImplementation") {
                         add(name, kotlin("test", Versions.KOTLIN.version))
                         add(name, kotlin("test-junit", Versions.KOTLIN.version))
-                        add(name, "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
+                        add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                     }
                 }
                 androidExtension().apply {
@@ -105,8 +105,8 @@ class SelektPlugin : Plugin<Project> {
                             add(name, kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
                             add(name, kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
                             add(name, "org.assertj:assertj-core:${Versions.ASSERT_J}")
-                            add(name, "org.mockito:mockito-core:${Versions.MOCKITO_CORE}")
-                            add(name, "com.nhaarman.mockitokotlin2:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
+                            add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
+                            add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                         }
                     }
                 }

@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.pools
 
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.util.concurrent.ScheduledExecutorService
 
 internal class PoolsKtTest {

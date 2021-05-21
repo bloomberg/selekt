@@ -16,17 +16,17 @@
 
 package com.bloomberg.selekt.pools
 
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.DisableOnDebug
 import org.junit.rules.Timeout
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.same
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.whenever
 import java.util.concurrent.TimeUnit
 
 internal class TieredObjectPoolTest {
@@ -84,5 +84,13 @@ internal class TieredObjectPoolTest {
         pool.returnObject(obj)
         verify(commonObjectPool, times(1)).returnObject(same(obj))
         verifyZeroInteractions(singleObjectPool)
+    }
+
+    @Test
+    fun clearsAllPools() {
+        val priority = Priority.HIGH
+        pool.clear(priority)
+        verify(singleObjectPool, times(1)).clear(same(priority))
+        verify(commonObjectPool, times(1)).clear(same(priority))
     }
 }

@@ -47,5 +47,5 @@ dependencies {
     compileOnly(gradleApi())
     implementation(kotlin("stdlib-jdk8", version = kotlinVersion))
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
-    implementation("com.android.tools.build:gradle:4.2.0")
+    implementation("com.android.tools.build:gradle:4.2.1")
 }

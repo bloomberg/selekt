@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.zero
+import javax.annotation.concurrent.GuardedBy
 
 private const val KEY_SIZE = 32
 
@@ -27,14 +28,21 @@ internal class Key(value: ByteArray) {
     }
 
     private val lock = Any()
+    @GuardedBy("lock")
     private val value: ByteArray = value.copyOf()
+    @GuardedBy("lock")
+    private var isDestroyed = false
 
     fun zero() = synchronized(lock) {
-        value.fill(0)
+        if (!isDestroyed) {
+            value.zero()
+            isDestroyed = true
+        }
     }
 
     @Generated
     inline fun <R> use(action: (ByteArray) -> R) = synchronized(lock) {
+        check(!isDestroyed) { "Key is destroyed." }
         value.copyOf()
     }.let {
         try {

@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.ManagedStringBuilder
 import com.bloomberg.selekt.commons.forUntil
 import com.bloomberg.selekt.pools.Priority
@@ -32,6 +33,7 @@ private object SharedSqlBuilder {
         override fun initialValue() = ManagedStringBuilder()
     }
 
+    @Generated
     inline fun <T> use(block: StringBuilder.() -> T) = threadLocal.get().use { block(this) }
 }
 
@@ -44,7 +46,7 @@ private object SharedSqlBuilder {
  *
  * This is the same strategy Google employs in the Android SDK.
  *
- * @link [Android's SQLiteDatabase](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/database/sqlite/SQLiteDatabase.java)
+ * @link [Android's SQLiteDatabase](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java)
  */
 @ThreadSafe
 class SQLDatabase constructor(

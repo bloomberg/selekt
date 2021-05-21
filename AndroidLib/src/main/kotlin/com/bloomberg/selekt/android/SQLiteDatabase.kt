@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
-import android.util.Log
 import androidx.annotation.IntRange
 import androidx.annotation.Size
 import com.bloomberg.selekt.CommonThreadLocalRandom
@@ -37,31 +36,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
-import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
-
-internal object SQLiteDatabaseRegistry {
-    private val lock = Any()
-    @GuardedBy("lock")
-    private val store = mutableSetOf<SQLiteDatabase>()
-
-    fun register(database: SQLiteDatabase) = synchronized(lock) {
-        check(store.add(database)) { "Failed to register a database, ${store.count()} registered." }
-    }
-
-    fun unregister(database: SQLiteDatabase) = synchronized(lock) {
-        check(store.remove(database)) { "Failed to unregister a database, ${store.count()} registered." }
-    }
-
-    fun releaseMemory(priority: Priority) {
-        synchronized(lock) { store.toList() }.run {
-            forEach {
-                it.releaseMemory(priority)
-            }
-            Log.d(Selekt.TAG, "Released resources from ${count()} databases.")
-        }
-    }
-}
 
 /**
  * @since v0.1.0.
