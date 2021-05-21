@@ -21,7 +21,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import javax.annotation.concurrent.GuardedBy
 
-class SingleObjectPool<K : Any, T : IPooledObject<K>>(
+internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val evictionDelayMillis: Long,
