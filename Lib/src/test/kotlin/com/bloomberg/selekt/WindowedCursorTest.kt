@@ -98,10 +98,84 @@ internal class WindowedCursorTest {
     }
 
     @Test
-    fun isBeforeFirstInitially() {
+    fun isNotFirst() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertFalse(isFirst())
+        }
+    }
+
+    @Test
+    fun isNotFirstZero() {
+        WindowedCursor(emptyArray(), mock()).apply {
+            assertFalse(isFirst())
+        }
+    }
+
+    @Test
+    fun isNotFirstZeroAfterLast() {
+        WindowedCursor(emptyArray(), mock()).apply {
+            assertFalse(moveToPosition(0))
+            assertFalse(isFirst())
+        }
+    }
+
+    @Test
+    fun isLast() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertTrue(moveToPosition(0))
+            assertTrue(isLast())
+        }
+    }
+
+    @Test
+    fun isNotLastInitially() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertFalse(isLast())
+        }
+    }
+
+    @Test
+    fun isNotLastEmpty() {
+        WindowedCursor(emptyArray(), mock()).apply {
+            assertFalse(isLast())
+        }
+    }
+
+    @Test
+    fun isBeforeFirstZeroCount() {
         WindowedCursor(emptyArray(), mock()).apply {
             assertTrue(isBeforeFirst())
+        }
+    }
+
+    @Test
+    fun isBeforeFirstInitially() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertTrue(isBeforeFirst())
             assertEquals(-1, position())
+        }
+    }
+
+    @Test
+    fun isNotBeforeFirst() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertTrue(moveToFirst())
+            assertFalse(isBeforeFirst())
         }
     }
 
@@ -113,6 +187,16 @@ internal class WindowedCursorTest {
         WindowedCursor(emptyArray(), window).apply {
             assertFalse(moveToPosition(1))
             assertTrue(isAfterLast())
+        }
+    }
+
+    @Test
+    fun isNotAfterLast() {
+        val window = mock<ICursorWindow>().apply {
+            whenever(numberOfRows()) doReturn 1
+        }
+        WindowedCursor(emptyArray(), window).apply {
+            assertFalse(isAfterLast())
         }
     }
 
