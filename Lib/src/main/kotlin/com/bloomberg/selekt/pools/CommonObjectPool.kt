@@ -29,7 +29,7 @@ import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 import kotlin.jvm.Throws
 
-class CommonObjectPool<K : Any, T : IPooledObject<K>>(
+internal class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val configuration: PoolConfiguration,
