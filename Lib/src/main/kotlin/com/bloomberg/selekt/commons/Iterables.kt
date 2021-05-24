@@ -16,6 +16,8 @@
 
 package com.bloomberg.selekt.commons
 
+import com.bloomberg.selekt.annotations.Generated
+
 fun <T : Any?> emptyIterable() = object : Iterable<T> {
     private val iterator = emptyIterator<T>()
 
@@ -32,6 +34,19 @@ private fun <T : Any?> emptyIterator() = object : Iterator<T> {
     override fun hasNext() = false
 
     override fun next() = throw NoSuchElementException()
+}
+
+@Generated
+inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwable> {
+    val throwables = mutableListOf<Throwable>()
+    forEach {
+        runCatching {
+            action(it)
+        }.exceptionOrNull()?.let { e ->
+            throwables.add(e)
+        }
+    }
+    return throwables
 }
 
 operator fun <L : Any?, R : Any?> Iterable<L>.times(other: Iterable<R>) = object : Iterable<Pair<L, R>> {

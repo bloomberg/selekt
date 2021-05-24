@@ -155,6 +155,7 @@ exceptions:
       - Exception
       - RuntimeException
       - Throwable
+    excludes: "**/androidTest/**,**/jmh/**,**/test/**"
 
 naming:
   active: true
