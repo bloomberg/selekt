@@ -21,7 +21,16 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-internal class IterableExtensionsTest {
+internal class IterablesTest {
+    @Test
+    fun forEachCatching() {
+        List(2) { Any() }.forEachCatching {
+            throw Exception("Oh no!")
+        }.toList().let {
+            assertEquals(2, it.size)
+        }
+    }
+
     @Test
     fun leftEmptyCartesianProduct() {
         assertEquals(emptyList(), (emptyList<Int>() * listOf(0, 1)).toList())

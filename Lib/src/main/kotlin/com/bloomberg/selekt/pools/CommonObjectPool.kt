@@ -18,6 +18,7 @@ package com.bloomberg.selekt.pools
 
 import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.LinkedDeque
+import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.commons.withLockInterruptibly
 import com.bloomberg.selekt.commons.withTryLock
 import java.util.concurrent.Future
@@ -141,9 +142,7 @@ internal class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             lock.withTryLock(::evictions)
         } else {
             lock.withTryLock(0L, TimeUnit.MILLISECONDS, ::evictions)
-        }?.forEach {
-            factory.destroyObject(it)
-        }
+        }?.destroyEach()
     }
 
     @GuardedBy("lock")
@@ -196,5 +195,13 @@ internal class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         priority: Priority?
     ) = (this@shouldBeRemovedAt.tag != this@CommonObjectPool.tag).let {
         it && (priority != null || !future!!.isCancelled) || isClosed.get() || priority.isHigh()
+    }
+
+    private fun Iterable<T>.destroyEach() {
+        forEachCatching {
+            factory.destroyObject(it)
+        }.firstOrNull()?.let {
+            throw it
+        }
     }
 }
