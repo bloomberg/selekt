@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.13.1
+
+### Fixes
+
+* Attempt to destroy all idle connections in an eviction pass before ever throwing.
+
 ## Version 0.13.0
 
 ### Fixes
