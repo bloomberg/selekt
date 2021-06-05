@@ -16,6 +16,8 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.commons.isNotEnglishLetter
+import com.bloomberg.selekt.commons.trimStartByIndex
 import javax.annotation.concurrent.ThreadSafe
 
 internal enum class SQLStatementType(
@@ -44,7 +46,7 @@ internal enum class SQLStatementType(
 
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 
-internal fun CharSequence.resolvedSqlStatementType() = trimStart(Char::isWhitespace).run {
+internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEnglishLetter).run {
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER
     }

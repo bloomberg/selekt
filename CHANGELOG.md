@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.13.2
+
+### Optimisations
+
+* Optimise trimming an SQL statement string just before resolving for its statement type.
+
 ## Version 0.13.1
 
 ### Fixes
