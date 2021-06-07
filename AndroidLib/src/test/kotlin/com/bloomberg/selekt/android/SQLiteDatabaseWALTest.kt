@@ -169,6 +169,61 @@ internal class SQLiteDatabaseWALTest {
         assertEquals(42, version)
     }
 
+    @Test
+    fun update(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT)")
+        exec("INSERT INTO 'Foo' VALUES ('x', 42)")
+        update("Foo", ContentValues().apply { put("count", 43) }, "bar = ?", arrayOf("x"), ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(43, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun updateMultipleValues(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT)")
+        exec("INSERT INTO 'Foo' VALUES ('x', 42)")
+        update("Foo", ContentValues().apply {
+            put("bar", "y")
+            put("count", 43)
+        }, "bar = ?", arrayOf("x"), ConflictAlgorithm.REPLACE)
+        query(false, "Foo", null, "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals("y", it.getString(0))
+            assertEquals(43, it.getInt(1))
+        }
+    }
+
+    @Test
+    fun updateEmptyWhere(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT)")
+        exec("INSERT INTO 'Foo' VALUES ('x', 42)")
+        update("Foo", ContentValues().apply { put("count", 43) }, null, null, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(43, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun updateEmptyWhereMultiple(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT)")
+        exec("INSERT INTO 'Foo' VALUES ('x', 42)")
+        exec("INSERT INTO 'Foo' VALUES ('y', 43)")
+        update("Foo", ContentValues().apply { put("count", 44) }, null, null, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(2, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(44, it.getInt(0))
+            assertTrue(it.moveToNext())
+            assertEquals(44, it.getInt(0))
+        }
+    }
+
     @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyValues(): Unit = database.run {

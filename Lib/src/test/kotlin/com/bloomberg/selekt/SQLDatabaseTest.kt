@@ -77,12 +77,12 @@ internal class SQLDatabaseTest {
     }
 
     @Test
-    fun nestedTransaction() = database.apply {
+    fun nestedTransaction() = database.run {
         transact { transact { } }
     }.also { verifyCommit() }
 
     @Test
-    fun nestedTransactions() = database.apply {
+    fun nestedTransactions() = database.run {
         transact { transact { transact { } }
     }.also { verifyCommit() } }
 
@@ -110,6 +110,20 @@ internal class SQLDatabaseTest {
             assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
                 exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             }
+        }
+    }
+
+    @Test
+    fun insertVerifiesValues(): Unit = database.run {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            insert("Foo", ContentValues(), ConflictAlgorithm.REPLACE)
+        }
+    }
+
+    @Test
+    fun updateVerifiesValues(): Unit = database.run {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            update("Foo", ContentValues(), "", emptyArray(), ConflictAlgorithm.REPLACE)
         }
     }
 

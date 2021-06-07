@@ -127,7 +127,7 @@ class SQLiteDatabase private constructor(
     val maxPageCount: Long
         get() = database.pragma("max_page_count").toLong()
 
-    internal fun setMaxPageCount(value: Long) = requireNotNull(database.pragma("max_page_count", value)).toLong()
+    internal fun setMaxPageCount(value: Long) = checkNotNull(database.pragma("max_page_count", value)).toLong()
 
     val pageCount: Int
         get() = database.pragma("page_count").toInt()
@@ -316,7 +316,7 @@ class SQLiteDatabase private constructor(
 
     internal fun setJournalMode(mode: SQLiteJournalMode) {
         check(!isTransactionOpenedByCurrentThread) { "Journal mode cannot be changed within a transaction." }
-        val nextMode = SQLiteJournalMode.valueOf(requireNotNull(database.pragma("journal_mode", mode))
+        val nextMode = SQLiteJournalMode.valueOf(checkNotNull(database.pragma("journal_mode", mode))
             .toUpperCase(Locale.US))
         check(mode === nextMode) { "Failed to set journal mode to $mode, mode is $nextMode." }
     }
