@@ -162,7 +162,7 @@
 === "Kotlin"
     ``` kotlin
     databaseHelper.writableDatabase.run {
-        insertWithOnConflict(
+        insert(
             "Foo",
             ContentValues().apply { put("bar", 42) },
             ConflictAlgorithm.REPLACE
@@ -179,7 +179,7 @@
     final SQLiteDatabase database = databaseHelper.getWritableDatabase();
     final ContentValues values = new ContentValues();
     values.put("bar", 42);
-    database.insertWithOnConflict(
+    database.insert(
         "Foo",
         values,
         ConflictAlgorithm.REPLACE
