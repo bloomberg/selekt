@@ -16,7 +16,7 @@
         <link rel="canonical" href="https://bloomberg.github.io/selekt/getting_started/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.7">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.7">
     
     
       
@@ -645,7 +645,7 @@
 <h3 id="querying-the-database">Querying the database</h3>
 <div class="tabbed-set" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><label for="__tabbed_5_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="n">databaseHelper</span><span class="p">.</span><span class="na">writableDatabase</span><span class="p">.</span><span class="na">run</span> <span class="p">{</span>
-    <span class="n">insertWithOnConflict</span><span class="p">(</span>
+    <span class="n">insert</span><span class="p">(</span>
         <span class="s">&quot;Foo&quot;</span><span class="p">,</span>
         <span class="n">ContentValues</span><span class="p">().</span><span class="na">apply</span> <span class="p">{</span> <span class="n">put</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">,</span> <span class="m">42</span><span class="p">)</span> <span class="p">},</span>
         <span class="n">ConflictAlgorithm</span><span class="p">.</span><span class="na">REPLACE</span>
@@ -661,7 +661,7 @@
 <div class="highlight"><pre><span></span><code><span class="kd">final</span> <span class="n">SQLiteDatabase</span> <span class="n">database</span> <span class="o">=</span> <span class="n">databaseHelper</span><span class="p">.</span><span class="na">getWritableDatabase</span><span class="p">();</span>
 <span class="kd">final</span> <span class="n">ContentValues</span> <span class="n">values</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ContentValues</span><span class="p">();</span>
 <span class="n">values</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="s">&quot;bar&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
-<span class="n">database</span><span class="p">.</span><span class="na">insertWithOnConflict</span><span class="p">(</span>
+<span class="n">database</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span>
     <span class="s">&quot;Foo&quot;</span><span class="p">,</span>
     <span class="n">values</span><span class="p">,</span>
     <span class="n">ConflictAlgorithm</span><span class="p">.</span><span class="na">REPLACE</span>
