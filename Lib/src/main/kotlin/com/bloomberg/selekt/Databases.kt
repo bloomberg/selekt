@@ -149,7 +149,7 @@ class SQLDatabase constructor(
     }
 
     fun pragma(key: String) = pledge {
-        requireNotNull(SQLStatement.executeForString(
+        checkNotNull(SQLStatement.executeForString(
             session,
             "PRAGMA $key",
             SQLStatementType.PRAGMA,
