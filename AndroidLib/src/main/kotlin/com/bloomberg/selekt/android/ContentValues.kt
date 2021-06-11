@@ -20,7 +20,7 @@ import android.content.ContentValues
 import com.bloomberg.selekt.IContentValues
 
 private class ContentValuesEntry : Map.Entry<String, Any?> {
-    lateinit var internalKey: String
+    var internalKey: String = ""
     var internalValue: Any? = null
 
     override val key: String
