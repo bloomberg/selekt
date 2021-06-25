@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.13.3
+
+### Fixes
+
+* Throw an `IllegalArgumentException` instead of an `IllegalStateException` when failing to add or remove a database from the registry.
+
+### Dependencies
+
+* Kotlin 1.5.20.
+* Gradle 7.1.
+
 ## Version 0.13.2
 
 ### Optimisations

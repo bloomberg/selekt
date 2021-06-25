@@ -16,6 +16,7 @@
 
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.tasks.factory.AndroidUnitTest
+import java.util.Locale
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.kotlin.dsl.get
@@ -30,4 +31,4 @@ internal val TaskContainer.jacocoTestReportTask: JacocoReport?
     get() = jacocoTestReportTasks().firstOrNull { it.name == "jacocoTestReport" }
 
 internal fun TaskContainer.unitTestTask(variant: BaseVariant) =
-    getByName("test${variant.name.capitalize()}UnitTest") as AndroidUnitTest
+    getByName("test${variant.name.capitalize(Locale.ROOT)}UnitTest") as AndroidUnitTest

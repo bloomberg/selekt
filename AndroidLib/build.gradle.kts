@@ -21,6 +21,7 @@ plugins {
     id("kotlin-android")
     id("org.jetbrains.dokka")
     id("bb-jacoco-android")
+    id("app.cash.licensee") version Versions.GRADLE_LICENSEE_PLUGIN.version
     kotlin("kapt")
     signing
     `maven-publish`
@@ -101,7 +102,7 @@ tasks.register<Task>("buildHostSQLite") {
 
 afterEvaluate {
     arrayOf("debug", "release").forEach {
-        tasks.getByName("pre${it.capitalize(Locale.US)}UnitTestBuild").dependsOn("buildHostSQLite")
+        tasks.getByName("pre${it.capitalize(Locale.ROOT)}UnitTestBuild").dependsOn("buildHostSQLite")
     }
 }
 
@@ -114,6 +115,10 @@ tasks.register<Jar>("sourcesJar") {
     from(android.sourceSets["main"].java.srcDirs)
     setProperty("archiveBaseName", "selekt")
     setProperty("archiveClassifier", "sources")
+}
+
+licensee {
+    allow("Apache-2.0")
 }
 
 afterEvaluate {

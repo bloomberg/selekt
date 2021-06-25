@@ -19,4 +19,5 @@ package com.bloomberg.selekt
 /**
  * @since 0.7.3
  */
-inline class ZeroBlob(val size: Int)
+@JvmInline
+value class ZeroBlob(val size: Int)

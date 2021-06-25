@@ -67,8 +67,8 @@ class SelektPlugin : Plugin<Project> {
             withPlugin("com.android.library") {
                 dependencies.apply {
                     configurations.getByName("androidTestImplementation") {
-                        add(name, kotlin("test", Versions.KOTLIN.version))
-                        add(name, kotlin("test-junit", Versions.KOTLIN.version))
+                        add(name, kotlin("test", Versions.KOTLIN_TEST.version))
+                        add(name, kotlin("test-junit", Versions.KOTLIN_TEST.version))
                         add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                     }
                 }
@@ -100,8 +100,8 @@ class SelektPlugin : Plugin<Project> {
                     }
                     dependencies.apply {
                         configurations.getByName("testImplementation") {
-                            add(name, kotlin("test", Versions.KOTLIN.version))
-                            add(name, kotlin("test-junit", Versions.KOTLIN.version))
+                            add(name, kotlin("test", Versions.KOTLIN_TEST.version))
+                            add(name, kotlin("test-junit", Versions.KOTLIN_TEST.version))
                             add(name, kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
                             add(name, kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
                             add(name, "org.assertj:assertj-core:${Versions.ASSERT_J}")

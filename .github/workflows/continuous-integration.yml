@@ -28,8 +28,10 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
         echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
+    - name: 'Licenses'
+      run: ./gradlew licensee
     - name: 'Analyse'
-      run: ./gradlew detekt ktlint lintDebug
+      run: ./gradlew detekt ktlintCheck lintDebug
     - name: 'Unit tests'
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Coverage'

@@ -26,9 +26,7 @@ plugins {
 }
 
 java {
-    @Suppress("UnstableApiUsage")
     withJavadocJar()
-    @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
 

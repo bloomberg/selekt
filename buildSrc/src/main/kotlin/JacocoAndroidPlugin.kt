@@ -39,7 +39,7 @@ class JacocoAndroidPlugin : Plugin<Project> {
                         }
                     }
                     tasks.register(
-                        "jacocoTest${name.capitalize(Locale.US)}UnitTestReport",
+                        "jacocoTest${name.capitalize(Locale.ROOT)}UnitTestReport",
                         JacocoReport::class.java
                     ) {
                         group = "verification"
@@ -63,9 +63,9 @@ class JacocoAndroidPlugin : Plugin<Project> {
                         )
                         executionData.from(testTask.jacocoTaskExtension().destinationFile!!.path)
                         reports {
-                            csv.isEnabled = false
-                            html.isEnabled = true
-                            xml.isEnabled = true
+                            csv.required.set(false)
+                            html.required.set(true)
+                            xml.required.set(true)
                         }
                     }
                 }

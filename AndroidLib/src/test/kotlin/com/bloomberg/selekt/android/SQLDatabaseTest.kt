@@ -187,7 +187,7 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     @Test
     fun simpleQueryForStringCompileStatement(): Unit = database.run {
         val statement = compileStatement("PRAGMA journal_mode", emptyArray())
-        assertEquals(inputs.journalMode.name, statement.simpleQueryForString()?.toUpperCase(Locale.US))
+        assertEquals(inputs.journalMode.name, statement.simpleQueryForString()?.uppercase(Locale.US))
     }
 
     @Test
