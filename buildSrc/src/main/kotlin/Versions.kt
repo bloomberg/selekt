@@ -42,7 +42,7 @@ enum class Versions(
     KTLINT_GRADLE_PLUGIN("10.1.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
     MOCKITO("3.9.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("3.2.0", URL("https://github.com/nhaarman/mockito-kotlin")),
-    NEXUS_PLUGIN("1.0.0", URL("https://github.com/gradle-nexus/publish-plugin")),
+    NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     ROBOLECTRIC("4.5.1", URL("https://github.com/robolectric/robolectric"));
 
     override fun toString() = version
