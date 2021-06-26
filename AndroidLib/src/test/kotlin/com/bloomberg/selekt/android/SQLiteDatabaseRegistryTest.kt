@@ -26,7 +26,7 @@ internal class SQLiteDatabaseRegistryTest {
         mock<SQLiteDatabase>().let {
             SQLiteDatabaseRegistry.register(it)
             try {
-                assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
                     SQLiteDatabaseRegistry.register(it)
                 }
             } finally {
@@ -37,7 +37,7 @@ internal class SQLiteDatabaseRegistryTest {
 
     @Test
     fun unregisterThrows() {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             SQLiteDatabaseRegistry.unregister(mock())
         }
     }

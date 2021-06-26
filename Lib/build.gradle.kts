@@ -30,9 +30,7 @@ plugins {
 disableKotlinCompilerAssertions()
 
 java {
-    @Suppress("UnstableApiUsage")
     withJavadocJar()
-    @Suppress("UnstableApiUsage")
     withSourcesJar()
 }
 

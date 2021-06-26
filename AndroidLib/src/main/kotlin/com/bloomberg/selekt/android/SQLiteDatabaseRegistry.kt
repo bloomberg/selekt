@@ -26,11 +26,11 @@ internal object SQLiteDatabaseRegistry {
     private val store = mutableSetOf<SQLiteDatabase>()
 
     fun register(database: SQLiteDatabase) = synchronized(lock) {
-        check(store.add(database)) { "Failed to register a database, ${store.count()} registered." }
+        require(store.add(database)) { "Failed to register a database, ${store.count()} registered." }
     }
 
     fun unregister(database: SQLiteDatabase) = synchronized(lock) {
-        check(store.remove(database)) { "Failed to unregister a database, ${store.count()} registered." }
+        require(store.remove(database)) { "Failed to unregister a database, ${store.count()} registered." }
     }
 
     fun releaseMemory(priority: Priority) {

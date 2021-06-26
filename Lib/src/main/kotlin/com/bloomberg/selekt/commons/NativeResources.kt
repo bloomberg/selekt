@@ -26,7 +26,7 @@ import kotlin.jvm.Throws
 private const val DEFAULT_BUFFER_LIMIT = 8_192
 
 @Suppress("Detekt.StringLiteralDuplication")
-internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.toLowerCase(Locale.US).run {
+internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
         startsWith("windows") -> "windows"

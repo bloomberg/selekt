@@ -50,35 +50,35 @@ internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEng
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER
     }
-    when (this[0].toUpperCase()) {
-        'S' -> when (this[1].toUpperCase()) {
+    when (this[0].uppercaseChar()) {
+        'S' -> when (this[1].uppercaseChar()) {
             'E' -> SQLStatementType.SELECT
             else -> SQLStatementType.OTHER // SAVEPOINT, ...
         }
         'I', 'U' -> SQLStatementType.UPDATE
-        'D' -> when (this[2].toUpperCase()) {
+        'D' -> when (this[2].uppercaseChar()) {
             'L' -> SQLStatementType.UPDATE // DELETE
             'O' -> SQLStatementType.DDL
             'T' -> SQLStatementType.UNPREPARED // DETACH
             else -> SQLStatementType.OTHER
         }
-        'R' -> when (this[2].toUpperCase()) {
+        'R' -> when (this[2].uppercaseChar()) {
             'L' -> SQLStatementType.ABORT // TODO what about to savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
             'P' -> SQLStatementType.UPDATE // REPLACE
             else -> SQLStatementType.OTHER
         }
         'B' -> SQLStatementType.BEGIN
-        'C' -> when (this[1].toUpperCase()) {
+        'C' -> when (this[1].uppercaseChar()) {
             'O' -> SQLStatementType.COMMIT
             'R' -> SQLStatementType.DDL // CREATE
             else -> SQLStatementType.OTHER
         }
-        'E' -> when (this[1].toUpperCase()) {
+        'E' -> when (this[1].uppercaseChar()) {
             'N' -> SQLStatementType.COMMIT
             else -> SQLStatementType.OTHER
         }
         'P' -> SQLStatementType.PRAGMA
-        'A' -> when (this[1].toUpperCase()) {
+        'A' -> when (this[1].uppercaseChar()) {
             'L' -> SQLStatementType.DDL // ALTER
             'T' -> SQLStatementType.ATTACH
             'N' -> SQLStatementType.UNPREPARED

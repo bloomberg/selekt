@@ -20,6 +20,8 @@ import io.gitlab.arturbosch.detekt.Detekt
 import java.util.Locale
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
+import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 buildscript {
     repositories {
@@ -41,6 +43,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
+    id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
 }
 
 group = selektGroupId
@@ -68,50 +71,30 @@ subprojects {
         resolutionStrategy.dependencySubstitution {
             substitute(module("com.bloomberg:selekt-android")).apply {
                 with(project(":AndroidLib"))
-                @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-annotations")).apply {
                 with(project(":Annotations"))
-                @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-api")).apply {
                 with(project(":ApiLib"))
-                @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-java")).apply {
                 with(project(":Lib"))
-                @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-sqlite3")).apply {
                 with(project(":SQLite3"))
-                @Suppress("UnstableApiUsage")
                 because("we work with an unreleased version")
             }
         }
     }
 }
 
-val ktlint: Configuration by configurations.creating
-
 dependencies {
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
-}
-
-tasks.register<JavaExec>("ktlint") {
-    group = "verification"
-    description = "Check Kotlin code style."
-    classpath = ktlint
-    main = "com.pinterest.ktlint.Main"
-    args = listOf(
-        "--reporter=plain",
-        "--reporter=checkstyle,output=$buildDir/ktlint.xml",
-        "--disabled_rules=import-ordering",
-        "**/*.kt"
-    )
 }
 
 subprojects {
@@ -179,7 +162,22 @@ subprojects {
     }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+allprojects {
+    apply {
+        plugin("org.jlleitschuh.gradle.ktlint")
+    }
+    configure<KtlintExtension> {
+        version.set(Versions.KTLINT.version)
+        disabledRules.set(kotlin.collections.setOf("import-ordering", "indent"))
+        reporters {
+            reporter(ReporterType.HTML)
+        }
+    }
+    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask>().configureEach {
+        reportsOutputDirectory.set(rootProject.layout.buildDirectory.dir("reports/ktlint/${project.name}/$name"))
+    }
+}
+
 fun JacocoReportBase.initialise() {
     group = "verification"
     val block: (JacocoReport) -> Unit = {
@@ -215,9 +213,9 @@ tasks.register<JacocoReport>("jacocoSelektTestReport") {
     initialise()
     description = "Generates a global JaCoCo coverage report."
     reports {
-        csv.isEnabled = false
-        html.isEnabled = true
-        xml.isEnabled = true
+        csv.required.set(false)
+        html.required.set(true)
+        xml.required.set(true)
     }
 }
 
