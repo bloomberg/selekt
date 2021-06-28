@@ -10,7 +10,6 @@ Change Log
 ### Dependencies
 
 * Kotlin 1.5.20.
-* Gradle 7.1.
 
 ## Version 0.13.2
 
