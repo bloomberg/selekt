@@ -49,14 +49,15 @@ jobs:
         tar -xjf secring.tar.bzip2
         rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
+      env:
+        ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_PASSWORD }}
+        ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USERNAME }}
       run: |
         ./gradlew \
           -Prelease=true \
           -Psigning.gnupg.homeDir=/tmp/gpg \
           -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
           -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
-          -PsonatypePassword="${{ secrets.OSSRH_PASSWORD }}" \
-          -PsonatypeUsername="${{ secrets.OSSRH_USERNAME }}" \
           publishToSonatype \
           closeAndReleaseSonatypeStagingRepository
     - name: 'Clean-up'
