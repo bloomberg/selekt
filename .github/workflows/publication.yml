@@ -42,22 +42,16 @@ jobs:
         ./gradlew :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
         ./gradlew assembleSelekt
-    - name: 'Prepare GPG'
-      run: |
-        mkdir /tmp/gpg && cd "$_"
-        echo "${{ secrets.GPG_DIRECTORY }}" | base64 --decode > secring.tar.bzip2
-        tar -xjf secring.tar.bzip2
-        rm secring.tar.bzip2
     - name: 'Publish to OSSRH'
       env:
+        ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
+        ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
+        ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSPHRASE }}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_PASSWORD }}
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USERNAME }}
       run: |
         ./gradlew \
           -Prelease=true \
-          -Psigning.gnupg.homeDir=/tmp/gpg \
-          -Psigning.gnupg.keyName="${{ secrets.GPG_KEY_ID }}" \
-          -Psigning.gnupg.passphrase="${{ secrets.GPG_KEY_PASSPHRASE }}" \
           publishToSonatype \
           closeAndReleaseSonatypeStagingRepository
     - name: 'Clean-up'
