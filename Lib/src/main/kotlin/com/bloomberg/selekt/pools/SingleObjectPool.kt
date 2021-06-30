@@ -20,7 +20,9 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import javax.annotation.concurrent.GuardedBy
+import javax.annotation.concurrent.ThreadSafe
 
+@ThreadSafe
 internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,

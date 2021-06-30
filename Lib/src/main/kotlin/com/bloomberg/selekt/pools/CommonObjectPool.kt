@@ -27,9 +27,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
+import javax.annotation.concurrent.ThreadSafe
 import kotlin.concurrent.withLock
 import kotlin.jvm.Throws
 
+@ThreadSafe
 internal class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
