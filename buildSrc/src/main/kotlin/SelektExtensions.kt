@@ -44,8 +44,8 @@ fun Project.gitCommit() = ByteArrayOutputStream().apply {
         commandLine("git", "rev-parse", "HEAD")
         standardOutput = this@apply
     }
-}.run {
-    toString(StandardCharsets.UTF_8.name()).trim()
+}.use {
+    it.toString(StandardCharsets.UTF_8.name()).trim()
 }
 
 fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
@@ -53,8 +53,8 @@ fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
         commandLine("git", "rev-parse", "--short", "HEAD")
         standardOutput = this@apply
     }
-}.run {
-    toString(StandardCharsets.UTF_8.name()).trim()
+}.use {
+    it.toString(StandardCharsets.UTF_8.name()).trim()
 }
 
 fun Project.isRelease() = "true" == properties["release"]
