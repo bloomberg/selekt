@@ -69,7 +69,11 @@ val Project.selektGroupId: String
     get() = "com.bloomberg"
 
 val Project.selektVersionName: String
-    get() = "${checkNotNull(properties["selekt.versionName"])}${if (isRelease()) "" else "-SNAPSHOT"}"
+    get() = if (isRelease()) {
+        checkNotNull(properties["selekt.versionName"]).toString()
+    } else {
+        "${checkNotNull(properties["selekt.nextVersionName"])}-SNAPSHOT"
+    }
 
 fun Project.disableKotlinCompilerAssertions() {
     pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
