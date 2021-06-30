@@ -54,7 +54,3 @@ jobs:
           -Prelease=true \
           publishToSonatype \
           closeAndReleaseSonatypeStagingRepository
-    - name: 'Clean-up'
-      if: ${{ always() }}
-      run:
-        rm -rf /tmp/gpg      
