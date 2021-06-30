@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:Suppress("UnstableApiUsage")
-
 import io.gitlab.arturbosch.detekt.Detekt
 import java.util.Locale
 import org.jetbrains.dokka.gradle.DokkaTask
