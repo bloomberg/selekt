@@ -132,7 +132,10 @@ subprojects {
 
     pluginManager.withPlugin("signing") {
         configure<SigningExtension> {
-            useGpgCmd()
+            val signingKeyId: String? by project
+            val signingKey: String? by project
+            val signingPassword: String? by project
+            useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             project.afterEvaluate {
                 configure<PublishingExtension> {
                     publications.forEach { sign(it) }
