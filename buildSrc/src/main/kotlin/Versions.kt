@@ -21,14 +21,14 @@ enum class Versions(
     private val url: URL
 ) {
     ANDROID_BUILD_TOOLS("30.0.3", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("4.2.1", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_GRADLE_PLUGIN("4.2.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.0-alpha07", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_SDK("30", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.2.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.2.5", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     ASSERT_J("3.15.0", URL("https://joel-costigliola.github.io/assertj")),
     CMAKE("3.18.1", URL("https://cmake.org")),
-    DETEKT("1.15.0", URL("https://github.com/arturbosch/detekt")),
+    DETEKT("1.17.1", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.4.10.2", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
     JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
@@ -40,7 +40,7 @@ enum class Versions(
     KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
     KTLINT("0.41.0", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.1.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
-    MOCKITO("3.9.0", URL("https://github.com/mockito/mockito")),
+    MOCKITO("3.11.2", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("3.2.0", URL("https://github.com/nhaarman/mockito-kotlin")),
     NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     ROBOLECTRIC("4.5.1", URL("https://github.com/robolectric/robolectric"));
