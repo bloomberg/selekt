@@ -71,6 +71,10 @@ subprojects {
                 with(project(":AndroidLib"))
                 because("we work with an unreleased version")
             }
+            substitute(module("com.bloomberg:selekt-android-sqlcipher")).apply {
+                with(project(":AndroidSQLCipher"))
+                because("we work with an unreleased version")
+            }
             substitute(module("com.bloomberg:selekt-annotations")).apply {
                 with(project(":Annotations"))
                 because("we work with an unreleased version")
