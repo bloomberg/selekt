@@ -14,7 +14,7 @@ jobs:
     - name: 'Install CMake'
       run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.18.1'
     - name: 'Install NDK'
-      run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.3.6528147'
+      run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.4.7075529'
     - name: 'Install Android SDK'
       run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'platforms;android-30'
     - uses: actions/checkout@v2
@@ -26,7 +26,6 @@ jobs:
     - name: 'Configure local.properties'
       run: |
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
-        echo "ndk.dir=${ANDROID_HOME}/ndk/21.3.6528147" >> local.properties
         echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
     - name: 'Licenses'
       run: ./gradlew licensee
@@ -40,7 +39,6 @@ jobs:
         bash scripts/codecov
     - name: 'Build Selekt'
       run: |
-        export ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/21.3.6528147"
         ./gradlew :OpenSSL:assembleArm64-v8a
         ./gradlew :OpenSSL:assembleArmeabi-v7a
         ./gradlew :OpenSSL:assembleX86
