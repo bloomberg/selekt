@@ -63,7 +63,7 @@ internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     override fun returnObject(obj: T) {
         canEvict = false
         if (isClosed) {
-            evictThenUnlock()
+            processCloseThenUnlock()
         } else {
             mutex.unlock()
         }
@@ -75,12 +75,11 @@ internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     internal fun evict(priority: Priority? = null) = mutex.run {
         when {
-            isClosed -> {
+            isClosed -> withTryLock {
                 factory.close()
+                evictions(null)
+            }.also {
                 attemptUnparkWaiters()
-                withTryLock {
-                    evictions(null)
-                }
             }
             priority.isHigh() -> withTryLock {
                 evictions(priority)
@@ -141,8 +140,9 @@ internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }
 
-    private fun evictThenUnlock() {
+    private fun processCloseThenUnlock() {
         try {
+            factory.close()
             evictions(null)
         } finally {
             mutex.unlock()
