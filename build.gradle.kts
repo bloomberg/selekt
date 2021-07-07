@@ -68,23 +68,23 @@ subprojects {
     configurations.all {
         resolutionStrategy.dependencySubstitution {
             substitute(module("com.bloomberg:selekt-android")).apply {
-                with(project(":AndroidLib"))
+                using(project(":AndroidLib"))
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-annotations")).apply {
-                with(project(":Annotations"))
+                using(project(":Annotations"))
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-api")).apply {
-                with(project(":ApiLib"))
+                using(project(":ApiLib"))
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-java")).apply {
-                with(project(":Lib"))
+                using(project(":Lib"))
                 because("we work with an unreleased version")
             }
             substitute(module("com.bloomberg:selekt-sqlite3")).apply {
-                with(project(":SQLite3"))
+                using(project(":SQLite3"))
                 because("we work with an unreleased version")
             }
         }
