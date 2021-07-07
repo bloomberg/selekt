@@ -36,6 +36,7 @@ repositories {
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    ndkVersion = Versions.ANDROID_NDK.version
 
     defaultConfig {
         minSdkVersion(21)
