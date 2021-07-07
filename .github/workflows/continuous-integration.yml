@@ -26,7 +26,6 @@ jobs:
     - name: 'Configure local.properties'
       run: |
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
-        echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
