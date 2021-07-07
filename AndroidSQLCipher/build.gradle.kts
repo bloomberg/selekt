@@ -46,7 +46,7 @@ afterEvaluate {
             from(components["release"])
             pom {
                 commonInitialisation(project)
-                description.set("Selekt Android SQLite library.")
+                description.set("SQLCipher for Selekt's Android Library.")
                 licenses {
                     license {
                         name.set("Dual OpenSSL and SSLeay License")
