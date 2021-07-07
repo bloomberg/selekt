@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 0.13.4
+
+### Fixes
+
+* Close the `SingleObjectPool` factory under the pool's lock to make clear locally that all races with creating the connection while closing the pool really are avoided. The pool being closed means the database has been closed too and the sole connection should be idle. Any waiters trying to acquire this connection post-close will raise an exception, meaning there's no contention for the pool lock and no added delay clearing the key.
+
+### Dependencies
+
+* Android Gradle Plugin 4.2.2.
+* Android NDK 21.4.7075529.
+* Gradle 7.1.1.
+* Licensee 1.1.0.
+* Nexus Sonatype Gradle Plugin 1.1.0.
+
 ## Version 0.13.3
 
 ### Fixes
