@@ -13,14 +13,6 @@ jobs:
         run: echo "YEAR=$(date +'%Y')" >> $GITHUB_ENV
       - name: 'Install system packages'
         run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
-      - name: 'Install Build Tools'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'build-tools;30.0.3'
-      - name: 'Install CMake'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'cmake;3.18.1'
-      - name: 'Install NDK'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'ndk;21.4.7075529'
-      - name: 'Install Android SDK'
-        run: echo 'y' | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install 'platforms;android-30'
       - uses: actions/checkout@v2
         with:
           submodules: true
@@ -31,10 +23,6 @@ jobs:
         with:
           python-version: 3.8
       - run: pip install mkdocs-material
-      - name: 'Configure local.properties'
-        run: |
-          echo "sdk.dir=${ANDROID_HOME}" > local.properties
-          echo "cmake.dir=${ANDROID_HOME}/cmake/3.18.1" >> local.properties
       - name: 'Dokka'
         run: |
           ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
