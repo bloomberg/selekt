@@ -18,7 +18,7 @@ android {
     defaultConfig {
         minSdkVersion(21)
         versionCode = 1
-        versionName = selektVersionName
+        versionName = sqlcipherVersionName
 
         ndk {
             abiFilters.addAll(arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -42,7 +42,7 @@ afterEvaluate {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
             artifactId = "selekt-android-sqlcipher"
-            version = android.defaultConfig.versionName
+            version = "$sqlcipherVersionName-$selektVersionName"
             from(components["release"])
             pom {
                 commonInitialisation(project)
