@@ -71,7 +71,7 @@ dependencies {
     api(selekt("api", selektVersionName))
     compileOnly(selekt("annotations", selektVersionName))
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
-    implementation(selekt("android-sqlcipher", selektVersionName))
+    implementation(selekt("android-sqlcipher", sqlcipherVersionName))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
     testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")

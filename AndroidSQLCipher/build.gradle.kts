@@ -42,7 +42,7 @@ afterEvaluate {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
             artifactId = "selekt-android-sqlcipher"
-            version = "$sqlcipherVersionName-$selektVersionName"
+            version = sqlcipherVersionName
             from(components["release"])
             pom {
                 commonInitialisation(project)

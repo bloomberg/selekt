@@ -76,7 +76,7 @@ val Project.selektVersionName: String
     }
 
 val Project.sqlcipherVersionName: String
-    get() = checkNotNull(properties["sqlcipher.versionName"]).toString()
+    get() = "${checkNotNull(properties["sqlcipher.versionName"])}-$selektVersionName"
 
 fun Project.disableKotlinCompilerAssertions() {
     pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
