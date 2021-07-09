@@ -36,7 +36,6 @@ repositories {
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
-    ndkVersion = Versions.ANDROID_NDK.version
 
     defaultConfig {
         minSdkVersion(21)
@@ -44,10 +43,6 @@ android {
         versionName = selektVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        ndk {
-            abiFilters.addAll(arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
-        }
     }
 
     buildTypes {
@@ -70,19 +65,13 @@ android {
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
-
-    externalNativeBuild {
-        cmake {
-            path("$rootDir/SQLite3/CMakeLists.txt")
-            version = Versions.CMAKE.version
-        }
-    }
 }
 
 dependencies {
     api(selekt("api", selektVersionName))
     compileOnly(selekt("annotations", selektVersionName))
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
+    implementation(selekt("android-sqlcipher", sqlcipherVersionName))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
     testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")
@@ -132,16 +121,6 @@ afterEvaluate {
             pom {
                 commonInitialisation(project)
                 description.set("Selekt Android SQLite library.")
-                licenses {
-                    license {
-                        name.set("Dual OpenSSL and SSLeay License")
-                        url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
-                    }
-                    license {
-                        name.set("Zetetic LLC")
-                        url.set("https://www.zetetic.net/sqlcipher/license")
-                    }
-                }
             }
             artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
         }.also {
