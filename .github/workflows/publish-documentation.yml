@@ -1,6 +1,9 @@
 name: 'Publish Documentation'
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 0 * * *'
 
@@ -27,7 +30,7 @@ jobs:
         run: |
           ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
       - name: 'Set version'
-        run: echo "VERSION=$(grep -hnr 'versionName' gradle.properties | sed 's/.*=//')" >> $GITHUB_ENV
+        run: echo "VERSION=$(grep -hnr 'selekt.versionName' gradle.properties | sed 's/.*=//')" >> $GITHUB_ENV
       - name: 'Mkdocs'
         run: |
           git fetch origin gh-pages:gh-pages
