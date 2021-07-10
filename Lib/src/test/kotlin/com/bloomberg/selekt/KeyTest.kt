@@ -23,13 +23,6 @@ import kotlin.test.assertNotSame
 
 internal class KeyTest {
     @Test
-    fun verifiesSize() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            Key(ByteArray(31) { 0x42 })
-        }
-    }
-
-    @Test
     fun makesCopy() {
         val raw = ByteArray(32) { 0x42 }
         Key(raw).use {

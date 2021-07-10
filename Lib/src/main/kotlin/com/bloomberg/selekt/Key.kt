@@ -20,13 +20,7 @@ import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.zero
 import javax.annotation.concurrent.GuardedBy
 
-private const val KEY_SIZE = 32
-
 internal class Key(value: ByteArray) {
-    init {
-        require(KEY_SIZE == value.size) { "Key must be 32 bytes in size." }
-    }
-
     private val lock = Any()
     @GuardedBy("lock")
     private val value: ByteArray = value.copyOf()
