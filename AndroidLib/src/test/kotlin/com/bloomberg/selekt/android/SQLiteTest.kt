@@ -212,6 +212,15 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun badRawKeyThrows() {
+        openConnection().useConnection {
+            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+                SQLite.rawKey(it, ByteArray(31) { 0x42 })
+            }
+        }
+    }
+
+    @Test
     fun softHeapLimitIsPositive() {
         assertEquals(8 * 1_024 * 1_024L, SQLite.softHeapLimit64())
     }

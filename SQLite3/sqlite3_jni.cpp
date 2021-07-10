@@ -638,6 +638,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_rawKey(
     jbyteArray jkey,
     jint keyLength
 ) {
+    if (keyLength != 32) {
+        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
+        return SQLITE_ERROR;
+    }
     AutoJByteArray key(env, jkey, keyLength);
     std::string prefix = "PRAGMA key=\"x'";
     std::string suffix = "'\"";
