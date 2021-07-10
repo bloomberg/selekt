@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.13.5
+
+### Fixes
+
+* Move SQLCipher for Android to its own Gradle subproject. This decouples Selekt from SQLCipher making it possible for other SQLite implementations to be swapped in.
+
 ## Version 0.13.4
 
 ### Fixes
