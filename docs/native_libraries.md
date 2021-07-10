@@ -1,4 +1,4 @@
-## Native libraries
+## Compatibility
 
 Selekt's packaged native libraries target the following ABIs:
 
