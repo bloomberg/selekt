@@ -157,6 +157,8 @@ class ExternalSQLite private constructor(
 
     external fun key(db: Long, key: ByteArray, length: Int): SQLCode
 
+    external fun keyConventionally(db: Long, key: ByteArray, length: Int): SQLCode
+
     external fun keywordCount(): Int
 
     external fun lastInsertRowId(db: Long): Long

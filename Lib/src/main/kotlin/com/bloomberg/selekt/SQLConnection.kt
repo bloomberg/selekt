@@ -49,7 +49,7 @@ internal class SQLConnection constructor(
 
     init {
         runCatching {
-            key?.use { sqlite.rawKey(pointer, it) }
+            key?.use { sqlite.keyConventionally(pointer, it) }
             sqlite.extendedResultCodes(pointer, 0)
             configuration.trace?.let { sqlite.traceV2(pointer, it()) }
             sqlite.busyTimeout(pointer, configuration.busyTimeoutMillis)
