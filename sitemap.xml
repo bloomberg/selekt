@@ -16,7 +16,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/</loc>
+         <loc>https://bloomberg.github.io/selekt/kdoc/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -27,21 +27,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-conflict-algorithm/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-conflict-algorithm/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-conflict-algorithm/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-conflict-algorithm/sql/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -222,26 +207,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-configuration/callback/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-configuration/component1/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-configuration/component2/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-configuration/component3/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-configuration/copy/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -466,26 +431,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-open-params/component1/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-open-params/component2/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-open-params/component3/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-open-params/copy/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-android-lib/com.bloomberg.selekt.android/-s-q-lite-open-params/journal-mode/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -586,11 +531,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -612,56 +552,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/busy-timeout-millis/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component1/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component2/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component3/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component4/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component5/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component6/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component7/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component8/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/component9/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-database-configuration/copy/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -821,16 +711,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-c-l-o-s-e/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -842,11 +722,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-c-l-o-s-e/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-c-l-o-s-e/value/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -866,11 +741,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-p-r-o-f-i-l-e/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-r-o-w/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -882,11 +752,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-r-o-w/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-r-o-w/value/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -906,27 +771,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-l-trace-event-code/-s-t-a-t-e-m-e-n-t/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/invoke/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/ordinal/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -946,11 +796,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-f-u-l-l/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-i-n-c-r-e-m-e-n-t-a-l/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -962,11 +807,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-i-n-c-r-e-m-e-n-t-a-l/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-i-n-c-r-e-m-e-n-t-a-l/value/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -986,27 +826,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-n-o-n-e/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/database-configuration/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/ordinal/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -1136,16 +961,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-secure-delete/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-secure-delete/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-secure-delete/-f-a-s-t/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -1196,16 +1011,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/to-string/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -1226,11 +1031,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-m-u-l-t-i-t-h-r-e-a-d/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-e-r-i-a-l-i-z-e-d/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -1246,11 +1046,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-e-r-i-a-l-i-z-e-d/value/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-i-n-g-l-e-t-h-r-e-a-d/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
@@ -1262,11 +1057,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-i-n-g-l-e-t-h-r-e-a-d/ordinal/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-i-n-g-l-e-t-h-r-e-a-d/value/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -1307,16 +1097,6 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/name/</loc>
-         <lastmod>2021-07-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/ordinal/</loc>
          <lastmod>2021-07-14</lastmod>
          <changefreq>daily</changefreq>
     </url>

@@ -326,12 +326,10 @@
               
                 
                 
-                <p>//<a href="../../../">AndroidLib</a>/<a href="../../">com.bloomberg.selekt.android</a>/<a href="../">SQLiteDatabase</a>/<a href="./">vacuum</a></p>
+                <p>//<a href="../../../../">AndroidLib</a>/<a href="../../">com.bloomberg.selekt.android</a>/<a href="../">SQLiteDatabase</a>/<a href="./">vacuum</a></p>
 <h1 id="vacuum">vacuum</h1>
-<p>[androidJvm]<br />
-Content<br />
-fun <a href="./">vacuum</a>()<br />
-More info  </p>
+<p>[androidJvm]\
+fun <a href="./">vacuum</a>()</p>
 <p>The vacuum command rebuilds the database file, repacking it into a minimal amount of disk space.</p>
 <p>A vacuum will fail if there is an open transaction on the database connection that is attempting to run the vacuum. Unfinalized SQL statements typically hold a read transaction open, so the vacuum might fail if there are unfinalized SQL statements on the same connection. Vacuum is a write operation and so if another database connection is holding a lock that prevents writes, then the vacuum will fail.</p>
                 

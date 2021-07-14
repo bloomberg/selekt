@@ -336,13 +336,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#functions" class="md-nav__link">
-    Functions
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#properties" class="md-nav__link">
     Properties
   </a>
@@ -362,78 +355,44 @@
               
                 
                 
-                <p>//<a href="../../">ApiLib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLiteJournalMode</a></p>
+                <p>//<a href="../../../">ApiLib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLiteJournalMode</a></p>
 <h1 id="sqlitejournalmode">SQLiteJournalMode</h1>
-<p>[jvm] enum <a href="./">SQLiteJournalMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteJournalMode</a>&gt; </p>
+<p>[jvm]\
+enum <a href="./">SQLiteJournalMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteJournalMode</a>&gt; </p>
 <h4 id="since">Since</h4>
 <p>v0.1.0.</p>
 <h2 id="entries">Entries</h2>
 <table>
 <thead>
 <tr>
-<th>Name</th>
-<th>Summary</th>
+<th></th>
+<th></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.DELETE///PointingToDeclaration/"></a><a href="-d-e-l-e-t-e/">DELETE</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.DELETE///PointingToDeclaration/"></a> [jvm] <a href="-d-e-l-e-t-e/">DELETE</a>()  <br>The DELETE journaling mode is the normal behavior.   <br></td>
+<td><a href="-w-a-l/">WAL</a></td>
+<td>[jvm]<br><a href="-w-a-l/">WAL</a>(commonMultipleConnectionConfiguration)<br>The WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.MEMORY///PointingToDeclaration/"></a><a href="-m-e-m-o-r-y/">MEMORY</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.MEMORY///PointingToDeclaration/"></a> [jvm] <a href="-m-e-m-o-r-y/">MEMORY</a>(commonInMemoryConfiguration)  <br>The MEMORY journaling mode stores the rollback journal in volatile RAM.   <br></td>
+<td><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a></td>
+<td>[jvm]<br><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a>()<br>The TRUNCATE journaling mode commits transactions by truncating the rollback journal to zero-length instead of deleting it.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.OFF///PointingToDeclaration/"></a><a href="-o-f-f/">OFF</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.OFF///PointingToDeclaration/"></a> [jvm] <a href="-o-f-f/">OFF</a>()  <br>The OFF journaling mode disables the rollback journal completely.   <br></td>
+<td><a href="-p-e-r-s-i-s-t/">PERSIST</a></td>
+<td>[jvm]<br><a href="-p-e-r-s-i-s-t/">PERSIST</a>()<br>The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST///PointingToDeclaration/"></a><a href="-p-e-r-s-i-s-t/">PERSIST</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST///PointingToDeclaration/"></a> [jvm] <a href="-p-e-r-s-i-s-t/">PERSIST</a>()  <br>The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction.   <br></td>
+<td><a href="-o-f-f/">OFF</a></td>
+<td>[jvm]<br><a href="-o-f-f/">OFF</a>()<br>The OFF journaling mode disables the rollback journal completely.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.TRUNCATE///PointingToDeclaration/"></a><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.TRUNCATE///PointingToDeclaration/"></a> [jvm] <a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a>()  <br>The TRUNCATE journaling mode commits transactions by truncating the rollback journal to zero-length instead of deleting it.   <br></td>
+<td><a href="-m-e-m-o-r-y/">MEMORY</a></td>
+<td>[jvm]<br><a href="-m-e-m-o-r-y/">MEMORY</a>(commonInMemoryConfiguration)<br>The MEMORY journaling mode stores the rollback journal in volatile RAM.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.WAL///PointingToDeclaration/"></a><a href="-w-a-l/">WAL</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode.WAL///PointingToDeclaration/"></a> [jvm] <a href="-w-a-l/">WAL</a>(commonMultipleConnectionConfiguration)  <br>The WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions.   <br></td>
-</tr>
-</tbody>
-</table>
-<h2 id="functions">Functions</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Summary</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a name="kotlin/Enum/compareTo/#com.bloomberg.selekt.SQLiteJournalMode/PointingToDeclaration/"></a><a href="-w-a-l/#%5Bkotlin%2FEnum%2FcompareTo%2F%23com.bloomberg.selekt.SQLiteJournalMode%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">compareTo</a></td>
-<td><a name="kotlin/Enum/compareTo/#com.bloomberg.selekt.SQLiteJournalMode/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator override fun <a href="-w-a-l/#%5Bkotlin%2FEnum%2FcompareTo%2F%23com.bloomberg.selekt.SQLiteJournalMode%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">compareTo</a>(other: <a href="./">SQLiteJournalMode</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/equals/#kotlin.Any?/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">equals</a></td>
-<td><a name="kotlin/Enum/equals/#kotlin.Any?/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/finalize/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Ffinalize%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">finalize</a></td>
-<td><a name="kotlin/Enum/finalize/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Ffinalize%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">finalize</a>()  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/getDeclaringClass/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FgetDeclaringClass%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">getDeclaringClass</a></td>
-<td><a name="kotlin/Enum/getDeclaringClass/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FgetDeclaringClass%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">getDeclaringClass</a>(): <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html">Class</a>&lt;<a href="./">SQLiteJournalMode</a>&gt;  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/hashCode/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">hashCode</a></td>
-<td><a name="kotlin/Enum/hashCode/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/toString/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">toString</a></td>
-<td><a name="kotlin/Enum/toString/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>  <br><br><br></td>
+<td><a href="-d-e-l-e-t-e/">DELETE</a></td>
+<td>[jvm]<br><a href="-d-e-l-e-t-e/">DELETE</a>()<br>The DELETE journaling mode is the normal behavior.</td>
 </tr>
 </tbody>
 </table>
@@ -447,16 +406,16 @@
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/databaseConfiguration/#/PointingToDeclaration/"></a><a href="database-configuration/">databaseConfiguration</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/databaseConfiguration/#/PointingToDeclaration/"></a> [jvm] val <a href="database-configuration/">databaseConfiguration</a>: <a href="../-database-configuration/">DatabaseConfiguration</a>   <br></td>
+<td><a href="database-configuration/">databaseConfiguration</a></td>
+<td>[jvm]<br>val <a href="database-configuration/">databaseConfiguration</a>: <a href="../-database-configuration/">DatabaseConfiguration</a></td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/name/#/PointingToDeclaration/"></a><a href="name/">name</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/name/#/PointingToDeclaration/"></a> [jvm] val <a href="name/">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>   <br></td>
+<td><a href="./#1016339638%2FProperties%2F-64293227">name</a></td>
+<td>[jvm]<br>val <a href="./#1016339638%2FProperties%2F-64293227">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/ordinal/#/PointingToDeclaration/"></a><a href="ordinal/">ordinal</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteJournalMode/ordinal/#/PointingToDeclaration/"></a> [jvm] val <a href="ordinal/">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>   <br></td>
+<td><a href="./#2024015560%2FProperties%2F-64293227">ordinal</a></td>
+<td>[jvm]<br>val <a href="./#2024015560%2FProperties%2F-64293227">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>

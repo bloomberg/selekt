@@ -355,29 +355,30 @@
               
                 
                 
-                <p>//<a href="../../">ApiLib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLiteAutoVacuumMode</a></p>
+                <p>//<a href="../../../">ApiLib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLiteAutoVacuumMode</a></p>
 <h1 id="sqliteautovacuummode">SQLiteAutoVacuumMode</h1>
-<p>[jvm] enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteAutoVacuumMode</a>&gt;    </p>
+<p>[jvm]\
+enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteAutoVacuumMode</a>&gt;</p>
 <h2 id="entries">Entries</h2>
 <table>
 <thead>
 <tr>
-<th>Name</th>
-<th>Summary</th>
+<th></th>
+<th></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.NONE///PointingToDeclaration/"></a><a href="-n-o-n-e/">NONE</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.NONE///PointingToDeclaration/"></a> [jvm] <a href="-n-o-n-e/">NONE</a>(0)  <br>Auto-vacuum is disabled.   <br></td>
+<td><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a></td>
+<td>[jvm]<br><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)<br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full".</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.FULL///PointingToDeclaration/"></a><a href="-f-u-l-l/">FULL</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.FULL///PointingToDeclaration/"></a> [jvm] <a href="-f-u-l-l/">FULL</a>(1)  <br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit.   <br></td>
+<td><a href="-f-u-l-l/">FULL</a></td>
+<td>[jvm]<br><a href="-f-u-l-l/">FULL</a>(1)<br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.INCREMENTAL///PointingToDeclaration/"></a><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.INCREMENTAL///PointingToDeclaration/"></a> [jvm] <a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)  <br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full".   <br></td>
+<td><a href="-n-o-n-e/">NONE</a></td>
+<td>[jvm]<br><a href="-n-o-n-e/">NONE</a>(0)<br>Auto-vacuum is disabled.</td>
 </tr>
 </tbody>
 </table>
@@ -391,32 +392,8 @@
 </thead>
 <tbody>
 <tr>
-<td><a name="kotlin/Enum/compareTo/#com.bloomberg.selekt.SQLiteAutoVacuumMode/PointingToDeclaration/"></a><a href="-i-n-c-r-e-m-e-n-t-a-l/#%5Bkotlin%2FEnum%2FcompareTo%2F%23com.bloomberg.selekt.SQLiteAutoVacuumMode%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">compareTo</a></td>
-<td><a name="kotlin/Enum/compareTo/#com.bloomberg.selekt.SQLiteAutoVacuumMode/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator override fun <a href="-i-n-c-r-e-m-e-n-t-a-l/#%5Bkotlin%2FEnum%2FcompareTo%2F%23com.bloomberg.selekt.SQLiteAutoVacuumMode%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">compareTo</a>(other: <a href="./">SQLiteAutoVacuumMode</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/equals/#kotlin.Any?/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">equals</a></td>
-<td><a name="kotlin/Enum/equals/#kotlin.Any?/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/finalize/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Ffinalize%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">finalize</a></td>
-<td><a name="kotlin/Enum/finalize/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2Ffinalize%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">finalize</a>()  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/getDeclaringClass/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FgetDeclaringClass%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">getDeclaringClass</a></td>
-<td><a name="kotlin/Enum/getDeclaringClass/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FgetDeclaringClass%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">getDeclaringClass</a>(): <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html">Class</a>&lt;<a href="./">SQLiteAutoVacuumMode</a>&gt;  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/hashCode/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">hashCode</a></td>
-<td><a name="kotlin/Enum/hashCode/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/invoke/#/PointingToDeclaration/"></a><a href="invoke/">invoke</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/invoke/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator fun <a href="invoke/">invoke</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
-</tr>
-<tr>
-<td><a name="kotlin/Enum/toString/#/PointingToDeclaration/"></a><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">toString</a></td>
-<td><a name="kotlin/Enum/toString/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/#%5Bkotlin%2FEnum%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-1889918706">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>  <br><br><br></td>
+<td><a href="invoke/">invoke</a></td>
+<td>[jvm]<br>operator fun <a href="invoke/">invoke</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>
@@ -430,12 +407,12 @@
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/name/#/PointingToDeclaration/"></a><a href="name/">name</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/name/#/PointingToDeclaration/"></a> [jvm] val <a href="name/">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>   <br></td>
+<td><a href="./#122814449%2FProperties%2F-64293227">name</a></td>
+<td>[jvm]<br>val <a href="./#122814449%2FProperties%2F-64293227">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/ordinal/#/PointingToDeclaration/"></a><a href="ordinal/">ordinal</a></td>
-<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/ordinal/#/PointingToDeclaration/"></a> [jvm] val <a href="ordinal/">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>   <br></td>
+<td><a href="./#-1072556627%2FProperties%2F-64293227">ordinal</a></td>
+<td>[jvm]<br>val <a href="./#-1072556627%2FProperties%2F-64293227">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>
