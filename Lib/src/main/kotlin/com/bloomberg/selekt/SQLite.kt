@@ -179,6 +179,8 @@ open class SQLite(
 
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
+    fun keyConventionally(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))
+
     fun keywordCount() = sqlite.keywordCount()
 
     fun lastInsertRowId(db: Long) = sqlite.lastInsertRowId(db)
