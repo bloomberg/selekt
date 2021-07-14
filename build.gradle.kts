@@ -173,7 +173,7 @@ allprojects {
     }
     configure<KtlintExtension> {
         version.set(Versions.KTLINT.version)
-        disabledRules.set(kotlin.collections.setOf("import-ordering", "indent"))
+        disabledRules.set(setOf("import-ordering", "indent"))
         reporters {
             reporter(ReporterType.HTML)
         }
