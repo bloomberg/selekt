@@ -122,7 +122,6 @@ internal class SQLBlobOutputStreamTest {
             whenever(size) doReturn expectedSize
             whenever(read(any(), any(), any(), any())).doAnswer {
                 requireNotNull(it.arguments[1] as? ByteArray)[0] = expectedByte
-                Unit
             }
         }
         BlobOutputStream(blob).use {
