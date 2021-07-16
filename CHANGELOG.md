@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 0.13.6
+
+### Fixes
+
+* Move the verification of the key size out of the JVM and closer to the native SQLite implementation. This makes it easier to swap out SQLite implementations.
+* Introduce a Key convention, resolving the keying strategy outside of the JVM to make it easier to swap out SQLite implementations.
+* The published Android sources jar is no longer empty.
+* Publish a KDoc jar for the main Android subproject.
+
+### Dependencies
+
+* Dokka 1.5.0.
+* Kotlin 1.5.21.
+
 ## Version 0.13.5
 
 ### Fixes
