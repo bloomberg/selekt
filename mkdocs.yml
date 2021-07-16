@@ -34,4 +34,4 @@ nav:
   - 'Overview': index.md
   - 'Getting started': getting_started.md
   - 'Native libraries': native_libraries.md
-  - 'API': kdoc/index.md
+  - 'API': kdoc/AndroidLib/index.md
