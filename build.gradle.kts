@@ -15,6 +15,7 @@
  */
 
 import io.gitlab.arturbosch.detekt.Detekt
+import java.net.URL
 import java.util.Locale
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -150,9 +151,10 @@ subprojects {
 
     pluginManager.withPlugin("org.jetbrains.dokka") {
         tasks.withType<DokkaTask>().configureEach {
+            moduleName.set("Selekt")
             dokkaSourceSets.named("main") {
                 sourceLink {
-                    remoteUrl.set(java.net.URL("https://github.com/bloomberg/selekt/tree/master/" +
+                    remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
                         "${this@configureEach.project.name}/src/main/kotlin"))
                     localDirectory.set(file("src/main/kotlin"))
                 }
@@ -161,7 +163,6 @@ subprojects {
                 noAndroidSdkLink.set(false)
                 noJdkLink.set(false)
                 noStdlibLink.set(false)
-                outputDirectory.set(File("$rootDir/docs/kdoc"))
             }
         }
     }

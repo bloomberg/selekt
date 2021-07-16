@@ -28,7 +28,8 @@ jobs:
       - run: pip install mkdocs-material
       - name: 'Dokka'
         run: |
-          ./gradlew :AndroidLib:dokkaGfm :ApiLib:dokkaGfm
+          ./gradlew :dokkaGfmMultiModule
+          cp -R build/dokka/gfmMultiModule docs/kdoc
       - name: 'Set version'
         run: echo "VERSION=$(grep -hnr 'selekt.versionName' gradle.properties | sed 's/.*=//')" >> $GITHUB_ENV
       - name: 'Mkdocs'
