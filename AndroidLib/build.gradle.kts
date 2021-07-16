@@ -99,12 +99,20 @@ afterEvaluate {
 tasks.register("assembleSelekt") {
     dependsOn("assembleRelease")
     dependsOn("sourcesJar")
+    dependsOn("dokkaHtmlJar")
 }
 
 tasks.register<Jar>("sourcesJar") {
     from(android.sourceSets["main"].java.srcDirs)
     setProperty("archiveBaseName", "selekt")
     setProperty("archiveClassifier", "sources")
+}
+
+tasks.register<Jar>("dokkaHtmlJar") {
+    dependsOn("dokkaHtml")
+    setProperty("archiveBaseName", "selekt")
+    setProperty("archiveClassifier", "kdoc")
+    from("$buildDir/dokka/html")
 }
 
 licensee {
@@ -123,6 +131,7 @@ afterEvaluate {
                 description.set("Selekt Android SQLite library.")
             }
             artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
+            artifact("$buildDir/libs/selekt-kdoc.jar") { classifier = "javadoc" }
         }.also {
             signing { sign(it) }
         }
