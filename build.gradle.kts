@@ -151,6 +151,7 @@ subprojects {
 
     pluginManager.withPlugin("org.jetbrains.dokka") {
         tasks.withType<DokkaTask>().configureEach {
+            moduleName.set("Selekt")
             dokkaSourceSets.named("main") {
                 sourceLink {
                     remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
