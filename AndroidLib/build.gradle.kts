@@ -57,6 +57,7 @@ android {
 
     defaultPublishConfig = "release"
 
+    sourceSets["main"].java.srcDir("src/main/kotlin")
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
 
     buildTypes {
