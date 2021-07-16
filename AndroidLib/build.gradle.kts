@@ -15,6 +15,7 @@
  */
 
 import java.util.Locale
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 plugins {
     id("com.android.library")
@@ -107,6 +108,10 @@ tasks.register<Jar>("sourcesJar") {
     from(android.sourceSets["main"].java.srcDirs)
     setProperty("archiveBaseName", "selekt")
     setProperty("archiveClassifier", "sources")
+}
+
+tasks.withType<DokkaTaskPartial>().configureEach {
+    moduleName.set("Selekt")
 }
 
 tasks.register<Jar>("dokkaHtmlJar") {
