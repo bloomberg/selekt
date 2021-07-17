@@ -33,14 +33,25 @@ internal class ThreadLocalSession(
     internal fun get(): SQLSession = threadLocal.get()
 }
 
+private data class SQLSessionState(
+    var depth: Int = 0,
+    var successes: Int = 0,
+    var transactionSql: String = "",
+    var transactionListener: SQLTransactionListener? = null
+) {
+    fun clear() {
+        depth = 0
+        successes = 0
+        transactionSql = ""
+        transactionListener = null
+    }
+}
+
 @NotThreadSafe
 internal class SQLSession(
     pool: SQLExecutorPool
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
-    private var depth = 0
-    private var successes = 0
-    private var transactionSql: String = ""
-    private var transactionListener: SQLTransactionListener? = null
+    private var state = SQLSessionState()
 
     override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
 
@@ -64,7 +75,7 @@ internal class SQLSession(
         it.executeForBlob(name, table, column, row)
     }
 
-    override fun endTransaction() {
+    override fun endTransaction() = state.run {
         --depth
         --successes
         if (depth == 0) {
@@ -75,29 +86,26 @@ internal class SQLSession(
     }
 
     override val inTransaction: Boolean
-        get() = depth > 0
+        get() = state.depth > 0
 
     override fun setTransactionSuccessful() {
         checkInTransaction()
-        check(successes == 0) { "This thread's current transaction is already marked as successful." }
-        ++successes
+        check(state.successes == 0) { "This thread's current transaction is already marked as successful." }
+        ++state.successes
     }
 
     override fun yieldTransaction() = yieldTransaction(0L)
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
-        val currentDepth = depth
-        val currentSuccesses = successes
-        val sql = transactionSql
-        val listener = transactionListener
-        internalEnd()
+        val oldState = state.copy()
+        val permits = retainCount
+        internalEnd(permits)
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(sql, listener)
-        depth = currentDepth
-        successes = currentSuccesses
+        internalBegin(oldState.transactionSql, oldState.transactionListener, permits)
+        state = oldState
         return true
     }
 
@@ -130,45 +138,49 @@ internal class SQLSession(
     ) = begin(mode.sql, listener)
 
     private fun begin(sql: String, listener: SQLTransactionListener?) {
-        if (depth == 0) {
+        if (state.depth == 0) {
             internalBegin(sql, listener)
         }
-        ++depth
+        ++state.depth
     }
 
-    private fun internalBegin(sql: String, listener: SQLTransactionListener?) {
-        retain(true, sql).runCatching {
+    private fun internalBegin(
+        sql: String,
+        listener: SQLTransactionListener?,
+        permits: Int = 1
+    ) {
+        retain(true, sql, permits).runCatching {
             executeWithRetry(sql)
             listener?.let {
-                transactionListener = it
+                state.transactionListener = it
                 it.onBegin()
             }
         }.exceptionOrNull()?.let {
             rollbackQuietly()
             clearTransactionState()
-            release()
+            release(permits)
             throw it
         }
-        transactionSql = sql
+        state.transactionSql = sql
     }
 
-    private fun internalEnd() {
+    private fun internalEnd(permits: Int = 1) {
         try {
-            if (successes == 0) {
+            if (state.successes == 0) {
                 commit()
             } else {
                 rollback()
             }
         } finally {
             clearTransactionState()
-            release()
+            release(permits)
         }
     }
 
     private fun commit() {
         execute(true) {
             runCatching {
-                transactionListener?.onCommit()
+                state.transactionListener?.onCommit()
                 it.executeWithRetry("END")
             }.exceptionOrNull()?.let {
                 rollbackQuietly()
@@ -180,7 +192,7 @@ internal class SQLSession(
     private fun rollback() {
         execute(false) {
             try {
-                transactionListener?.onRollback()
+                state.transactionListener?.onRollback()
             } finally {
                 it.execute("ROLLBACK")
             }
@@ -194,10 +206,7 @@ internal class SQLSession(
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }
 
     private fun clearTransactionState() {
-        depth = 0
-        successes = 0
-        transactionSql = ""
-        transactionListener = null
+        state.clear()
     }
 }
 
@@ -226,7 +235,7 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
     private val pool: TieredObjectPool<K, T>
 ) {
     private var obj: T? = null
-    private var retainCount = 0
+    protected var retainCount = 0
 
     @Generated
     inline fun <R> execute(
@@ -256,18 +265,28 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
     val hasObject: Boolean
         get() = retainCount > 0
 
-    protected fun retain(primary: Boolean, key: K) = retain(primary) { pool.borrowObject(key) }
+    protected fun retain(
+        primary: Boolean,
+        key: K,
+        permits: Int = 1
+    ) = retain(primary, permits) { pool.borrowObject(key) }
 
-    protected fun release() = obj!!.release()
+    protected fun release(permits: Int = 1) = obj!!.release(permits)
 
-    private fun retain(primary: Boolean) = retain(primary) { pool.borrowObject() }
+    private fun retain(primary: Boolean, permits: Int = 1) = retain(primary, permits) { pool.borrowObject() }
 
     @Generated
-    private inline fun retain(primary: Boolean, block: () -> T) =
-        (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also { obj = it }).also { ++retainCount }
+    private inline fun retain(
+        primary: Boolean,
+        permits: Int,
+        block: () -> T
+    ) = (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also { obj = it }).also {
+        retainCount += permits
+    }
 
-    private fun T.release() {
-        if (--retainCount == 0) {
+    private fun T.release(permits: Int) {
+        retainCount -= permits
+        if (retainCount == 0) {
             pool.returnObject(this).also { obj = null }
         }
     }
