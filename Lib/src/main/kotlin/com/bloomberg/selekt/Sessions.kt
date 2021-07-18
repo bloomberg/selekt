@@ -98,6 +98,7 @@ internal class SQLSession(
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
+        check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
         val oldState = state.copy()
         val permits = retainCount
         internalEnd(permits)
