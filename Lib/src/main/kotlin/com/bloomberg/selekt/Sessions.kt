@@ -158,7 +158,7 @@ internal class SQLSession(
             }
         }.exceptionOrNull()?.let {
             rollbackQuietly()
-            clearTransactionState()
+            state.clear()
             release(permits)
             throw it
         }
@@ -173,7 +173,7 @@ internal class SQLSession(
                 rollback()
             }
         } finally {
-            clearTransactionState()
+            state.clear()
             release(permits)
         }
     }
@@ -205,10 +205,6 @@ internal class SQLSession(
     }
 
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }
-
-    private fun clearTransactionState() {
-        state.clear()
-    }
 }
 
 interface ISQLTransactor {
