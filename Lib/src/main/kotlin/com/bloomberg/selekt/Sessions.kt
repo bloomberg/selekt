@@ -100,12 +100,12 @@ internal class SQLSession(
         checkInTransaction()
         check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
         val oldState = state.copy()
-        val permits = retainCount
-        internalEnd(permits)
+        val oldRetainCount = retainCount
+        internalEnd(oldRetainCount)
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(oldState.transactionSql, oldState.transactionListener, permits)
+        internalBegin(oldState.transactionSql, oldState.transactionListener, oldRetainCount)
         state = oldState
         return true
     }

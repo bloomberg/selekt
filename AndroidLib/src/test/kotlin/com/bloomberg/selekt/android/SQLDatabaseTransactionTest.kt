@@ -351,6 +351,19 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
     }
 
     @Test
+    fun yieldTransactionThrowsIfTransactionMarkedAsSuccessful(): Unit = database.run {
+        beginExclusiveTransaction()
+        try {
+            setTransactionSuccessful()
+            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+                yieldTransaction()
+            }
+        } finally {
+            endTransaction()
+        }
+    }
+
+    @Test
     fun yieldTransactionWithPauseThrows(): Unit = database.run {
         assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
             yieldTransaction(100L)
