@@ -16,7 +16,7 @@
         <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/yield-transaction/">
       
       <link rel="icon" href="../../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.10">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.1.11">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../../assets/stylesheets/main.1fe995fd.min.css">
+      <link rel="stylesheet" href="../../../../../../assets/stylesheets/main.3754935a.min.css">
       
         
         <link rel="stylesheet" href="../../../../../../assets/stylesheets/palette.f1a3b89f.min.css">
@@ -290,9 +290,7 @@
                 <p>//<a href="../../../../">Selekt</a>/<a href="../../">com.bloomberg.selekt.android</a>/<a href="../">SQLiteDatabase</a>/<a href="./">yieldTransaction</a></p>
 <h1 id="yieldtransaction">yieldTransaction</h1>
 <p>[androidJvm]\
-fun <a href="./">yieldTransaction</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></p>
-<p>[androidJvm]\
-fun <a href="./">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></p>
+fun <a href="./">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a> = 0L): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></p>
 <p>Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful thus far and committed, do not call <a href="../../../../AndroidLib/com.bloomberg.selekt.android/-s-q-lite-database/set-transaction-successful.md">setTransactionSuccessful</a>. When this method returns a new transaction will have been created but not yet marked as successful.</p>
 <p>The yielding transaction can be nested.</p>
                 
