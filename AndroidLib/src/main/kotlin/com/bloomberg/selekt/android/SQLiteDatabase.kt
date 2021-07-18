@@ -37,6 +37,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.jvm.Throws
 
 /**
  * @since v0.1.0.
@@ -443,8 +444,6 @@ class SQLiteDatabase private constructor(
         stream: InputStream
     ) = database.writeToBlob(name, table, column, row, offset, stream)
 
-    fun yieldTransaction() = database.yieldTransaction()
-
     /**
      * Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful
      * thus far and committed, do not call [setTransactionSuccessful]. When this method returns a new transaction will have
@@ -452,7 +451,8 @@ class SQLiteDatabase private constructor(
      *
      * The yielding transaction can be nested.
      */
-    fun yieldTransaction(@IntRange(from = 0L) pauseMillis: Long) = database.yieldTransaction(pauseMillis)
+    @Throws(InterruptedException::class)
+    fun yieldTransaction(@IntRange(from = 0L) pauseMillis: Long = 0L) = database.yieldTransaction(pauseMillis)
 }
 
 private const val PAGE_SIZE = "page_size"

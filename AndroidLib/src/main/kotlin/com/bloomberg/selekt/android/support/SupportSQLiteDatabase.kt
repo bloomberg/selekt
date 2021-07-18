@@ -169,7 +169,7 @@ private class SupportSQLiteDatabase constructor(
         whereArgs: Array<out Any>?
     ) = database.update(table, values, whereClause, whereArgs, conflictAlgorithm.toConflictAlgorithm())
 
-    override fun yieldIfContendedSafely() = database.yieldTransaction()
+    override fun yieldIfContendedSafely() = yieldIfContendedSafely(0L)
 
     override fun yieldIfContendedSafely(sleepAfterYieldDelay: Long) = database.yieldTransaction(sleepAfterYieldDelay)
 }
