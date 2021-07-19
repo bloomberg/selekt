@@ -58,4 +58,6 @@ dependencies {
     implementation(androidX("core", "ktx", version = "1.0.2"))
     implementation(androidX("paging", "runtime", "2.1.0"))
     implementation(androidX("constraintlayout", version = "1.1.3"))
+    implementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
+    implementation(kotlinX("coroutines-android", Versions.KOTLIN_COROUTINES.version))
 }

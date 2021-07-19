@@ -104,6 +104,7 @@ class SelektPlugin : Plugin<Project> {
                             add(name, kotlin("test-junit", Versions.KOTLIN_TEST.version))
                             add(name, kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
                             add(name, kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+                            add(name, kotlinX("coroutines-test", Versions.KOTLIN_COROUTINES_TEST.version))
                             add(name, "org.assertj:assertj-core:${Versions.ASSERT_J}")
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                             add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")

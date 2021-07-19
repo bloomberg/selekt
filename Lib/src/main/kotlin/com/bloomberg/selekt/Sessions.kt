@@ -20,6 +20,10 @@ import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.TieredObjectPool
 import javax.annotation.concurrent.NotThreadSafe
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.ThreadContextElement
+import kotlinx.coroutines.asContextElement
+import kotlinx.coroutines.delay
 
 internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
 
@@ -30,7 +34,33 @@ internal class ThreadLocalSession(
         override fun initialValue() = SQLSession(pool)
     }
 
+    internal fun transferToThreadLocalContextElement() =
+        SynchronizedThreadContextElement(threadLocal.asContextElement()).also {
+            threadLocal.remove()
+        }
+
     internal fun get(): SQLSession = threadLocal.get()
+
+    internal fun set(session: SQLSession) {
+        threadLocal.set(session)
+    }
+}
+
+internal class SynchronizedThreadContextElement<T>(
+    private val element: ThreadContextElement<T>
+) : ThreadContextElement<T> {
+    override val key = element.key
+
+    @Synchronized
+    override fun restoreThreadContext(
+        context: CoroutineContext,
+        oldState: T
+    ) = element.restoreThreadContext(context, oldState)
+
+    @Synchronized
+    override fun updateThreadContext(context: CoroutineContext) = element.updateThreadContext(context)
+
+    internal fun getLock() = this
 }
 
 private data class SQLSessionState(
@@ -94,7 +124,17 @@ internal class SQLSession(
         ++state.successes
     }
 
-    override fun yieldTransaction() = yieldTransaction(0L)
+    suspend fun delayTransaction(pauseMillis: Long = 0L): Boolean {
+        checkInTransaction()
+        check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
+        val oldState = state.copy()
+        val permits = retainCount
+        internalEnd(permits)
+        delay(pauseMillis)
+        internalBegin(oldState.transactionSql, oldState.transactionListener, permits)
+        state = oldState
+        return true
+    }
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
@@ -222,9 +262,7 @@ interface ISQLTransactor {
 
     fun setTransactionSuccessful()
 
-    fun yieldTransaction(): Boolean
-
-    fun yieldTransaction(pauseMillis: Long): Boolean
+    fun yieldTransaction(pauseMillis: Long = 0L): Boolean
 }
 
 @NotThreadSafe

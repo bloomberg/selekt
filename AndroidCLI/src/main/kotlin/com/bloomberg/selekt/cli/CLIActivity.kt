@@ -27,18 +27,28 @@ import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.android.Selekt
 import com.bloomberg.selekt.cli.databinding.ActivityMainBinding
-import java.lang.StringBuilder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class CLIActivity : AppCompatActivity() {
     private lateinit var database: SQLiteDatabase
     private lateinit var binding: ActivityMainBinding
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     private val keyListener = View.OnKeyListener { _, keyCode, keyEvent ->
         if (KeyEvent.KEYCODE_ENTER == keyCode) {
             if (KeyEvent.ACTION_UP == keyEvent.action) {
                 binding.input.text.apply {
                     takeUnless { it.isBlank() }?.toString()?.let {
-                        runCatching { executeSQL(it) }.exceptionOrNull()?.let { e -> log(e) }
+                        scope.launch {
+                            runCatching { executeSQL(it) }.getOrElse {
+                                launch(Dispatchers.Main) {
+                                    log(it.message)
+                                }
+                            }
+                        }
                     }
                     clear()
                 }
@@ -85,18 +95,21 @@ class CLIActivity : AppCompatActivity() {
 
     private fun log(any: Any?) = binding.console.append("\n$any")
 
-    private fun executeSQL(sql: String) {
+    @OptIn(Experimental::class)
+    private suspend fun executeSQL(sql: String) = withContext(scope.coroutineContext) {
         log("> $sql")
-        if (sql.startsWith("SELECT", ignoreCase = true) || sql.startsWith("PRAGMA", ignoreCase = true)) {
-            query(sql)
-        } else {
-            database.exec(sql)
+        database.withTransaction {
+            delayTransaction(100L) // Very important work!
+            if (sql.startsWith("SELECT", ignoreCase = true) || sql.startsWith("PRAGMA", ignoreCase = true)) {
+                query(sql)
+            } else {
+                exec(sql)
+                null
+            }
         }
-    }
-
-    private fun query(sql: String) = database.query(sql, emptyArray()).use {
+    }?.use {
         if (it.columnCount < 1) {
-            return
+            return@use
         }
         val builder = StringBuilder()
         while (it.moveToNext()) {
@@ -109,4 +122,6 @@ class CLIActivity : AppCompatActivity() {
             builder.clear()
         }
     }
+
+    private fun query(sql: String) = database.query(sql, emptyArray())
 }

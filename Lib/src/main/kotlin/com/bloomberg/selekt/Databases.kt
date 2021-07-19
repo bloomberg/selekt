@@ -25,6 +25,13 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.lang.StringBuilder
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import javax.annotation.concurrent.GuardedBy
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
@@ -107,6 +114,10 @@ class SQLDatabase constructor(
         )
     }
 
+    suspend fun delayTransaction(pauseMillis: Long = 0L) {
+        session.get().delayTransaction(pauseMillis)
+    }
+
     override fun endTransaction() = pledge { session.get().endTransaction() }
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
@@ -135,7 +146,9 @@ class SQLDatabase constructor(
                 .append('(')
             val iterator = values.entrySet.iterator()
             val bindArgs = Array(values.size) {
-                if (it > 0) { append(',') }
+                if (it > 0) {
+                    append(',')
+                }
                 iterator.next().run {
                     append(key)
                     value
@@ -149,12 +162,14 @@ class SQLDatabase constructor(
     }
 
     fun pragma(key: String) = pledge {
-        checkNotNull(SQLStatement.executeForString(
-            session,
-            "PRAGMA $key",
-            SQLStatementType.PRAGMA,
-            EMPTY_ARRAY
-        ))
+        checkNotNull(
+            SQLStatement.executeForString(
+                session,
+                "PRAGMA $key",
+                SQLStatementType.PRAGMA,
+                EMPTY_ARRAY
+            )
+        )
     }
 
     fun pragma(key: String, value: Any) = pledge {
@@ -262,7 +277,9 @@ class SQLDatabase constructor(
                 .append(" SET ")
             val bindArgs = Array(valuesSize + whereArgs.size) {
                 if (it < valuesSize) {
-                    if (it > 0) { append(',') }
+                    if (it > 0) {
+                        append(',')
+                    }
                     iterator.next().run {
                         append(key).append("=?")
                         value
@@ -348,8 +365,32 @@ class SQLDatabase constructor(
         }
     }
 
-    override fun yieldTransaction() = pledge {
-        session.get().yieldTransaction()
+    suspend fun <D, T> withTransaction(
+        database: D,
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        block: suspend D.() -> T
+    ): T = pledge {
+        val context = additionalSessionContext()
+        try {
+            withContext(dispatcher + context) {
+                when (transactionMode) {
+                    SQLiteTransactionMode.EXCLUSIVE -> session.get().beginExclusiveTransaction()
+                    SQLiteTransactionMode.IMMEDIATE -> session.get().beginImmediateTransaction()
+                }
+                try {
+                    return@withContext block(database).also {
+                        session.get().setTransactionSuccessful()
+                    }
+                } finally {
+                    session.get().endTransaction()
+                }
+            }
+        } finally {
+            if (context != EmptyCoroutineContext) {
+                session.set(context[SessionElement]!!.session())
+            }
+        }
     }
 
     override fun yieldTransaction(pauseMillis: Long) = pledge {
@@ -375,6 +416,15 @@ class SQLDatabase constructor(
             val information = query.fill(it)
             WindowedCursor(information.columnNames, it)
         }
+    }
+
+    private suspend fun additionalSessionContext() = if (coroutineContext[SessionElement] == null) {
+        val currentSession = session.get()
+        session.transferToThreadLocalContextElement().run {
+            SessionElement(currentSession, getLock()) + this
+        }
+    } else {
+        EmptyCoroutineContext
     }
 }
 
@@ -435,4 +485,24 @@ interface IReadableDatabase : Closeable {
     ): ICursor
 
     fun query(query: ISQLQuery): ICursor
+}
+
+/**
+ * Marker coroutine context element used to indicate that a thread-local session context element is already available
+ * within the current coroutine scope, and to hold a reference to the prevailing session for restoration upon leaving
+ * the transacting coroutine scope.
+ */
+private class SessionElement(
+    @GuardedBy("lock")
+    private val session: SQLSession,
+    private val lock: Any
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<SessionElement>
+
+    override val key: CoroutineContext.Key<SessionElement>
+        get() = Key
+
+    fun session() = synchronized(lock) {
+        session
+    }
 }

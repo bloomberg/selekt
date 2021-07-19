@@ -36,6 +36,7 @@ java {
 
 dependencies {
     compileOnly(selekt("annotations", selektVersionName))
+    compileOnly(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
     implementation(selekt("api", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
 }

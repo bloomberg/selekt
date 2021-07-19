@@ -38,6 +38,7 @@ enum class Versions(
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.5.21", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_COROUTINES("1.5.0", URL("https://github.com/Kotlin/kotlinx.coroutines")),
+    KOTLIN_COROUTINES_TEST("1.5.0", URL("https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-test/")),
     KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
     KTLINT("0.41.0", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.1.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),

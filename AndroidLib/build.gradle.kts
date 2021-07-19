@@ -59,6 +59,7 @@ android {
     defaultPublishConfig = "release"
 
     sourceSets["main"].java.srcDir("src/main/kotlin")
+    sourceSets["test"].java.srcDir("src/test/kotlin")
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
 
     buildTypes {
@@ -73,6 +74,7 @@ dependencies {
     api(selekt("api", selektVersionName))
     compileOnly(selekt("annotations", selektVersionName))
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
+    compileOnly(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
     implementation(selekt("android-sqlcipher", sqlcipherVersionName))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))

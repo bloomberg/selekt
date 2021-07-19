@@ -28,6 +28,7 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
 import org.intellij.lang.annotations.Language
 import java.util.Locale
+import kotlin.jvm.Throws
 
 internal fun SQLiteDatabase.asSupportSQLiteDatabase(): SupportSQLiteDatabase = SupportSQLiteDatabase(this)
 
@@ -169,7 +170,9 @@ private class SupportSQLiteDatabase constructor(
         whereArgs: Array<out Any>?
     ) = database.update(table, values, whereClause, whereArgs, conflictAlgorithm.toConflictAlgorithm())
 
+    @Throws(InterruptedException::class)
     override fun yieldIfContendedSafely() = yieldIfContendedSafely(0L)
 
+    @Throws(InterruptedException::class)
     override fun yieldIfContendedSafely(sleepAfterYieldDelay: Long) = database.yieldTransaction(sleepAfterYieldDelay)
 }

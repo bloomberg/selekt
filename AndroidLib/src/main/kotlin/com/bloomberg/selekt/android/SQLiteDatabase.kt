@@ -30,6 +30,8 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.SQLiteTransactionMode
 import com.bloomberg.selekt.pools.Priority
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.intellij.lang.annotations.Language
 import java.io.Closeable
 import java.io.File
@@ -172,7 +174,7 @@ class SQLiteDatabase private constructor(
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
-     * Begins a transaction in exclusive mode.
+     * Begins a transaction in exclusive mode. Prefer [transact] or [withTransaction] whenever possible.
      *
      * Transactions can be nested. When the outer transaction is ended all of the work done in that transaction and all of
      * the nested transactions will be committed or rolled back. The changes will be rolled back if any transaction is ended
@@ -182,13 +184,15 @@ class SQLiteDatabase private constructor(
      *
      * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
      */
+    @Throws(InterruptedException::class)
     internal fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
 
+    @Throws(InterruptedException::class)
     internal fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
         database.beginExclusiveTransactionWithListener(listener)
 
     /**
-     * Begins a transaction in immediate mode. Prefer [transact] whenever possible.
+     * Begins a transaction in immediate mode. Prefer [transact] or [withTransaction] whenever possible.
      *
      * Transactions can be nested. When the outer transaction is ended all of the work done in that transaction and all of
      * the nested transactions will be committed or rolled back. The changes will be rolled back if any transaction is ended
@@ -198,12 +202,25 @@ class SQLiteDatabase private constructor(
      *
      * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
      */
+    @Throws(InterruptedException::class)
     internal fun beginImmediateTransaction() = database.beginImmediateTransaction()
 
+    @Throws(InterruptedException::class)
     internal fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
         database.beginImmediateTransactionWithListener(listener)
 
     fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
+
+    /**
+     * Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful
+     * thus far and committed, do not call [setTransactionSuccessful]. When this method returns a new transaction will have
+     * been created but not yet marked as successful.
+     *
+     * The delaying transaction can be nested.
+     *
+     * @since 0.14.0
+     */
+    suspend fun delayTransaction(pauseMillis: Long = 0L) = database.delayTransaction(pauseMillis)
 
     fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
         database.delete(
@@ -414,6 +431,24 @@ class SQLiteDatabase private constructor(
      * @link [SQLite's VACUUM](https://www.sqlite.org/lang_vacuum.html)
      */
     fun vacuum() = exec("VACUUM")
+
+    /**
+     * Calls the suspending [block] inside a database transaction. The transaction will be marked as successful unless an
+     * exception is thrown in the suspending [block] or the coroutine is cancelled.
+     *
+     * Performing blocking database operations is not permitted in a coroutine scope other than the one received by the
+     * suspending block, doing so results in undefined behaviour. Calls to [withTransaction] can be nested though.
+     *
+     * This is an optional method that requires the Kotlin Coroutines library at runtime.
+     *
+     * @since 0.14.0
+     */
+    @Experimental
+    suspend fun <T> withTransaction(
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        block: suspend SQLiteDatabase.() -> T
+    ) = database.withTransaction(this, transactionMode, dispatcher, block)
 
     /**
      * @link [SQLite's blob_write](https://www.sqlite.org/c3ref/blob_write.html)
