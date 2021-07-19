@@ -56,35 +56,31 @@ internal class SQLDatabaseMemoryTest {
 
     @Test
     fun delete(): Unit = database.transact {
-        database.run {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            assertEquals(1, delete("Foo", "bar=?", arrayOf("42")))
-            query(false, "Foo", emptyArray(), "", emptyArray(), null, null, null, null).use {
-                assertFalse(it.moveToFirst())
-                assertEquals(0, it.count)
-            }
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        assertEquals(1, delete("Foo", "bar=?", arrayOf("42")))
+        query(false, "Foo", emptyArray(), "", emptyArray(), null, null, null, null).use {
+            assertFalse(it.moveToFirst())
+            assertEquals(0, it.count)
         }
     }
 
     @Test
     fun deleteAll(): Unit = database.transact {
-        database.run {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-                val values = ContentValues().apply { put("bar", it) }
-                val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-                assertEquals((index + 1).toLong(), rowId)
-            }
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(4, it.count)
-            }
-            assertEquals(4, delete("Foo", "", emptyArray()))
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(0, it.count)
-            }
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
+            val values = ContentValues().apply { put("bar", it) }
+            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+            assertEquals((index + 1).toLong(), rowId)
+        }
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(4, it.count)
+        }
+        assertEquals(4, delete("Foo", "", emptyArray()))
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(0, it.count)
         }
     }
 
@@ -99,122 +95,104 @@ internal class SQLDatabaseMemoryTest {
     }
 
     @Test
-    fun insertIntWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
+    fun insertIntWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertLongWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42L) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertStringWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        val values = ContentValues().apply { put("bar", "xyz") }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+    }
+
+    @Test
+    fun insertFloatAsIntWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42.0f) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
         }
     }
 
     @Test
-    fun insertLongWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42L) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
+    fun insertIntAsFloatWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar FLOAT)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getFloat(0).roundToInt())
         }
     }
 
     @Test
-    fun insertStringWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-            val values = ContentValues().apply { put("bar", "xyz") }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
+    fun insertFloatWithOnConflictGetAsInt(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar Float)", emptyArray())
+        val values = ContentValues().apply { put("bar", 42.0f) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
         }
     }
 
     @Test
-    fun insertFloatAsIntWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42.0f) }
+    fun insertIntWithOnConflictMultipleTimes(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
+            val values = ContentValues().apply { put("bar", it) }
             val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertTrue(it.moveToFirst())
-                assertEquals(42, it.getInt(0))
-            }
+            assertEquals((index + 1).toLong(), rowId)
         }
     }
 
     @Test
-    fun insertIntAsFloatWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar FLOAT)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertTrue(it.moveToFirst())
-                assertEquals(42, it.getFloat(0).roundToInt())
-            }
+    fun insertBlobWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+        val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            val blob = it.getBlob(0)
+            assertArrayEquals(ByteArray(1) { 42 }, blob)
+            run { assertSame(blob, it.getBlob(0)) }
         }
     }
 
     @Test
-    fun insertFloatWithOnConflictGetAsInt(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar Float)", emptyArray())
-            val values = ContentValues().apply { put("bar", 42.0f) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertTrue(it.moveToFirst())
-                assertEquals(42, it.getInt(0))
-            }
-        }
-    }
-
-    @Test
-    fun insertIntWithOnConflictMultipleTimes(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-                val values = ContentValues().apply { put("bar", it) }
-                val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-                assertEquals((index + 1).toLong(), rowId)
-            }
-        }
-    }
-
-    @Test
-    fun insertBlobWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
-            val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertTrue(it.moveToFirst())
-                val blob = it.getBlob(0)
-                assertArrayEquals(ByteArray(1) { 42 }, blob)
-                run { assertSame(blob, it.getBlob(0)) }
-            }
-        }
-    }
-
-    @Test
-    fun insertEmptyBlobWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
-            val values = ContentValues().apply { put("bar", byteArrayOf()) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
-            assertEquals(1L, rowId)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertTrue(it.moveToFirst())
-                val blob = it.getBlob(0)
-                assertNull(blob)
-            }
+    fun insertEmptyBlobWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+        val values = ContentValues().apply { put("bar", byteArrayOf()) }
+        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, rowId)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            val blob = it.getBlob(0)
+            assertNull(blob)
         }
     }
 
@@ -226,94 +204,82 @@ internal class SQLDatabaseMemoryTest {
     }
 
     @Test
-    fun queryInt(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertEquals(0, it.columnIndex("bar"))
-                assertTrue(it.moveToFirst())
-                assertEquals(42, it.getInt(0))
-                assertFalse(it.moveToNext())
-            }
+    fun queryInt(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertEquals(0, it.columnIndex("bar"))
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
+            assertFalse(it.moveToNext())
         }
     }
 
     @Test
-    fun queryLong(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", 42L) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertEquals(0, it.columnIndex("bar"))
-                assertTrue(it.moveToFirst())
-                assertEquals(42L, it.getLong(0))
-                assertFalse(it.moveToNext())
-            }
+    fun queryLong(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", 42L) }, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertEquals(0, it.columnIndex("bar"))
+            assertTrue(it.moveToFirst())
+            assertEquals(42L, it.getLong(0))
+            assertFalse(it.moveToNext())
         }
     }
 
     @Test
-    fun queryMaxLong(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertEquals(0, it.columnIndex("bar"))
-                assertTrue(it.moveToFirst())
-                assertEquals(Long.MAX_VALUE, it.getLong(0))
-                assertFalse(it.moveToNext())
-            }
+    fun queryMaxLong(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) }, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertEquals(0, it.columnIndex("bar"))
+            assertTrue(it.moveToFirst())
+            assertEquals(Long.MAX_VALUE, it.getLong(0))
+            assertFalse(it.moveToNext())
         }
     }
 
     @Test
-    fun queryMinLong(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", Long.MIN_VALUE) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-                assertEquals(0, it.columnIndex("bar"))
-                assertTrue(it.moveToFirst())
-                assertEquals(Long.MIN_VALUE, it.getLong(0))
-                assertFalse(it.moveToNext())
-            }
+    fun queryMinLong(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", Long.MIN_VALUE) }, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertEquals(0, it.columnIndex("bar"))
+            assertTrue(it.moveToFirst())
+            assertEquals(Long.MIN_VALUE, it.getLong(0))
+            assertFalse(it.moveToNext())
         }
     }
 
     @Test
-    fun rawQuery(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            query("SELECT * FROM 'Foo'", emptyArray()).use {
-                assertEquals(1, it.count)
-                assertEquals(0, it.columnIndex("bar"))
-                assertTrue(it.moveToFirst())
-                assertEquals(42, it.getInt(0))
-                assertFalse(it.moveToNext())
-            }
+    fun rawQuery(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        query("SELECT * FROM 'Foo'", emptyArray()).use {
+            assertEquals(1, it.count)
+            assertEquals(0, it.columnIndex("bar"))
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
+            assertFalse(it.moveToNext())
         }
     }
 
     @Test
-    fun updateWithOnConflict(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            update(
-                "Foo", ContentValues().apply { put("bar", 43) }, "bar=?", arrayOf("42"),
-                ConflictAlgorithm.REPLACE
-            )
-            query("SELECT * FROM 'Foo'", emptyArray()).use {
-                assertTrue(it.moveToFirst())
-                assertEquals(43, it.getInt(0))
-                assertFalse(it.moveToNext())
-            }
+    fun updateWithOnConflict(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        update(
+            "Foo", ContentValues().apply { put("bar", 43) }, "bar=?", arrayOf("42"),
+            ConflictAlgorithm.REPLACE
+        )
+        query("SELECT * FROM 'Foo'", emptyArray()).use {
+            assertTrue(it.moveToFirst())
+            assertEquals(43, it.getInt(0))
+            assertFalse(it.moveToNext())
         }
     }
 
@@ -324,13 +290,11 @@ internal class SQLDatabaseMemoryTest {
     }
 
     @Test
-    fun directReadInsideTransaction(): Unit = database.run {
-        transact {
-            exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
-            }
+    fun directReadInsideTransaction(): Unit = database.transact {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
         }
     }
 }
