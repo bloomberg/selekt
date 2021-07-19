@@ -225,7 +225,13 @@ class SQLDatabase constructor(
 
     fun <T> transact(
         transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
-        block: () -> T
+        block: SQLDatabase.() -> T
+    ) = transact(this, transactionMode, block)
+
+    fun <D, T> transact(
+        database: D,
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        block: D.() -> T
     ): T = pledge {
         val session = session.get()
         when (transactionMode) {
@@ -233,7 +239,7 @@ class SQLDatabase constructor(
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
         }
         try {
-            block().also { session.setTransactionSuccessful() }
+            block(database).also { session.setTransactionSuccessful() }
         } finally {
             session.endTransaction()
         }
