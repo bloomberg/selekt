@@ -452,6 +452,7 @@ class SQLiteDatabase private constructor(
      * The yielding transaction can be nested.
      */
     @Throws(InterruptedException::class)
+    @JvmOverloads
     fun yieldTransaction(@IntRange(from = 0L) pauseMillis: Long = 0L) = database.yieldTransaction(pauseMillis)
 }
 
