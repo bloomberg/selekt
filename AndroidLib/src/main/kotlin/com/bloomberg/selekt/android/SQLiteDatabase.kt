@@ -373,8 +373,8 @@ class SQLiteDatabase private constructor(
      */
     fun <T> transact(
         transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
-        block: () -> T
-    ) = database.transact(transactionMode, block)
+        block: SQLiteDatabase.() -> T
+    ) = database.transact(this, transactionMode, block)
 
     fun update(
         table: String,
