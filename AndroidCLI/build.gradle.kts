@@ -50,6 +50,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    lintOptions {
+        disable("OldTargetApi")
+    }
 }
 
 dependencies {
