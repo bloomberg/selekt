@@ -98,6 +98,12 @@ afterEvaluate {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("standardOut", "standardError", "started", "passed", "skipped", "failed")
+    }
+}
+
 tasks.register("assembleSelekt") {
     dependsOn("assembleRelease")
     dependsOn("sourcesJar")
