@@ -63,7 +63,7 @@ enum class SQLiteJournalMode(
      * journaling mode is persistent; after being set it stays in effect across multiple database connections and after
      * closing and reopening the database.
      *
-     * @link [SQLite's WAL journal mode](https://www.sqlite.org/wal.html)
+     * @see <a href="https://www.sqlite.org/wal.html">SQLite's WAL journal mode</a>
      */
     WAL(commonMultipleConnectionConfiguration)
 }

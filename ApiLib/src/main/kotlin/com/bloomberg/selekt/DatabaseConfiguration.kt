@@ -46,7 +46,7 @@ data class DatabaseConfiguration constructor(
          * busy timeout needs to be long enough to tolerate slow I/O write operations but not so long as to cause the
          * application to hang indefinitely if there is a problem acquiring a database lock.
          *
-         * @link [SQLite's busy_timeout](https://www.sqlite.org/c3ref/busy_timeout.html)
+         * @see <a href="https://www.sqlite.org/c3ref/busy_timeout.html">SQLite's busy_timeout</a>
          */
         const val COMMON_BUSY_TIMEOUT_MILLIS = 2_500
     }
