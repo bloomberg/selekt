@@ -45,8 +45,7 @@ import kotlin.jvm.Throws
 @ThreadSafe
 @Suppress("Detekt.TooManyFunctions", "Detekt.LongParameterList") // Mirrors the Android SDK APIs.
 class SQLiteDatabase private constructor(
-    private val database: SQLDatabase,
-    private val file: File?
+    private val database: SQLDatabase
 ) : Closeable {
     companion object {
         private fun internalOpenOrCreateDatabase(
@@ -60,8 +59,7 @@ class SQLiteDatabase private constructor(
                 configuration,
                 key,
                 CommonThreadLocalRandom
-            ),
-            file
+            )
         )
 
         @JvmStatic
