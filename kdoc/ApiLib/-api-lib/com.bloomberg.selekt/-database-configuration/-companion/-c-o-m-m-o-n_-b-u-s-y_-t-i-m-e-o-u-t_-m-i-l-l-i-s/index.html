@@ -280,6 +280,21 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See also
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -296,6 +311,22 @@
 <p>[jvm]\
 const val <a href="./">COMMON_BUSY_TIMEOUT_MILLIS</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a> = 2_500</p>
 <p>When using WAL, a timeout could occur if one connection is busy performing an auto-checkpoint operation. The busy timeout needs to be long enough to tolerate slow I/O write operations but not so long as to cause the application to hang indefinitely if there is a problem acquiring a database lock.</p>
+<h2 id="see-also">See also</h2>
+<p>jvm</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><a href="https://www.sqlite.org/c3ref/busy_timeout.html">SQLite's busy_timeout</a></td>
+</tr>
+</tbody>
+</table>
                 
               
               

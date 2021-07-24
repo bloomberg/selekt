@@ -287,6 +287,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See also
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#constructors" class="md-nav__link">
     Constructors
   </a>
@@ -328,6 +335,22 @@
 <p>The use of ThreadLocal underpins <a href="./">SQLDatabase</a>'s thread-safety.</p>
 <p>A thread can acquire at most one connection session per database instance. Sessions hold at most one connection at any given time, and exclusively. Sessions control all access to a database's connections and each session is thread-bound. This prevents two threads from ever sharing a single connection.</p>
 <p>This is the same strategy Google employs in the Android SDK.</p>
+<h2 id="see-also">See also</h2>
+<p>jvm</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="constructors">Constructors</h2>
 <table>
 <thead>
