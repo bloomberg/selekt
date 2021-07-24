@@ -25,7 +25,7 @@ internal interface SQLExecutor : BatchSQLExecutor {
     /**
      * True if and only if the executor can execute only read-only SQL statements.
      *
-     * @Link [SQLite's db_readonly](https://www.sqlite.org/c3ref/db_readonly.html)
+     * @see <a href="https://www.sqlite.org/c3ref/db_readonly.html">SQLite's db_readonly</a>
      */
     val isReadOnly: Boolean
 

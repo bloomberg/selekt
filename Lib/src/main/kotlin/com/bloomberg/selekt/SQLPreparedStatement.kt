@@ -58,7 +58,7 @@ internal class SQLPreparedStatement(
      * Note that application-defined SQL functions or virtual tables might still change the database indirectly as a
      * side-effect.
      *
-     * @Link [SQLite's stmt_readonly](https://www.sqlite.org/c3ref/stmt_readonly.html)
+     * @see <a href="https://www.sqlite.org/c3ref/stmt_readonly.html">SQLite's stmt_readonly</a>
      */
     var isReadOnly = sqlite.statementReadOnly(pointer) != 0
         private set

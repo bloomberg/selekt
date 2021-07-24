@@ -172,7 +172,7 @@ class SQLiteDatabase private constructor(
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
-     * Begins a transaction in exclusive mode.
+     * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.
      *
      * Transactions can be nested. When the outer transaction is ended all of the work done in that transaction and all of
      * the nested transactions will be committed or rolled back. The changes will be rolled back if any transaction is ended
@@ -180,7 +180,7 @@ class SQLiteDatabase private constructor(
      *
      * When in WAL-journal mode, this is equivalent to calling [beginImmediateTransaction].
      *
-     * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
+     * @see <a href="https://www.sqlite.org/lang_transaction.html">SQLite's transaction</a>
      */
     internal fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
 
@@ -196,7 +196,7 @@ class SQLiteDatabase private constructor(
      *
      * When in WAL-journal mode, this is equivalent to calling [beginExclusiveTransaction].
      *
-     * @link [SQLite's transaction](https://www.sqlite.org/lang_transaction.html)
+     * @see <a href="https://www.sqlite.org/lang_transaction.html">SQLite's transaction</a>
      */
     internal fun beginImmediateTransaction() = database.beginImmediateTransaction()
 
@@ -369,7 +369,7 @@ class SQLiteDatabase private constructor(
      * @param transactionMode of the transaction; the default is [SQLiteTransactionMode.EXCLUSIVE].
      * @param block to transact.
      * @return result of the transaction.
-     * @link [SQLite's transaction](https://sqlite.org/lang_transaction.html)
+     * @see <a href="https://sqlite.org/lang_transaction.html">SQLite's transaction</a>
      */
     fun <T> transact(
         transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
@@ -411,12 +411,12 @@ class SQLiteDatabase private constructor(
      * SQL statements on the same connection. Vacuum is a write operation and so if another database connection is holding a
      * lock that prevents writes, then the vacuum will fail.
      *
-     * @link [SQLite's VACUUM](https://www.sqlite.org/lang_vacuum.html)
+     * @see <a href="https://www.sqlite.org/lang_vacuum.html">SQLite's VACUUM</a>
      */
     fun vacuum() = exec("VACUUM")
 
     /**
-     * @link [SQLite's blob_write](https://www.sqlite.org/c3ref/blob_write.html)
+     * @see <a href="https://www.sqlite.org/c3ref/blob_write.html">SQLite's blob_write</a>
      * @since 0.7.4
      */
     @Experimental
@@ -431,7 +431,7 @@ class SQLiteDatabase private constructor(
     /**
      * Modifies the contents of a blob; it is not possible to increase the size of a blob using this method.
      *
-     * @link [SQLite's blob_write](https://www.sqlite.org/c3ref/blob_write.html)
+     * @see <a href="https://www.sqlite.org/c3ref/blob_write.html">SQLite's blob_write</a>
      * @since 0.7.3
      */
     @Experimental

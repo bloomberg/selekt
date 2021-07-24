@@ -46,7 +46,7 @@ private object SharedSqlBuilder {
  *
  * This is the same strategy Google employs in the Android SDK.
  *
- * @link [Android's SQLiteDatabase](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java)
+ * @see <a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a>
  */
 @ThreadSafe
 class SQLDatabase constructor(
