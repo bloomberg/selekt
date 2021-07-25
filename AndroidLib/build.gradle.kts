@@ -81,6 +81,7 @@ dependencies {
     testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
+    testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
 }
 
