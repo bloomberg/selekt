@@ -26,6 +26,8 @@ jobs:
         with:
           python-version: 3.8
       - run: pip install mkdocs-material
+      - name: 'Gradle'
+        run: echo 'org.gradle.caching=false' >> gradle.properties
       - name: 'Dokka'
         run: |
           ./gradlew :dokkaGfmMultiModule :dokkaHtmlMultiModule

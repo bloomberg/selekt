@@ -20,6 +20,8 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: 'Gradle'
+      run: echo 'org.gradle.caching=false' >> gradle.properties
     - name: 'Unit tests'
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Build Selekt'
