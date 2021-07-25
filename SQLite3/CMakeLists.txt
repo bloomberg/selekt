@@ -21,6 +21,15 @@ project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 14)
 
+if(USE_CCACHE)
+  find_program(CCACHE_FOUND ccache)
+  if(CCACHE_FOUND)
+    message(STATUS "Using ccache.")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  endif()
+endif()
+
 add_subdirectory(sqlite3)
 
 find_package(JNI QUIET)

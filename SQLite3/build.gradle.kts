@@ -118,6 +118,7 @@ tasks.register<Exec>("cmakeSQLite") {
     commandLine("cmake")
     args(
         "-DCMAKE_BUILD_TYPE=Release",
+        "-DUSE_CCACHE=1",
         "-DSLKT_TARGET_ABI=${platformIdentifier()}",
         projectDir
     )
