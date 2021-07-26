@@ -10,6 +10,9 @@ repositories {
     jcenter()
 }
 
+fun Project.abis() = findProperty("selekt.abis")?.toString()?.split(",")
+    ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
@@ -21,7 +24,7 @@ android {
         versionName = sqlcipherVersionName
 
         ndk {
-            abiFilters.addAll(arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            abiFilters.addAll(abis())
         }
     }
 
