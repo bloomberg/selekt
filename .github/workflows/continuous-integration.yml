@@ -54,3 +54,7 @@ jobs:
     - name: 'Verify coverage'
       run:
         ./gradlew :jacocoSelektCoverageVerification
+    - name: 'Tear down'
+      if: always()
+      run: |
+        ./gradlew --stop
