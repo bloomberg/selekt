@@ -36,6 +36,15 @@ jobs:
       run: |
         echo 'org.gradle.caching=true' >> gradle.properties
         echo 'org.gradle.daemon=false' >> gradle.properties
+        echo 'plugins {' >> settings.gradle.kts
+        echo '    id("com.gradle.enterprise").version("3.6.3")' >> settings.gradle.kts
+        echo '}' >> settings.gradle.kts
+        echo 'gradleEnterprise {' >> settings.gradle.kts
+        echo '    buildScan {' >> settings.gradle.kts
+        echo '        termsOfServiceUrl = "https://gradle.com/terms-of-service"' >> settings.gradle.kts
+        echo '        termsOfServiceAgree = "yes"' >> settings.gradle.kts
+        echo '    }' >> settings.gradle.kts
+        echo '}' >> settings.gradle.kts
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
