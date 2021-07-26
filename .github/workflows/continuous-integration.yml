@@ -15,8 +15,19 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: Gradle Build Cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
     - name: 'Gradle'
-      run: echo 'org.gradle.caching=false' >> gradle.properties
+      run: |
+        echo 'org.gradle.caching=true' >> gradle.properties
+        echo 'org.gradle.daemon=false' >> gradle.properties
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
