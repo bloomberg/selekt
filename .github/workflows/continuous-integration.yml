@@ -15,7 +15,8 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
-    - uses: actions/cache@v2
+    - name: Gradle Build Cache
+      uses: actions/cache@v2
       with:
         path: |
           ~/.gradle/caches
