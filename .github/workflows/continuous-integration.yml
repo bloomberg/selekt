@@ -7,6 +7,11 @@ jobs:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest
     steps:
+    - name: 'Set environment'
+      run: |
+        if [[ ${GITHUB_REF} == 'refs/heads/main' ]]; then
+          echo 'SCAN=--scan' >> ${GITHUB_ENV}
+        fi
     - name: 'Install system packages'
       run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
     - uses: actions/checkout@v2
@@ -34,18 +39,18 @@ jobs:
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
-      run: ./gradlew detekt ktlintCheck lintDebug
+      run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
+      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
     - name: 'Coverage'
       run: |
-        ./gradlew :jacocoSelektTestReport
+        ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
         bash scripts/codecov
     - name: 'Build Selekt'
       run: |
         ./gradlew :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
-        ./gradlew assembleSelekt -Pselekt.abis=x86_64
+        ./gradlew assembleSelekt -Pselekt.abis=x86_64 ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
         ./gradlew :jacocoSelektCoverageVerification
