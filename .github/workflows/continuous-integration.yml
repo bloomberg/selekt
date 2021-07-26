@@ -36,7 +36,7 @@ jobs:
       run: |
         echo 'org.gradle.caching=true' >> gradle.properties
         echo 'org.gradle.daemon=false' >> gradle.properties
-        cat gradle.enterprise.kts >> build.gradle.kts
+        cat gradle.enterprise.kts >> settings.gradle.kts
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
