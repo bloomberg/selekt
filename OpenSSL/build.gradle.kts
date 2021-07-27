@@ -86,6 +86,8 @@ tasks.register<Copy>("unpackOpenSsl") {
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     tasks.register<Exec>("assemble${it.capitalize(Locale.ROOT)}") {
         dependsOn("unpackOpenSsl")
+        inputs.property("version", openSslVersion())
+        outputs.dir("$buildDir/libs/$it")
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
