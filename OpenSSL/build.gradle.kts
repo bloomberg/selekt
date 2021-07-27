@@ -130,7 +130,7 @@ tasks.register<Task>("assembleHost") {
     dependsOn("makeHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
-    val outputDir = "${buildDir}/libs/${targetIdentifier()}"
+    val outputDir = "$buildDir/libs/${targetIdentifier()}"
     outputs.dir(outputDir)
     doLast {
         outputDir.let {
