@@ -107,7 +107,7 @@ fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
     }
 }
 
-fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
 val openSslWorkingDir: String = archive.run {
     File("$buildDir/generated/${name.substringBefore(".tar.gz")}")
@@ -128,8 +128,12 @@ tasks.register<Exec>("makeHost") {
 
 tasks.register<Task>("assembleHost") {
     dependsOn("makeHost")
+    inputs.property("target", targetIdentifier())
+    inputs.property("version", openSslVersion())
+    val outputDir = "${buildDir}/libs/${targetIdentifier()}"
+    outputs.dir(outputDir)
     doLast {
-        "${buildDir.path}/libs/${platformIdentifier()}".let {
+        outputDir.let {
             mkdir(it)
             copy {
                 logger.quiet("Copying to: $it")
