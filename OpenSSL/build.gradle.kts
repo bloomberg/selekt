@@ -128,8 +128,12 @@ tasks.register<Exec>("makeHost") {
 
 tasks.register<Task>("assembleHost") {
     dependsOn("makeHost")
+    inputs.property("platform", platformIdentifier())
+    inputs.property("version", openSslVersion())
+    val outputDir = "${buildDir}/libs/${platformIdentifier()}"
+    outputs.dir(outputDir)
     doLast {
-        "${buildDir.path}/libs/${platformIdentifier()}".let {
+        outputDir.let {
             mkdir(it)
             copy {
                 logger.quiet("Copying to: $it")
