@@ -30,6 +30,10 @@ if(USE_CCACHE)
   endif()
 endif()
 
+if(NOT SLKT_TARGET_ABI)
+  set(SLKT_TARGET_ABI ${ANDROID_ABI})
+endif()
+
 add_subdirectory(sqlite3)
 
 find_package(JNI QUIET)
@@ -37,7 +41,7 @@ if(JNI_INCLUDE_DIRS)
   target_include_directories(selekt SYSTEM PUBLIC ${JNI_INCLUDE_DIRS})
 endif()
 
-file(GLOB INCLUDE_OPENSSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../OpenSSL/build/generated/openssl-*/include)
+file(GLOB INCLUDE_OPENSSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../OpenSSL/build/generated/${SLKT_TARGET_ABI}/openssl-*/include)
 if(NOT INCLUDE_OPENSSL_DIR)
   message(WARNING "OpenSSL include directory not found.")
 endif()

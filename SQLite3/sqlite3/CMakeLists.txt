@@ -70,10 +70,6 @@ if(log-lib)
   target_link_libraries(selekt ${log-lib})
 endif()
 
-if(NOT SLKT_TARGET_ABI)
-  set(SLKT_TARGET_ABI ${ANDROID_ABI})
-endif()
-
 set(LIBCRYPTO ${CMAKE_CURRENT_SOURCE_DIR}/../../OpenSSL/build/libs/${SLKT_TARGET_ABI}/libcrypto.a)
 if(NOT LIBCRYPTO)
   message(WARNING "OpenSSL libcrypto.a not found.")
