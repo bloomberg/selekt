@@ -88,6 +88,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         dependsOn("unpackOpenSsl")
         inputs.property("version", openSslVersion())
         outputs.dir("$buildDir/libs/$it")
+        outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
