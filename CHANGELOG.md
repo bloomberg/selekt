@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 0.13.7
+
+### Fixes
+
+* Fix `SQLiteDatabase.yieldTransaction` so that the connection is temporarily returned to the pool even if the transaction is nested.
+* Annotate `SQLiteDatabase.yieldTransaction` as throwing an `InterruptedException`, from the internal call to `Thread.sleep`.
+* Forward the database reference to the received transaction block.
+
 ## Version 0.13.6
 
 ### Fixes
