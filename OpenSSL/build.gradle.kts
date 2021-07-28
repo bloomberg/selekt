@@ -92,7 +92,6 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
-        logging.captureStandardOutput(LogLevel.INFO)
         args(
             archive.run { File("$buildDir/generated/$it/${name.substringBefore(".tar.gz")}") }.path,
             it,
