@@ -87,6 +87,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     tasks.register<Exec>("assemble${it.capitalize(Locale.ROOT)}") {
         dependsOn("unpackOpenSsl${it.capitalize(Locale.ROOT)}")
         inputs.property("version", openSslVersion())
+        outputs.dir("$openSslWorkingDir/include/**/*.h")
         outputs.dir("$buildDir/libs/$it")
         outputs.cacheIf { true }
         workingDir(projectDir)
@@ -124,6 +125,9 @@ tasks.register<Copy>("unpackOpenSslHost") {
 
 tasks.register<Exec>("configureHost") {
     dependsOn("unpackOpenSslHost")
+    inputs.property("target", targetIdentifier())
+    inputs.property("version", openSslVersion())
+    outputs.dir("$openSslWorkingDir/include/**/*.h")
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
