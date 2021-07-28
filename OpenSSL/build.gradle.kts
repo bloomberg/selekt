@@ -96,6 +96,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
             it,
             21
         )
+        logging.captureStandardOutput(LogLevel.INFO)
     }
 }
 
@@ -124,6 +125,7 @@ tasks.register<Exec>("makeHost") {
     workingDir(openSslWorkingDir)
     commandLine("make")
     args("build_libs")
+    logging.captureStandardOutput(LogLevel.INFO)
 }
 
 tasks.register<Task>("assembleHost") {
