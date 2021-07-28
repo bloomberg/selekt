@@ -87,6 +87,7 @@ tasks.register<Exec>("configureSqlCipher") {
         "--enable-tempstore=yes",
         "--with-crypto-lib=none"
     )
+    logging.captureStandardOutput(LogLevel.INFO)
 }
 
 tasks.register<Exec>("amalgamate") {
