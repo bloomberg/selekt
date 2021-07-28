@@ -77,22 +77,23 @@ tasks.register<Exec>("verifyOpenSslSignature") {
     )
 }
 
-tasks.register<Copy>("unpackOpenSsl") {
-    from(tarTree(archive))
-    into("$buildDir/generated/")
-    dependsOn("downloadOpenSsl")
-}
-
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
+    tasks.register<Copy>("unpackOpenSsl${it.capitalize(Locale.ROOT)}") {
+        from(tarTree(archive))
+        into("$buildDir/generated/$it")
+        dependsOn("downloadOpenSsl")
+    }
+
     tasks.register<Exec>("assemble${it.capitalize(Locale.ROOT)}") {
-        dependsOn("unpackOpenSsl")
+        dependsOn("unpackOpenSsl${it.capitalize(Locale.ROOT)}")
         inputs.property("version", openSslVersion())
+        outputs.dir("$openSslWorkingDir/include/**/*.h")
         outputs.dir("$buildDir/libs/$it")
         outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
-            archive.run { File("$buildDir/generated/${name.substringBefore(".tar.gz")}") }.path,
+            archive.run { File("$buildDir/generated/$it/${name.substringBefore(".tar.gz")}") }.path,
             it,
             21
         )
@@ -111,17 +112,32 @@ fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
 fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
 val openSslWorkingDir: String = archive.run {
-    File("$buildDir/generated/${name.substringBefore(".tar.gz")}")
+    File("$buildDir/generated/${targetIdentifier()}/${name.substringBefore(".tar.gz")}")
 }.path
 
+// FIXME Some of the host building logic parallels Android's above. Re-purpose?
+tasks.register<Copy>("unpackOpenSslHost") {
+    from(tarTree(archive))
+    into("$buildDir/generated/${targetIdentifier()}")
+    dependsOn("downloadOpenSsl")
+}
+
 tasks.register<Exec>("configureHost") {
-    dependsOn("unpackOpenSsl")
+    dependsOn("unpackOpenSslHost")
+    inputs.property("target", targetIdentifier())
+    inputs.property("version", openSslVersion())
+    outputs.dir("$openSslWorkingDir/include/**/*.h")
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
 
 tasks.register<Exec>("makeHost") {
     dependsOn("configureHost")
+    inputs.property("target", targetIdentifier())
+    inputs.property("version", openSslVersion())
+    arrayOf(".a").forEach {
+        outputs.files("$openSslWorkingDir/libcrypto$it")
+    }
     workingDir(openSslWorkingDir)
     commandLine("make")
     args("build_libs")
