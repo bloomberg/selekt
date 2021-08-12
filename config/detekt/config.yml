@@ -19,7 +19,6 @@ output-reports:
 
 comments:
   active: true
-  excludes: "**/androidTest/**,**/jmh/**,**/test/**"
   CommentOverPrivateFunction:
     active: true
   CommentOverPrivateProperty:
