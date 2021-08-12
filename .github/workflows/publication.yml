@@ -26,11 +26,11 @@ jobs:
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Build Selekt'
       run: |
-        ./gradlew clean
-        ./gradlew :OpenSSL:assembleArm64-v8a
-        ./gradlew :OpenSSL:assembleArmeabi-v7a
-        ./gradlew :OpenSSL:assembleX86
-        ./gradlew :OpenSSL:assembleX86_64
+        ./gradlew clean \
+          :OpenSSL:assembleArm64-v8a \
+          :OpenSSL:assembleArmeabi-v7a \
+          :OpenSSL:assembleX86 \
+          :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
         ./gradlew assembleSelekt
     - name: 'Publish snapshot to OSSRH'
