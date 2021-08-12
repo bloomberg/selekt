@@ -77,6 +77,10 @@ tasks.register<Exec>("verifyOpenSslSignature") {
     )
 }
 
+fun openSslWorkingDir(target: String) = archive.run {
+    File("$buildDir/generated/$target/${name.substringBefore(".tar.gz")}")
+}.path
+
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     tasks.register<Copy>("unpackOpenSsl${it.capitalize(Locale.ROOT)}") {
         from(tarTree(archive))
@@ -87,8 +91,9 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     tasks.register<Exec>("assemble${it.capitalize(Locale.ROOT)}") {
         dependsOn("unpackOpenSsl${it.capitalize(Locale.ROOT)}")
         inputs.property("version", openSslVersion())
-        outputs.dir("$openSslWorkingDir/include/**/*.h")
-        outputs.dir("$buildDir/libs/$it")
+        outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
+            .withPropertyName("headers")
+        outputs.dir("$buildDir/libs/$it").withPropertyName("lib")
         outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
@@ -111,9 +116,7 @@ fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
 
 fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
-val openSslWorkingDir: String = archive.run {
-    File("$buildDir/generated/${targetIdentifier()}/${name.substringBefore(".tar.gz")}")
-}.path
+val openSslWorkingDir: String = openSslWorkingDir(targetIdentifier())
 
 // FIXME Some of the host building logic parallels Android's above. Re-purpose?
 tasks.register<Copy>("unpackOpenSslHost") {
@@ -126,7 +129,8 @@ tasks.register<Exec>("configureHost") {
     dependsOn("unpackOpenSslHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
-    outputs.dir("$openSslWorkingDir/include/**/*.h")
+    outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
+        .withPropertyName("headers")
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
@@ -138,6 +142,8 @@ tasks.register<Exec>("makeHost") {
     arrayOf(".a").forEach {
         outputs.files("$openSslWorkingDir/libcrypto$it")
     }
+    outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
+        .withPropertyName("headers")
     workingDir(openSslWorkingDir)
     commandLine("make")
     args("build_libs")
