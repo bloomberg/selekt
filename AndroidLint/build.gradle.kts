@@ -33,6 +33,14 @@ java {
     withSourcesJar()
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-reflect") {
+            useVersion(Versions.KOTLIN.version)
+        }
+    }
+}
+
 dependencies {
     compileOnly("com.android.tools.lint:lint:${Versions.ANDROID_LINT}")
     compileOnly("com.android.tools.lint:lint-api:${Versions.ANDROID_LINT}")
