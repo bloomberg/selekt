@@ -30,15 +30,12 @@ fun Project.abis() = findProperty("selekt.abis")?.toString()?.split(",")
     ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
-    compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    compileSdk = Versions.ANDROID_SDK.version.toInt()
+    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
     ndkVersion = Versions.ANDROID_NDK.version
 
     defaultConfig {
-        minSdkVersion(21)
-        versionCode = 1
-        versionName = sqlcipherVersionName
-
+        minSdk = 21
         ndk {
             abiFilters.addAll(abis())
         }

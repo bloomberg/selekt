@@ -35,14 +35,11 @@ repositories {
 }
 
 android {
-    compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    compileSdk = Versions.ANDROID_SDK.version.toInt()
+    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
 
     defaultConfig {
-        minSdkVersion(21)
-        versionCode = 1
-        versionName = selektVersionName
-
+        minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -139,7 +136,7 @@ afterEvaluate {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
             artifactId = "selekt-android"
-            version = android.defaultConfig.versionName
+            version = selektVersionName
             from(components["release"])
             pom {
                 commonInitialisation(project)

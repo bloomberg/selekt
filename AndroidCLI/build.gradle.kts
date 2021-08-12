@@ -31,8 +31,8 @@ android {
 
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
-        minSdkVersion(21)
-        targetSdkVersion(30)
+        minSdk = 21
+        targetSdk = 30
         versionCode = 1
         versionName = "0.1"
     }
@@ -51,7 +51,7 @@ android {
         viewBinding = true
     }
 
-    lintOptions {
+    lint {
         disable("OldTargetApi")
     }
 }

@@ -51,7 +51,7 @@ class JacocoAndroidPlugin : Plugin<Project> {
                         classDirectories.from(
                             fileTree(
                                 mapOf(
-                                    "dir" to this@all.javaCompileProvider.get().destinationDir,
+                                    "dir" to this@all.javaCompileProvider.get().destinationDirectory,
                                     "exclude" to jacocoAndroidUnitTestReportExtension().excludes
                                 )
                             ) + fileTree(
