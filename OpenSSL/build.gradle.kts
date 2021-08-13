@@ -131,8 +131,9 @@ tasks.register<Exec>("configureHost") {
     dependsOn("unpackOpenSslHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
-    outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
-        .withPropertyName("headers")
+    outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
+        .withPropertyName("configure")
+    outputs.cacheIf { true }
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
@@ -143,10 +144,12 @@ tasks.register<Exec>("makeHost") {
     inputs.property("version", openSslVersion())
     arrayOf(".a").forEach {
         outputs.files("$openSslWorkingDir/libcrypto$it")
+            .withPropertyName("libcrypto$it")
     }
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     workingDir(openSslWorkingDir)
+    outputs.cacheIf { true }
     commandLine("make")
     args("build_libs")
     logging.captureStandardOutput(LogLevel.INFO)
@@ -157,7 +160,8 @@ tasks.register<Task>("assembleHost") {
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
     val outputDir = "$buildDir/libs/${targetIdentifier()}"
-    outputs.dir(outputDir)
+    outputs.dir(outputDir).withPropertyName("libs")
+    outputs.cacheIf { true }
     doLast {
         outputDir.let {
             mkdir(it)
