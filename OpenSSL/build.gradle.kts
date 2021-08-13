@@ -68,7 +68,6 @@ tasks.register<Verify>("verifyOpenSslChecksum") {
     src(archive)
     algorithm("SHA-256")
     checksum("${project.property("openssl.sha256")}")
-    mustRunAfter("downloadOpenSsl")
 }
 
 tasks.register<Exec>("verifyOpenSslSignature") {
