@@ -62,6 +62,9 @@ jobs:
     - name: 'Verify coverage'
       run:
         ./gradlew :jacocoSelektCoverageVerification
+    - name: 'Build others'
+      run: |
+        ./gradlew :AndroidLint:assemble
     - name: 'Tear down'
       if: always()
       run: |
