@@ -43,6 +43,7 @@ tasks.register<Download>("downloadOpenSslPgp") {
     inputs.property("url", url)
     outputs.files(archivePgp)
     finalizedBy("verifyOpenSslPgpChecksum")
+    mustRunAfter("clean")
 }
 
 tasks.register<Download>("downloadOpenSsl") {
@@ -54,6 +55,7 @@ tasks.register<Download>("downloadOpenSsl") {
     outputs.files(archive)
     dependsOn("downloadOpenSslPgp")
     finalizedBy("verifyOpenSslChecksum", "verifyOpenSslSignature")
+    mustRunAfter("clean")
 }
 
 tasks.register<Verify>("verifyOpenSslPgpChecksum") {
@@ -123,6 +125,7 @@ tasks.register<Copy>("unpackOpenSslHost") {
     from(tarTree(archive))
     into("$buildDir/generated/${targetIdentifier()}")
     dependsOn("downloadOpenSsl")
+    mustRunAfter("clean")
 }
 
 tasks.register<Exec>("configureHost") {
