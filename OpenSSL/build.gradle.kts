@@ -20,7 +20,6 @@ import java.util.Locale
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 fun Project.openSslVersion() = arrayOf(
