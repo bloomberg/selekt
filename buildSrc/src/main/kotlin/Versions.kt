@@ -20,7 +20,7 @@ enum class Versions(
     val version: String,
     private val url: URL
 ) {
-    ANDROID_BUILD_TOOLS("30.0.3", URL("https://developer.android.com/studio/releases/build-tools")),
+    ANDROID_BUILD_TOOLS("31.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
     ANDROID_GRADLE_PLUGIN("7.0.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.0", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("21.4.7075529", URL("https://developer.android.com/ndk")),
