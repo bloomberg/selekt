@@ -54,7 +54,7 @@ tasks.register("assembleSelekt") {
 }
 
 afterEvaluate {
-    tasks.getByName("configureCMakeDebug").dependsOn(":OpenSSL:assembleAndroid")
+    tasks.getByName("preBuild").dependsOn(":OpenSSL:assembleAndroid")
     publishing {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
