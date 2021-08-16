@@ -27,7 +27,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    jcenter()
 }
 
 gradlePlugin {
