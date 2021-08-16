@@ -23,7 +23,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    jcenter()
 }
 
 fun Project.abis() = findProperty("selekt.abis")?.toString()?.split(",")
