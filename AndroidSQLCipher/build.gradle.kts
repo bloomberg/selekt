@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
+
 plugins {
     id("com.android.library")
     signing
@@ -52,14 +54,12 @@ tasks.register("assembleSelekt") {
     dependsOn("assembleRelease")
 }
 
+tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
+    dependsOn(":OpenSSL:assembleAndroid")
+    dependsOn(":SQLite3:amalgamate")
+}
+
 afterEvaluate {
-    arrayOf(
-        "configureCMakeDebug",
-        "configureCMakeRelWithDebInfo"
-    ).map { tasks.getByName(it) }.forEach {
-        it.dependsOn(":OpenSSL:assembleAndroid")
-        it.dependsOn(":SQLite3:amalgamate")
-    }
     publishing {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
