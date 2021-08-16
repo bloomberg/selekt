@@ -36,6 +36,7 @@ java {
 dependencies {
     compileOnly("com.android.tools.lint:lint:${Versions.ANDROID_LINT}")
     compileOnly("com.android.tools.lint:lint-api:${Versions.ANDROID_LINT}")
+    implementation(kotlin("reflect", Versions.KOTLIN.version))
 }
 
 tasks.withType<Jar> {
