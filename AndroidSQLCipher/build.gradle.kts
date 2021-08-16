@@ -54,7 +54,13 @@ tasks.register("assembleSelekt") {
 }
 
 afterEvaluate {
-    tasks.getByName("preBuild").dependsOn(":OpenSSL:assembleAndroid")
+    arrayOf(
+        "configureCMakeDebug",
+        "configureCMakeRelWithDebInfo"
+    ).map { tasks.getByName(it) }.forEach {
+        it.dependsOn(":OpenSSL:assembleAndroid")
+        it.dependsOn(":SQLite3:amalgamate")
+    }
     publishing {
         publications.create<MavenPublication>("main") {
             groupId = selektGroupId
