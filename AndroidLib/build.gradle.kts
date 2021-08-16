@@ -48,7 +48,9 @@ android {
         }
 
         release {
+            isMinifyEnabled = false
             buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "false")
+            buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
 
@@ -58,13 +60,6 @@ android {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
-        }
-    }
 }
 
 dependencies {
