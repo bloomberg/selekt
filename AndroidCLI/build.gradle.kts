@@ -22,7 +22,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    jcenter()
 }
 
 android {

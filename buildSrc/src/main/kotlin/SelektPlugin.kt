@@ -59,8 +59,6 @@ class SelektPlugin : Plugin<Project> {
                 androidExtension().apply {
                     lintOptions {
                         isWarningsAsErrors = true
-                        // FIXME Remove when all dependencies are available elsewhere.
-                        disable("JcenterRepositoryObsolete")
                     }
                 }
             }
@@ -75,8 +73,6 @@ class SelektPlugin : Plugin<Project> {
                 androidExtension().apply {
                     lintOptions {
                         isWarningsAsErrors = true
-                        // FIXME Remove when all dependencies are available elsewhere.
-                        disable("JcenterRepositoryObsolete")
                     }
                     testOptions {
                         unitTests.apply {
