@@ -25,8 +25,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    compileSdk = Versions.ANDROID_SDK.version.toInt()
+    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
 
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
@@ -34,6 +34,9 @@ android {
         targetSdk = 30
         versionCode = 1
         versionName = "0.1"
+        ndk {
+            abiFilters.addAll(arrayOf("arm64-v8a", "x86_64"))
+        }
     }
 
     arrayOf("main").forEach {
