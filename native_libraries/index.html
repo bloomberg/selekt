@@ -396,7 +396,7 @@
 <div class="tabbed-set" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><label for="__tabbed_1_1">Kotlin</label><div class="tabbed-content">
 <div class="highlight"><pre><span></span><code><span class="n">android</span> <span class="p">{</span>
     <span class="n">ndk</span> <span class="p">{</span>
-        <span class="n">abiFilters</span><span class="p">(</span><span class="s">&quot;arm64-v8a&quot;</span><span class="p">,</span> <span class="s">&quot;x86_64&quot;</span><span class="p">)</span>
+        <span class="n">abiFilters</span><span class="p">.</span><span class="na">addAll</span><span class="p">(</span><span class="n">arrayOf</span><span class="p">(</span><span class="s">&quot;arm64-v8a&quot;</span><span class="p">,</span> <span class="s">&quot;x86_64&quot;</span><span class="p">))</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
