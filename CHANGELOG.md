@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.14.0
+
+### Fixes
+
+* Remove all calls to `jcenter()` from our Gradle build scripts.
+
+### Dependencies
+
+* Android Gradle Plugin 7.0.0.
+* Android Lint 30.0.0.
+* Build Tools 31.0.0.
+* Detekt 1.18.0.
+* NDK LTS 23.0.
+* OpenSSL 1.1.1k.
+* Robolectric 4.6.1.
+
 ## Version 0.13.7
 
 ### Fixes
