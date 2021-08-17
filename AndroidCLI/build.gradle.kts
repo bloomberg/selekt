@@ -25,8 +25,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    compileSdk = Versions.ANDROID_SDK.version.toInt()
+    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
 
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
