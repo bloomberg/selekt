@@ -115,7 +115,7 @@ subprojects {
 
     configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         toolVersion = Versions.DETEKT.version
-        input = files("src")
+        source = files("src")
         config = files("${rootProject.projectDir}/config/detekt/config.yml")
         buildUponDefaultConfig = true
         parallel = false
