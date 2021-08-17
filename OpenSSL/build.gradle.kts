@@ -27,9 +27,9 @@ fun Project.openSslVersion() = arrayOf(
     "${property("openssl.version.suffix")}"
 ).joinToString("")
 
-fun Project.openSslBaseUrl() = "https://www.openssl.org/source/old/${project.property("openssl.version")}"
-fun Project.openSslUrl() = "${openSslBaseUrl()}/openssl-${openSslVersion()}.tar.gz"
-fun Project.openSslPgpUrl() = "${openSslBaseUrl()}/openssl-${openSslVersion()}.tar.gz.asc"
+val openSslBaseUrl = "https://www.openssl.org/source"
+fun Project.openSslUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.gz"
+fun Project.openSslPgpUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.gz.asc"
 
 val archive = File("$buildDir/tmp/openssl-${openSslVersion()}.tar.gz")
 val archivePgp = File("${archive.path}.asc")
