@@ -109,7 +109,7 @@ subprojects {
         kotlinOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-Xuse-experimental=kotlin.Experimental")
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
     }
 
@@ -159,7 +159,7 @@ subprojects {
                     localDirectory.set(file("src/main/kotlin"))
                 }
                 includeNonPublic.set(false)
-                jdkVersion.set(JavaVersion.VERSION_1_8.majorVersion.toInt())
+                jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
                 noAndroidSdkLink.set(false)
                 noJdkLink.set(false)
                 noStdlibLink.set(false)
