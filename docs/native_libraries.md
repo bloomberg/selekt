@@ -17,7 +17,7 @@ The set of ABIs your application supports can be restricted by applying an ABI f
     ``` kotlin
     android {
         ndk {
-            abiFilters("arm64-v8a", "x86_64")
+            abiFilters.addAll(arrayOf("x86_64", "arm64-v8a"))
         }
     }
     ```
