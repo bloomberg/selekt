@@ -34,6 +34,9 @@ android {
         targetSdk = 30
         versionCode = 1
         versionName = "0.1"
+        ndk {
+            abiFilters.addAll(arrayOf("x86_64", "arm64-v8a"))
+        }
     }
 
     arrayOf("main").forEach {
