@@ -27,9 +27,6 @@ repositories {
     google()
 }
 
-fun Project.abis() = findProperty("selekt.abis")?.toString()?.split(",")
-    ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
@@ -38,7 +35,7 @@ android {
     defaultConfig {
         minSdk = 21
         ndk {
-            abiFilters.addAll(abis())
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
     }
 

@@ -56,9 +56,7 @@ jobs:
         bash scripts/codecov
     - name: 'Build Selekt'
       run: |
-        ./gradlew :OpenSSL:assembleX86_64
-        ./gradlew :SQLite3:amalgamate
-        ./gradlew assembleSelekt -Pselekt.abis=x86_64 ${{ env.SCAN }}
+        ./gradlew assembleSelekt ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
         ./gradlew :jacocoSelektCoverageVerification
