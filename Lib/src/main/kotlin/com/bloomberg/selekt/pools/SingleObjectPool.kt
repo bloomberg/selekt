@@ -23,7 +23,7 @@ import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
 
 @ThreadSafe
-internal class SingleObjectPool<K : Any, T : IPooledObject<K>>(
+class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val evictionDelayMillis: Long,

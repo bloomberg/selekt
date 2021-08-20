@@ -33,6 +33,7 @@ enum class Versions(
     DOKKA("1.5.0", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
     JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
+    JMH("1.33", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT5("5.7.2", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),

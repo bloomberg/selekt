@@ -20,10 +20,12 @@ repositories {
 
 plugins {
     kotlin("jvm")
+    kotlin("kapt")
     id("org.jetbrains.dokka")
     jacoco
     `maven-publish`
     signing
+    id("bb-jmh")
 }
 
 disableKotlinCompilerAssertions()
@@ -37,6 +39,8 @@ dependencies {
     compileOnly(selekt("annotations", selektVersionName))
     implementation(selekt("api", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
+    jmhImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
+    jmhImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
 }
 
 tasks.register("assembleSelekt") {
