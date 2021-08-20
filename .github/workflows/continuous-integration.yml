@@ -62,7 +62,7 @@ jobs:
         ./gradlew :jacocoSelektCoverageVerification
     - name: 'Build others'
       run: |
-        ./gradlew :AndroidCLI:assembleDebug :AndroidLint:assemble
+        ./gradlew :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
     - name: 'Tear down'
       if: always()
       run: |

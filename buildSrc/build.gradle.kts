@@ -39,6 +39,10 @@ gradlePlugin {
             id = "bb-jacoco-android"
             implementationClass = "JacocoAndroidPlugin"
         }
+        create("Bloomberg JMH Plugin") {
+            id = "bb-jmh"
+            implementationClass = "JmhPlugin"
+        }
     }
 }
 

@@ -32,7 +32,7 @@ import kotlin.concurrent.withLock
 import kotlin.jvm.Throws
 
 @ThreadSafe
-internal class CommonObjectPool<K : Any, T : IPooledObject<K>>(
+class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val configuration: PoolConfiguration,
