@@ -13,7 +13,7 @@
         <meta name="author" content="Bloomberg L.P.">
       
       
-        <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-i-object-pool/">
+        <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/">
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.4">
@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#iobjectpool" class="md-skip">
+        <a href="#singleobjectpool" class="md-skip">
           Skip to content
         </a>
       
@@ -293,13 +293,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#inheritors" class="md-nav__link">
-    Inheritors
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -313,10 +306,11 @@
               
                 
                 
-                <p>//<a href="../../../">Lib</a>/<a href="../">com.bloomberg.selekt.pools</a>/<a href="./">IObjectPool</a></p>
-<h1 id="iobjectpool">IObjectPool</h1>
+                <p>//<a href="../../../">Lib</a>/<a href="../">com.bloomberg.selekt.pools</a>/<a href="./">SingleObjectPool</a></p>
+<h1 id="singleobjectpool">SingleObjectPool</h1>
 <p>[jvm]\
-interface <a href="./">IObjectPool</a>&lt;<a href="./">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="./">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></p>
+@ThreadSafe()</p>
+<p>class <a href="./">SingleObjectPool</a>&lt;<a href="./">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="./">T</a> : <a href="../-i-pooled-object/">IPooledObject</a>&lt;<a href="./">K</a>&gt;&gt;(<strong>factory</strong>: <a href="../-i-object-factory/">IObjectFactory</a>&lt;<a href="./">T</a>&gt;, <strong>executor</strong>: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, <strong>evictionDelayMillis</strong>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>, <strong>evictionIntervalMillis</strong>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>) : <a href="../-i-object-pool/">IObjectPool</a>&lt;<a href="./">K</a>, <a href="./">T</a>&gt;</p>
 <h2 id="functions">Functions</h2>
 <table>
 <thead>
@@ -328,35 +322,23 @@ interface <a href="./">IObjectPool</a>&lt;<a href="./">K</a> : <a href="https://
 <tbody>
 <tr>
 <td><a href="borrow-object/">borrowObject</a></td>
-<td>[jvm]<br>abstract fun <a href="borrow-object/">borrowObject</a>(): <a href="./">T</a><br>abstract fun <a href="borrow-object/">borrowObject</a>(key: <a href="./">K</a>): <a href="./">T</a></td>
+<td>[jvm]<br>open override fun <a href="borrow-object/">borrowObject</a>(): <a href="./">T</a><br>open override fun <a href="borrow-object/">borrowObject</a>(key: <a href="./">K</a>): <a href="./">T</a></td>
+</tr>
+<tr>
+<td><a href="borrow-object-or-null/">borrowObjectOrNull</a></td>
+<td>[jvm]<br>fun <a href="borrow-object-or-null/">borrowObjectOrNull</a>(): <a href="./">T</a>?</td>
 </tr>
 <tr>
 <td><a href="clear/">clear</a></td>
-<td>[jvm]<br>abstract fun <a href="clear/">clear</a>(priority: <a href="../-priority/">Priority</a>)</td>
+<td>[jvm]<br>open override fun <a href="clear/">clear</a>(priority: <a href="../-priority/">Priority</a>)</td>
 </tr>
 <tr>
-<td><a href="../-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a></td>
-<td>[jvm]<br>abstract override fun <a href="../-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a>()</td>
+<td><a href="close/">close</a></td>
+<td>[jvm]<br>open override fun <a href="close/">close</a>()</td>
 </tr>
 <tr>
 <td><a href="return-object/">returnObject</a></td>
-<td>[jvm]<br>abstract fun <a href="return-object/">returnObject</a>(obj: <a href="./">T</a>)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="inheritors">Inheritors</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="../-common-object-pool/">CommonObjectPool</a></td>
-</tr>
-<tr>
-<td><a href="../-single-object-pool/">SingleObjectPool</a></td>
+<td>[jvm]<br>open override fun <a href="return-object/">returnObject</a>(obj: <a href="./">T</a>)</td>
 </tr>
 </tbody>
 </table>

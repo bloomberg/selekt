@@ -2461,6 +2461,36 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/-common-object-pool/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/borrow-object/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/clear/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/close/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-common-object-pool/return-object/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-i-object-factory/</loc>
          <lastmod>2021-08-20</lastmod>
          <changefreq>daily</changefreq>
@@ -2582,6 +2612,41 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-priority/-l-o-w/ordinal/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/-single-object-pool/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/borrow-object-or-null/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/borrow-object/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/clear/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/close/</loc>
+         <lastmod>2021-08-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt.pools/-single-object-pool/return-object/</loc>
          <lastmod>2021-08-20</lastmod>
          <changefreq>daily</changefreq>
     </url>
