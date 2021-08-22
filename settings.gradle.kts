@@ -18,6 +18,7 @@ rootProject.name = "Selekt"
 
 include(":AndroidCLI")
 include(":AndroidLib")
+include(":AndroidLibBenchmark")
 include(":AndroidLint")
 include(":AndroidSQLCipher")
 include(":Annotations")
