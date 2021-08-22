@@ -2,7 +2,7 @@ name: 'Periodic Integration tests'
 
 on:
   schedule:
-    - cron: 'H 22 * * *'
+    - cron: '0 22 * * *'
   push:
     branches:
       - main
