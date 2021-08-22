@@ -1,0 +1,29 @@
+name: 'Periodic Integration tests'
+
+on:
+  schedule:
+    - cron: 'H 22 * * *'
+  push:
+    branches:
+      - main
+
+jobs:
+  ci-pipeline:
+    name: 'Continuous Integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: 'Install system packages'
+        run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: 'Integration tests'
+        run: |
+          ./gradlew integrationTest
+      - name: 'Benchmarks'
+        run: |
+          ./gradlew jmh

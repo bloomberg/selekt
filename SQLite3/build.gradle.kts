@@ -170,6 +170,10 @@ tasks.register<Exec>("cleanSqlCipher") {
     args("clean", "-dfx")
 }
 
+tasks.register<Delete>("deleteCxxHost") {
+    delete(".cxx-host")
+}
+
 tasks.getByName("clean") {
-    dependsOn("cleanSqlCipher")
+    dependsOn("cleanSqlCipher", "deleteCxxHost")
 }

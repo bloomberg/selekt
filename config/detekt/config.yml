@@ -269,7 +269,7 @@ style:
     active: false
   MagicNumber:
     active: true
-    excludes: "**/androidTest/**,**/jmh/**,**/test/**"
+    excludes: "**/androidTest/**,**/integrationTest/**,**/jmh/**,**/test/**"
     ignoreAnnotation: false
     ignoreCompanionObjectPropertyDeclaration: true
     ignoreConstantDeclaration: true
