@@ -20,6 +20,7 @@ enum class Versions(
     val version: String,
     private val url: URL
 ) {
+    ANDROID_BENCHMARK_GRADLE_PLUGIN("1.1.0-alpha06", URL("https://developer.android.com/studio/profile/benchmark")),
     ANDROID_BUILD_TOOLS("31.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
     ANDROID_GRADLE_PLUGIN("7.0.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.0", URL("https://github.com/googlesamples/android-custom-lint-rules")),
@@ -35,6 +36,7 @@ enum class Versions(
     JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JMH("1.33", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
+    JUNIT4("4.13.1", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.7.2", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.5.21", URL("https://github.com/JetBrains/kotlin")),
