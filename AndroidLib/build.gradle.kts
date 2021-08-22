@@ -54,8 +54,6 @@ android {
         }
     }
 
-    defaultPublishConfig = "release"
-
     arrayOf("debug", "main", "release", "test").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
