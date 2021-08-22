@@ -1,4 +1,4 @@
-name: 'Periodic Integration tests'
+name: 'Periodic Integration Tests'
 
 on:
   schedule:
@@ -24,6 +24,3 @@ jobs:
       - name: 'Integration tests'
         run: |
           ./gradlew integrationTest
-      - name: 'Benchmarks'
-        run: |
-          ./gradlew jmh
