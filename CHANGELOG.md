@@ -1,6 +1,19 @@
 Change Log
 ==========
 
+## Version 0.14.1
+
+### Features
+
+* Reduced OpenSSL binary size. 
+* Publish Android benchmarks.
+* Publish JMH benchmarks.
+* Publish JVM integration tests.
+
+### Dependencies
+
+* Gradle 7.2.
+
 ## Version 0.14.0
 
 ### Fixes
