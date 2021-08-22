@@ -56,13 +56,15 @@ case ${TARGET_ABI} in
         ;;
 esac
 
+# https://github.com/openssl/openssl/blob/837017b4748d587912d9d218894644d6ca86721f/INSTALL#L469-L482
 OPENSSL_CONFIGURE_OPTIONS="-fPIC -fstack-protector-all no-idea no-camellia \
-    no-seed no-bf no-cast no-rc2 no-rc4 no-rc5 no-md2 \
-    no-md4 no-ecdh no-sock no-ssl3 \
-    no-dsa no-dh no-ec no-ecdsa no-tls1 \
-    no-rfc3779 no-whirlpool no-srp \
-    no-mdc2 no-ecdh no-engine \
-    no-srtp"
+    no-seed no-bf no-blake2 no-cast no-rc2 no-rc4 no-rc5 no-md2 no-rmd160 \
+    no-md4 no-ecdh no-sock no-ssl no-ssl3 \
+    no-chacha no-des no-dh no-dsa no-ec no-ecdsa no-ec2m no-ocb no-tls no-dtls \
+    no-poly1305 no-rfc3779 no-whirlpool no-scrypt no-srp \
+    no-mdc2 no-engine no-ts no-sse2 \
+    no-srtp no-shared no-comp no-ct no-cms no-capieng \
+    no-deprecated no-autoerrinit"
 
 TOOLCHAIN_BIN="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/${TOOLCHAIN_SYSTEM}/bin/"
 PATH=${TOOLCHAIN_BIN}:${PATH}
