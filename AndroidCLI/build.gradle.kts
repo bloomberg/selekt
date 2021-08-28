@@ -65,3 +65,9 @@ dependencies {
     implementation(androidX("paging", "runtime", "2.1.0"))
     implementation(androidX("constraintlayout", version = "1.1.3"))
 }
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
+    }
+}
