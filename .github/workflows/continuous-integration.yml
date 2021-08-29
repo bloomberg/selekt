@@ -50,6 +50,11 @@ jobs:
       run: ./gradlew licensee
     - name: 'Analyse'
       run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: 'Analyses'
+        path: |
+          **/build/reports/detekt
     - name: 'Unit tests'
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
     - name: 'Coverage'
