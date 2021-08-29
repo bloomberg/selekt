@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jmh" class="md-skip">
+        <a href="#android-benchmarks" class="md-skip">
           Skip to content
         </a>
       
@@ -283,6 +283,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#android-benchmarks" class="md-nav__link">
+    Android Benchmarks
+  </a>
+  
+    <nav class="md-nav" aria-label="Android Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#insert" class="md-nav__link">
+    Insert
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jmh" class="md-nav__link">
     JMH
   </a>
@@ -349,6 +369,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#android-benchmarks" class="md-nav__link">
+    Android Benchmarks
+  </a>
+  
+    <nav class="md-nav" aria-label="Android Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#insert" class="md-nav__link">
+    Insert
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jmh" class="md-nav__link">
     JMH
   </a>
@@ -383,9 +423,33 @@
                 
                   <h1>Benchmarks</h1>
                 
-                <h2 id="jmh">JMH</h2>
+                <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+<h2 id="android-benchmarks">Android Benchmarks</h2>
+<h3 id="insert">Insert</h3>
+<script type="text/javascript">
+google.charts.load('current', {'packages':['corechart']}).then(drawChart);
+function drawChart() {
+    var data = new google.visualization.DataTable();
+    data.addColumn('string', 'API');
+    data.addColumn('number', 'ms');
+    data.addRows([
+        ['onConflict', 0.477],
+        ['statement', 0.308],
+        ['batch', 0.271]
+    ]);
+    var options = {
+        'title': 'Simple WAL-insert (Pixel 3a, v0.14.1)',
+        'legend': 'none'
+    };
+    new google.visualization.BarChart(document.getElementById('insert_chart_div'))
+        .draw(data, options);
+}
+</script>
+<div id="insert_chart_div"></div>
+
+<h2 id="jmh">JMH</h2>
 <h3 id="common-and-single-object-pools">Common and single object pools</h3>
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
 google.charts.load('current', {'packages':['corechart']}).then(drawChart);
 function drawChart() {
