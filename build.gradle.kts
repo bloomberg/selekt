@@ -108,7 +108,7 @@ subprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             allWarningsAsErrors = true
-            freeCompilerArgs = listOf("-Xuse-experimental=kotlin.Experimental")
+            freeCompilerArgs = listOf("-Xopt-in=kotlin.RequiresOptIn")
             jvmTarget = "11"
         }
     }

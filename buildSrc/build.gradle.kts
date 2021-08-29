@@ -17,7 +17,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // TODO Move me.
-val kotlinVersion = "1.5.21"
+val kotlinVersion = "1.5.30"
 
 plugins {
     `kotlin-dsl`
