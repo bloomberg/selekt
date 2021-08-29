@@ -39,13 +39,17 @@ internal class Mutex {
         check(awaitLock(Long.MIN_VALUE, true)) { "Failed to acquire lock." }
     }
 
-    fun tryLock(isCancellable: Boolean = true): Boolean {
+    fun tryLock(
+        nanos: Long,
+        isCancellable: Boolean = true
+    ): Boolean {
+        require(nanos >= 0L) { "Nanos must be non-negative." }
         if (Thread.interrupted()) {
             throw InterruptedException()
         } else if (isCancellable && isCancelled()) {
             cancellationError()
         }
-        return awaitLock(0L, isCancellable)
+        return awaitLock(nanos, isCancellable)
     }
 
     fun unlock() {
@@ -81,9 +85,10 @@ internal class Mutex {
 
     @Generated
     inline fun <R> withTryLock(
+        nanos: Long,
         isCancellable: Boolean,
         block: () -> R
-    ): R? = if (tryLock(isCancellable)) {
+    ): R? = if (tryLock(nanos, isCancellable)) {
         try {
             block()
         } finally {
@@ -107,7 +112,10 @@ internal class Mutex {
         intervalNanos: Long,
         isCancellable: Boolean
     ): Boolean {
-        waiters.add(Thread.currentThread())
+        val thread = Thread.currentThread()
+        if (!waiters.add(thread)) {
+            return false
+        }
         var remainingNanos = intervalNanos
         val deadlineNanos = System.nanoTime() + intervalNanos
         while (!(isThisHead() && internalTryLock())) {
@@ -140,7 +148,7 @@ internal class Mutex {
 
     private fun removeThisWaiterNotifyingNext() {
         isThisHead().also {
-            waiters.remove(Thread.currentThread())
+            check(waiters.remove(Thread.currentThread())) { "Failed to remove waiter." }
             if (it) {
                 LockSupport.unpark(waiters.peek())
             }
