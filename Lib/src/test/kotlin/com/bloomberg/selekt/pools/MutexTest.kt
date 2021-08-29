@@ -32,46 +32,37 @@ internal class MutexTest {
     val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
 
     @Test
-    fun negativeNanos() {
-        Mutex().let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-                it.tryLock(-1L)
-            }
-        }
-    }
-
-    @Test
     fun lockThenTryLock() {
         Mutex().apply {
             lock()
-            assertFalse(tryLock(0L))
+            assertFalse(tryLock())
         }
     }
 
     @Test
     fun tryLockZeroNanos() {
-        assertTrue(Mutex().tryLock(0L))
+        assertTrue(Mutex().tryLock())
     }
 
     @Test
     fun tryLockWithCancellation() {
         Mutex().apply { cancel() }.let {
             assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-                it.tryLock(0L, true)
+                it.tryLock(true)
             }
         }
     }
 
     @Test
     fun tryLockWithoutCancellation() {
-        assertTrue(Mutex().apply { cancel() }.tryLock(0L, false))
+        assertTrue(Mutex().apply { cancel() }.tryLock(false))
     }
 
     @Test
     fun tryLockFails() {
         val lock = Mutex()
         thread { lock.lock() }.join()
-        assertFalse(lock.tryLock(1L, false))
+        assertFalse(lock.tryLock(false))
     }
 
     @Test
@@ -131,7 +122,7 @@ internal class MutexTest {
         Mutex().apply {
             val thread = Thread.currentThread().apply { interrupt() }
             assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
-                tryLock(0L, false)
+                tryLock(false)
             }
             assertFalse(thread.isInterrupted)
         }
@@ -165,7 +156,7 @@ internal class MutexTest {
             cancel()
             Thread.currentThread().interrupt()
             assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
-                tryLock(0L, true)
+                tryLock(true)
             }
         }
     }
@@ -174,12 +165,10 @@ internal class MutexTest {
     fun tryLockRespectsTimeout() {
         Mutex().apply {
             lock()
-            val intervalNanos = TimeUnit.MILLISECONDS.toNanos(100L)
             val start = System.nanoTime()
-            assertFalse(tryLock(intervalNanos, false))
+            assertFalse(tryLock(false))
             val duration = System.nanoTime() - start
-            assertTrue(duration >= intervalNanos)
-            assertTrue(duration <= intervalNanos + TimeUnit.MILLISECONDS.toNanos(300L))
+            assertTrue(duration <= TimeUnit.MILLISECONDS.toNanos(100L))
         }
     }
 
@@ -225,7 +214,7 @@ internal class MutexTest {
                     lock()
                     unlock()
                 }, {
-                    if (tryLock(TimeUnit.MILLISECONDS.toNanos(100L))) {
+                    if (tryLock()) {
                         unlock()
                     }
                 }).map {
