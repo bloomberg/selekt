@@ -397,7 +397,8 @@ function drawChart() {
         ['Single', 77747041.047]
     ]);
     var options = {
-        'title': 'Borrow then return a single pooled object (v0.14.1)'
+        'title': 'Borrow then return a single pooled object (v0.14.1)',
+        'legend': 'none'
     };
     new google.visualization.BarChart(document.getElementById('pool_chart_div'))
         .draw(data, options);
