@@ -18,7 +18,6 @@ package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
-import kotlin.test.fail
 
 internal class CollectionsTest {
     @Test
@@ -31,10 +30,5 @@ internal class CollectionsTest {
     fun nonEmptyConcurrentSetOf() {
         val set = concurrentSetOf<String>().apply { add("") }
         assertTrue(set.isNotEmpty())
-    }
-
-    @Test
-    fun junk() {
-        fail("Fail me!")
     }
 }
