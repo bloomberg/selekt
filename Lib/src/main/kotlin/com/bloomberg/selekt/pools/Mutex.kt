@@ -112,10 +112,7 @@ internal class Mutex {
         intervalNanos: Long,
         isCancellable: Boolean
     ): Boolean {
-        val thread = Thread.currentThread()
-        if (!waiters.add(thread)) {
-            return false
-        }
+        waiters.add(Thread.currentThread())
         var remainingNanos = intervalNanos
         val deadlineNanos = System.nanoTime() + intervalNanos
         while (!(isThisHead() && internalTryLock())) {
@@ -148,7 +145,7 @@ internal class Mutex {
 
     private fun removeThisWaiterNotifyingNext() {
         isThisHead().also {
-            check(waiters.remove(Thread.currentThread())) { "Failed to remove waiter." }
+            waiters.remove(Thread.currentThread())
             if (it) {
                 LockSupport.unpark(waiters.peek())
             }
