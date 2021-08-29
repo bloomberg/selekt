@@ -52,6 +52,12 @@ jobs:
       run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
     - name: 'Unit tests'
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: 'Unit test results'
+        path: |
+          AndroidLib/build/reports/tests/testDebugUnitTest
+          Lib/build/reports/tests/test
     - name: 'Coverage'
       run: |
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
