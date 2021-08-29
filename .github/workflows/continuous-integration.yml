@@ -62,6 +62,7 @@ jobs:
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
         bash scripts/codecov
     - uses: actions/upload-artifact@v2
+      if: always()
       with:
         name: 'Unit test reports'
         path: |
