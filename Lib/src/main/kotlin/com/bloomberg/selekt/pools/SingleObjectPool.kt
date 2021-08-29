@@ -54,7 +54,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     override fun borrowObject(key: K) = borrowObject()
 
-    fun borrowObjectOrNull() = if (mutex.tryLock(0L, true)) {
+    fun borrowObjectOrNull() = if (mutex.tryLock()) {
         acquireObject()
     } else {
         null
@@ -84,7 +84,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
             priority.isHigh() -> withTryLock {
                 evictions(priority)
             }
-            else -> withTryLock(0L, false) {
+            else -> withTryLock(false) {
                 if (priority != null) {
                     obj?.releaseMemory()
                 }

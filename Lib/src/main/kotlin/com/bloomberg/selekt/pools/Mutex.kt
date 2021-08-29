@@ -39,17 +39,13 @@ internal class Mutex {
         check(awaitLock(Long.MIN_VALUE, true)) { "Failed to acquire lock." }
     }
 
-    fun tryLock(
-        nanos: Long,
-        isCancellable: Boolean = true
-    ): Boolean {
-        require(nanos >= 0L) { "Nanos must be non-negative." }
+    fun tryLock(isCancellable: Boolean = true): Boolean {
         if (Thread.interrupted()) {
             throw InterruptedException()
         } else if (isCancellable && isCancelled()) {
             cancellationError()
         }
-        return awaitLock(nanos, isCancellable)
+        return awaitLock(0L, isCancellable)
     }
 
     fun unlock() {
@@ -85,10 +81,9 @@ internal class Mutex {
 
     @Generated
     inline fun <R> withTryLock(
-        nanos: Long,
         isCancellable: Boolean,
         block: () -> R
-    ): R? = if (tryLock(nanos, isCancellable)) {
+    ): R? = if (tryLock(isCancellable)) {
         try {
             block()
         } finally {
