@@ -23,7 +23,7 @@ import com.bloomberg.selekt.Experimental
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
-import com.bloomberg.selekt.commons.deleteDatabase
+import com.bloomberg.selekt.annotations.DelicateApi
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -42,6 +42,7 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
+@DelicateApi
 internal class SQLiteDatabaseWALTest {
     private val file = File.createTempFile("test-sql-database-wal", ".db").also { it.deleteOnExit() }
 

@@ -29,6 +29,7 @@ import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.SQLiteTransactionMode
+import com.bloomberg.selekt.annotations.DelicateApi
 import com.bloomberg.selekt.pools.Priority
 import org.intellij.lang.annotations.Language
 import java.io.Closeable
@@ -180,9 +181,11 @@ class SQLiteDatabase private constructor(
      *
      * @see <a href="https://www.sqlite.org/lang_transaction.html">SQLite's transaction</a>
      */
-    internal fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
+    @DelicateApi
+    fun beginExclusiveTransaction() = database.beginExclusiveTransaction()
 
-    internal fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
+    @DelicateApi
+    fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
         database.beginExclusiveTransactionWithListener(listener)
 
     /**
@@ -196,9 +199,11 @@ class SQLiteDatabase private constructor(
      *
      * @see <a href="https://www.sqlite.org/lang_transaction.html">SQLite's transaction</a>
      */
-    internal fun beginImmediateTransaction() = database.beginImmediateTransaction()
+    @DelicateApi
+    fun beginImmediateTransaction() = database.beginImmediateTransaction()
 
-    internal fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
+    @DelicateApi
+    fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
         database.beginImmediateTransactionWithListener(listener)
 
     fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
@@ -209,7 +214,8 @@ class SQLiteDatabase private constructor(
             whereClause.orEmpty(),
             whereArgs.orEmpty())
 
-    internal fun endTransaction() = database.endTransaction()
+    @DelicateApi
+    fun endTransaction() = database.endTransaction()
 
     fun exec(@Language("RoomSql") sql: String) = database.exec(sql)
 
@@ -333,7 +339,8 @@ class SQLiteDatabase private constructor(
         database.pragma(PAGE_SIZE, 1 shl value)
     }
 
-    internal fun setTransactionSuccessful() = database.setTransactionSuccessful()
+    @DelicateApi
+    fun setTransactionSuccessful() = database.setTransactionSuccessful()
 
     /**
      * @since 0.7.4

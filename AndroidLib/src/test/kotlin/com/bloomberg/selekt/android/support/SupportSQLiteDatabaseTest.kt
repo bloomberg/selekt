@@ -24,6 +24,7 @@ import androidx.sqlite.db.SupportSQLiteQuery
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.ConflictAlgorithm
 import com.bloomberg.selekt.android.SQLiteDatabase
+import com.bloomberg.selekt.annotations.DelicateApi
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -56,11 +57,12 @@ import kotlin.test.assertTrue
 private const val CONFLICT_REPLACE = 5
 
 @RunWith(RobolectricTestRunner::class)
+@DelicateApi
 internal class SupportSQLiteDatabaseTest {
     @get:Rule
     val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
 
-    @Mock lateinit var database: com.bloomberg.selekt.android.SQLiteDatabase
+    @Mock lateinit var database: SQLiteDatabase
     private lateinit var supportDatabase: SupportSQLiteDatabase
 
     @Before
