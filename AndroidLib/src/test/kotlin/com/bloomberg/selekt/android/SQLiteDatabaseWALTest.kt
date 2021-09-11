@@ -24,7 +24,6 @@ import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.annotations.DelicateApi
-import com.bloomberg.selekt.commons.deleteDatabase
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
