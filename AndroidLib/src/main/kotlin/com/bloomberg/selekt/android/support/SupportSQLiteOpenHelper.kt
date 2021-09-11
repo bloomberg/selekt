@@ -23,6 +23,7 @@ import com.bloomberg.selekt.android.ISQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.android.SQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteOpenParams
+import com.bloomberg.selekt.annotations.DelicateApi
 
 fun createSupportSQLiteOpenHelperFactory(
     journalMode: SQLiteJournalMode,
@@ -41,7 +42,7 @@ private class SupportSQLiteOpenHelperFactory(
     ).asSupportSQLiteOpenHelper()
 }
 
-internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = object : SupportSQLiteOpenHelper {
+internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = @DelicateApi object : SupportSQLiteOpenHelper {
     private val database: SupportSQLiteDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         this@asSupportSQLiteOpenHelper.writableDatabase.asSupportSQLiteDatabase()
     }
@@ -73,7 +74,7 @@ internal fun SupportSQLiteOpenHelper.Configuration.asSelektConfiguration(
     name = requireNotNull(name) { "Encryption of in-memory SupportDatabases is not supported." }
 )
 
-internal fun SupportSQLiteOpenHelper.Callback.asSelektCallback() = object : ISQLiteOpenHelper.Callback {
+internal fun SupportSQLiteOpenHelper.Callback.asSelektCallback() = @DelicateApi object : ISQLiteOpenHelper.Callback {
     override fun onConfigure(database: SQLiteDatabase) = this@asSelektCallback.onConfigure(
         database.asSupportSQLiteDatabase())
 

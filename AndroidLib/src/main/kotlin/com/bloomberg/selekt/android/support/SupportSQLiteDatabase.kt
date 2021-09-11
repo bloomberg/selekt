@@ -26,9 +26,11 @@ import androidx.sqlite.db.SupportSQLiteQuery
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
+import com.bloomberg.selekt.annotations.DelicateApi
 import org.intellij.lang.annotations.Language
 import java.util.Locale
 
+@DelicateApi
 internal fun SQLiteDatabase.asSupportSQLiteDatabase(): SupportSQLiteDatabase = SupportSQLiteDatabase(this)
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -50,6 +52,7 @@ private class WrappedSQLiteTransactionListener(
     override fun hashCode() = listener.hashCode()
 }
 
+@DelicateApi
 private class SupportSQLiteDatabase constructor(
     private val database: SQLiteDatabase
 ) : SupportSQLiteDatabase {

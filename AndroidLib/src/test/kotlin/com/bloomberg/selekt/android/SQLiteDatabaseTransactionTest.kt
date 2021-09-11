@@ -22,6 +22,7 @@ import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTransactionMode
+import com.bloomberg.selekt.annotations.DelicateApi
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -71,6 +72,7 @@ internal data class TransactionTestInputs(
 }
 
 @RunWith(Parameterized::class)
+@DelicateApi
 internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
     @get:Rule
     val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
