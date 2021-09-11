@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.14.2
+
+### Features
+
+* Make `SQLiteDatabase.beginTransaction` et al public API but carrying a health warning.
+
+### Optimisations
+
+* Further reductions in the OpenSSL libcrypto.a binary size.
+
+### Dependencies
+
+* Android Gradle Plugin 7.0.2.
+* Android Lint 30.0.2.
+* Kotlin 1.5.30.
+
 ## Version 0.14.1
 
 ### Features
