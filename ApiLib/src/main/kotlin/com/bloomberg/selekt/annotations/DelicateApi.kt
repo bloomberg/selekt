@@ -17,10 +17,9 @@
 package com.bloomberg.selekt.annotations
 
 /**
- * Marks Selekt methods that are to be used with caution. Their use must be subject to careful review. Misuse can result
- * in leaks.
+ * Marks Selekt methods that are to be used with caution. Their use must be subject to careful review. Misuse may result
+ * in leaks or hard to diagnose bugs.
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @MustBeDocumented
 @Retention(value = AnnotationRetention.BINARY)
 @RequiresOptIn(
