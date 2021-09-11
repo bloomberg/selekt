@@ -378,6 +378,22 @@
 <td>[androidJvm]<br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement.</td>
 </tr>
 <tr>
+<td><a href="begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-exclusive-transaction/">beginExclusiveTransaction</a>()<br>Begins a transaction in exclusive mode.</td>
+</tr>
+<tr>
+<td><a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
+</tr>
+<tr>
+<td><a href="begin-immediate-transaction/">beginImmediateTransaction</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-immediate-transaction/">beginImmediateTransaction</a>()<br>Begins a transaction in immediate mode.</td>
+</tr>
+<tr>
+<td><a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
+</tr>
+<tr>
 <td><a href="close/">close</a></td>
 <td>[androidJvm]<br>open override fun <a href="close/">close</a>()</td>
 </tr>
@@ -388,6 +404,10 @@
 <tr>
 <td><a href="delete/">delete</a></td>
 <td>[androidJvm]<br>fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+</tr>
+<tr>
+<td><a href="end-transaction/">endTransaction</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="end-transaction/">endTransaction</a>()</td>
 </tr>
 <tr>
 <td><a href="exec/">exec</a></td>
@@ -420,6 +440,10 @@
 <tr>
 <td><a href="set-maximum-size/">setMaximumSize</a></td>
 <td>[androidJvm]<br>fun <a href="set-maximum-size/">setMaximumSize</a>(bytes: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+</tr>
+<tr>
+<td><a href="set-transaction-successful/">setTransactionSuccessful</a></td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="set-transaction-successful/">setTransactionSuccessful</a>()</td>
 </tr>
 <tr>
 <td><a href="size-of-blob/">sizeOfBlob</a></td>

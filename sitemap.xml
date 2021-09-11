@@ -246,6 +246,26 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-exclusive-transaction-with-listener/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-exclusive-transaction/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-immediate-transaction-with-listener/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-immediate-transaction/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/close/</loc>
          <lastmod>2021-09-11</lastmod>
          <changefreq>daily</changefreq>
@@ -257,6 +277,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/delete/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/end-transaction/</loc>
          <lastmod>2021-09-11</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -342,6 +367,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/set-maximum-size/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/set-transaction-successful/</loc>
          <lastmod>2021-09-11</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -1172,6 +1202,21 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt/-zero-blob/size/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/</loc>
+         <lastmod>2021-09-11</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/-delicate-api/</loc>
          <lastmod>2021-09-11</lastmod>
          <changefreq>daily</changefreq>
     </url>

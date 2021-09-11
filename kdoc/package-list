@@ -49,9 +49,14 @@ $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase.Companion/openOrCrea
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase///PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/index.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/autoVacuum/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/auto-vacuum.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/batch.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransaction/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-exclusive-transaction.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-exclusive-transaction-with-listener.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransaction/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-immediate-transaction.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/beginImmediateTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/begin-immediate-transaction-with-listener.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/close/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/close.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/compileStatement/#kotlin.String/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/compile-statement.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/delete/#kotlin.String#kotlin.String?#kotlin.Array[kotlin.Any?]?/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/delete.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/endTransaction/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/end-transaction.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/exec/#kotlin.String#kotlin.Array[kotlin.Any?]/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/exec.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/exec/#kotlin.String/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/exec.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/incrementalVacuum/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/incremental-vacuum.md
@@ -74,6 +79,7 @@ $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/readFromBlob/#kotlin
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/readFromBlob/#kotlin.String#kotlin.String#kotlin.String#kotlin.Long#kotlin.Int#kotlin.Int#java.io.OutputStream/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/read-from-blob.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/setForeignKeyConstraintsEnabled/#kotlin.Boolean/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/set-foreign-key-constraints-enabled.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/setMaximumSize/#kotlin.Long/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/set-maximum-size.md
+$dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/setTransactionSuccessful/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/set-transaction-successful.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/sizeOfBlob/#kotlin.String#kotlin.String#kotlin.Long/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/size-of-blob.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/sizeOfBlob/#kotlin.String#kotlin.String#kotlin.String#kotlin.Long/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/size-of-blob.md
 $dokka.location:com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/transact.md
@@ -109,6 +115,9 @@ $dokka.location:com.bloomberg.selekt.android/Selekt/registerComponentCallbackWit
 $dokka.location:com.bloomberg.selekt.android/Selekt/sqliteLibVersion/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-selekt/sqlite-lib-version.md
 $dokka.location:com.bloomberg.selekt.android/Selekt/sqliteLibVersionNumber/#/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-selekt/sqlite-lib-version-number.md
 $dokka.location:com.bloomberg.selekt.android/Selekt/unregisterComponentCallbackFrom/#android.app.Application/PointingToDeclaration/Selekt/-selekt/com.bloomberg.selekt.android/-selekt/unregister-component-callback-from.md
+$dokka.location:com.bloomberg.selekt.annotations////PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/index.md
+$dokka.location:com.bloomberg.selekt.annotations/DelicateApi///PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/index.md
+$dokka.location:com.bloomberg.selekt.annotations/DelicateApi/DelicateApi/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/-delicate-api.md
 $dokka.location:com.bloomberg.selekt.commons////PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/index.md
 $dokka.location:com.bloomberg.selekt.commons//deleteDatabase/#java.io.File/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/delete-database.md
 $dokka.location:com.bloomberg.selekt.commons//emptyIterable/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/empty-iterable.md
@@ -563,6 +572,7 @@ com.bloomberg.selekt.android
 com.bloomberg.selekt.android.support
 module:ApiLib
 com.bloomberg.selekt
+com.bloomberg.selekt.annotations
 module:Lib
 com.bloomberg.selekt
 com.bloomberg.selekt.commons

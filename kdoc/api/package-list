@@ -6,6 +6,7 @@ com.bloomberg.selekt.android
 com.bloomberg.selekt.android.support
 module:ApiLib
 com.bloomberg.selekt
+com.bloomberg.selekt.annotations
 module:Lib
 com.bloomberg.selekt
 com.bloomberg.selekt.commons
