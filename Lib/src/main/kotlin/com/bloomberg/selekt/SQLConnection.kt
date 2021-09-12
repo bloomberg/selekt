@@ -268,8 +268,3 @@ private fun SQLPreparedStatement.bindArgument(position: Int, arg: Any?) {
         else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
     }
 }
-
-private fun SQLPreparedStatement.resetAndClearBindings() {
-    reset()
-    clearBindings()
-}

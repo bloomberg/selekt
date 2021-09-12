@@ -713,6 +713,20 @@ Java_com_bloomberg_selekt_ExternalSQLite_reset(
     return sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(jstatement));
 }
 
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_resetAndClearBindings(
+    JNIEnv* env,
+    jobject clazz,
+    jlong jstatement
+) {
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    auto const result = sqlite3_reset(statement);
+    if (SQLITE_OK != result) {
+        return result;
+    }
+    return sqlite3_clear_bindings(statement);
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_softHeapLimit64(
     JNIEnv* env,

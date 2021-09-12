@@ -181,6 +181,8 @@ class ExternalSQLite private constructor(
 
     external fun reset(statement: Long): SQLCode
 
+    external fun resetAndClearBindings(statement: Long): SQLCode
+
     external fun softHeapLimit64(): Long
 
     external fun sql(statement: Long): String
