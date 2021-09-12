@@ -462,6 +462,7 @@ $dokka.location:com.bloomberg.selekt/SQLite/rawKey/#kotlin.Long#kotlin.ByteArray
 $dokka.location:com.bloomberg.selekt/SQLite/rekey/#kotlin.Long#kotlin.ByteArray/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/rekey.md
 $dokka.location:com.bloomberg.selekt/SQLite/releaseMemory/#kotlin.Int/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/release-memory.md
 $dokka.location:com.bloomberg.selekt/SQLite/reset/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/reset.md
+$dokka.location:com.bloomberg.selekt/SQLite/resetAndClearBindings/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/reset-and-clear-bindings.md
 $dokka.location:com.bloomberg.selekt/SQLite/softHeapLimit64/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/soft-heap-limit64.md
 $dokka.location:com.bloomberg.selekt/SQLite/sql/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/sql.md
 $dokka.location:com.bloomberg.selekt/SQLite/statementBusy/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/statement-busy.md

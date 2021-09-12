@@ -2296,6 +2296,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt/-s-q-lite/reset-and-clear-bindings/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/Lib/-lib/com.bloomberg.selekt/-s-q-lite/reset/</loc>
          <lastmod>2021-09-12</lastmod>
          <changefreq>daily</changefreq>
