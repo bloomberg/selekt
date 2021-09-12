@@ -207,6 +207,8 @@ open class SQLite(
 
     fun reset(statement: Long) = checkStatementSQLCode(statement, sqlite.reset(statement))
 
+    fun resetAndClearBindings(statement: Long) = checkStatementSQLCode(statement, sqlite.resetAndClearBindings(statement))
+
     fun softHeapLimit64() = sqlite.softHeapLimit64()
 
     fun sql(statement: Long) = sqlite.sql(statement)

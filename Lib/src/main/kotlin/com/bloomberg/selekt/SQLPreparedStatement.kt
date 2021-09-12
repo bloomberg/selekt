@@ -127,6 +127,10 @@ internal class SQLPreparedStatement(
         sqlite.reset(pointer)
     }
 
+    fun resetAndClearBindings() {
+        sqlite.resetAndClearBindings(pointer)
+    }
+
     fun step() = sqlite.step(pointer)
 
     fun step(intervalMillis: Long): SQLCode {
