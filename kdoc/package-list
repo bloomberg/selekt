@@ -118,6 +118,8 @@ $dokka.location:com.bloomberg.selekt.android/Selekt/unregisterComponentCallbackF
 $dokka.location:com.bloomberg.selekt.annotations////PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/index.md
 $dokka.location:com.bloomberg.selekt.annotations/DelicateApi///PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/index.md
 $dokka.location:com.bloomberg.selekt.annotations/DelicateApi/DelicateApi/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/-delicate-api.md
+$dokka.location:com.bloomberg.selekt.annotations/Experimental///PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-experimental/index.md
+$dokka.location:com.bloomberg.selekt.annotations/Experimental/Experimental/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-experimental/-experimental.md
 $dokka.location:com.bloomberg.selekt.commons////PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/index.md
 $dokka.location:com.bloomberg.selekt.commons//deleteDatabase/#java.io.File/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/delete-database.md
 $dokka.location:com.bloomberg.selekt.commons//emptyIterable/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt.commons/empty-iterable.md
@@ -271,8 +273,6 @@ $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/name/#/PointingToDecl
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/secureDelete/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt/-database-configuration/secure-delete.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/timeBetweenEvictionRunsMillis/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt/-database-configuration/time-between-eviction-runs-millis.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/trace/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt/-database-configuration/trace.md
-$dokka.location:com.bloomberg.selekt/Experimental///PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt/-experimental/index.md
-$dokka.location:com.bloomberg.selekt/Experimental/Experimental/#/PointingToDeclaration/ApiLib/-api-lib/com.bloomberg.selekt/-experimental/-experimental.md
 $dokka.location:com.bloomberg.selekt/IConflictAlgorithm///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-i-conflict-algorithm/index.md
 $dokka.location:com.bloomberg.selekt/IConflictAlgorithm/sql/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-i-conflict-algorithm/sql.md
 $dokka.location:com.bloomberg.selekt/IContentValues///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-i-content-values/index.md

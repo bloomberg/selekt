@@ -646,16 +646,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt/-experimental/</loc>
-         <lastmod>2021-09-13</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt/-experimental/-experimental/</loc>
-         <lastmod>2021-09-13</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-program/</loc>
          <lastmod>2021-09-13</lastmod>
          <changefreq>daily</changefreq>
@@ -1217,6 +1207,16 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/-delicate-api/</loc>
+         <lastmod>2021-09-13</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-experimental/</loc>
+         <lastmod>2021-09-13</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/ApiLib/-api-lib/com.bloomberg.selekt.annotations/-experimental/-experimental/</loc>
          <lastmod>2021-09-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
