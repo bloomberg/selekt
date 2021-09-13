@@ -21,7 +21,7 @@ import androidx.annotation.IntRange
 import androidx.annotation.Size
 import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.DatabaseConfiguration
-import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLTransactionListener

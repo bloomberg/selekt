@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt
+package com.bloomberg.selekt.annotations
 
 @RequiresOptIn(message = "This API is experimental. It may be changed in the future without notice.")
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)

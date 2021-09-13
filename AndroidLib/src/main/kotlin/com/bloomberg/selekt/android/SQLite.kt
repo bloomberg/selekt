@@ -32,7 +32,7 @@ import android.database.sqlite.SQLiteMisuseException
 import android.database.sqlite.SQLiteOutOfMemoryException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
-import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQL_ABORT
 import com.bloomberg.selekt.SQL_AUTH

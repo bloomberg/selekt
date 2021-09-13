@@ -17,7 +17,7 @@
 package com.bloomberg.selekt.android
 
 import android.app.Application
-import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.annotations.Experimental
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
