@@ -28,6 +28,7 @@ import com.bloomberg.selekt.android.ISQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.android.SQLiteOpenParams
+import com.bloomberg.selekt.annotations.Experimental
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -191,7 +192,7 @@ internal class SQLiteJournalModeDatabaseBenchmark(inputs: Inputs) {
         }
     }
 
-    @OptIn(com.bloomberg.selekt.Experimental::class)
+    @OptIn(Experimental::class)
     @Test
     fun batchInsertInt(): Unit = databaseHelper.writableDatabase.run {
         val args = Array(1) { 0 }

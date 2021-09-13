@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase

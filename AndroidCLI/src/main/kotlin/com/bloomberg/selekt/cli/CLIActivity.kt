@@ -21,7 +21,7 @@ import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.bloomberg.selekt.Experimental
+import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.android.SQLiteDatabase
