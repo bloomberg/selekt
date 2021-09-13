@@ -38,6 +38,13 @@ private const val INTERVAL_MILLIS = 2_000L
 
 internal class SQLPreparedStatementTest {
     @Test
+    fun clearBindings() {
+        val sqlite = mock<SQLite>()
+        SQLPreparedStatement(POINTER, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom).clearBindings()
+        verify(sqlite, times(1)).clearBindings(eq(POINTER))
+    }
+
+    @Test
     fun stepWithRetryDone() {
         val sqlite = mock<SQLite>().apply {
             whenever(stepWithoutThrowing(any())) doReturn SQL_DONE
