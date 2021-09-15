@@ -1,6 +1,21 @@
 Change Log
 ==========
 
+## Version 0.14.3
+
+### Fixes
+
+* Move Experimental annotation into the dedicated annotations package, alongside the rest.
+
+### Optimisations
+
+* Reset and clear bindings for prepared statements in one JNI hop instead of two.
+
+### Dependencies
+
+* Android SDK 31.
+* Kotlin Coroutines 1.5.1.
+
 ## Version 0.14.2
 
 ### Features
