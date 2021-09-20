@@ -65,7 +65,8 @@ OPENSSL_CONFIGURE_OPTIONS="-fPIC -fstack-protector-all no-idea no-camellia \
     no-mdc2 no-engine no-ts no-sse2 \
     no-sm2 no-sm3 no-sm4 no-ocsp no-cmac \
     no-srtp no-shared no-comp no-ct no-cms no-capieng \
-    no-deprecated no-autoerrinit no-stdio no-ui-console"
+    no-deprecated no-autoerrinit no-stdio no-ui-console \
+    no-filenames"
 
 TOOLCHAIN_BIN="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/${TOOLCHAIN_SYSTEM}/bin/"
 PATH=${TOOLCHAIN_BIN}:${PATH}
