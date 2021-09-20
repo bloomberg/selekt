@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.14.4
+
+### Fixes
+
+* Further reduce OpenSSL binary size with the no-filenames configuration option.
+
+### Dependencies
+
+* OpenSSL 1.1.1l.
+* Kotlin 1.5.31.
+
 ## Version 0.14.3
 
 ### Fixes
