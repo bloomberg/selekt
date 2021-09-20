@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 // TODO Move me.
 val kotlinVersion = "1.5.31"
 
