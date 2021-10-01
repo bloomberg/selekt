@@ -143,7 +143,6 @@ internal class SQLPreparedStatement(
         SQL_DONE -> SQL_DONE
         SQL_BUSY -> {
             pauseElseExpire(expireAtMillis)
-            sqlite.reset(pointer)
             stepUntil(expireAtMillis)
         }
         else -> sqlite.throwSQLException(sqlite.databaseHandle(pointer))
