@@ -356,6 +356,19 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun resetPreparedStatement() {
+        assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar TEXT)"))
+        assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES ('abc')"))
+        assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES ('123')"))
+        prepareStatement(db, "SELECT * FROM 'Foo'").usePreparedStatement {
+            assertEquals(SQL_ROW, SQLite.step(it))
+            assertEquals(SQL_OK, SQLite.reset(it))
+            assertEquals(SQL_ROW, SQLite.step(it))
+            assertEquals("abc", SQLite.columnText(it, 0))
+        }
+    }
+
+    @Test
     fun columnTypeBlob() {
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar BLOB)"))
         assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES (x'0500')"))
