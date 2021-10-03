@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.14.5
+
+### Fixes
+
+* Remove extraneous prepared statement reset when retrying for busy.
+
 ## Version 0.14.4
 
 ### Fixes
