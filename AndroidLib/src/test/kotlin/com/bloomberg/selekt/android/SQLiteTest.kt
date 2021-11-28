@@ -1349,7 +1349,7 @@ internal class SQLiteTest {
 
     @Test
     fun keywordCount(): Unit = SQLite.run {
-        assertEquals(145, keywordCount())
+        assertEquals(147, keywordCount())
     }
 
     private fun openConnection(flags: SQLOpenOperation = SQL_OPEN_READWRITE or SQL_OPEN_CREATE): Pointer {
