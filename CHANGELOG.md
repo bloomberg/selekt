@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 0.15.0
+
+### Dependencies
+
+* Gradle 7.3.
+* Kotlin 1.6.0.
+* SQLCipher 4.5.0.
+
 ## Version 0.14.5
 
 ### Fixes
