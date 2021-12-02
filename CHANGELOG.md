@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.15.1
+
+### Fixes
+
+* Correct SQLCipher version name for publication.
+
+### Dependencies
+
+* Gradle 7.3.1.
+
 ## Version 0.15.0
 
 ### Dependencies
