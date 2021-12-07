@@ -337,7 +337,7 @@ object <a href="./">Companion</a></p>
 <tbody>
 <tr>
 <td><a href="-c-o-m-m-o-n_-b-u-s-y_-t-i-m-e-o-u-t_-m-i-l-l-i-s/">COMMON_BUSY_TIMEOUT_MILLIS</a></td>
-<td>[jvm]<br>const val <a href="-c-o-m-m-o-n_-b-u-s-y_-t-i-m-e-o-u-t_-m-i-l-l-i-s/">COMMON_BUSY_TIMEOUT_MILLIS</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a> = 2_500<br>When using WAL, a timeout could occur if one connection is busy performing an auto-checkpoint operation.</td>
+<td>[jvm]<br>const val <a href="-c-o-m-m-o-n_-b-u-s-y_-t-i-m-e-o-u-t_-m-i-l-l-i-s/">COMMON_BUSY_TIMEOUT_MILLIS</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br>When using WAL, a timeout could occur if one connection is busy performing an auto-checkpoint operation. The busy timeout needs to be long enough to tolerate slow I/O write operations but not so long as to cause the application to hang indefinitely if there is a problem acquiring a database lock.</td>
 </tr>
 </tbody>
 </table>

@@ -341,7 +341,7 @@ interface <a href="./">SQLTransactionListener</a></p>
 </tr>
 <tr>
 <td><a href="on-commit/">onCommit</a></td>
-<td>[jvm]<br>abstract fun <a href="on-commit/">onCommit</a>()<br>Called immediately before committing the transaction.</td>
+<td>[jvm]<br>abstract fun <a href="on-commit/">onCommit</a>()<br>Called immediately before committing the transaction. If the transaction commit fails the listener will be notified of the subsequent rollback event.</td>
 </tr>
 <tr>
 <td><a href="on-rollback/">onRollback</a></td>

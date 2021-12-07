@@ -351,15 +351,15 @@ enum <a href="./">SQLiteThreadingMode</a> : <a href="https://kotlinlang.org/api/
 <tbody>
 <tr>
 <td><a href="-s-i-n-g-l-e-t-h-r-e-a-d/">SINGLETHREAD</a></td>
-<td>[jvm]<br><a href="-s-i-n-g-l-e-t-h-r-e-a-d/">SINGLETHREAD</a>(0)<br>This option sets the threading mode to "single-thread".</td>
+<td>[jvm]<br><a href="-s-i-n-g-l-e-t-h-r-e-a-d/">SINGLETHREAD</a>(0)<br>This option sets the threading mode to "single-thread". In other words, it disables all mutexing and puts SQLite into a mode where it can only be used by a single thread.</td>
 </tr>
 <tr>
 <td><a href="-s-e-r-i-a-l-i-z-e-d/">SERIALIZED</a></td>
-<td>[jvm]<br><a href="-s-e-r-i-a-l-i-z-e-d/">SERIALIZED</a>(1)<br>This option sets the threading mode to "serialized".</td>
+<td>[jvm]<br><a href="-s-e-r-i-a-l-i-z-e-d/">SERIALIZED</a>(1)<br>This option sets the threading mode to "serialized". In other words, this option enables all mutexes including the recursive mutexes on database connection and prepared statement objects. In this mode the SQLite library will itself serialize access to database connections and prepared statements so that the application is free to use the same database connection or the same prepared statement in different threads at the same time.</td>
 </tr>
 <tr>
 <td><a href="-m-u-l-t-i-t-h-r-e-a-d/">MULTITHREAD</a></td>
-<td>[jvm]<br><a href="-m-u-l-t-i-t-h-r-e-a-d/">MULTITHREAD</a>(2)<br>This option sets the threading mode to "multi-thread".</td>
+<td>[jvm]<br><a href="-m-u-l-t-i-t-h-r-e-a-d/">MULTITHREAD</a>(2)<br>This option sets the threading mode to "multi-thread". In other words, it disables mutexing on database connection and prepared statement objects. The application is responsible for serializing access to database connections and prepared statements. But other mutexes are enabled so that SQLite will be safe to use in a multi-threaded environment as long as no two threads attempt to use the same database connection at the same time.</td>
 </tr>
 </tbody>
 </table>
@@ -388,12 +388,12 @@ enum <a href="./">SQLiteThreadingMode</a> : <a href="https://kotlinlang.org/api/
 </thead>
 <tbody>
 <tr>
-<td><a href="./#-267972457%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="./#-267972457%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a href="./#651066183%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="./#651066183%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>

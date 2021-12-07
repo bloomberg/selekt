@@ -347,15 +347,15 @@
 </tr>
 <tr>
 <td><a href="-s-q-lite-database/">SQLiteDatabase</a></td>
-<td>[androidJvm]<br>@ThreadSafe()<br>class <a href="-s-q-lite-database/">SQLiteDatabase</a> : <a href="https://developer.android.com/reference/kotlin/java/io/Closeable.html">Closeable</a></td>
+<td>[androidJvm]<br>@ThreadSafe<br>class <a href="-s-q-lite-database/">SQLiteDatabase</a> : <a href="https://developer.android.com/reference/kotlin/java/io/Closeable.html">Closeable</a></td>
 </tr>
 <tr>
 <td><a href="-s-q-lite-open-helper/">SQLiteOpenHelper</a></td>
-<td>[androidJvm]<br>class <a href="-s-q-lite-open-helper/">SQLiteOpenHelper</a> : <a href="-i-s-q-lite-open-helper/">ISQLiteOpenHelper</a><br>The <a href="-s-q-lite-open-helper/">SQLiteOpenHelper</a> class contains a useful set of APIs for managing your database.</td>
+<td>[androidJvm]<br>class <a href="-s-q-lite-open-helper/">SQLiteOpenHelper</a> : <a href="-i-s-q-lite-open-helper/">ISQLiteOpenHelper</a><br>The <a href="-s-q-lite-open-helper/">SQLiteOpenHelper</a> class contains a useful set of APIs for managing your database. When you use this class to obtain references to your database, the system performs the potentially long-running operations of creating and updating the database lazily and only when needed, not during application startup. All you need to do is call writableDatabase().</td>
 </tr>
 <tr>
 <td><a href="-s-q-lite-open-params/">SQLiteOpenParams</a></td>
-<td>[androidJvm]<br>data class <a href="-s-q-lite-open-params/">SQLiteOpenParams</a>(<strong>journalMode</strong>: <a href="../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/">SQLiteJournalMode</a>, <strong>pageSizeExponent</strong>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>, <strong>trace</strong>: <a href="../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-trace-event-mode/">SQLiteTraceEventMode</a>?)<br>Wrapper for configuration parameters that are used for opening a <a href="-s-q-lite-database/">SQLiteDatabase</a>.</td>
+<td>[androidJvm]<br>data class <a href="-s-q-lite-open-params/">SQLiteOpenParams</a>(journalMode: <a href="../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-journal-mode/">SQLiteJournalMode</a>, pageSizeExponent: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>, trace: <a href="../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-trace-event-mode/">SQLiteTraceEventMode</a>?)<br>Wrapper for configuration parameters that are used for opening a <a href="-s-q-lite-database/">SQLiteDatabase</a>.</td>
 </tr>
 </tbody>
 </table>

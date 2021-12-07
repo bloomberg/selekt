@@ -346,7 +346,7 @@
 <p>//<a href="../../../">Selekt</a>/<a href="../">com.bloomberg.selekt.android</a>/<a href="./">SQLiteDatabase</a></p>
 <h1 id="sqlitedatabase">SQLiteDatabase</h1>
 <p>[androidJvm]\
-@ThreadSafe()</p>
+@ThreadSafe</p>
 <p>class <a href="./">SQLiteDatabase</a> : <a href="https://developer.android.com/reference/kotlin/java/io/Closeable.html">Closeable</a></p>
 <h4 id="since">Since</h4>
 <p>v0.1.0.</p>
@@ -376,23 +376,23 @@
 <tbody>
 <tr>
 <td><a href="batch/">batch</a></td>
-<td>[androidJvm]<br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement.</td>
+<td>[androidJvm]<br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><br>Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The prototypical use case is for database modifications inside a tight loop to which this is optimised.</td>
 </tr>
 <tr>
 <td><a href="begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-exclusive-transaction/">beginExclusiveTransaction</a>()<br>Begins a transaction in exclusive mode.</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="begin-exclusive-transaction/">beginExclusiveTransaction</a>()<br>Begins a transaction in exclusive mode. Prefer <a href="transact/">transact</a> whenever possible.</td>
 </tr>
 <tr>
 <td><a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
 </tr>
 <tr>
 <td><a href="begin-immediate-transaction/">beginImmediateTransaction</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-immediate-transaction/">beginImmediateTransaction</a>()<br>Begins a transaction in immediate mode.</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="begin-immediate-transaction/">beginImmediateTransaction</a>()<br>Begins a transaction in immediate mode. Prefer <a href="transact/">transact</a> whenever possible.</td>
 </tr>
 <tr>
 <td><a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-l-transaction-listener/index.md">SQLTransactionListener</a>)</td>
 </tr>
 <tr>
 <td><a href="close/">close</a></td>
@@ -404,19 +404,19 @@
 </tr>
 <tr>
 <td><a href="delete/">delete</a></td>
-<td>[androidJvm]<br>fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td>[androidJvm]<br>fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 <tr>
 <td><a href="end-transaction/">endTransaction</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="end-transaction/">endTransaction</a>()</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="end-transaction/">endTransaction</a>()</td>
 </tr>
 <tr>
 <td><a href="exec/">exec</a></td>
-<td>[androidJvm]<br>fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>)<br>fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>)</td>
+<td>[androidJvm]<br>fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>)<br>fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;)</td>
 </tr>
 <tr>
 <td><a href="incremental-vacuum/">incrementalVacuum</a></td>
-<td>[androidJvm]<br>fun <a href="incremental-vacuum/">incrementalVacuum</a>()<br>The incremental vacuum pragma causes pages to be removed from the freelist.<br>[androidJvm]<br>fun <a href="incremental-vacuum/">incrementalVacuum</a>(pages: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>)<br>The incremental vacuum pragma causes up to N pages to be removed from the freelist.</td>
+<td>[androidJvm]<br>fun <a href="incremental-vacuum/">incrementalVacuum</a>()<br>The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the same number of pages. The incremental vacuum pragma has no effect if the database is not already in incremental vacuum mode or if there are no pages on the freelist.<br>[androidJvm]<br>fun <a href="incremental-vacuum/">incrementalVacuum</a>(pages: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>)<br>The incremental vacuum pragma causes up to N pages to be removed from the freelist. The database file is truncated by the same amount. The incremental vacuum pragma has no effect if the database is not already in incremental mode or if there are no pages on the freelist. If there are fewer on the freelist, or if pages is less than 1, then the entire freelist is cleared.</td>
 </tr>
 <tr>
 <td><a href="insert/">insert</a></td>
@@ -428,7 +428,7 @@
 </tr>
 <tr>
 <td><a href="query/">query</a></td>
-<td>[androidJvm]<br>fun <a href="query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a><br>fun <a href="query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a><br>fun <a href="query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>?, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>? = null, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a></td>
+<td>[androidJvm]<br>fun <a href="query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a><br>fun <a href="query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a><br>fun <a href="query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;?, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>? = null, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>? = null): <a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a></td>
 </tr>
 <tr>
 <td><a href="read-from-blob/">readFromBlob</a></td>
@@ -444,7 +444,7 @@
 </tr>
 <tr>
 <td><a href="set-transaction-successful/">setTransactionSuccessful</a></td>
-<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a>()<br>fun <a href="set-transaction-successful/">setTransactionSuccessful</a>()</td>
+<td>[androidJvm]<br>@<a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt.annotations/-delicate-api/">DelicateApi</a><br>fun <a href="set-transaction-successful/">setTransactionSuccessful</a>()</td>
 </tr>
 <tr>
 <td><a href="size-of-blob/">sizeOfBlob</a></td>
@@ -452,15 +452,15 @@
 </tr>
 <tr>
 <td><a href="transact/">transact</a></td>
-<td>[androidJvm]<br>fun &lt;<a href="transact/">T</a>&gt; <a href="transact/">transact</a>(transactionMode: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="./">SQLiteDatabase</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a><br>Execute a block inside either an exclusive or an immediate database transaction.</td>
+<td>[androidJvm]<br>fun &lt;<a href="transact/">T</a>&gt; <a href="transact/">transact</a>(transactionMode: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="./">SQLiteDatabase</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a><br>Execute a block inside either an exclusive or an immediate database transaction. These transaction modes are the same in WAL-journal mode; in other journal modes, exclusive transaction mode prevents other connections from reading the database while the transaction is underway.</td>
 </tr>
 <tr>
 <td><a href="update/">update</a></td>
-<td>[androidJvm]<br>fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?, conflictAlgorithm: <a href="../-conflict-algorithm/">ConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td>[androidJvm]<br>fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?, conflictAlgorithm: <a href="../-conflict-algorithm/">ConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 <tr>
 <td><a href="upsert/">upsert</a></td>
-<td>[androidJvm]<br>fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+<td>[androidJvm]<br>fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
 </tr>
 <tr>
 <td><a href="vacuum/">vacuum</a></td>
@@ -472,7 +472,7 @@
 </tr>
 <tr>
 <td><a href="yield-transaction/">yieldTransaction</a></td>
-<td>[androidJvm]<br>@<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html">JvmOverloads</a>()<br>fun <a href="yield-transaction/">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a> = 0L): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Temporarily end the transaction to allow other threads to make progress.</td>
+<td>[androidJvm]<br>@<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html">JvmOverloads</a><br>fun <a href="yield-transaction/">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a> = 0): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful thus far and committed, do not call <a href="set-transaction-successful/">setTransactionSuccessful</a>. When this method returns a new transaction will have been created but not yet marked as successful.</td>
 </tr>
 </tbody>
 </table>
@@ -487,7 +487,7 @@
 <tbody>
 <tr>
 <td><a href="auto-vacuum/">autoVacuum</a></td>
-<td>[androidJvm]<br>var <a href="auto-vacuum/">autoVacuum</a>: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/">SQLiteAutoVacuumMode</a><br>Auto-vacuuming is only possible if the database stores some additional information that allows each database page to be traced backwards to its referrer.</td>
+<td>[androidJvm]<br>var <a href="auto-vacuum/">autoVacuum</a>: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/">SQLiteAutoVacuumMode</a><br>Auto-vacuuming is only possible if the database stores some additional information that allows each database page to be traced backwards to its referrer. Therefore, auto-vacuuming must be turned on before any tables are created. It is not possible to enable or disable auto-vacuum after a table has been created.</td>
 </tr>
 <tr>
 <td><a href="is-connection-held-by-current-thread/">isConnectionHeldByCurrentThread</a></td>

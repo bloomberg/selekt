@@ -351,15 +351,15 @@ enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api
 <tbody>
 <tr>
 <td><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a></td>
-<td>[jvm]<br><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)<br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full".</td>
+<td>[jvm]<br><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)<br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full". In incremental mode, the separate incremental vacuum pragma must be invoked to cause the auto-vacuum to occur.</td>
 </tr>
 <tr>
 <td><a href="-f-u-l-l/">FULL</a></td>
-<td>[jvm]<br><a href="-f-u-l-l/">FULL</a>(1)<br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit.</td>
+<td>[jvm]<br><a href="-f-u-l-l/">FULL</a>(1)<br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit. Note, however, that auto-vacuum only truncates the freelist pages from the file. Auto-vacuum does not defragment the database nor repack individual database pages the way that vacuum does. In fact, because it moves pages around within the file, auto-vacuum can actually make fragmentation worse.</td>
 </tr>
 <tr>
 <td><a href="-n-o-n-e/">NONE</a></td>
-<td>[jvm]<br><a href="-n-o-n-e/">NONE</a>(0)<br>Auto-vacuum is disabled.</td>
+<td>[jvm]<br><a href="-n-o-n-e/">NONE</a>(0)<br>Auto-vacuum is disabled. When auto-vacuum is disabled and data is deleted data from a database, the database file remains the same size. Unused database file pages are added to a "freelist" and reused for subsequent inserts. So no database file space is lost. However, the database file does not shrink. In this mode vacuum can be used to rebuild the entire database file and thus reclaim unused disk space.</td>
 </tr>
 </tbody>
 </table>
@@ -388,12 +388,12 @@ enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api
 </thead>
 <tbody>
 <tr>
-<td><a href="./#122814449%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="./#122814449%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a href="./#-1072556627%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="./#-1072556627%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>

@@ -353,7 +353,7 @@ enum <a href="./">SQLiteSecureDelete</a> : <a href="https://kotlinlang.org/api/l
 </tr>
 <tr>
 <td><a href="-f-a-s-t/">FAST</a></td>
-<td>[jvm]<br><a href="-f-a-s-t/">FAST</a>()<br>The "fast" setting is an intermediate setting in between "on" and "off".</td>
+<td>[jvm]<br><a href="-f-a-s-t/">FAST</a>()<br>The "fast" setting is an intermediate setting in between "on" and "off". When secure_delete is set to "fast", SQLite will overwrite deleted content with zeros only if doing so does not increase the amount of I/O. In other words, the "fast" setting uses more CPU cycles but does not use more I/O. This has the effect of purging all old content from b-tree pages, but leaving forensic traces on freelist pages.</td>
 </tr>
 </tbody>
 </table>
@@ -367,12 +367,12 @@ enum <a href="./">SQLiteSecureDelete</a> : <a href="https://kotlinlang.org/api/l
 </thead>
 <tbody>
 <tr>
-<td><a href="./#-2136269204%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="./#-2136269204%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a href="./#703865170%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="./#703865170%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>

@@ -353,27 +353,27 @@ enum <a href="./">SQLiteJournalMode</a> : <a href="https://kotlinlang.org/api/la
 <tbody>
 <tr>
 <td><a href="-w-a-l/">WAL</a></td>
-<td>[jvm]<br><a href="-w-a-l/">WAL</a>(commonMultipleConnectionConfiguration)<br>The WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions.</td>
+<td>[jvm]<br><a href="-w-a-l/">WAL</a>(commonMultipleConnectionConfiguration)<br>The WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions. The WAL journaling mode is persistent; after being set it stays in effect across multiple database connections and after closing and reopening the database.</td>
 </tr>
 <tr>
 <td><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a></td>
-<td>[jvm]<br><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a>()<br>The TRUNCATE journaling mode commits transactions by truncating the rollback journal to zero-length instead of deleting it.</td>
+<td>[jvm]<br><a href="-t-r-u-n-c-a-t-e/">TRUNCATE</a>()<br>The TRUNCATE journaling mode commits transactions by truncating the rollback journal to zero-length instead of deleting it. On many systems, truncating a file is much faster than deleting the file since the containing directory does not need to be changed.</td>
 </tr>
 <tr>
 <td><a href="-p-e-r-s-i-s-t/">PERSIST</a></td>
-<td>[jvm]<br><a href="-p-e-r-s-i-s-t/">PERSIST</a>()<br>The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction.</td>
+<td>[jvm]<br><a href="-p-e-r-s-i-s-t/">PERSIST</a>()<br>The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction. Instead, the header of the journal is overwritten with zeros. This will prevent other database connections from rolling the journal back. The PERSIST journaling mode is useful as an optimization on platforms where deleting or truncating a file is much more expensive than overwriting the first block of a file with zeros.</td>
 </tr>
 <tr>
 <td><a href="-o-f-f/">OFF</a></td>
-<td>[jvm]<br><a href="-o-f-f/">OFF</a>()<br>The OFF journaling mode disables the rollback journal completely.</td>
+<td>[jvm]<br><a href="-o-f-f/">OFF</a>()<br>The OFF journaling mode disables the rollback journal completely. No rollback journal is ever created and hence there is never a rollback journal to delete. The OFF journaling mode disables the atomic commit and rollback capabilities of SQLite. The ROLLBACK command no longer works; it behaves in an undefined way. Applications must avoid using the ROLLBACK command when the journal mode is OFF. If the application crashes in the middle of a transaction when the OFF journaling mode is set, then the database file will very likely go corrupt. Without a journal, there is no way for a statement to unwind partially completed operations following a constraint error. This might also leave the database in a corrupted state.</td>
 </tr>
 <tr>
 <td><a href="-m-e-m-o-r-y/">MEMORY</a></td>
-<td>[jvm]<br><a href="-m-e-m-o-r-y/">MEMORY</a>(commonInMemoryConfiguration)<br>The MEMORY journaling mode stores the rollback journal in volatile RAM.</td>
+<td>[jvm]<br><a href="-m-e-m-o-r-y/">MEMORY</a>(commonInMemoryConfiguration)<br>The MEMORY journaling mode stores the rollback journal in volatile RAM. This saves disk I/O but at the expense of database safety and integrity. If the application using SQLite crashes in the middle of a transaction when the MEMORY journaling mode is set, then the database file will very likely go corrupt.</td>
 </tr>
 <tr>
 <td><a href="-d-e-l-e-t-e/">DELETE</a></td>
-<td>[jvm]<br><a href="-d-e-l-e-t-e/">DELETE</a>()<br>The DELETE journaling mode is the normal behavior.</td>
+<td>[jvm]<br><a href="-d-e-l-e-t-e/">DELETE</a>()<br>The DELETE journaling mode is the normal behavior. In the DELETE mode, the rollback journal is deleted at the conclusion of each transaction. Indeed, the delete operation is the action that causes the transaction to commit.</td>
 </tr>
 </tbody>
 </table>
@@ -391,12 +391,12 @@ enum <a href="./">SQLiteJournalMode</a> : <a href="https://kotlinlang.org/api/la
 <td>[jvm]<br>val <a href="database-configuration/">databaseConfiguration</a>: <a href="../-database-configuration/">DatabaseConfiguration</a></td>
 </tr>
 <tr>
-<td><a href="./#1016339638%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="./#1016339638%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
 </tr>
 <tr>
-<td><a href="./#2024015560%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="./#2024015560%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
+<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>

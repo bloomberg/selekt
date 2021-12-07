@@ -346,8 +346,8 @@
 <p>//<a href="../../../">Lib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLDatabase</a></p>
 <h1 id="sqldatabase">SQLDatabase</h1>
 <p>[jvm]\
-@ThreadSafe()</p>
-<p>class <a href="./">SQLDatabase</a>(<strong>path</strong>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, <strong>sqlite</strong>: <a href="../-s-q-lite/">SQLite</a>, <strong>configuration</strong>: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-database-configuration/">DatabaseConfiguration</a>, <strong>key</strong>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a>?, <strong>random</strong>: <a href="../-i-random/">IRandom</a>) : <a href="../-shared-closeable/">SharedCloseable</a>, <a href="../-i-database/">IDatabase</a></p>
+@ThreadSafe</p>
+<p>class <a href="./">SQLDatabase</a>(path: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, sqlite: <a href="../-s-q-lite/">SQLite</a>, configuration: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-database-configuration/">DatabaseConfiguration</a>, key: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a>?, random: <a href="../-i-random/">IRandom</a>) : <a href="../-shared-closeable/">SharedCloseable</a>, <a href="../-i-database/">IDatabase</a></p>
 <p>The use of ThreadLocal underpins <a href="./">SQLDatabase</a>'s thread-safety.</p>
 <p>A thread can acquire at most one connection session per database instance. Sessions hold at most one connection at any given time, and exclusively. Sessions control all access to a database's connections and each session is thread-bound. This prevents two threads from ever sharing a single connection.</p>
 <p>This is the same strategy Google employs in the Android SDK.</p>
@@ -393,7 +393,7 @@
 <tbody>
 <tr>
 <td><a href="batch/">batch</a></td>
-<td>[jvm]<br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td>[jvm]<br>fun <a href="batch/">batch</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/-sequence/index.html">Sequence</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 <tr>
 <td><a href="begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
@@ -417,11 +417,11 @@
 </tr>
 <tr>
 <td><a href="compile-statement/">compileStatement</a></td>
-<td>[jvm]<br>open override fun <a href="compile-statement/">compileStatement</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?): <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-statement/">ISQLStatement</a></td>
+<td>[jvm]<br>open override fun <a href="compile-statement/">compileStatement</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?): <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-statement/">ISQLStatement</a></td>
 </tr>
 <tr>
 <td><a href="delete/">delete</a></td>
-<td>[jvm]<br>open override fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td>[jvm]<br>open override fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 <tr>
 <td><a href="end-transaction/">endTransaction</a></td>
@@ -429,7 +429,7 @@
 </tr>
 <tr>
 <td><a href="exec/">exec</a></td>
-<td>[jvm]<br>open override fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>?)</td>
+<td>[jvm]<br>open override fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;?)</td>
 </tr>
 <tr>
 <td><a href="execute/">execute</a></td>
@@ -449,7 +449,7 @@
 </tr>
 <tr>
 <td><a href="query/">query</a></td>
-<td>[jvm]<br>open override fun <a href="query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="../-i-cursor/">ICursor</a><br>open override fun <a href="query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>): <a href="../-i-cursor/">ICursor</a><br>open override fun <a href="query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>?): <a href="../-i-cursor/">ICursor</a></td>
+<td>[jvm]<br>open override fun <a href="query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="../-i-cursor/">ICursor</a><br>open override fun <a href="query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;): <a href="../-i-cursor/">ICursor</a><br>open override fun <a href="query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>?): <a href="../-i-cursor/">ICursor</a></td>
 </tr>
 <tr>
 <td><a href="read-from-blob/">readFromBlob</a></td>
@@ -473,11 +473,11 @@
 </tr>
 <tr>
 <td><a href="update/">update</a></td>
-<td>[jvm]<br>open override fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td>[jvm]<br>open override fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 <tr>
 <td><a href="upsert/">upsert</a></td>
-<td>[jvm]<br>open override fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+<td>[jvm]<br>open override fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
 </tr>
 <tr>
 <td><a href="write-to-blob/">writeToBlob</a></td>
