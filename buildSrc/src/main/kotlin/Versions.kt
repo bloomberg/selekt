@@ -31,7 +31,7 @@ enum class Versions(
     ASSERT_J("3.20.2", URL("https://joel-costigliola.github.io/assertj")),
     CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.18.0", URL("https://github.com/arturbosch/detekt")),
-    DOKKA("1.5.0", URL("https://github.com/Kotlin/dokka")),
+    DOKKA("1.6.0", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
     JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JMH("1.33", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
