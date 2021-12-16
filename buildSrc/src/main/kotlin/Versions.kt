@@ -39,7 +39,7 @@ enum class Versions(
     JUNIT4("4.13.1", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.7.2", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),
-    KOTLIN("1.6.0", URL("https://github.com/JetBrains/kotlin")),
+    KOTLIN("1.6.10", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_COROUTINES("1.5.1", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
     KTLINT("0.42.1", URL("https://github.com/pinterest/ktlint")),
