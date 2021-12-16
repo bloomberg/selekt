@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.15.2
+
+### Dependencies
+
+* Dokka 1.6.0.
+* Gradle 7.3.2.
+* Kotlin 1.6.10.
+* NDK 23.1.7779620.
+* OpenSSL 1.1.1m.
+* Robolectric 4.7.2.
+
 ## Version 0.15.1
 
 ### Fixes
