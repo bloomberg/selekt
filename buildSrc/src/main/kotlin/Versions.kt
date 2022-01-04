@@ -44,8 +44,8 @@ enum class Versions(
     KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
     KTLINT("0.42.1", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.2.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
-    MOCKITO("3.11.2", URL("https://github.com/mockito/mockito")),
-    MOCKITO_KOTLIN("3.2.0", URL("https://github.com/nhaarman/mockito-kotlin")),
+    MOCKITO("4.0.0", URL("https://github.com/mockito/mockito")),
+    MOCKITO_KOTLIN(MOCKITO.version, URL("https://github.com/mockito/mockito-kotlin")),
     NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     ROBOLECTRIC("4.7.2", URL("https://github.com/robolectric/robolectric"));
 

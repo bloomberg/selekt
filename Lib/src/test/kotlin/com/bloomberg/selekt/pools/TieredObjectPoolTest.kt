@@ -25,7 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.TimeUnit
 
@@ -41,21 +41,21 @@ internal class TieredObjectPoolTest {
     fun borrowPrimaryObject() {
         pool.borrowPrimaryObject()
         verify(singleObjectPool, times(1)).borrowObject()
-        verifyZeroInteractions(commonObjectPool)
+        verifyNoInteractions(commonObjectPool)
     }
 
     @Test
     fun borrowSecondaryObjectKeyed() {
         val key = ""
         pool.borrowObject(key)
-        verifyZeroInteractions(singleObjectPool)
+        verifyNoInteractions(singleObjectPool)
         verify(commonObjectPool, times(1)).borrowObject(same(key))
     }
 
     @Test
     fun borrowSecondaryObject() {
         pool.borrowObject()
-        verifyZeroInteractions(singleObjectPool)
+        verifyNoInteractions(singleObjectPool)
         verify(commonObjectPool, times(1)).borrowObject()
     }
 
@@ -73,7 +73,7 @@ internal class TieredObjectPoolTest {
         }
         pool.returnObject(obj)
         verify(singleObjectPool, times(1)).returnObject(same(obj))
-        verifyZeroInteractions(commonObjectPool)
+        verifyNoInteractions(commonObjectPool)
     }
 
     @Test
@@ -83,7 +83,7 @@ internal class TieredObjectPoolTest {
         }
         pool.returnObject(obj)
         verify(commonObjectPool, times(1)).returnObject(same(obj))
-        verifyZeroInteractions(singleObjectPool)
+        verifyNoInteractions(singleObjectPool)
     }
 
     @Test
