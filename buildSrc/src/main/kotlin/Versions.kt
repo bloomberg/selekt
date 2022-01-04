@@ -28,7 +28,7 @@ enum class Versions(
     ANDROID_SDK("31", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.2.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.2.5", URL("https://developer.android.com/jetpack/androidx/releases/room")),
-    ASSERT_J("3.20.2", URL("https://joel-costigliola.github.io/assertj")),
+    ASSERT_J("3.22.0", URL("https://joel-costigliola.github.io/assertj")),
     CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.18.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
