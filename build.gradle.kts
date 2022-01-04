@@ -16,6 +16,7 @@
 
 import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URL
+import java.time.Duration
 import java.util.Locale
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -52,6 +53,10 @@ logger.quiet("Group: $group; Version: $version")
 nexusPublishing {
     repositories {
         sonatype()
+    }
+    transitionCheckOptions {
+        maxRetries.set(180)
+        delayBetween.set(Duration.ofSeconds(10L))
     }
 }
 
