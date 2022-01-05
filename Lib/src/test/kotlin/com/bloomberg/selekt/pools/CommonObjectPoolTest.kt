@@ -30,7 +30,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import java.io.IOException
@@ -343,7 +343,7 @@ internal class CommonObjectPoolTest {
         val obj = PooledObject()
         whenever(other.borrowObjectOrNull()) doReturn obj
         repeat(configuration.maxTotal) { borrowObject() }
-        verifyZeroInteractions(other)
+        verifyNoInteractions(other)
         borrowObject()
         verify(other, times(1)).borrowObjectOrNull()
     }
