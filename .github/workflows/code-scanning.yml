@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v4.1.0
+        uses: JetBrains/qodana-action@main
         with:
-          linter: jetbrains/qodana-jvm-android
+          linter: jetbrains/qodana-jvm-android:latest
