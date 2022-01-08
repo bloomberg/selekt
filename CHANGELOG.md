@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 0.15.3
+
+### Dependencies
+
+* AssertJ 3.22.0.
+* Detekt 1.19.0.
+* Dokka 1.6.10.
+* Gradle 7.3.3.
+* JMH 1.34.
+* Ktlint 0.43.2.
+* Ktlint Gradle plugin 10.2.1.
+* Mockito 4.0.0.
+* Robolectric 4.7.3.
+
 ## Version 0.15.2
 
 ### Dependencies
