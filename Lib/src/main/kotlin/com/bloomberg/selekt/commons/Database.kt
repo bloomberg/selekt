@@ -24,9 +24,9 @@ fun deleteDatabase(file: File) = file.run {
         File("$absolutePath-journal").delete() or
         File("$absolutePath-shm").delete() or
         File("$absolutePath-wal").delete()
-    parentFile?.let {
+    parentFile?.run {
         val prefix = "$name-mj"
-        it.listFiles {
+        listFiles {
             f -> f.name.startsWith(prefix)
         }?.forEach {
             deleted = deleted or it.delete()
