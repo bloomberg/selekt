@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ internal class LruCache<T : Any>(private val maxSize: Int, private val disposal:
             .forEach { disposal(it) }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline operator fun get(key: String, supplier: () -> T): T = store.getOrPut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)

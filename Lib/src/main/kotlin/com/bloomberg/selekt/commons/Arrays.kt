@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.bloomberg.selekt.commons
 
 import com.bloomberg.selekt.annotations.Generated
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     var i = 0
     while (i < size) {
@@ -26,7 +26,7 @@ internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     }
 }
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
     var i = 0
     while (i < size) {

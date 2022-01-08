@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,11 +123,11 @@ internal class SimpleCursorWindow : ICursorWindow {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun get(row: Int, column: Int) = rows[row][column]
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun append(value: Any?) = rows.last().add(value)
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.bloomberg.selekt.annotations.Generated
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withTryLock(
     action: () -> T
 ): T? {
@@ -34,7 +34,7 @@ internal inline fun <T> Lock.withTryLock(
     return null
 }
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withTryLock(
     time: Long,
     unit: TimeUnit,
@@ -50,7 +50,7 @@ internal inline fun <T> Lock.withTryLock(
     return null
 }
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withLockInterruptibly(
     action: () -> T
 ): T? {
