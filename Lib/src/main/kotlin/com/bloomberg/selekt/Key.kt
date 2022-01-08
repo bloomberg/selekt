@@ -34,7 +34,7 @@ internal class Key(value: ByteArray) {
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> use(action: (ByteArray) -> R) = synchronized(lock) {
         check(!isDestroyed) { "Key is destroyed." }
         value.copyOf()

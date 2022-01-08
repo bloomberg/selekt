@@ -18,7 +18,7 @@ package com.bloomberg.selekt.commons
 
 import com.bloomberg.selekt.annotations.Generated
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 inline fun Int.forUntil(other: Int, block: (Int) -> Unit) {
     var i = this
     while (i < other) {

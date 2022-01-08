@@ -51,7 +51,7 @@ internal class LinkedDeque<T> {
     val hasSizeOne: Boolean
         get() = first === last && first != null
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun pollFirst(predicate: (T) -> Boolean): T? {
         var head = first
         while (head != null) {
