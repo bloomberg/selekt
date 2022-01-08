@@ -30,7 +30,6 @@ plugins {
     `maven-publish`
     signing
     id("bb-jmh")
-    id("org.jetbrains.kotlinx.kover") apply false
 }
 
 disableKotlinCompilerAssertions()

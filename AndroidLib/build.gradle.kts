@@ -27,7 +27,6 @@ plugins {
     kotlin("kapt")
     signing
     `maven-publish`
-    id("org.jetbrains.kotlinx.kover") apply false
 }
 
 repositories {
