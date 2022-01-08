@@ -259,6 +259,8 @@ style:
     active: false
   EqualsNullCall:
     active: true
+  ExpressionBodySyntax:
+    active: true
   ForbiddenComment:
     active: false
     values: 'TODO:,FIXME:,STOPSHIP:'

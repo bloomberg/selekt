@@ -30,9 +30,7 @@ internal class LruCache<T : Any>(private val maxSize: Int, private val disposal:
             }
         }
 
-        override fun remove(key: String): T? {
-            return super.remove(key)?.also { disposal(it) }
-        }
+        override fun remove(key: String): T? = super.remove(key)?.also { disposal(it) }
     }
 
     fun evict(key: String) {
