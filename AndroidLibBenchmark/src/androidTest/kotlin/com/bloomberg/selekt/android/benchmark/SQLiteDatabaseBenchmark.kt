@@ -196,9 +196,10 @@ internal class SQLiteJournalModeDatabaseBenchmark(inputs: Inputs) {
     @Test
     fun batchInsertInt(): Unit = databaseHelper.writableDatabase.run {
         benchmarkRule.measureRepeated {
-            batch("INSERT OR REPLACE INTO 'Foo' VALUES (?)") { i, it ->
-                if (i < 100) {
-                    it[0] = i
+            var count = 0
+            batch("INSERT OR REPLACE INTO 'Foo' VALUES (?)") {
+                if (count++ < 100) {
+                    it[0] = count
                     true
                 } else {
                     false

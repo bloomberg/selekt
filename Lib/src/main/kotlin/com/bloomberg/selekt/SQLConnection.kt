@@ -98,13 +98,12 @@ internal class SQLConnection constructor(
 
     override fun executeForChangedRowCount(
         sql: String,
-        bindArgs: (Int, Array<in Any?>) -> Boolean
+        bindArgs: (Array<in Any?>) -> Boolean
     ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
-        var count = 0
         val args = arrayOfNulls<Any?>(parameterCount)
         try {
-            while (bindArgs(count++, args)) {
+            while (bindArgs(args)) {
                 reset()
                 bindArguments(args)
                 if (SQL_DONE != step()) {

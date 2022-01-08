@@ -681,8 +681,9 @@ internal class SQLDatabaseTest(private val inputs: SQLInputs) {
     @Test
     fun batchInsert(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
-            (i < 2).also { _ -> it[0] = 42 + i }
+        var count = 0
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)") {
+            (count < 2).also { _ -> it[0] = 42 + count++ }
         })
     }
 

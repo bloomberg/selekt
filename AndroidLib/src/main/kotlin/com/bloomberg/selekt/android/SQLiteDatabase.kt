@@ -157,7 +157,7 @@ class SQLiteDatabase private constructor(
      * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
      * prototypical use case is for database modifications inside a tight loop to which this is optimised.
      *
-     * The bind args supplier receives an index and an array of constant length corresponding to the number of arguments in the SQL
+     * The bind args supplier receives an array of constant length corresponding to the number of arguments in the SQL
      * statement, returning true each time the array has been repopulated.
      *
      * The transaction is not committed by this method until the supply of arguments to bind is exhausted. For long
@@ -170,7 +170,7 @@ class SQLiteDatabase private constructor(
     @Experimental
     fun batch(
         @Language("RoomSql") sql: String,
-        bindArgs: (Int, Array<in Any?>) -> Boolean
+        bindArgs: (Array<in Any?>) -> Boolean
     ): Int = database.batch(sql, bindArgs)
 
     /**

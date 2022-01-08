@@ -109,7 +109,7 @@ internal class SQLStatement private constructor(
         fun execute(
             session: ThreadLocalSession,
             sql: String,
-            bindArgs: (Int, Array<in Any?>) -> Boolean
+            bindArgs: (Array<in Any?>) -> Boolean
         ): Int {
             require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) {
                 "Only batched updates are permitted."

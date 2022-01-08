@@ -62,9 +62,10 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchInsert(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
-            (i < 2).also { _ ->
-                it[0] = 42 + i
+        var count = 0
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)") {
+            (count < 2).also { _ ->
+                it[0] = 42 + count++
             }
         })
     }
@@ -72,9 +73,10 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchInsertBooleanTrueThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        var count = 0
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
-                (i < 1).also { _ -> it[0] = true }
+            batch("INSERT INTO 'Foo' VALUES (?)") {
+                (count++ < 1).also { _ -> it[0] = true }
             }
         }
     }
@@ -82,9 +84,10 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchInsertBooleanFalseThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        var count = 0
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
-                (i < 1).also { _ -> it[0] = false }
+            batch("INSERT INTO 'Foo' VALUES (?)") {
+                (count++ < 1).also { _ -> it[0] = false }
             }
         }
     }
@@ -92,9 +95,10 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchInsertAnyFails(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        var count = 0
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
-                (i < 1).also { _ -> it[0] = Any() }
+            batch("INSERT INTO 'Foo' VALUES (?)") {
+                (count++ < 1).also { _ -> it[0] = Any() }
             }
         }
     }
@@ -102,7 +106,7 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchRequiresUpdate(): Unit = database.run {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("SELECT * FROM Foo") { _, _ -> false }
+            batch("SELECT * FROM Foo") { false }
         }
     }
 }

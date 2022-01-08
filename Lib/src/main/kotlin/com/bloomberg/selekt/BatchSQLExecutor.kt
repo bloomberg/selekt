@@ -17,5 +17,5 @@
 package com.bloomberg.selekt
 
 internal interface BatchSQLExecutor {
-    fun executeForChangedRowCount(sql: String, bindArgs: (Int, Array<in Any?>) -> Boolean): Int
+    fun executeForChangedRowCount(sql: String, bindArgs: (Array<in Any?>) -> Boolean): Int
 }
