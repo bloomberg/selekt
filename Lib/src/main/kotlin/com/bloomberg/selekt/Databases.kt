@@ -65,7 +65,7 @@ class SQLDatabase constructor(
     val isCurrentThreadSessionActive: Boolean
         get() = session.get().hasObject
 
-    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
+    fun batch(sql: String, bindArgs: (Int, Array<in Any?>) -> Boolean): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 

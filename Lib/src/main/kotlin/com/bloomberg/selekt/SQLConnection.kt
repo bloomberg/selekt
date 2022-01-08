@@ -96,16 +96,25 @@ internal class SQLConnection constructor(
         }
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>) = withPreparedStatement(sql) {
+    override fun executeForChangedRowCount(
+        sql: String,
+        bindArgs: (Int, Array<in Any?>) -> Boolean
+    ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
-        bindArgs.forEach {
-            reset()
-            bindArguments(it)
-            if (SQL_DONE != step()) {
-                return@withPreparedStatement -1
+        var count = 0
+        val args = arrayOfNulls<Any?>(parameterCount)
+        try {
+            while (bindArgs(count++, args)) {
+                reset()
+                bindArguments(args)
+                if (SQL_DONE != step()) {
+                    return@withPreparedStatement -1
+                }
             }
+            sqlite.totalChanges(pointer) - changes
+        } finally {
+            args.fill(null)
         }
-        sqlite.totalChanges(pointer) - changes
     }
 
     override fun executeForCursorWindow(

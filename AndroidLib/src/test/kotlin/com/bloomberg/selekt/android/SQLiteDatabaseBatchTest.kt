@@ -60,58 +60,49 @@ internal class SQLiteDatabaseBatchTest {
     }
 
     @Test
-    fun batchSequenceInsert(): Unit = database.run {
+    fun batchInsert(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
+            (i < 2).also { _ ->
+                it[0] = 42 + i
+            }
+        })
     }
 
     @Test
-    fun batchSequenceInsertWithCommonArray(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        val args = Array(1) { 0 }
-        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequence {
-            args[0] = 42
-            yield(args)
-            args[0] = 43
-            yield(args)
-        }))
-        query("SELECT * FROM 'Foo'", null).use {
-            assertEquals(2, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertTrue(it.moveToNext())
-            assertEquals(43, it.getInt(0))
+    fun batchInsertBooleanTrueThrows(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
+                (i < 1).also { _ -> it[0] = true }
+            }
         }
     }
 
     @Test
-    fun batchSequenceInsertBooleanTrueThrows(): Unit = database.run {
+    fun batchInsertBooleanFalseThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(true)))
+            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
+                (i < 1).also { _ -> it[0] = false }
+            }
         }
     }
 
     @Test
-    fun batchSequenceInsertBooleanFalseThrows(): Unit = database.run {
+    fun batchInsertAnyFails(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(false)))
-        }
-    }
-
-    @Test
-    fun batchSequenceInsertAnyFails(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(Any())))
+            batch("INSERT INTO 'Foo' VALUES (?)") { i, it ->
+                (i < 1).also { _ -> it[0] = Any() }
+            }
         }
     }
 
     @Test
     fun batchRequiresUpdate(): Unit = database.run {
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            batch("SELECT * FROM Foo", sequence { })
+            batch("SELECT * FROM Foo") { _, _ -> false }
         }
     }
 }
