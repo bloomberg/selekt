@@ -1,0 +1,15 @@
+name: Code Scanning
+
+on:
+  schedule:
+    - cron: '0 22 * * SUN'
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@main
+        with:
+          linter: jetbrains/qodana-jvm-android:latest
