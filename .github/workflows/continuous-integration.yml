@@ -60,8 +60,9 @@ jobs:
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
     - name: 'Coverage'
       run: |
-        ./gradlew :jacocoSelektTestReport :koverHtmlReport ${{ env.SCAN }}
+        ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
         bash scripts/codecov
+        ./gradlew :koverHtmlReport ${{ env.SCAN }}
     - uses: actions/upload-artifact@v2
       if: always()
       with:

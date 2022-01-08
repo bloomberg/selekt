@@ -2,10 +2,7 @@ name: 'Periodic Integration Tests'
 
 on:
   schedule:
-    - cron: '0 22 * * *'
-  push:
-    branches:
-      - main
+    - cron: '0 22 * * SUN'
 
 jobs:
   ci-pipeline:
