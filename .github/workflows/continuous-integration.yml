@@ -75,7 +75,7 @@ jobs:
         ./gradlew assembleSelekt ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
-        ./gradlew :jacocoSelektCoverageVerification
+        ./gradlew :jacocoSelektCoverageVerification :koverVerify
     - name: 'Build others'
       run: |
         ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
