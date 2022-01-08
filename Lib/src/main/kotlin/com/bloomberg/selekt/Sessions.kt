@@ -110,7 +110,7 @@ internal class SQLSession(
         return true
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     internal inline fun <R> execute(
         primary: Boolean,
         sql: String,
@@ -234,7 +234,7 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
     private var obj: T? = null
     protected var retainCount = 0
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> execute(
         primary: Boolean,
         key: K,
@@ -247,7 +247,7 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> execute(
         primary: Boolean,
         block: (T) -> R
@@ -272,7 +272,7 @@ internal open class Session<K : Any, T : IPooledObject<K>> constructor(
 
     private fun retain(primary: Boolean, permits: Int = 1) = retain(primary, permits) { pool.borrowObject() }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun retain(
         primary: Boolean,
         permits: Int,

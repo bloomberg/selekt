@@ -18,7 +18,7 @@ package com.bloomberg.selekt.commons
 
 import com.bloomberg.selekt.annotations.Generated
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun String.trimStartByIndex(predicate: (Char) -> Boolean): String {
     var i = 0
     while (i < length) {
