@@ -267,6 +267,8 @@ style:
     imports: 'org.junit.Assert.assertTrue,org.junit.Assert.assertFalse,org.junit.Assert.assertNotNull,org.junit.Assert.assertNull'
   ForbiddenVoid:
     active: false
+  LoopWithTooManyJumpStatements:
+    active: true
   MagicNumber:
     active: true
     excludes: "**/androidTest/**,**/integrationTest/**,**/jmh/**,**/test/**"
