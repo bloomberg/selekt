@@ -33,9 +33,6 @@ class SelektPlugin : Plugin<Project> {
         pluginManager.apply {
             withPlugin("java") {
                 dependencies.apply {
-                    configurations.getByName("implementation") {
-                        add(name, kotlin("stdlib-jdk8:${Versions.KOTLIN}"))
-                    }
                     configurations.getByName("testImplementation") {
                         add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
                     }
