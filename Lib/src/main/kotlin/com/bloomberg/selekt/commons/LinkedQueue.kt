@@ -22,9 +22,10 @@ import javax.annotation.concurrent.NotThreadSafe
 class LinkedQueue<T> {
     @NotThreadSafe
     internal data class Node<T>(
-        val item: T,
-        var next: Node<T>?
-    )
+        val item: T
+    ) {
+        var next: Node<T>? = null
+    }
 
     private var first: Node<T>? = null
     private var last: Node<T>? = null
@@ -33,7 +34,7 @@ class LinkedQueue<T> {
         get() = first == null
 
     fun add(item: T) = last.let {
-        last = Node(item, null)
+        last = Node(item)
         if (it == null) {
             first = last
         } else {
