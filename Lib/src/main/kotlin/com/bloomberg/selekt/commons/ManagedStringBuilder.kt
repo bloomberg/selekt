@@ -33,7 +33,7 @@ class ManagedStringBuilder(
     @JvmField
     internal var builder = StringBuilder(defaultLength)
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <T> use(block: StringBuilder.() -> T) = try {
         block(builder)
     } finally {

@@ -21,4 +21,6 @@ package com.bloomberg.selekt.annotations
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.BINARY)
-annotation class Generated
+annotation class Generated(
+    val message: String
+)

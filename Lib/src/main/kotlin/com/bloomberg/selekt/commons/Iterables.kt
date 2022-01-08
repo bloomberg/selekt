@@ -36,7 +36,7 @@ private fun <T : Any?> emptyIterator() = object : Iterator<T> {
     override fun next() = throw NoSuchElementException()
 }
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwable> {
     val throwables = mutableListOf<Throwable>()
     forEach {
