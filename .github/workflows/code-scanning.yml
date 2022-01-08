@@ -1,0 +1,13 @@
+name: Code Scanning
+
+on: [pull_request, push]
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v4.1.0
+        with:
+          linter: jetbrains/qodana-jvm-android
