@@ -24,7 +24,7 @@ jobs:
     - name: 'Gradle'
       run: echo 'org.gradle.caching=false' >> gradle.properties
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
+      run: ./gradlew :AndroidLib:testDebugUnitTest :ApiLib:test :Lib:test
     - name: 'Build Selekt'
       run: |
         ./gradlew clean \

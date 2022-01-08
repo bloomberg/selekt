@@ -57,7 +57,7 @@ jobs:
         path: |
           **/build/reports/detekt
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
+      run: ./gradlew :AndroidLib:testDebugUnitTest :ApiLib:test :Lib:test ${{ env.SCAN }}
     - name: 'Coverage'
       run: |
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}

@@ -22,6 +22,7 @@ repositories {
 
 plugins {
     kotlin("jvm")
+    jacoco
     id("org.jetbrains.dokka")
     `maven-publish`
     signing
