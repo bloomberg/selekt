@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 import java.util.Locale
+import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 plugins {
@@ -58,6 +59,16 @@ android {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
+
+    testOptions {
+        unitTests.all {
+            if (!it.name.contains("debug", ignoreCase = true)) {
+                it.extensions.configure<KoverTaskExtension> {
+                    isDisabled = true
+                }
+            }
+        }
+    }
 }
 
 dependencies {

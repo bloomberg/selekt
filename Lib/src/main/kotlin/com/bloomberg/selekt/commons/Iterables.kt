@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ private fun <T : Any?> emptyIterator() = object : Iterator<T> {
     override fun next() = throw NoSuchElementException()
 }
 
-@Generated
+@Generated("Jacoco does not report coverage for inline methods")
 inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwable> {
     val throwables = mutableListOf<Throwable>()
     forEach {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,6 @@ class SelektPlugin : Plugin<Project> {
         pluginManager.apply {
             withPlugin("java") {
                 dependencies.apply {
-                    configurations.getByName("implementation") {
-                        add(name, kotlin("stdlib-jdk8:${Versions.KOTLIN}"))
-                    }
                     configurations.getByName("testImplementation") {
                         add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
                     }

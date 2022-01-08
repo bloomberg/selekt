@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ internal class SQLConnection constructor(
         sqlite.databaseReleaseMemory(pointer)
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         block: SQLPreparedStatement.() -> R
@@ -181,7 +181,7 @@ internal class SQLConnection constructor(
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         bindArgs: Array<*>,

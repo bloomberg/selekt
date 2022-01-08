@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     @Suppress("Detekt.ReturnCount")
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     @Throws(InterruptedException::class)
     private inline fun internalBorrowObject(preferred: () -> T?): T {
         lock.withLockInterruptibly {

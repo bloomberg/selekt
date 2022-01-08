@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bloomberg Finance L.P.
+ * Copyright 2022 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ abstract class SharedCloseable : Closeable {
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     internal inline fun <T> pledge(block: () -> T): T {
         retain()
         try {

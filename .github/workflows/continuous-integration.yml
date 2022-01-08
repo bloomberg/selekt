@@ -60,7 +60,7 @@ jobs:
       run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
     - name: 'Coverage'
       run: |
-        ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
+        ./gradlew :jacocoSelektTestReport :koverHtmlReport ${{ env.SCAN }}
         bash scripts/codecov
     - uses: actions/upload-artifact@v2
       if: always()
@@ -68,6 +68,7 @@ jobs:
         name: 'Unit test reports'
         path: |
           build/reports/jacoco/jacocoSelektTestReport
+          build/reports/kover/html
           AndroidLib/build/reports/tests/testDebugUnitTest
           Lib/build/reports/tests/test
     - name: 'Build Selekt'
@@ -75,7 +76,7 @@ jobs:
         ./gradlew assembleSelekt ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
-        ./gradlew :jacocoSelektCoverageVerification
+        ./gradlew :jacocoSelektCoverageVerification :koverVerify
     - name: 'Build others'
       run: |
         ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
