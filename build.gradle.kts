@@ -18,6 +18,7 @@ import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URL
 import java.time.Duration
 import java.util.Locale
+import kotlinx.kover.api.VerificationValueType
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
@@ -32,6 +33,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
+    id("org.jetbrains.kotlinx.kover") version Versions.KOTLINX_KOVER.version
     id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
 }
 
@@ -238,4 +240,18 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
         }
     }
     mustRunAfter("jacocoSelektTestReport")
+}
+
+kover {
+    disabledProjects = setOf(":AndroidCli", ":AndroidLibBenchmark")
+}
+
+tasks.koverVerify {
+    rule {
+        name = "Minimal line coverage"
+        bound {
+            minValue = 97
+            valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
+        }
+    }
 }

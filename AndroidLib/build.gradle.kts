@@ -15,6 +15,7 @@
  */
 
 import java.util.Locale
+import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 plugins {
@@ -26,6 +27,7 @@ plugins {
     kotlin("kapt")
     signing
     `maven-publish`
+    id("org.jetbrains.kotlinx.kover") apply false
 }
 
 repositories {
@@ -58,6 +60,16 @@ android {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
+
+    testOptions {
+        unitTests.all {
+            if (!it.name.contains("debug", ignoreCase = true)) {
+                it.extensions.configure<KoverTaskExtension> {
+                    isDisabled = true
+                }
+            }
+        }
+    }
 }
 
 dependencies {
