@@ -34,6 +34,7 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
     id("org.jetbrains.kotlinx.kover") version Versions.KOTLINX_KOVER.version
+    id("org.jetbrains.qodana") version Versions.QODANA_PLUGIN.version
     id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
 }
 
@@ -254,4 +255,8 @@ tasks.koverVerify {
             valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
         }
     }
+}
+
+qodana {
+    saveReport.set(true)
 }

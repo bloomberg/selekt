@@ -48,6 +48,7 @@ enum class Versions(
     MOCKITO("4.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN(MOCKITO.version, URL("https://github.com/mockito/mockito-kotlin")),
     NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
+    QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
     ROBOLECTRIC("4.7.3", URL("https://github.com/robolectric/robolectric"));
 
     override fun toString() = version
