@@ -279,6 +279,8 @@ style:
     ignorePropertyDeclaration: false
   MandatoryBracesIfStatements:
     active: true
+  MandatoryBracesLoops:
+    active: true
   MaxLineLength:
     active: true
     excludes: "**/androidTest/**,**/jmh/**,**/test/**"
@@ -318,7 +320,7 @@ style:
     active: true
   UnderscoresInNumericLiterals:
     active: true
-    acceptableDecimalLength: 5
+    acceptableLength: 5
   UnnecessaryAbstractClass:
     active: true
   UnnecessaryApply:
