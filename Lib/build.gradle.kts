@@ -16,6 +16,8 @@
 
 @file:Suppress("UnstableApiUsage")
 
+import kotlinx.kover.api.KoverTaskExtension
+
 repositories {
     mavenCentral()
 }
@@ -93,6 +95,9 @@ tasks.register<Test>("integrationTest") {
     outputs.cacheIf { false }
     dependsOn("buildHostSQLite")
     shouldRunAfter("test")
+    extensions.configure<KoverTaskExtension> {
+        isDisabled = true
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {
