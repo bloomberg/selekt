@@ -70,7 +70,7 @@ internal class Mutex {
         LockSupport.unpark(it)
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> withTryLock(
         block: () -> R
     ): R? = if (internalTryLock()) {
@@ -83,7 +83,7 @@ internal class Mutex {
         null
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> withTryLock(
         nanos: Long,
         isCancellable: Boolean,
@@ -99,7 +99,7 @@ internal class Mutex {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun internalTryLock() = isLockedUpdater.compareAndSet(this, 0, 1)
 
     /**

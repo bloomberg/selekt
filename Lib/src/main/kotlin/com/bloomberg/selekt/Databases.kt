@@ -33,7 +33,7 @@ private object SharedSqlBuilder {
         override fun initialValue() = ManagedStringBuilder()
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <T> use(block: StringBuilder.() -> T) = threadLocal.get().use { block(this) }
 }
 

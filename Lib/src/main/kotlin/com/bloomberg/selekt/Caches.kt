@@ -45,7 +45,7 @@ internal class LruCache<T : Any>(private val maxSize: Int, private val disposal:
             .forEach { disposal(it) }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     inline operator fun get(key: String, supplier: () -> T): T = store.getOrPut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)

@@ -169,7 +169,7 @@ internal class SQLConnection constructor(
         sqlite.databaseReleaseMemory(pointer)
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         block: SQLPreparedStatement.() -> R
@@ -181,7 +181,7 @@ internal class SQLConnection constructor(
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         bindArgs: Array<*>,

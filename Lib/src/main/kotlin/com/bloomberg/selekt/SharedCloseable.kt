@@ -41,7 +41,7 @@ abstract class SharedCloseable : Closeable {
         }
     }
 
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     internal inline fun <T> pledge(block: () -> T): T {
         retain()
         try {

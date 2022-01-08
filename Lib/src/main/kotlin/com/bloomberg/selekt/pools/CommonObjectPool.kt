@@ -73,7 +73,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     @Suppress("Detekt.ReturnCount")
-    @Generated
+    @Generated("Jacoco does not report coverage for inline methods")
     @Throws(InterruptedException::class)
     private inline fun internalBorrowObject(preferred: () -> T?): T {
         lock.withLockInterruptibly {
