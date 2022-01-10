@@ -1,8 +1,9 @@
 name: Code Scanning
 
-on:
-  schedule:
-    - cron: '0 22 * * SUN'
+on: [pull_request, push]
+#on:
+#  schedule:
+#    - cron: '0 22 * * SUN'
 
 jobs:
   qodana:
