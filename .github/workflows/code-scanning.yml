@@ -1,8 +1,11 @@
 name: Code Scanning
 
 on:
+  push:
+    branches:
+      - main
   schedule:
-    - cron: '0 22 * * SUN'
+    - cron: '0 22 * * *'
 
 jobs:
   qodana:
@@ -13,3 +16,9 @@ jobs:
         uses: JetBrains/qodana-action@main
         with:
           linter: jetbrains/qodana-jvm-android:latest
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ runner.temp }}/qodana/results/report
+          publish_branch: qodana
