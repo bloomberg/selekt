@@ -118,12 +118,11 @@ subprojects {
         parallel = false
         debug = false
         ignoreFailures = false
-
-        reports.html.destination = file("$rootDir/build/reports/detekt/${project.name}-detekt.html")
     }
     tasks.withType<Detekt> {
         exclude("**/res/**")
         exclude("**/tmp/**")
+        reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
 
     pluginManager.withPlugin("jacoco") {
