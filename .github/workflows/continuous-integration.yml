@@ -62,6 +62,8 @@ jobs:
       run: |
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
     - uses: codecov/codecov-action@v2
+      with:
+        files: ./build/reports/jacoco/jacocoSelektTestReport/jacocoSelektTestReport.xml
     - name: 'Coverage HTML Report'
       run: |
         ./gradlew :koverHtmlReport ${{ env.SCAN }}
