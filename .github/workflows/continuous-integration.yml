@@ -61,7 +61,9 @@ jobs:
     - name: 'Coverage'
       run: |
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
-        bash scripts/codecov
+    - uses: codecov/codecov-action@v2
+    - name: 'Coverage HTML Report'
+      run: |
         ./gradlew :koverHtmlReport ${{ env.SCAN }}
     - uses: actions/upload-artifact@v2
       if: always()
