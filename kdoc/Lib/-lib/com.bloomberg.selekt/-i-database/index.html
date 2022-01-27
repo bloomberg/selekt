@@ -338,8 +338,7 @@
 
 <p>//<a href="../../../">Lib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">IDatabase</a></p>
 <h1 id="idatabase">IDatabase</h1>
-<p>[jvm]\
-interface <a href="./">IDatabase</a> : <a href="../-i-readable-database/">IReadableDatabase</a>, <a href="../-i-s-q-l-transactor/">ISQLTransactor</a></p>
+<p>[jvm] interface <a href="./">IDatabase</a> : <a href="../-i-readable-database/">IReadableDatabase</a>, <a href="../-i-s-q-l-transactor/">ISQLTransactor</a>   </p>
 <h2 id="functions">Functions</h2>
 <table>
 <thead>
@@ -350,68 +349,68 @@ interface <a href="./">IDatabase</a> : <a href="../-i-readable-database/">IReada
 </thead>
 <tbody>
 <tr>
-<td><a href="../-i-s-q-l-transactor/begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/begin-exclusive-transaction/">beginExclusiveTransaction</a>()</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginExclusiveTransaction/#/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/begin-exclusive-transaction/">beginExclusiveTransaction</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginExclusiveTransaction/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/begin-exclusive-transaction/">beginExclusiveTransaction</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: <a href="../-s-q-l-transaction-listener/">SQLTransactionListener</a>)</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/begin-exclusive-transaction-with-listener/">beginExclusiveTransactionWithListener</a>(listener: <a href="../-s-q-l-transaction-listener/">SQLTransactionListener</a>)  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/begin-immediate-transaction/">beginImmediateTransaction</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/begin-immediate-transaction/">beginImmediateTransaction</a>()</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginImmediateTransaction/#/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/begin-immediate-transaction/">beginImmediateTransaction</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginImmediateTransaction/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/begin-immediate-transaction/">beginImmediateTransaction</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: <a href="../-s-q-l-transaction-listener/">SQLTransactionListener</a>)</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginImmediateTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/beginImmediateTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/begin-immediate-transaction-with-listener/">beginImmediateTransactionWithListener</a>(listener: <a href="../-s-q-l-transaction-listener/">SQLTransactionListener</a>)  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../../com.bloomberg.selekt.pools/-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a></td>
-<td>[jvm]<br>abstract override fun <a href="../../com.bloomberg.selekt.pools/-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a>()</td>
+<td><a name="java.io/Closeable/close/#/PointingToDeclaration/"></a><a href="../../com.bloomberg.selekt.pools/-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a></td>
+<td><a name="java.io/Closeable/close/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract override fun <a href="../../com.bloomberg.selekt.pools/-i-object-factory/#358956095%2FFunctions%2F-113810430">close</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="compile-statement/">compileStatement</a></td>
-<td>[jvm]<br>abstract fun <a href="compile-statement/">compileStatement</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;? = null): <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-statement/">ISQLStatement</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/compileStatement/#kotlin.String#kotlin.Array[kotlin.Any?]?/PointingToDeclaration/"></a><a href="compile-statement/">compileStatement</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/compileStatement/#kotlin.String#kotlin.Array[kotlin.Any?]?/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="compile-statement/">compileStatement</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>? = null): <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-statement/">ISQLStatement</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="delete/">delete</a></td>
-<td>[jvm]<br>abstract fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/delete/#kotlin.String#kotlin.String#kotlin.Array[kotlin.Any?]/PointingToDeclaration/"></a><a href="delete/">delete</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/delete/#kotlin.String#kotlin.String#kotlin.Array[kotlin.Any?]/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="delete/">delete</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/end-transaction/">endTransaction</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/end-transaction/">endTransaction</a>()</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/endTransaction/#/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/end-transaction/">endTransaction</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/endTransaction/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/end-transaction/">endTransaction</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="exec/">exec</a></td>
-<td>[jvm]<br>abstract fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;? = null)</td>
+<td><a name="com.bloomberg.selekt/IDatabase/exec/#kotlin.String#kotlin.Array[kotlin.Any?]?/PointingToDeclaration/"></a><a href="exec/">exec</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/exec/#kotlin.String#kotlin.Array[kotlin.Any?]?/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="exec/">exec</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, bindArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>? = null)  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="insert/">insert</a></td>
-<td>[jvm]<br>abstract fun <a href="insert/">insert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/insert/#kotlin.String#com.bloomberg.selekt.IContentValues#com.bloomberg.selekt.IConflictAlgorithm/PointingToDeclaration/"></a><a href="insert/">insert</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/insert/#kotlin.String#com.bloomberg.selekt.IContentValues#com.bloomberg.selekt.IConflictAlgorithm/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="insert/">insert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-readable-database/is-open/">isOpen</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-readable-database/is-open/">isOpen</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></td>
+<td><a name="com.bloomberg.selekt/IReadableDatabase/isOpen/#/PointingToDeclaration/"></a><a href="../-i-readable-database/is-open/">isOpen</a></td>
+<td><a name="com.bloomberg.selekt/IReadableDatabase/isOpen/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-readable-database/is-open/">isOpen</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-readable-database/query/">query</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-readable-database/query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="../-i-cursor/">ICursor</a><br>abstract fun <a href="../-i-readable-database/query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;): <a href="../-i-cursor/">ICursor</a><br>abstract fun <a href="../-i-readable-database/query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>?): <a href="../-i-cursor/">ICursor</a></td>
+<td><a name="com.bloomberg.selekt/IReadableDatabase/query/#com.bloomberg.selekt.ISQLQuery/PointingToDeclaration/"></a><a href="../-i-readable-database/query/">query</a></td>
+<td><a name="com.bloomberg.selekt/IReadableDatabase/query/#com.bloomberg.selekt.ISQLQuery/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-readable-database/query/">query</a>(query: <a href="../../../../ApiLib/-api-lib/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="../-i-cursor/">ICursor</a>  <br>abstract fun <a href="../-i-readable-database/query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>): <a href="../-i-cursor/">ICursor</a>  <br>abstract fun <a href="../-i-readable-database/query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>?): <a href="../-i-cursor/">ICursor</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/set-transaction-successful/">setTransactionSuccessful</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/set-transaction-successful/">setTransactionSuccessful</a>()</td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/setTransactionSuccessful/#/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/set-transaction-successful/">setTransactionSuccessful</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/setTransactionSuccessful/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/set-transaction-successful/">setTransactionSuccessful</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="update/">update</a></td>
-<td>[jvm]<br>abstract fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/update/#kotlin.String#com.bloomberg.selekt.IContentValues#kotlin.String#kotlin.Array[kotlin.Any?]#com.bloomberg.selekt.IConflictAlgorithm/PointingToDeclaration/"></a><a href="update/">update</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/update/#kotlin.String#com.bloomberg.selekt.IContentValues#kotlin.String#kotlin.Array[kotlin.Any?]#com.bloomberg.selekt.IConflictAlgorithm/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="update/">update</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, whereClause: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, whereArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?>, conflictAlgorithm: <a href="../-i-conflict-algorithm/">IConflictAlgorithm</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="upsert/">upsert</a></td>
-<td>[jvm]<br>abstract fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/upsert/#kotlin.String#com.bloomberg.selekt.IContentValues#kotlin.Array[kotlin.String]#kotlin.String/PointingToDeclaration/"></a><a href="upsert/">upsert</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/upsert/#kotlin.String#com.bloomberg.selekt.IContentValues#kotlin.Array[kotlin.String]#kotlin.String/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="upsert/">upsert</a>(table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, values: <a href="../-i-content-values/">IContentValues</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a><out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>>, update: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a></td>
-<td>[jvm]<br>abstract fun <a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>abstract fun <a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#/PointingToDeclaration/"></a><a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a></td>
+<td><a name="com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>abstract fun <a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br>abstract fun <a href="../-i-s-q-l-transactor/yield-transaction/">yieldTransaction</a>(pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>  <br><br><br></td>
 </tr>
 </tbody>
 </table>
@@ -425,12 +424,12 @@ interface <a href="./">IDatabase</a> : <a href="../-i-readable-database/">IReada
 </thead>
 <tbody>
 <tr>
-<td><a href="../-i-s-q-l-transactor/in-transaction/">inTransaction</a></td>
-<td>[jvm]<br>abstract val <a href="../-i-s-q-l-transactor/in-transaction/">inTransaction</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/inTransaction/#/PointingToDeclaration/"></a><a href="./#-1554990134%2FProperties%2F-113810430">inTransaction</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/inTransaction/#/PointingToDeclaration/"></a> [jvm] abstract val <a href="./#-1554990134%2FProperties%2F-113810430">inTransaction</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>   <br></td>
 </tr>
 <tr>
-<td><a href="version/">version</a></td>
-<td>[jvm]<br>abstract var <a href="version/">version</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/version/#/PointingToDeclaration/"></a><a href="version/">version</a></td>
+<td><a name="com.bloomberg.selekt/IDatabase/version/#/PointingToDeclaration/"></a> [jvm] abstract var <a href="version/">version</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>   <br></td>
 </tr>
 </tbody>
 </table>
@@ -443,7 +442,7 @@ interface <a href="./">IDatabase</a> : <a href="../-i-readable-database/">IReada
 </thead>
 <tbody>
 <tr>
-<td><a href="../-s-q-l-database/">SQLDatabase</a></td>
+<td><a name="com.bloomberg.selekt/SQLDatabase///PointingToDeclaration/"></a><a href="../-s-q-l-database/">SQLDatabase</a></td>
 </tr>
 </tbody>
 </table>

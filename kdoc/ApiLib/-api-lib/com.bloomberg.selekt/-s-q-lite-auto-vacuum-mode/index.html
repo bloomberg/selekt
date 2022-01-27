@@ -338,8 +338,7 @@
 
 <p>//<a href="../../../">ApiLib</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLiteAutoVacuumMode</a></p>
 <h1 id="sqliteautovacuummode">SQLiteAutoVacuumMode</h1>
-<p>[jvm]\
-enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteAutoVacuumMode</a>&gt;</p>
+<p>[jvm] enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="./">SQLiteAutoVacuumMode</a>&gt;    </p>
 <h2 id="entries">Entries</h2>
 <table>
 <thead>
@@ -350,16 +349,16 @@ enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api
 </thead>
 <tbody>
 <tr>
-<td><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a></td>
-<td>[jvm]<br><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)<br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full". In incremental mode, the separate incremental vacuum pragma must be invoked to cause the auto-vacuum to occur.</td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.INCREMENTAL///PointingToDeclaration/"></a><a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.INCREMENTAL///PointingToDeclaration/"></a> [jvm] <a href="-i-n-c-r-e-m-e-n-t-a-l/">INCREMENTAL</a>(2)  <br>The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not occur automatically at each commit as it does with "full".   <br></td>
 </tr>
 <tr>
-<td><a href="-f-u-l-l/">FULL</a></td>
-<td>[jvm]<br><a href="-f-u-l-l/">FULL</a>(1)<br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit. Note, however, that auto-vacuum only truncates the freelist pages from the file. Auto-vacuum does not defragment the database nor repack individual database pages the way that vacuum does. In fact, because it moves pages around within the file, auto-vacuum can actually make fragmentation worse.</td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.FULL///PointingToDeclaration/"></a><a href="-f-u-l-l/">FULL</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.FULL///PointingToDeclaration/"></a> [jvm] <a href="-f-u-l-l/">FULL</a>(1)  <br>The freelist pages are moved to the end of the database file and the database file is truncated to remove the freelist pages at every transaction commit.   <br></td>
 </tr>
 <tr>
-<td><a href="-n-o-n-e/">NONE</a></td>
-<td>[jvm]<br><a href="-n-o-n-e/">NONE</a>(0)<br>Auto-vacuum is disabled. When auto-vacuum is disabled and data is deleted data from a database, the database file remains the same size. Unused database file pages are added to a "freelist" and reused for subsequent inserts. So no database file space is lost. However, the database file does not shrink. In this mode vacuum can be used to rebuild the entire database file and thus reclaim unused disk space.</td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.NONE///PointingToDeclaration/"></a><a href="-n-o-n-e/">NONE</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode.NONE///PointingToDeclaration/"></a> [jvm] <a href="-n-o-n-e/">NONE</a>(0)  <br>Auto-vacuum is disabled.   <br></td>
 </tr>
 </tbody>
 </table>
@@ -373,8 +372,8 @@ enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api
 </thead>
 <tbody>
 <tr>
-<td><a href="invoke/">invoke</a></td>
-<td>[jvm]<br>operator fun <a href="invoke/">invoke</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/invoke/#/PointingToDeclaration/"></a><a href="invoke/">invoke</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/invoke/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>operator fun <a href="invoke/">invoke</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>  <br><br><br></td>
 </tr>
 </tbody>
 </table>
@@ -388,12 +387,12 @@ enum <a href="./">SQLiteAutoVacuumMode</a> : <a href="https://kotlinlang.org/api
 </thead>
 <tbody>
 <tr>
-<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/name/#/PointingToDeclaration/"></a><a href="./#122814449%2FProperties%2F2129701850">name</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/name/#/PointingToDeclaration/"></a> [jvm] val <a href="./#122814449%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>   <br></td>
 </tr>
 <tr>
-<td><a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/ordinal/#/PointingToDeclaration/"></a><a href="./#-1072556627%2FProperties%2F2129701850">ordinal</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteAutoVacuumMode/ordinal/#/PointingToDeclaration/"></a> [jvm] val <a href="./#-1072556627%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>   <br></td>
 </tr>
 </tbody>
 </table>

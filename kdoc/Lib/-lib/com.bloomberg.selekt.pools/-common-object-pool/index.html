@@ -324,9 +324,8 @@
 
 <p>//<a href="../../../">Lib</a>/<a href="../">com.bloomberg.selekt.pools</a>/<a href="./">CommonObjectPool</a></p>
 <h1 id="commonobjectpool">CommonObjectPool</h1>
-<p>[jvm]\
-@ThreadSafe</p>
-<p>class <a href="./">CommonObjectPool</a>&lt;<a href="./">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="./">T</a> : <a href="../-i-pooled-object/">IPooledObject</a>&lt;<a href="./">K</a>&gt;&gt;(factory: <a href="../-i-object-factory/">IObjectFactory</a>&lt;<a href="./">T</a>&gt;, executor: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, configuration: <a href="../-pool-configuration/">PoolConfiguration</a>, otherPool: <a href="../-single-object-pool/">SingleObjectPool</a>&lt;<a href="./">K</a>, <a href="./">T</a>&gt;) : <a href="../-i-object-pool/">IObjectPool</a>&lt;<a href="./">K</a>, <a href="./">T</a>&gt;</p>
+<p>[jvm] @ThreadSafe()  </p>
+<p>class <a href="./">CommonObjectPool</a>&lt;<a href="./">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="./">T</a> : <a href="../-i-pooled-object/">IPooledObject</a>&lt;<a href="./">K</a>&gt;&gt;(<strong>factory</strong>: <a href="../-i-object-factory/">IObjectFactory</a>&lt;<a href="./">T</a>&gt;, <strong>executor</strong>: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, <strong>configuration</strong>: <a href="../-pool-configuration/">PoolConfiguration</a>, <strong>otherPool</strong>: <a href="../-single-object-pool/">SingleObjectPool</a>&lt;<a href="./">K</a>, <a href="./">T</a>&gt;) : <a href="../-i-object-pool/">IObjectPool</a>&lt;<a href="./">K</a>, <a href="./">T</a>&gt;    </p>
 <h2 id="functions">Functions</h2>
 <table>
 <thead>
@@ -337,20 +336,20 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="borrow-object/">borrowObject</a></td>
-<td>[jvm]<br>open override fun <a href="borrow-object/">borrowObject</a>(): <a href="./">T</a><br>open override fun <a href="borrow-object/">borrowObject</a>(key: <a href="./">K</a>): <a href="./">T</a></td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/borrowObject/#/PointingToDeclaration/"></a><a href="borrow-object/">borrowObject</a></td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/borrowObject/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="borrow-object/">borrowObject</a>(): <a href="./">T</a>  <br>open override fun <a href="borrow-object/">borrowObject</a>(key: <a href="./">K</a>): <a href="./">T</a>  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="clear/">clear</a></td>
-<td>[jvm]<br>open override fun <a href="clear/">clear</a>(priority: <a href="../-priority/">Priority</a>)</td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/clear/#com.bloomberg.selekt.pools.Priority/PointingToDeclaration/"></a><a href="clear/">clear</a></td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/clear/#com.bloomberg.selekt.pools.Priority/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="clear/">clear</a>(priority: <a href="../-priority/">Priority</a>)  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="close/">close</a></td>
-<td>[jvm]<br>open override fun <a href="close/">close</a>()</td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/close/#/PointingToDeclaration/"></a><a href="close/">close</a></td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/close/#/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="close/">close</a>()  <br><br><br></td>
 </tr>
 <tr>
-<td><a href="return-object/">returnObject</a></td>
-<td>[jvm]<br>open override fun <a href="return-object/">returnObject</a>(obj: <a href="./">T</a>)</td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/returnObject/#TypeParam(bounds=[com.bloomberg.selekt.pools.IPooledObject[TypeParam(bounds=[kotlin.Any])]])/PointingToDeclaration/"></a><a href="return-object/">returnObject</a></td>
+<td><a name="com.bloomberg.selekt.pools/CommonObjectPool/returnObject/#TypeParam(bounds=[com.bloomberg.selekt.pools.IPooledObject[TypeParam(bounds=[kotlin.Any])]])/PointingToDeclaration/"></a>[jvm]  <br>Content  <br>open override fun <a href="return-object/">returnObject</a>(obj: <a href="./">T</a>)  <br><br><br></td>
 </tr>
 </tbody>
 </table>

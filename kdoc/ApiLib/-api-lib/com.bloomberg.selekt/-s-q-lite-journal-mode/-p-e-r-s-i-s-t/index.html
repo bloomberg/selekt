@@ -324,8 +324,7 @@
 
 <p>//<a href="../../../../">ApiLib</a>/<a href="../../">com.bloomberg.selekt</a>/<a href="../">SQLiteJournalMode</a>/<a href="./">PERSIST</a></p>
 <h1 id="persist">PERSIST</h1>
-<p>[jvm]\
-<a href="./">PERSIST</a>()</p>
+<p>[jvm] <a href="./">PERSIST</a>()  </p>
 <p>The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction. Instead, the header of the journal is overwritten with zeros. This will prevent other database connections from rolling the journal back. The PERSIST journaling mode is useful as an optimization on platforms where deleting or truncating a file is much more expensive than overwriting the first block of a file with zeros.</p>
 <h2 id="properties">Properties</h2>
 <table>
@@ -337,16 +336,16 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="../database-configuration/">databaseConfiguration</a></td>
-<td>[jvm]<br>val <a href="../database-configuration/">databaseConfiguration</a>: <a href="../../-database-configuration/">DatabaseConfiguration</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/databaseConfiguration/#/PointingToDeclaration/"></a><a href="database-configuration/">databaseConfiguration</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/databaseConfiguration/#/PointingToDeclaration/"></a> [jvm] val <a href="database-configuration/">databaseConfiguration</a>: <a href="../../-database-configuration/">DatabaseConfiguration</a>   <br></td>
 </tr>
 <tr>
-<td><a href="../../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a></td>
-<td>[jvm]<br>val <a href="../../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-372974862%2FProperties%2F2129701850">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/name/#/PointingToDeclaration/"></a><a href="name/">name</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/name/#/PointingToDeclaration/"></a> [jvm] val <a href="name/">name</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>   <br></td>
 </tr>
 <tr>
-<td><a href="../../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a></td>
-<td>[jvm]<br>val <a href="../../-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/#-739389684%2FProperties%2F2129701850">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/ordinal/#/PointingToDeclaration/"></a><a href="ordinal/">ordinal</a></td>
+<td><a name="com.bloomberg.selekt/SQLiteJournalMode.PERSIST/ordinal/#/PointingToDeclaration/"></a> [jvm] val <a href="ordinal/">ordinal</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>   <br></td>
 </tr>
 </tbody>
 </table>
