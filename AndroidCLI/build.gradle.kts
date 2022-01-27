@@ -54,7 +54,7 @@ android {
     }
 
     lint {
-        disable("OldTargetApi")
+        disable.add("OldTargetApi")
     }
 }
 
