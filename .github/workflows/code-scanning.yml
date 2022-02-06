@@ -1,11 +1,8 @@
 name: Code Scanning
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 22 * * FRI'
 
 jobs:
   qodana:
