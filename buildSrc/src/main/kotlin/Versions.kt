@@ -22,7 +22,7 @@ enum class Versions(
 ) {
     ANDROID_BENCHMARK_GRADLE_PLUGIN("1.1.0-alpha06", URL("https://developer.android.com/studio/profile/benchmark")),
     ANDROID_BUILD_TOOLS("32.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("7.1.1", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_GRADLE_PLUGIN("7.1.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("23.1.7779620", URL("https://developer.android.com/ndk")),
     ANDROID_SDK("31", URL("https://developer.android.com/sdk")),
