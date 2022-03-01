@@ -21,7 +21,7 @@ enum class Versions(
     private val url: URL
 ) {
     ANDROID_BENCHMARK_GRADLE_PLUGIN("1.1.0-alpha06", URL("https://developer.android.com/studio/profile/benchmark")),
-    ANDROID_BUILD_TOOLS("31.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
+    ANDROID_BUILD_TOOLS("32.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
     ANDROID_GRADLE_PLUGIN("7.1.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("23.1.7779620", URL("https://developer.android.com/ndk")),
@@ -40,10 +40,10 @@ enum class Versions(
     JUNIT5("5.7.2", URL("https://junit.org/junit5/")),
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.6.10", URL("https://github.com/JetBrains/kotlin")),
-    KOTLIN_COROUTINES("1.5.2", URL("https://github.com/Kotlin/kotlinx.coroutines")),
+    KOTLIN_COROUTINES("1.6.0", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
-    KOTLINX_KOVER("0.5.0-RC", URL("https://github.com/Kotlin/kotlinx-kover")),
-    KTLINT("0.43.2", URL("https://github.com/pinterest/ktlint")),
+    KOTLINX_KOVER("0.5.0", URL("https://github.com/Kotlin/kotlinx-kover")),
+    KTLINT("0.44.0", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.2.1", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
     MOCKITO("4.0.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN(MOCKITO.version, URL("https://github.com/mockito/mockito-kotlin")),
