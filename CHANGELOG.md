@@ -1,6 +1,18 @@
 Change Log
 ==========
 
+## Version 0.15.4
+
+### Dependencies
+
+* Android Build Tools 32.0.0.
+* Android Gradle Plugin 7.1.2.
+* Gradle 7.4.1.
+* Kotlin Coroutines 1.6.0
+* Kover 0.5.0.
+* Ktlint 0.44.0.
+* SQLCipher 4.5.1.
+
 ## Version 0.15.3
 
 ### Dependencies
