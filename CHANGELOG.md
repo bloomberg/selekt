@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.15.5
+
+### Fixes
+
+* Correct our SQLCipher version property to read "4.5.1".
+
+### Dependencies
+
+* OpenSSL 1.1.1n.
+
 ## Version 0.15.4
 
 ### Dependencies
