@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.15.6
+
+### Dependencies
+
+* Gradle 7.4.2.
+* Kotlin 1.6.20.
+
 ## Version 0.15.5
 
 ### Fixes
