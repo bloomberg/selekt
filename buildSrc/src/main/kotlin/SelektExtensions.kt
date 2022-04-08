@@ -25,13 +25,13 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 
 fun DependencyHandler.androidX(module: String, suffix: String? = null, version: String? = null): Any =
-    "androidx.$module:$module${suffix?.let { "-$it" } ?: ""}${version?.let { ":$it" } ?: ""}"
+    "androidx.$module:$module${suffix?.let { "-$it" }.orEmpty()}${version?.let { ":$it" }.orEmpty()}"
 
 fun DependencyHandler.kotlinX(module: String, version: String? = null): Any =
-    "org.jetbrains.kotlinx:kotlinx-$module${version?.let { ":$version" } ?: ""}"
+    "org.jetbrains.kotlinx:kotlinx-$module${version?.let { ":$version" }.orEmpty()}"
 
 fun DependencyHandler.selekt(module: String, version: String? = null): Any =
-    "com.bloomberg:selekt-$module${version?.let { ":$version" } ?: ""}"
+    "com.bloomberg:selekt-$module${version?.let { ":$version" }.orEmpty()}"
 
 val <T> NamedDomainObjectContainer<T>.debug: T get() = requireNotNull(getByName("debug"))
 
