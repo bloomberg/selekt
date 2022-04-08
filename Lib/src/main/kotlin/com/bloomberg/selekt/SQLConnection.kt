@@ -213,16 +213,16 @@ internal class SQLConnection constructor(
     private fun optimiseQuietly() {
         runCatching {
             // To achieve the best long-term query performance without the need to do a detailed engineering analysis of
-            // the application schema and SQL, it is recommended that applications run "PRAGMA optimize" (with no arguments)
-            // just before closing each database connection.
+            // the application schema and SQL, it is recommended that applications run "PRAGMA optimize" (with no
+            // arguments) just before closing each database connection.
             // See: https://www.sqlite.org/pragma.html#pragma_optimize
             //
-            // Applications with long-lived databases that use complex queries should consider running the following commands
-            // just prior to closing each database connection:
+            // Applications with long-lived databases that use complex queries should consider running the following
+            // commands just prior to closing each database connection:
             //     PRAGMA analysis_limit=400;
             //     PRAGMA optimize;
-            // The optimize pragma is usually a no-op but it will occasionally run ANALYZE if it seems like doing so will be
-            // useful to the query planner. The analysis_limit pragma limits the scope of any ANALYZE command that the
+            // The optimize pragma is usually a no-op but it will occasionally run ANALYZE if it seems like doing so will
+            // be useful to the query planner. The analysis_limit pragma limits the scope of any ANALYZE command that the
             // optimize pragma runs so that it does not consume too many CPU cycles. The constant "400" can be adjusted as
             // needed. Values between 100 and 1000 work well for most applications.
             // See: https://www.sqlite.org/lang_analyze.html
