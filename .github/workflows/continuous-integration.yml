@@ -62,7 +62,7 @@ jobs:
       run: |
         ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
         bash scripts/codecov
-        ./gradlew :koverHtmlReport ${{ env.SCAN }}
+        ./gradlew :koverMergedHtmlReport ${{ env.SCAN }}
     - uses: actions/upload-artifact@v2
       if: always()
       with:
@@ -77,7 +77,7 @@ jobs:
         ./gradlew assembleSelekt ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
-        ./gradlew :jacocoSelektCoverageVerification :koverVerify
+        ./gradlew :jacocoSelektCoverageVerification :koverMergedVerify
     - name: 'Build others'
       run: |
         ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
