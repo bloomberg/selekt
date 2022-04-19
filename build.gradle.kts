@@ -246,7 +246,7 @@ kover {
     disabledProjects = setOf(":AndroidCli", ":AndroidLibBenchmark")
 }
 
-tasks.koverVerify {
+tasks.koverMergedVerify {
     rule {
         name = "Minimal line coverage"
         bound {
