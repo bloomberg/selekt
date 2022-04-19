@@ -250,7 +250,7 @@ tasks.koverMergedVerify {
     rule {
         name = "Minimal line coverage"
         bound {
-            minValue = 97
+            minValue = 94
             valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
         }
     }
