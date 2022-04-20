@@ -33,7 +33,7 @@ enum class Versions(
     DETEKT("1.19.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
-    JACOCO("0.8.7", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
+    JACOCO("0.8.8", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JMH("1.34", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.1", URL("https://github.com/junit-team/junit4")),
