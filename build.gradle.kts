@@ -243,7 +243,7 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
 }
 
 kover {
-    disabledProjects = setOf(":AndroidCli", ":AndroidLibBenchmark")
+    disabledProjects = setOf("AndroidCli", "AndroidLibBenchmark")
 }
 
 tasks.koverMergedVerify {
