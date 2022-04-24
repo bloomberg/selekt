@@ -20,7 +20,7 @@ Selekt is a Kotlin and familiar Android wrapper over the community edition of [S
 
 The two most popular publicly available alternatives to Selekt are the Android SDK's own SQLite database, and [Android-SQLCipher](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/). The Android SDK's SQLite database does not encrypt databases, instead relying on the OS's user security model to restrict access. Android-SQLCipher uses the SQLCipher library to encrypt databases, but because the derivation of every key is by design expensive it can't be allowed to make full use of the concurrency offered by SQLite3: Each database must have only one connection, connections cannot be ephemeral and must persist even if idling.
 
-Selekt sits somewhere between the two: Selekt also uses SQLCipher to encrypt databases with AES-256, but uses SQLCipher in a mode that moves the responsibility for deriving keys to the caller. This compromise sacrifices some of the security guarantee offered by the default operating mode of SQLCipher, in return for allowing greater concurrency and efficient resource use while still retaining pretty good security.
+Selekt sits somewhere between the two: Selekt also uses SQLCipher to encrypt databases with AES-256, but uses SQLCipher in a mode that moves the responsibility for deriving keys to the caller. This sacrifices some of the security guarantee offered by the default operating mode of SQLCipher, in return for allowing greater concurrency and efficient resource use while still retaining pretty good security.
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ contact us at opensource@bloomberg.net.
 
 ## Security Vulnerability Reporting
 
-If you believe you have identified a security vulnerability in this project, please send email to the project
+If you believe you have identified a security vulnerability in this project, please send an email to the project
 team at opensource@bloomberg.net, detailing the suspected issue and any methods you've found to reproduce it.
 
 Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until
