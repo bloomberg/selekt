@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import java.util.concurrent.ScheduledExecutorService
 
 internal class PoolsKtTest {
-    private abstract class PooledObject : IPooledObject<Any>
+    private interface PooledObject : IPooledObject<Any>
     private val executor = mock<ScheduledExecutorService>()
 
     @Test
