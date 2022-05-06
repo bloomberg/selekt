@@ -107,7 +107,7 @@ internal class Mutex {
      * @param isCancellable true if the wait can be cancelled, else false.
      * @return true if the thread succeeded in acquiring the lock, else false.
      */
-    @Suppress("Detekt.ReturnCount", "Detekt.CommentOverPrivateFunction")
+    @Suppress("Detekt.CommentOverPrivateFunction", "Detekt.ComplexMethod", "Detekt.ReturnCount")
     private fun awaitLock(
         intervalNanos: Long,
         isCancellable: Boolean
