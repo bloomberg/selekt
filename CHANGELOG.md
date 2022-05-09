@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.15.7
+
+### Dependencies
+
+* Detekt 1.20.0.
+* Kotlin 1.6.21.
+* Kotlin Coroutines 1.6.1.
+* Ktlint 0.45.2
+* Ktlint Gradle plugin 10.3.0.
+
 ## Version 0.15.6
 
 ### Dependencies
