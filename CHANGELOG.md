@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.16.0
+
+### Dependencies
+
+* Android Gradle Plugin 7.2.0.
+* OpenSSL 1.1.1o.
+
 ## Version 0.15.7
 
 ### Dependencies
