@@ -595,7 +595,7 @@
 <div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">():</span><span class="w"> </span><span class="n">ByteArray? </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span><span class="w"></span>
 <span class="w">    </span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span><span class="w"></span>
 
-<span class="n">provate</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">factory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createSupportSQLiteOpenHelperFactory</span><span class="p">(</span><span class="w"></span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">factory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createSupportSQLiteOpenHelperFactory</span><span class="p">(</span><span class="w"></span>
 <span class="w">    </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="n">deriveKey</span><span class="p">()</span><span class="w"></span>
 <span class="p">)</span><span class="w"></span>
@@ -610,7 +610,7 @@
 <span class="w">    </span><span class="c1">// TODO Optional key, must be exactly 32-bytes long.</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 
-<span class="n">provate</span><span class="w"> </span><span class="n">SupportSQLiteOpenHelper</span><span class="p">.</span><span class="na">Factory</span><span class="w"> </span><span class="n">factory</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="kd">private</span><span class="w"> </span><span class="n">SupportSQLiteOpenHelper</span><span class="p">.</span><span class="na">Factory</span><span class="w"> </span><span class="n">factory</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
 <span class="w">    </span><span class="n">SupportSQLiteOpenHelperKt</span><span class="p">.</span><span class="na">createSupportSQLiteOpenHelperFactory</span><span class="p">(</span><span class="w"></span>
 <span class="w">        </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span><span class="w"></span>
 <span class="w">        </span><span class="n">deriveKey</span><span class="p">());</span><span class="w"></span>
