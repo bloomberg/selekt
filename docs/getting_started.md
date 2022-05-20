@@ -98,7 +98,7 @@
     private fun deriveKey(): ByteArray? = TODO(
         "Optional key, must be exactly 32-bytes long.")
 
-    provate val factory = createSupportSQLiteOpenHelperFactory(
+    private val factory = createSupportSQLiteOpenHelperFactory(
         SQLiteJournalMode.WAL,
         deriveKey()
     )
@@ -114,7 +114,7 @@
         // TODO Optional key, must be exactly 32-bytes long.
     }
 
-    provate SupportSQLiteOpenHelper.Factory factory =
+    private SupportSQLiteOpenHelper.Factory factory =
         SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
             SQLiteJournalMode.WAL,
             deriveKey());
