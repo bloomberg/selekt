@@ -74,7 +74,7 @@ public final class SQLiteDatabaseJavaTest {
     public void creation() {
         database = SQLiteDatabase.openOrCreateDatabase(
             targetContext.getDatabasePath("sample"),
-            SQLiteJournalMode.WAL.getDatabaseConfiguration(),
+            SQLiteJournalMode.WAL.databaseConfiguration,
             key
         );
         database.exec("PRAGMA journal_mode=WAL");

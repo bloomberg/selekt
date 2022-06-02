@@ -46,6 +46,7 @@ internal enum class SQLStatementType(
 
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 
+@JvmSynthetic
 internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEnglishLetter).run {
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER

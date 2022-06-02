@@ -30,6 +30,7 @@ internal class ThreadLocalSession(
         override fun initialValue() = SQLSession(pool)
     }
 
+    @JvmSynthetic
     internal fun get(): SQLSession = threadLocal.get()
 }
 

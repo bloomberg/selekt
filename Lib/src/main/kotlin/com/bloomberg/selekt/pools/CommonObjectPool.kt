@@ -122,6 +122,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         executor.execute { evict(priority) }
     }
 
+    @JvmSynthetic
     internal fun evict(priority: Priority? = null) {
         @GuardedBy("lock")
         fun evictions() = run {

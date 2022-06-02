@@ -43,6 +43,7 @@ private val sharedExecutor = ScheduledThreadPoolExecutor(1, ThreadFactory {
     allowCoreThreadTimeOut(true)
 }
 
+@JvmSynthetic
 internal fun openConnectionPool(
     path: String,
     sqlite: SQLite,

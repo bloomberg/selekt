@@ -73,6 +73,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         executor.execute { evict(priority) }
     }
 
+    @JvmSynthetic
     internal fun evict(priority: Priority? = null) = mutex.run {
         when {
             isClosed -> withTryLock {

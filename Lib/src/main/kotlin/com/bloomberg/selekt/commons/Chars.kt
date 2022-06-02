@@ -16,6 +16,8 @@
 
 package com.bloomberg.selekt.commons
 
+@JvmSynthetic
 internal fun Char.isEnglishLetter() = this in 'A'..'Z' || this in 'a'..'z'
 
+@JvmSynthetic
 internal fun Char.isNotEnglishLetter() = !isEnglishLetter()

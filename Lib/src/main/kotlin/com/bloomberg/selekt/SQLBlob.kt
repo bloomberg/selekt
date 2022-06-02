@@ -21,8 +21,10 @@ import java.io.InputStream
 import java.io.OutputStream
 import javax.annotation.concurrent.NotThreadSafe
 
+@JvmSynthetic
 internal fun SQLBlob.inputStream(offset: Int, limit: Int): InputStream = BlobInputStream(this, offset, limit)
 
+@JvmSynthetic
 internal fun SQLBlob.outputStream(offset: Int): OutputStream = BlobOutputStream(this, offset)
 
 @NotThreadSafe

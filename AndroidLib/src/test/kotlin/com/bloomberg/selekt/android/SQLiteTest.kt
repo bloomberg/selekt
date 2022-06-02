@@ -82,6 +82,7 @@ internal inline fun Pointer.useConnection(block: (Pointer) -> Unit) = try {
     assertEquals(SQL_OK, SQLite.closeV2(this))
 }
 
+@JvmSynthetic
 internal fun prepareStatement(connection: Long, sql: String): Long {
     val holder = LongArray(1)
     SQLite.prepareV2(connection, sql, holder)

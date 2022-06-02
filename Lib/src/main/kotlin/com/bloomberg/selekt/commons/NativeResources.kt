@@ -26,6 +26,7 @@ import kotlin.jvm.Throws
 private const val DEFAULT_BUFFER_LIMIT = 8_192
 
 @Suppress("Detekt.StringLiteralDuplication")
+@JvmSynthetic
 internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
@@ -34,14 +35,17 @@ internal fun osName(systemOsName: String = System.getProperty("os.name")) = syst
     }
 }
 
+@JvmSynthetic
 internal fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
+@JvmSynthetic
 internal fun libraryExtension() = when (osName()) {
     "darwin" -> ".dylib"
     "windows" -> ".dll"
     else -> ".so"
 }
 
+@JvmSynthetic
 internal fun libraryResourceName(parentDirectory: String, name: String) =
     "$parentDirectory/${platformIdentifier()}${File.separatorChar}lib${name}${libraryExtension()}"
 

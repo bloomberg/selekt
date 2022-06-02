@@ -42,6 +42,7 @@ private class SupportSQLiteOpenHelperFactory(
     ).asSupportSQLiteOpenHelper()
 }
 
+@JvmSynthetic
 internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = @DelicateApi object : SupportSQLiteOpenHelper {
     private val database: SupportSQLiteDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         this@asSupportSQLiteOpenHelper.writableDatabase.asSupportSQLiteDatabase()
@@ -66,6 +67,7 @@ internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = @DelicateApi object
     }
 }
 
+@JvmSynthetic
 internal fun SupportSQLiteOpenHelper.Configuration.asSelektConfiguration(
     key: ByteArray?
 ) = ISQLiteOpenHelper.Configuration(
@@ -74,6 +76,7 @@ internal fun SupportSQLiteOpenHelper.Configuration.asSelektConfiguration(
     name = requireNotNull(name) { "Encryption of in-memory SupportDatabases is not supported." }
 )
 
+@JvmSynthetic
 internal fun SupportSQLiteOpenHelper.Callback.asSelektCallback() = @DelicateApi object : ISQLiteOpenHelper.Callback {
     override fun onConfigure(database: SQLiteDatabase) = this@asSelektCallback.onConfigure(
         database.asSupportSQLiteDatabase())

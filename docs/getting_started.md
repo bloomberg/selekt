@@ -149,7 +149,7 @@
 
     final SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(
         targetContext.getDatabasePath("sample"),
-        SQLiteJournalMode.WAL.getDatabaseConfiguration(),
+        SQLiteJournalMode.WAL.databaseConfiguration,
         deriveKey()
     );
     database.exec("PRAGMA journal_mode=WAL");
