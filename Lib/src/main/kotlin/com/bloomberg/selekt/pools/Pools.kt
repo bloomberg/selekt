@@ -20,6 +20,7 @@ import java.io.Closeable
 import java.util.concurrent.ScheduledExecutorService
 import kotlin.jvm.Throws
 
+@JvmSynthetic
 internal fun <K : Any, T : IPooledObject<K>> createObjectPool(
     factory: IObjectFactory<T>,
     executor: ScheduledExecutorService,
@@ -44,6 +45,7 @@ enum class Priority {
     HIGH
 }
 
+@JvmSynthetic
 internal fun Priority?.isHigh() = this?.let { it >= Priority.HIGH } ?: false
 
 interface IObjectPool<K : Any, T : Any> : Closeable {

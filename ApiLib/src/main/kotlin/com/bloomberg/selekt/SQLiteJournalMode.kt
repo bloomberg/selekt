@@ -22,6 +22,7 @@ import com.bloomberg.selekt.DatabaseConfiguration.Companion.COMMON_BUSY_TIMEOUT_
  * @since v0.1.0.
  */
 enum class SQLiteJournalMode(
+    @JvmField
     val databaseConfiguration: DatabaseConfiguration = commonSingleConnectionConfiguration
 ) {
     /**

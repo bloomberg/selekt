@@ -137,6 +137,7 @@ private interface IQuery : ISQLProgram {
     fun fill(window: ICursorWindow): SQLStatementInformation
 }
 
+@JvmSynthetic
 internal fun StringBuilder.selectColumns(columns: Array<out String>, distinct: Boolean) = apply {
     append("SELECT ")
     if (distinct) {
@@ -149,26 +150,32 @@ internal fun StringBuilder.selectColumns(columns: Array<out String>, distinct: B
     }
 }
 
+@JvmSynthetic
 internal fun StringBuilder.fromTable(table: String) = append(" FROM ").append(table)
 
+@JvmSynthetic
 internal fun StringBuilder.where(clause: String) = apply {
     if (clause.isNotEmpty()) {
         append(" WHERE ").append(clause)
     }
 }
 
+@JvmSynthetic
 internal fun StringBuilder.groupBy(clause: String?) = apply {
     clause?.let { append(" GROUP BY ").append(it) }
 }
 
+@JvmSynthetic
 internal fun StringBuilder.having(clause: String?) = apply {
     clause?.let { append(" HAVING ").append(it) }
 }
 
+@JvmSynthetic
 internal fun StringBuilder.orderBy(clause: String?) = apply {
     clause?.let { append(" ORDER BY ").append(it) }
 }
 
+@JvmSynthetic
 internal fun StringBuilder.limit(limit: Int?) = apply {
     limit?.let { append(" LIMIT ").append(it) }
 }

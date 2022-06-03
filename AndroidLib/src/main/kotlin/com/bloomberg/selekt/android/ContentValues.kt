@@ -31,6 +31,7 @@ private class ContentValuesEntry : Map.Entry<String, Any?> {
 }
 
 @Suppress("Detekt.MethodOverloading")
+@JvmSynthetic
 internal fun ContentValues.asSelektContentValues() = object : IContentValues {
     override val isEmpty: Boolean
         get() = this@asSelektContentValues.size() == 0

@@ -31,9 +31,11 @@ import org.intellij.lang.annotations.Language
 import java.util.Locale
 
 @DelicateApi
+@JvmSynthetic
 internal fun SQLiteDatabase.asSupportSQLiteDatabase(): SupportSQLiteDatabase = SupportSQLiteDatabase(this)
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+@JvmSynthetic
 internal fun SQLiteTransactionListener.asSQLTransactionListener(): SQLTransactionListener =
     WrappedSQLiteTransactionListener(this)
 

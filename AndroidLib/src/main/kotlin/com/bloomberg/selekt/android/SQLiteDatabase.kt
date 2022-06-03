@@ -127,6 +127,7 @@ class SQLiteDatabase private constructor(
     val maxPageCount: Long
         get() = database.pragma("max_page_count").toLong()
 
+    @JvmSynthetic
     internal fun setMaxPageCount(value: Long) = checkNotNull(database.pragma("max_page_count", value)).toLong()
 
     val pageCount: Int
@@ -304,6 +305,7 @@ class SQLiteDatabase private constructor(
         stream: OutputStream
     ) = database.readFromBlob(name, table, column, row, offset, limit, stream)
 
+    @JvmSynthetic
     internal fun releaseMemory(priority: Priority) {
         database.releaseMemory(priority)
     }
@@ -319,6 +321,7 @@ class SQLiteDatabase private constructor(
         database.pragma("foreign_keys", if (enabled) "ON" else "OFF")
     }
 
+    @JvmSynthetic
     internal fun setJournalMode(mode: SQLiteJournalMode) {
         check(!isTransactionOpenedByCurrentThread) { "Journal mode cannot be changed within a transaction." }
         val nextMode = SQLiteJournalMode.valueOf(checkNotNull(database.pragma("journal_mode", mode)).uppercase(Locale.US))
@@ -332,6 +335,7 @@ class SQLiteDatabase private constructor(
      *
      * @param value to raise 2 to for the page size.
      */
+    @JvmSynthetic
     internal fun setPageSizeExponent(value: Int) = run {
         require(value in SQLiteOpenParams.LOWEST_PAGE_SIZE_EXPONENT..SQLiteOpenParams.HIGHEST_PAGE_SIZE_EXPONENT) {
             "The page size must be a power of two between 512 and 65536 inclusive."

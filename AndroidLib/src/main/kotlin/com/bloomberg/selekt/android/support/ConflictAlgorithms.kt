@@ -18,6 +18,7 @@ package com.bloomberg.selekt.android.support
 
 import com.bloomberg.selekt.android.ConflictAlgorithm
 
+@JvmSynthetic
 internal fun Int.toConflictAlgorithm() = conflictAlgorithms[this]
 
 private val conflictAlgorithms = arrayOf(

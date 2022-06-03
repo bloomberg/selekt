@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 internal data class WeightedTask(val weight: Int, val block: suspend SQLDatabase.() -> Unit)
 
+@JvmSynthetic
 internal fun List<WeightedTask>.randomTask(): suspend (SQLDatabase) -> Unit {
     var total = sumOf { it.weight }
     val x = ThreadLocalRandom.current().nextInt(0, total + 1)

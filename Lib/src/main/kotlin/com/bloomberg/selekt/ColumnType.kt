@@ -28,6 +28,7 @@ enum class ColumnType(val sqlDataType: SQLDataType) {
     }
 }
 
+@JvmSynthetic
 internal fun Any?.toColumnType() = when (this) {
     null -> ColumnType.NULL
     is String -> ColumnType.STRING
