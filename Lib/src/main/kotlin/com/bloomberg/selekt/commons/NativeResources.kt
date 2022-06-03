@@ -20,6 +20,7 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
 import java.util.Locale
 import kotlin.jvm.Throws
 
@@ -49,13 +50,13 @@ internal fun libraryExtension() = when (osName()) {
 internal fun libraryResourceName(parentDirectory: String, name: String) =
     "$parentDirectory/${platformIdentifier()}${File.separatorChar}lib${name}${libraryExtension()}"
 
+@Suppress("NewApi") // Not used by Android.
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
     val url = libraryResourceName(parentDirectory, name).let {
         checkNotNull(loader.getResource(it)) { "Failed to find resource with name: $it" }
     }
-    val file = File.createTempFile("libselekt", "lib").apply {
-        delete()
+    val file = Files.createTempFile("libselekt", "lib").toFile().apply {
         deleteOnExit()
     }
     url.openStream().use { inputStream ->
