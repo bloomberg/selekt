@@ -24,8 +24,6 @@ import java.nio.file.Files
 import java.util.Locale
 import kotlin.jvm.Throws
 
-private const val DEFAULT_BUFFER_LIMIT = 8_192
-
 @Suppress("Detekt.StringLiteralDuplication")
 @JvmSynthetic
 internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
@@ -59,15 +57,12 @@ fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: Stri
     val file = Files.createTempFile("libselekt", "lib").toFile().apply {
         deleteOnExit()
     }
-    url.openStream().use { inputStream ->
-        BufferedOutputStream(FileOutputStream(file)).use { outputStream ->
-            var length: Int
-            val buffer = ByteArray(DEFAULT_BUFFER_LIMIT)
-            while (inputStream.read(buffer).also { length = it } > -1) {
-                outputStream.write(buffer, 0, length)
-            }
+    try {
+        url.openStream().use { inputStream ->
+            BufferedOutputStream(FileOutputStream(file)).use { outputStream -> inputStream.copyTo(outputStream) }
         }
         loadNativeLibrary(file)
+    } finally {
         file.delete()
     }
 }
