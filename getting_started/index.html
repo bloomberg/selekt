@@ -647,7 +647,7 @@
 
 <span class="kd">final</span><span class="w"> </span><span class="n">SQLiteDatabase</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SQLiteDatabase</span><span class="p">.</span><span class="na">openOrCreateDatabase</span><span class="p">(</span><span class="w"></span>
 <span class="w">    </span><span class="n">targetContext</span><span class="p">.</span><span class="na">getDatabasePath</span><span class="p">(</span><span class="s">&quot;sample&quot;</span><span class="p">),</span><span class="w"></span>
-<span class="w">    </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">.</span><span class="na">getDatabaseConfiguration</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">.</span><span class="na">databaseConfiguration</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="n">deriveKey</span><span class="p">()</span><span class="w"></span>
 <span class="p">);</span><span class="w"></span>
 <span class="n">database</span><span class="p">.</span><span class="na">exec</span><span class="p">(</span><span class="s">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">);</span><span class="w"></span>
