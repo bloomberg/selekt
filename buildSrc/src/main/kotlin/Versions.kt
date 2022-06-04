@@ -45,7 +45,7 @@ enum class Versions(
     KOTLINX_KOVER("0.5.0", URL("https://github.com/Kotlin/kotlinx-kover")),
     KTLINT("0.45.2", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.3.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
-    MOCKITO("4.5.1", URL("https://github.com/mockito/mockito")),
+    MOCKITO("4.6.1", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("4.0.0", URL("https://github.com/mockito/mockito-kotlin")),
     NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
