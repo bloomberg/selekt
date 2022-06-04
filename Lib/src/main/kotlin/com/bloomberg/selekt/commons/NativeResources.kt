@@ -48,12 +48,12 @@ internal fun libraryExtension() = when (osName()) {
 internal fun libraryResourceName(parentDirectory: String, name: String) =
     "$parentDirectory/${platformIdentifier()}${File.separatorChar}lib${name}${libraryExtension()}"
 
-@Suppress("NewApi") // Not used by Android.
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
     val url = libraryResourceName(parentDirectory, name).let {
         checkNotNull(loader.getResource(it)) { "Failed to find resource with name: $it" }
     }
+    @Suppress("NewApi") // Not used by Android.
     val file = Files.createTempFile("libselekt", "lib").toFile().apply {
         deleteOnExit()
     }
@@ -61,14 +61,9 @@ fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: Stri
         url.openStream().use { inputStream ->
             BufferedOutputStream(FileOutputStream(file)).use { outputStream -> inputStream.copyTo(outputStream) }
         }
-        loadNativeLibrary(file)
+        @Suppress("UnsafeDynamicallyLoadedCode")
+        System.load(file.absolutePath)
     } finally {
         file.delete()
     }
-}
-
-@Suppress("UnsafeDynamicallyLoadedCode")
-private fun loadNativeLibrary(file: File) {
-    file.run { require(isFile && exists() && canRead()) }
-    System.load(file.absolutePath)
 }
