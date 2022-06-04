@@ -39,7 +39,7 @@ Before sending a [Pull Request](../../pulls), please make sure you read our
 
 ## Licenses
 
-Please read the [LICENSE](LICENSE) and [SQLCIPHER_LICENSE](SQLCIPHER_LICENSE) files.
+Please read the [LICENSE](LICENSE), [OPENSSL_LICENSE](OPENSSL_LICENSE) and [SQLCIPHER_LICENSE](SQLCIPHER_LICENSE) files.
 
 ## Code of Conduct
 
