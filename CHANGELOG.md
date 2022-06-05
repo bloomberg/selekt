@@ -1,6 +1,21 @@
 Change Log
 ==========
 
+## Version 0.16.1
+
+### Fixes
+
+* Friendlier Java APIs.
+* Prefer `Files.createTempFile` when unpacking native libraries from the JAR in the JVM.
+
+### Dependencies
+
+* LiveData 2.4.1.
+* Mockito 4.6.1.
+* NDK 24.0.8215888.
+* Robolectric 4.8.1.
+* Room 2.4.2.
+
 ## Version 0.16.0
 
 ### Dependencies
