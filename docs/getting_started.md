@@ -84,7 +84,7 @@
         context.applicationContext,
         3,
         new ISQLiteOpenHelper.Configuration(
-            MyOpenHelperCallback,
+            new MyOpenHelperCallback(),
             deriveKey(),
             "sample"
         )
