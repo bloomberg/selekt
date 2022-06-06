@@ -7,7 +7,7 @@ Selekt's packaged native libraries target the following ABIs:
 * x86
 * x86_64
 
-The eventual size of an APK can be reduced by filtering out ABIs that are not supported. This can also help prevent APKs from being installed on devices that are not otherwise supported.
+The eventual size of an APK can be reduced by filtering out ABIs that are not needed. This can also help prevent APKs from being installed on devices that are not otherwise supported.
 
 ### Restricting native libraries
 
