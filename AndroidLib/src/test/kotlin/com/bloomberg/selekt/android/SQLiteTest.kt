@@ -451,7 +451,7 @@ internal class SQLiteTest {
     @Test
     fun prepareV2ThenFinalize() {
         prepareStatement(db, "CREATE TABLE 'Foo' (bar INT)").usePreparedStatement {
-            Assert.assertNotEquals(NULL, this)
+            Assert.assertNotEquals(NULL, it)
         }
     }
 
@@ -459,7 +459,7 @@ internal class SQLiteTest {
     @Test
     fun prepareV2ThenFinalizeTwice() {
         prepareStatement(db, "CREATE TABLE 'Foo' (bar INT)").let {
-            Assert.assertNotEquals(NULL, this)
+            Assert.assertNotEquals(NULL, it)
             SQLite.finalize(it)
             assertThatExceptionOfType(SQLiteException::class.java).isThrownBy { SQLite.finalize(it) }
         }
