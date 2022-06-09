@@ -36,6 +36,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version Versions.KOTLINX_KOVER.version
     id("org.jetbrains.qodana") version Versions.QODANA_PLUGIN.version
     id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
+    id("org.owasp.dependencycheck") version Versions.DEPENDENCY_CHECK.version
 }
 
 group = selektGroupId
@@ -59,6 +60,7 @@ jacoco {
 subprojects {
     apply {
         plugin("selekt")
+        plugin("org.owasp.dependencycheck")
     }
 }
 

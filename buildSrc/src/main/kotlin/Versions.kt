@@ -30,6 +30,7 @@ enum class Versions(
     ANDROIDX_ROOM("2.4.2", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     ASSERT_J("3.22.0", URL("https://joel-costigliola.github.io/assertj")),
     CMAKE("3.18.1", URL("https://cmake.org")),
+    DEPENDENCY_CHECK("7.1.0.1", URL("https://github.com/jeremylong/DependencyCheck")),
     DETEKT("1.20.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
