@@ -72,15 +72,7 @@ class SelektPlugin : Plugin<Project> {
                         isWarningsAsErrors = true
                     }
                     testOptions {
-                        unitTests.apply {
-                            if (project.hasProperty("robolectricDependencyRepoUrl")) {
-                                all {
-                                    it.systemProperty("robolectric.dependency.repo.url",
-                                        requireNotNull(project.properties["robolectricDependencyRepoUrl"]))
-                                }
-                            }
-                            isIncludeAndroidResources = true
-                        }
+                        unitTests.isIncludeAndroidResources = true
                     }
                 }
             }
