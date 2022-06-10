@@ -26,35 +26,43 @@ import kotlin.jvm.Throws
 
 @Suppress("Detekt.StringLiteralDuplication")
 @JvmSynthetic
-internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
+internal fun osNames(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
     when {
-        startsWith("mac") -> "darwin"
-        startsWith("windows") -> "windows"
-        else -> replace("\\s+", "_")
+        startsWith("mac") -> listOf("darwin", "mac")
+        startsWith("windows") -> listOf("windows")
+        else -> listOf(replace("\\s+", "_"))
     }
 }
 
 @JvmSynthetic
-internal fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
-
-@JvmSynthetic
-internal fun libraryExtension() = when (osName()) {
-    "darwin" -> ".dylib"
-    "windows" -> ".dll"
-    else -> ".so"
+internal fun platformIdentifiers() = osNames().flatMap {
+    listOf("$it-${System.getProperty("os.arch")}", "$it${File.separatorChar}${System.getProperty("os.arch")}")
 }
 
 @JvmSynthetic
-internal fun libraryResourceName(parentDirectory: String, name: String) =
-    "$parentDirectory/${platformIdentifier()}${File.separatorChar}lib${name}${libraryExtension()}"
+internal fun libraryExtensions() = osNames().map {
+    when (it) {
+        "darwin", "mac" -> ".dylib"
+        "windows" -> ".dll"
+        else -> ".so"
+    }
+}.toSet()
+
+@JvmSynthetic
+internal fun libraryResourceNames(
+    parentDirectory: String,
+    name: String
+) = platformIdentifiers().times(libraryExtensions()).map {
+    "$parentDirectory${File.separatorChar}${it.first}${File.separatorChar}lib${name}${it.second}"
+}
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = libraryResourceName(parentDirectory, name).let {
-        checkNotNull(loader.getResource(it)) { "Failed to find resource with name: $it" }
-    }
+    val url = checkNotNull(libraryResourceNames(parentDirectory, name).mapNotNull {
+        loader.getResource(it)
+    }.firstOrNull()) { "Failed to find resource with name: $name" }
     @Suppress("NewApi") // Not used by Android.
-    val file = Files.createTempFile("libselekt", "lib").toFile().apply {
+    val file = Files.createTempFile("lib$name", "lib").toFile().apply {
         deleteOnExit()
     }
     try {
