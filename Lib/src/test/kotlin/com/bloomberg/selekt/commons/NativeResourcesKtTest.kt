@@ -18,7 +18,7 @@ package com.bloomberg.selekt.commons
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class NativeResourcesKtTest {
@@ -29,17 +29,17 @@ internal class NativeResourcesKtTest {
 
     @Test
     fun osNameDarwin() {
-        assertContentEquals(listOf("darwin", "mac"), osNames("Mac OS"))
+        assertEquals(listOf("darwin", "mac"), osNames("Mac OS"))
     }
 
     @Test
     fun osNameLinux() {
-        assertContentEquals(listOf("linux"), osNames("Linux"))
+        assertEquals(listOf("linux"), osNames("Linux"))
     }
 
     @Test
     fun osNameWindows() {
-        assertContentEquals(listOf("windows"), osNames("Windows 95"))
+        assertEquals(listOf("windows"), osNames("Windows 95"))
     }
 
     @Test
