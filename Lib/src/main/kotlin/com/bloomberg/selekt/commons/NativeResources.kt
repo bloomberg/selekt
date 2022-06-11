@@ -28,7 +28,7 @@ import kotlin.jvm.Throws
 @JvmSynthetic
 internal fun osNames(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
     when {
-        startsWith("mac") -> listOf("darwin", "mac")
+        startsWith("mac") -> listOf("darwin", "mac", "osx")
         startsWith("windows") -> listOf("windows")
         else -> listOf(replace("\\s+", "_"))
     }
@@ -36,13 +36,14 @@ internal fun osNames(systemOsName: String = System.getProperty("os.name")) = sys
 
 @JvmSynthetic
 internal fun platformIdentifiers() = osNames().flatMap {
-    listOf("$it-${System.getProperty("os.arch")}", "$it${File.separatorChar}${System.getProperty("os.arch")}")
+    val osArch = System.getProperty("os.arch")
+    listOf('-', File.separatorChar).map { s -> "$it$s$osArch" }
 }
 
 @JvmSynthetic
 internal fun libraryExtensions() = osNames().map {
     when (it) {
-        "darwin", "mac" -> ".dylib"
+        "darwin", "mac", "osx" -> ".dylib"
         "windows" -> ".dll"
         else -> ".so"
     }

@@ -24,12 +24,12 @@ import kotlin.test.assertTrue
 internal class NativeResourcesKtTest {
     @Test
     fun commonOsNames() {
-        assertTrue(osNames().intersect(listOf("darwin", "linux", "mac", "windows")).isNotEmpty())
+        assertTrue(osNames().intersect(listOf("darwin", "linux", "mac", "osx", "windows")).isNotEmpty())
     }
 
     @Test
     fun osNameDarwin() {
-        assertEquals(listOf("darwin", "mac"), osNames("Mac OS"))
+        assertEquals(listOf("darwin", "mac", "osx"), osNames("Mac OS"))
     }
 
     @Test
