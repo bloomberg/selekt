@@ -23,38 +23,40 @@ import kotlin.test.assertTrue
 
 internal class NativeResourcesKtTest {
     @Test
-    fun commonOsName() {
-        assertTrue(osName() in arrayOf("darwin", "linux", "windows"))
+    fun commonOsNames() {
+        assertTrue(osNames().intersect(listOf("darwin", "linux", "mac", "osx", "windows")).isNotEmpty())
     }
 
     @Test
     fun osNameDarwin() {
-        assertEquals("darwin", osName("Mac OS"))
+        assertEquals(listOf("darwin", "mac", "osx"), osNames("Mac OS"))
     }
 
     @Test
     fun osNameLinux() {
-        assertEquals("linux", osName("Linux"))
+        assertEquals(listOf("linux"), osNames("Linux"))
     }
 
     @Test
     fun osNameWindows() {
-        assertEquals("windows", osName("Windows 95"))
+        assertEquals(listOf("windows"), osNames("Windows 95"))
     }
 
     @Test
     fun commonPlatformIdentifier() {
-        assertTrue(platformIdentifier().isNotBlank())
+        assertTrue(platformIdentifiers().isNotEmpty())
     }
 
     @Test
     fun commonLibraryExtension() {
-        assertTrue(libraryExtension() in arrayOf(".dll", ".dylib", ".so"))
+        assertTrue(libraryExtensions().intersect(listOf(".dll", ".dylib", ".so")).isNotEmpty())
     }
 
     @Test
     fun commonLibraryResourceName() {
-        assertTrue(libraryResourceName("jni", "selekt").startsWith("jni"))
+        libraryResourceNames("jni", "selekt").forEach {
+            assertTrue(it.startsWith("jni"))
+        }
     }
 
     @Test

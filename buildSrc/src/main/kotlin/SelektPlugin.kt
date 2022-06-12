@@ -23,6 +23,9 @@ import org.gradle.kotlin.dsl.kotlin
 private fun Test.configureJUnit5() {
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "60s")
+    systemProperty("junit.jupiter.execution.timeout.mode", "disabled_on_debug")
+    systemProperty("junit.jupiter.execution.timeout.testable.method.default", "60s")
 }
 
 class SelektPlugin : Plugin<Project> {
@@ -41,10 +44,6 @@ class SelektPlugin : Plugin<Project> {
                         add(name, "org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT5}")
                         add(name, "org.junit.vintage:junit-vintage-engine:${Versions.JUNIT5}")
                     }
-                }
-                tasks.withType(Test::class.java) {
-                    useJUnitPlatform()
-                    configureJUnit5()
                 }
                 tasks.withType(Jar::class.java).configureEach {
                     metaInf {
@@ -85,14 +84,16 @@ class SelektPlugin : Plugin<Project> {
                     }
                     dependencies.apply {
                         configurations.getByName("testImplementation") {
-                            add(name, kotlin("test", Versions.KOTLIN_TEST.version))
-                            add(name, kotlin("test-junit", Versions.KOTLIN_TEST.version))
+                            add(name, kotlin("test-junit5", Versions.KOTLIN_TEST.version))
                             add(name, kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
                             add(name, kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
-                            add(name, "org.assertj:assertj-core:${Versions.ASSERT_J}")
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                             add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                         }
+                    }
+                    tasks.withType(Test::class.java) {
+                        useJUnitPlatform()
+                        configureJUnit5()
                     }
                 }
             }

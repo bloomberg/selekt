@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -60,7 +60,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun countIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).count
@@ -123,7 +123,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun isAfterLastIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).isAfterLast()
@@ -132,7 +132,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun isBeforeFirstIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).isBeforeFirst()
@@ -160,7 +160,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun isFirstIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).isFirst()
@@ -169,7 +169,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun isLastIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).isLast()
@@ -198,7 +198,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun moveIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).move(1)
@@ -207,7 +207,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun moveToFirstIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).moveToFirst()
@@ -260,7 +260,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun moveToPositionIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).moveToPosition(0)
@@ -269,7 +269,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun moveToPreviousIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).moveToPrevious()
@@ -278,7 +278,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun moveToLastIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).moveToLast()
@@ -287,7 +287,7 @@ internal class ForwardCursorTest {
 
     @Test
     fun positionIsUnsupported() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {
                 whenever(columnNames) doReturn arrayOf("bar")
             }).position()

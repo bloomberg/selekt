@@ -16,10 +16,7 @@
 
 package com.bloomberg.selekt.pools
 
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
@@ -27,12 +24,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import java.util.concurrent.TimeUnit
 
 internal class TieredObjectPoolTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     private val singleObjectPool: SingleObjectPool<String, PooledObject> = mock()
     private val commonObjectPool: CommonObjectPool<String, PooledObject> = mock()
     private val pool = TieredObjectPool(singleObjectPool, commonObjectPool)

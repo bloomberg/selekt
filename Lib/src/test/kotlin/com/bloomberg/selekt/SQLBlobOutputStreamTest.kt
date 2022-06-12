@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
@@ -42,7 +42,7 @@ internal class SQLBlobOutputStreamTest {
     @Test
     fun outputStreamChecksOffset() {
         BlobOutputStream(mock()).run {
-            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<ArrayIndexOutOfBoundsException> {
                 write(ByteArray(1), -1, 1)
             }
         }
@@ -51,7 +51,7 @@ internal class SQLBlobOutputStreamTest {
     @Test
     fun outputStreamChecksLength() {
         BlobOutputStream(mock()).run {
-            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<ArrayIndexOutOfBoundsException> {
                 write(ByteArray(1), 0, -1)
             }
         }
@@ -60,7 +60,7 @@ internal class SQLBlobOutputStreamTest {
     @Test
     fun outputStreamChecksUpperBounds() {
         BlobOutputStream(mock()).run {
-            assertThatExceptionOfType(ArrayIndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<ArrayIndexOutOfBoundsException> {
                 write(ByteArray(1), 1, 1)
             }
         }
@@ -71,7 +71,7 @@ internal class SQLBlobOutputStreamTest {
         mock<SQLBlob>().apply {
             whenever(readOnly) doReturn true
         }.let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            assertThrows<IllegalArgumentException> {
                 BlobOutputStream(it)
             }
         }
@@ -79,14 +79,14 @@ internal class SQLBlobOutputStreamTest {
 
     @Test
     fun writeFromNegativeStart() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             BlobOutputStream(mock(), start = -1)
         }
     }
 
     @Test
     fun writeTooAdvancedStart() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             BlobOutputStream(mock(), start = 1)
         }
     }
@@ -108,7 +108,7 @@ internal class SQLBlobOutputStreamTest {
             whenever(size) doReturn 0
         }
         BlobOutputStream(blob).use {
-            assertThatExceptionOfType(IndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<IndexOutOfBoundsException> {
                 it.write(byteArrayOf(0x42))
             }
         }
@@ -143,7 +143,7 @@ internal class SQLBlobOutputStreamTest {
             verify(blob, times(1)).write(eq(expectedSource.size), same(expectedSource), eq(0), eq(expectedSource.size))
             it.write(expectedSource, 0, 20)
             verify(blob, times(1)).write(eq(2 * expectedSource.size), same(expectedSource), eq(0), eq(20))
-            assertThatExceptionOfType(IndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<IndexOutOfBoundsException> {
                 it.write(byteArrayOf(0x42))
             }
         }
@@ -160,7 +160,7 @@ internal class SQLBlobOutputStreamTest {
             verify(blob, times(1)).write(eq(expectedSource.size), same(expectedSource), eq(0), eq(expectedSource.size))
             it.write(expectedSource, 0, 20)
             verify(blob, times(1)).write(eq(2 * expectedSource.size), same(expectedSource), eq(0), eq(20))
-            assertThatExceptionOfType(IndexOutOfBoundsException::class.java).isThrownBy {
+            assertThrows<IndexOutOfBoundsException> {
                 it.write(byteArrayOf(0x42))
             }
         }

@@ -16,11 +16,7 @@
 
 package com.bloomberg.selekt
 
-import org.junit.Rule
 import org.junit.jupiter.api.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.RuleChain
-import org.junit.rules.Timeout
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.inOrder
@@ -35,10 +31,6 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class LruCacheTest {
-    @Rule
-    @JvmField
-    val rule: RuleChain = RuleChain.outerRule(DisableOnDebug(Timeout.seconds(10L)))
-
     @Test
     fun evict() {
         val first = Any()

@@ -29,21 +29,17 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.jupiter.SelektTestExtension
 import com.bloomberg.selekt.android.SQLiteDatabase
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import java.io.File
-import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 
 private fun <T : RoomDatabase> buildRoomDatabase(
@@ -51,6 +47,7 @@ private fun <T : RoomDatabase> buildRoomDatabase(
     klass: Class<T>
 ) = Room.databaseBuilder(context, klass, "app")
     .openHelperFactory(createSupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, ByteArray(32) { 0x42 }))
+    .allowMainThreadQueries()
     .build()
 
 @Database(entities = [User::class], version = 1, exportSchema = false)
@@ -74,12 +71,9 @@ interface UserDao {
     fun insertAll(vararg users: User)
 }
 
-@RunWith(RobolectricTestRunner::class)
+@ExtendWith(SelektTestExtension::class)
 internal class SupportSQLiteOpenHelperFactoryTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-room", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-room", ".db").toFile().also { it.deleteOnExit() }
     private val context = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
@@ -88,7 +82,7 @@ internal class SupportSQLiteOpenHelperFactoryTest {
         AppDatabase::class.java
     )
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.close()
     }
@@ -106,7 +100,7 @@ internal class SupportSQLiteOpenHelperFactoryTest {
     fun encryption() {
         database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
         SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, null).use {
-            assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
+            assertThrows<SQLiteDatabaseCorruptException> {
                 it.journalMode
             }
         }

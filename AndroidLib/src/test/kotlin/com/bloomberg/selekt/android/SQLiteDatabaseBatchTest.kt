@@ -19,31 +19,28 @@ package com.bloomberg.selekt.android
 import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.commons.deleteDatabase
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import java.io.File
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(Experimental::class)
-@RunWith(RobolectricTestRunner::class)
 internal class SQLiteDatabaseBatchTest {
-    private val file = File.createTempFile("test-sql-database-batch", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-batch", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             try {
@@ -87,7 +84,7 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertBooleanTrueThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(true)))
         }
     }
@@ -95,7 +92,7 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertBooleanFalseThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(false)))
         }
     }
@@ -103,14 +100,14 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertAnyFails(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(Any())))
         }
     }
 
     @Test
     fun batchRequiresUpdate(): Unit = database.run {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             batch("SELECT * FROM Foo", sequence { })
         }
     }

@@ -18,28 +18,23 @@ package com.bloomberg.selekt.android
 
 import android.database.SQLException
 import android.database.sqlite.SQLiteException
-import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.commons.times
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SimpleSQLQuery
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtensionContext
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.ArgumentsProvider
+import org.junit.jupiter.params.provider.ArgumentsSource
 import org.mockito.kotlin.mock
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import java.io.File
 import java.util.Locale
-import java.util.concurrent.TimeUnit
+import java.util.stream.Stream
+import kotlin.io.path.createTempFile
 import kotlin.math.roundToInt
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -54,645 +49,850 @@ internal data class SQLInputs(
     override fun toString() = "$journalMode;${if (key != null) "keyed" else "not-keyed"}"
 }
 
-@RunWith(Parameterized::class)
-internal class SQLDatabaseTest(private val inputs: SQLInputs) {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
+internal class SampleSQLArgumentsProvider : ArgumentsProvider {
+    override fun provideArguments(
+        context: ExtensionContext
+    ): Stream<out Arguments> = (SQLiteJournalMode.values().filter { it != SQLiteJournalMode.MEMORY } *
+        arrayOf(ByteArray(32) { 0x42 }, null)).map {
+        SQLInputs(it.first, it.second)
+    }.map { Arguments.of(it) }.stream()
+}
 
-    private val file = File.createTempFile("test-sql-database", ".db").also { it.deleteOnExit() }
+internal class SQLDatabaseTest {
+    private val file = createTempFile("test-sql-database", ".db").toFile().also { it.deleteOnExit() }
 
-    companion object {
-        @Parameters(name = "{0}")
-        @JvmStatic
-        fun initParameters(): Iterable<SQLInputs> = (SQLiteJournalMode.values().filter { it != SQLiteJournalMode.MEMORY } *
-            arrayOf(ByteArray(32) { 0x42 }, null)).map {
-            SQLInputs(it.first, it.second)
-        }
-    }
-
-    private val database = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key)
-
-    @Before
-    fun setUp() {
-        database.pragma("journal_mode", inputs.journalMode)
-    }
-
-    @After
-    fun tearDown() {
-        database.run {
-            try {
-                if (isOpen()) {
-                    close()
-                }
-                assertFalse(isOpen())
-            } finally {
-                assertTrue(deleteDatabase(file))
-            }
-        }
-    }
-
-    @Test
-    fun delete(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun delete(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        assertEquals(1, delete("Foo", "bar=?", arrayOf("42")))
-        query(false, "Foo", emptyArray(), "", emptyArray(), null, null, null, null).use {
-            assertFalse(it.moveToFirst())
-            assertEquals(0, it.count)
+        assertEquals(1, it.delete("Foo", "bar=?", arrayOf("42")))
+        it.query(false, "Foo", emptyArray(), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertFalse(cursor.moveToFirst())
+            assertEquals(0, cursor.count)
         }
     }
 
-    @Test
-    fun deleteAll(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-            val values = ContentValues().apply { put("bar", it) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun deleteAll(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
+            val values = ContentValues().apply { put("bar", value) }
+            val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
             assertEquals((index + 1).toLong(), rowId)
         }
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(4, it.count)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(4, cursor.count)
         }
-        assertEquals(4, delete("Foo", "", emptyArray()))
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(0, it.count)
+        assertEquals(4, it.delete("Foo", "", emptyArray()))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(0, cursor.count)
         }
     }
 
-    @Test
-    fun exec() {
-        database.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun exec(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
     }
 
-    @Test(expected = SQLException::class)
-    fun execInvalidSQL() {
-        database.exec("NOT SQL", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun execInvalidSQL(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        assertThrows<SQLException> {
+            it.exec("NOT SQL", emptyArray())
+        }
     }
 
-    @Test
-    fun executeCompileStatement(): Unit = database.run {
-        val statement = compileStatement("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun executeCompileStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        val statement = it.compileStatement("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         statement.execute()
-        val rowId = insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun executeInsertCompileStatement(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (42)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun executeInsertCompileStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (42)", emptyArray())
         val rowId = statement.executeInsert()
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun executeInsertNumberCompileStatementThrows(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)", arrayOf(mock<Number>()))
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun executeInsertNumberCompileStatementThrows(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)", arrayOf(mock<Number>()))
+        assertThrows<IllegalArgumentException> {
             statement.executeInsert()
         }
     }
 
-    @Test
-    fun executeUpdateDeleteCompileStatement(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        val statement = compileStatement("DELETE FROM 'Foo' WHERE bar=42", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun executeUpdateDeleteCompileStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        val statement = it.compileStatement("DELETE FROM 'Foo' WHERE bar=42", emptyArray())
         val count = statement.executeUpdateDelete()
         assertEquals(1, count)
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun execAfterDatabaseHasClosed(): Unit = database.run {
-        close()
-        assertFalse(isOpen())
-        exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
-    }
-
-    @Test
-    fun executeStatementsOnAnotherThread(): Unit = database.run {
-        val statement = compileStatement("CREATE TABLE 'Foo' (bar INT)")
-        Thread {
-            transact { statement.execute() }
-        }.let {
-            it.isDaemon = true
-            it.start()
-            it.join(1_000L)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun execAfterDatabaseHasClosed(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.close()
+        assertFalse(it.isOpen())
+        assertThrows<IllegalStateException> {
+            it.exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
         }
     }
 
-    @Test
-    fun simpleQueryForStringCompileStatement(): Unit = database.run {
-        val statement = compileStatement("PRAGMA journal_mode", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun executeStatementsOnAnotherThread(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        val statement = it.compileStatement("CREATE TABLE 'Foo' (bar INT)")
+        Thread {
+            it.transact { statement.execute() }
+        }.run {
+            isDaemon = true
+            start()
+            join(1_000L)
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun simpleQueryForStringCompileStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        val statement = it.compileStatement("PRAGMA journal_mode", emptyArray())
         assertEquals(inputs.journalMode.name, statement.simpleQueryForString()?.uppercase(Locale.US))
     }
 
-    @Test
-    fun simpleQueryForNullStringCompileStatement(): Unit = database.run {
-        val statement = compileStatement("SELECT null", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun simpleQueryForNullStringCompileStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        val statement = it.compileStatement("SELECT null", emptyArray())
         assertNull(statement.simpleQueryForString())
     }
 
-    @Test
-    fun insertByteWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertByteWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.toByte()) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertDoubleWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar DOUBLE)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertDoubleWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar DOUBLE)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertIntWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertIntWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertLongWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertLongWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42L) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertShortWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertShortWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.toShort()) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertStringWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertStringWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val values = ContentValues().apply { put("bar", "xyz") }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
     }
 
-    @Test
-    fun insertFloatAsIntWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertFloatAsIntWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0f) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertTrue(it.getInt(0) in 41..42)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.getInt(0) in 41..42)
         }
     }
 
-    @Test
-    fun insertIntAsFloatWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar FLOAT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertIntAsFloatWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar FLOAT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getFloat(0).roundToInt())
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getFloat(0).roundToInt())
         }
     }
 
-    @Test
-    fun insertFloatWithOnConflictGetAsInt(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar Float)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertFloatWithOnConflictGetAsInt(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar Float)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0f) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
         }
     }
 
-    @Test
-    fun insertIntWithOnConflictMultipleTimes(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-            val values = ContentValues().apply { put("bar", it) }
-            val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertIntWithOnConflictMultipleTimes(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
+            val values = ContentValues().apply { put("bar", value) }
+            val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
             assertEquals((index + 1).toLong(), rowId)
         }
     }
 
-    @Test
-    fun insertBlobWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertBlobWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
         val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            val blob = it.getBlob(0)
-            Assert.assertArrayEquals(ByteArray(1) { 42 }, blob)
-            run { assertSame(blob, it.getBlob(0)) }
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            val blob = cursor.getBlob(0)
+            assertContentEquals(ByteArray(1) { 42 }, blob)
+            run { assertSame(blob, cursor.getBlob(0)) }
         }
     }
 
-    @Test
-    fun insertNullWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertNullWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val values = ContentValues().apply { putNull("bar") }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertTrue(it.isNull(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
         }
     }
 
-    @Test
-    fun insertJapaneseText(): Unit = database.run {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertJapaneseText(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
         val text = "日本語"
-        exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val values = ContentValues().apply { put("bar", text) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(text, it.getString(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(text, cursor.getString(0))
         }
     }
 
-    @Test
-    fun insertBlobGetByColumnName(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar BLOB)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertBlobGetByColumnName(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar BLOB)")
         val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
-        val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
         assertEquals(1L, rowId)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            val index = it.columnIndex("bar")
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            val index = cursor.columnIndex("bar")
             assertTrue(index > -1)
-            val blob = it.getBlob(index)
-            Assert.assertArrayEquals(ByteArray(1) { 42 }, blob)
-            run { assertSame(blob, it.getBlob(0)) }
+            val blob = cursor.getBlob(index)
+            assertContentEquals(ByteArray(1) { 42 }, blob)
+            run { assertSame(blob, cursor.getBlob(0)) }
         }
     }
 
-    @Test
-    fun insertAndGetBlobWithStatement(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar BLOB)")
-        val statement = compileStatement("INSERT INTO Foo VALUES (?)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertAndGetBlobWithStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar BLOB)")
+        val statement = it.compileStatement("INSERT INTO Foo VALUES (?)")
         statement.bindBlob(1, ByteArray(1) { 42 })
         assertEquals(1L, statement.executeInsert())
-        query(SimpleSQLQuery("SELECT * FROM Foo")).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            val index = it.columnIndex("bar")
+        it.query(SimpleSQLQuery("SELECT * FROM Foo")).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            val index = cursor.columnIndex("bar")
             assertTrue(index > -1)
-            val blob = it.getBlob(index)
-            Assert.assertArrayEquals(ByteArray(1) { 42 }, blob)
-            run { assertSame(blob, it.getBlob(0)) }
+            val blob = cursor.getBlob(index)
+            assertContentEquals(ByteArray(1) { 42 }, blob)
+            run { assertSame(blob, cursor.getBlob(0)) }
         }
     }
 
-    @Test
-    fun insertDoubleAsCompiledStatement(): Unit = database.run {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertDoubleAsCompiledStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
         val value = 42.0
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindDouble(1, value)
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(value, it.getDouble(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(value, cursor.getDouble(0))
         }
     }
 
-    @Test
-    fun insertIntAsCompiledStatement(): Unit = database.run {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertIntAsCompiledStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
         val value = 42
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindInt(1, value)
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(value, it.getInt(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(value, cursor.getInt(0))
         }
     }
 
-    @Test
-    fun insertNullAsCompiledStatement(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertNullAsCompiledStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindString(1, "knock me out")
         statement.bindNull(1)
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertTrue(it.isNull(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
         }
     }
 
-    @Test
-    fun insertStringAsCompiledStatement(): Unit = database.run {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertStringAsCompiledStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
         val text = "greetings"
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindString(1, text)
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(text, it.getString(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(text, cursor.getString(0))
         }
     }
 
-    @Test
-    fun insertStringAsCompiledStatementWithTableBind(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
-            compileStatement("INSERT INTO ? VALUES (?)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertStringAsCompiledStatementWithTableBind(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        assertThrows<SQLiteException> {
+            it.compileStatement("INSERT INTO ? VALUES (?)")
         }
     }
 
-    @Test
-    fun clearCompiledStatement(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun clearCompiledStatement(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindString(1, "abc")
         statement.clearBindings()
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertTrue(it.isNull(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
         }
     }
 
-    @Test
-    fun closeCompiledStatementClears(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        val statement = compileStatement("INSERT INTO 'Foo' VALUES (?)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun closeCompiledStatementClears(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
         statement.bindString(1, "abc")
         statement.close()
         assertEquals(1L, statement.executeInsert())
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertTrue(it.isNull(0))
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertTrue(cursor.isNull(0))
         }
     }
 
-    @Test
-    fun upsertString(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun upsertString(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         val values = ContentValues().apply { put("bar", "hello") }
-        val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
-        assertEquals(id, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
-        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
-            assertEquals(1, it.getInt(0))
+        val id = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(id, it.upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        it.query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
         }
     }
 
-    @Test
-    fun query(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertFalse(it.moveToNext())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun query(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun queryMultiple(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT, xyz INT)", emptyArray())
-        insert("Foo", ContentValues().apply {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryMultiple(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT, xyz INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply {
             put("bar", 42)
             put("xyz", 43)
         }, ConflictAlgorithm.REPLACE)
-        query(false, "Foo", arrayOf("bar", "xyz"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertEquals(1, it.columnIndex("xyz"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertEquals(43, it.getInt(1))
-            assertFalse(it.moveToNext())
+        it.query(false, "Foo", arrayOf("bar", "xyz"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertEquals(1, cursor.columnIndex("xyz"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertEquals(43, cursor.getInt(1))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun queryDistinct(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        repeat(2) {
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryDistinct(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        repeat(2) { _ ->
+            it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
         }
-        query(true, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-        }
-    }
-
-    @Test
-    fun queryAll(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertFalse(it.moveToNext())
+        it.query(true, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
         }
     }
 
-    @Test(expected = SQLException::class)
-    fun queryTableWithEmptyName(): Unit = database.run {
-        query(false, "", emptyArray(), "", emptyArray(), null, null, null, null).use {}
-    }
-
-    @Test
-    fun queryQueryNoArgs(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query(SimpleSQLQuery("SELECT * FROM 'Foo'")).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertFalse(it.moveToNext())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryAll(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun queryQueryWithArgs(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query(SimpleSQLQuery("SELECT * FROM 'Foo' WHERE bar=?", arrayOf(42))).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertFalse(it.moveToNext())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryTableWithEmptyName(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        assertThrows<SQLException> {
+            it.query(false, "", emptyArray(), "", emptyArray(), null, null, null, null).use {}
         }
     }
 
-    @Test
-    fun rawQuery(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query("SELECT * FROM 'Foo'", emptyArray()).use {
-            assertEquals(1, it.count)
-            assertEquals(0, it.columnIndex("bar"))
-            assertTrue(it.moveToFirst())
-            assertEquals(42, it.getInt(0))
-            assertFalse(it.moveToNext())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryQueryNoArgs(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query(SimpleSQLQuery("SELECT * FROM 'Foo'")).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun rawQueryWithPadding(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        query("          SELECT   *   FROM    'Foo'          ", emptyArray()).use {
-            assertEquals(1, it.count)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryQueryWithArgs(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query(SimpleSQLQuery("SELECT * FROM 'Foo' WHERE bar=?", arrayOf(42))).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun queryThenAlterThenQueryIgnoresSchemaChange(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        query("SELECT * FROM 'Foo'", emptyArray()).use {
-            assertEquals(1, it.columnCount)
-        }
-        exec("ALTER TABLE 'Foo' ADD COLUMN xyz INT")
-        query("SELECT * FROM 'Foo'", emptyArray()).use {
-            assertEquals(1, it.columnCount)
-        }
-    }
-
-    @Test
-    fun queryByChar(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar TEXT)")
-        insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-            query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x'))
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun rawQuery(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertEquals(0, cursor.columnIndex("bar"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals(42, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun insertAsQuery(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        query("INSERT INTO 'Foo' VALUES (42)", emptyArray()).close()
-        query("SELECT * FROM 'Foo'", emptyArray()).use {
-            assertEquals(1, it.count)
-            assertTrue(it.moveToFirst())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun rawQueryWithPadding(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.query("          SELECT   *   FROM    'Foo'          ", emptyArray()).use { cursor ->
+            assertEquals(1, cursor.count)
         }
     }
 
-    @Test
-    fun updateWithOnConflict(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-        update(
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryThenAlterThenQueryIgnoresSchemaChange(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertEquals(1, cursor.columnCount)
+        }
+        it.exec("ALTER TABLE 'Foo' ADD COLUMN xyz INT")
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertEquals(1, cursor.columnCount)
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun queryByChar(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar TEXT)")
+        it.insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
+        assertThrows<IllegalArgumentException> {
+            it.query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x')).close()
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertAsQuery(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.query("INSERT INTO 'Foo' VALUES (42)", emptyArray()).close()
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertEquals(1, cursor.count)
+            assertTrue(cursor.moveToFirst())
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun updateWithOnConflict(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        it.update(
             "Foo", ContentValues().apply { put("bar", 43) }, "bar=?", arrayOf("42"),
             ConflictAlgorithm.REPLACE
         )
-        query("SELECT * FROM 'Foo'", emptyArray()).use {
-            assertTrue(it.moveToFirst())
-            assertEquals(43, it.getInt(0))
-            assertFalse(it.moveToNext())
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(43, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
         }
     }
 
-    @Test
-    fun simpleQueryForLong(): Unit = database.run {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun simpleQueryForLong(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
         val value = 42L
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(value))
-        val statement = compileStatement("SELECT * FROM 'Foo' LIMIT 1")
-        assertEquals(value, statement.simpleQueryForLong())
-    }
-
-    @Test
-    fun insertBigInt(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar BIGINT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) },
-            ConflictAlgorithm.REPLACE)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertTrue(it.moveToFirst())
-            assertEquals(Long.MAX_VALUE, it.getLong(0))
-            assertFalse(it.moveToNext())
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(value))
+        it.compileStatement("SELECT * FROM 'Foo' LIMIT 1").use { statement ->
+            assertEquals(value, statement.simpleQueryForLong())
         }
     }
 
-    @Test
-    fun version() = database.run {
-        version = 42
-        assertEquals(42, version)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertBigInt(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar BIGINT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) },
+            ConflictAlgorithm.REPLACE)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(Long.MAX_VALUE, cursor.getLong(0))
+            assertFalse(cursor.moveToNext())
+        }
     }
 
-    @Test
-    fun directReadInsideTransaction(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun version(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.version = 42
+        assertEquals(42, it.version)
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun directReadInsideTransaction(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.transact {
             exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertEquals(1, it.count)
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+                assertEquals(1, cursor.count)
             }
         }
     }
 
-    @Test
-    fun readConnectionIsReturnedToReadPool(): Unit = database.run {
-        query("SELECT date()", emptyArray())
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun readConnectionIsReturnedToReadPool(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.query("SELECT date()", emptyArray())
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
     }
 
-    @Test
-    fun secureDeleteIsFast(): Unit = database.run {
-        assertEquals(2, pragma("secure_delete").toInt())
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun secureDeleteIsFast(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        assertEquals(2, it.pragma("secure_delete").toInt())
     }
 
-    @Test
-    fun batchInsert(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun batchInsert(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        assertEquals(2, it.batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
     }
 
-    @Test
-    fun insertOneHundredUnboundThenOneBound(): Unit = database.run {
-        exec("CREATE TABLE 'Foo' (bar INT)")
-        repeat(100) { exec("INSERT INTO 'Foo' VALUES ($it)") }
-        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(200))
-        query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
-            repeat(100) {
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun insertOneHundredUnboundThenOneBound(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        repeat(100) { i -> it.exec("INSERT INTO 'Foo' VALUES ($i)") }
+        it.exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(200))
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            repeat(100) { i ->
                 assertTrue(cursor.moveToNext())
-                assertEquals(it, cursor.getInt(0))
+                assertEquals(i, cursor.getInt(0))
             }
             assertTrue(cursor.moveToNext())
             assertEquals(200, cursor.getInt(0))

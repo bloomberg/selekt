@@ -16,10 +16,10 @@
 
 package com.bloomberg.selekt.commons
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -54,7 +54,7 @@ internal class DatabaseKtTest {
 
     @Test
     fun deleteDatabaseDirectory() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             deleteDatabase(parent)
         }
     }

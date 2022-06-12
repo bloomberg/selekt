@@ -20,15 +20,12 @@ import android.database.SQLException
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.After
-import org.junit.Assert.assertArrayEquals
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.math.roundToInt
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -36,17 +33,14 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class SQLDatabaseMemoryTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     private lateinit var database: SQLDatabase
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database = SQLDatabase("file::memory:", SQLite, SQLiteJournalMode.MEMORY.databaseConfiguration, null)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             close()
@@ -89,9 +83,11 @@ internal class SQLDatabaseMemoryTest {
         database.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
     }
 
-    @Test(expected = SQLException::class)
+    @Test
     fun execInvalidSQL() {
-        database.exec("NOT SQL", emptyArray())
+        assertThrows<SQLException> {
+            database.exec("NOT SQL", emptyArray())
+        }
     }
 
     @Test
@@ -177,7 +173,7 @@ internal class SQLDatabaseMemoryTest {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
             val blob = it.getBlob(0)
-            assertArrayEquals(ByteArray(1) { 42 }, blob)
+            assertContentEquals(ByteArray(1) { 42 }, blob)
             run { assertSame(blob, it.getBlob(0)) }
         }
     }
@@ -196,11 +192,13 @@ internal class SQLDatabaseMemoryTest {
         }
     }
 
-    @Test(expected = IllegalStateException::class)
+    @Test
     fun execAfterDatabaseHasClosed(): Unit = database.run {
         close()
         assertFalse(isOpen())
-        exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+        assertThrows<IllegalStateException> {
+            exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
+        }
     }
 
     @Test

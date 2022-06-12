@@ -16,12 +16,9 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Rule
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
@@ -35,7 +32,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -48,9 +44,6 @@ private val databaseConfiguration = DatabaseConfiguration(
 )
 
 internal class SQLConnectionTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     @Mock lateinit var sqlite: SQLite
 
     @BeforeEach
@@ -65,7 +58,7 @@ internal class SQLConnectionTest {
     @Test
     fun exceptionInConstruction() {
         whenever(sqlite.busyTimeout(any(), any())) doThrow IllegalStateException()
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
@@ -76,7 +69,7 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
@@ -92,7 +85,7 @@ internal class SQLConnectionTest {
             0
         }
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).apply {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 prepare("INSERT INTO Foo VALUES (?)")
             }
         }
@@ -138,7 +131,7 @@ internal class SQLConnectionTest {
         }
         whenever(sqlite.bindParameterCount(any())) doReturn 1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            assertThrows<IllegalArgumentException> {
                 it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
             }
         }
@@ -148,7 +141,7 @@ internal class SQLConnectionTest {
     fun connectionRejectsUnrecognisedColumnType() {
         whenever(sqlite.columnType(any(), any())) doReturn -1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
             }
         }
@@ -311,9 +304,9 @@ internal class SQLConnectionTest {
         whenever(sqlite.columnCount(any())) doReturn 1
         whenever(sqlite.columnType(any(), any())) doReturn -1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException>("Failed to allocate a window row.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
-            }.withMessage("Failed to allocate a window row.")
+            }
         }
     }
 
@@ -334,9 +327,9 @@ internal class SQLConnectionTest {
             whenever(allocateRow()) doReturn true
         }
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException>("Unrecognised column type for column 0.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), cursorWindow)
-            }.withMessage("Unrecognised column type for column 0.")
+            }
         }
     }
 

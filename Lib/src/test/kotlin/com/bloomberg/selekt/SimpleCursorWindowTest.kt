@@ -16,21 +16,13 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Rule
 import org.junit.jupiter.api.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.RuleChain
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class SimpleCursorWindowTest {
-    @Rule
-    @JvmField
-    val rule: RuleChain = RuleChain.outerRule(DisableOnDebug(Timeout.seconds(10L)))
-
     private val window = SimpleCursorWindow()
 
     @Test
@@ -74,7 +66,7 @@ internal class SimpleCursorWindowTest {
     fun getBlobAsLong(): Unit = window.run {
         allocateRow()
         put(1L)
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             getBlob(0, 0)
         }
     }
@@ -352,7 +344,7 @@ internal class SimpleCursorWindowTest {
 
     @Test
     fun putBeforeAllocatingRow(): Unit = window.run {
-        assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
+        assertThrows<NoSuchElementException> {
             put("foo")
         }
     }

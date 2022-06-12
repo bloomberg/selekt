@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.commons
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -119,14 +119,14 @@ internal class LinkedDequeTest {
 
     @Test
     fun reverseIterateEmptyThrows() {
-        assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
+        assertThrows<NoSuchElementException> {
             LinkedDeque<Any>().reverseMutableIterator().next()
         }
     }
 
     @Test
     fun reverseRemoveEmptyThrows() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             LinkedDeque<Any>().reverseMutableIterator().remove()
         }
     }
@@ -137,7 +137,7 @@ internal class LinkedDequeTest {
             putFirst(Any())
             reverseMutableIterator().let {
                 it.next()
-                assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
+                assertThrows<NoSuchElementException> {
                     it.next()
                 }
             }

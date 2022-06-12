@@ -17,12 +17,12 @@
 package com.bloomberg.selekt.android.support
 
 import com.bloomberg.selekt.ISQLProgram
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.junit.Before
-import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 
@@ -30,7 +30,7 @@ internal class SupportSQLiteProgramKtTest {
     @Mock
     lateinit var program: ISQLProgram
 
-    @Before
+    @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
     }

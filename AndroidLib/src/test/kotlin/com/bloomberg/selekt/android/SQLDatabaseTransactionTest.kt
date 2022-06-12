@@ -17,94 +17,57 @@
 package com.bloomberg.selekt.android
 
 import android.database.SQLException
-import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import java.io.File
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.io.path.createTempFile
 
-data class SQLTransactionTestInputs(
-    val journalMode: SQLiteJournalMode
-) {
-    override fun toString() = "$journalMode"
-}
+private fun createFile(
+    input: SQLiteJournalMode
+) = createTempFile("test-transactions-${input.name}-", ".db").toFile().also { it.deleteOnExit() }
 
-@RunWith(Parameterized::class)
-internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-transactions", ".db").also { it.deleteOnExit() }
-
-    private val database = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, key = null)
-
-    companion object {
-        @Parameters(name = "{0}")
-        @JvmStatic
-        fun initParameters(): Iterable<SQLTransactionTestInputs> = arrayOf(
-            SQLiteJournalMode.DELETE,
-            SQLiteJournalMode.WAL
-        ).map { SQLTransactionTestInputs(it) }
-    }
-
-    @Before
-    fun setUp() {
-        database.exec("CREATE TABLE 'Foo' (bar INT)")
-    }
-
-    @After
-    fun tearDown() {
-        database.run {
-            try {
-                close()
-                assertFalse(isOpen())
-            } finally {
-                assertTrue(deleteDatabase(file))
-            }
-        }
-    }
-
-    @Test
-    fun rollbackOnSQLException(): Unit = database.run {
+internal class SQLDatabaseTransactionTest {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackOnSQLException(
+        input: SQLiteJournalMode
+    ) = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
         val result = runCatching {
-            transact {
+            it.transact {
                 insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
                 throw SQLException()
             }
         }
         assertTrue(result.isFailure)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertFalse(it.moveToFirst())
-            assertEquals(0, it.count)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertFalse(cursor.moveToFirst())
+            assertEquals(0, cursor.count)
         }
     }
 
-    @Test
-    fun rollbackOnNestedSQLException(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackOnNestedSQLException(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
         val result = runCatching {
-            transact {
+            it.transact {
                 insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
                 transact {
                     throw SQLException()
@@ -112,199 +75,275 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
             }
         }
         assertTrue(result.isFailure)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertFalse(it.moveToFirst())
-            assertEquals(0, it.count)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertFalse(cursor.moveToFirst())
+            assertEquals(0, cursor.count)
         }
     }
 
-    @Test
-    fun rollbackOnIllegalStateException(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackOnIllegalStateException(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
         val result = runCatching {
-            transact {
+            it.transact {
                 insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
                 error("Something bad just happened!")
             }
         }
         assertTrue(result.isFailure)
-        query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-            assertFalse(it.moveToFirst())
-            assertEquals(0, it.count)
+        it.query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+            assertFalse(cursor.moveToFirst())
+            assertEquals(0, cursor.count)
         }
     }
 
-    @Test
-    fun inTransaction(): Unit = database.run {
-        transact { assertTrue(inTransaction) }
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun inTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.transact { assertTrue(inTransaction) }
     }
 
-    @Test
-    fun outOfTransaction(): Unit = database.run {
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun outOfTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun transactionWithResult(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionWithResult(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
         val result = Any()
-        assertSame(result, transact { result })
+        assertSame(result, it.transact { result })
     }
 
-    @Test
-    fun rawBeginAndRawEnd(): Unit = database.run {
-        exec("BEGIN")
-        assertTrue(inTransaction)
-        exec("END")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawBeginAndRawEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN")
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun rawBeginImmediateAndRawEnd(): Unit = database.run {
-        exec("BEGIN IMMEDIATE")
-        assertTrue(inTransaction)
-        exec("END")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawBeginImmediateAndRawEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN IMMEDIATE")
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun rawNested(): Unit = database.run {
-        exec("BEGIN")
-        assertTrue(inTransaction)
-        exec("BEGIN")
-        assertTrue(inTransaction)
-        exec("END")
-        assertTrue(inTransaction)
-        exec("END")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawNested(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN")
+        assertTrue(it.inTransaction)
+        it.exec("BEGIN")
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun rawBeginThenEnd(): Unit = database.run {
-        exec("BEGIN")
-        assertTrue(inTransaction)
-        setTransactionSuccessful()
-        endTransaction()
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawBeginThenEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN")
+        assertTrue(it.inTransaction)
+        it.setTransactionSuccessful()
+        it.endTransaction()
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun rawBeginRollback(): Unit = database.run {
-        exec("BEGIN")
-        assertTrue(inTransaction)
-        exec("ROLLBACK")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawBeginRollback(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN")
+        assertTrue(it.inTransaction)
+        it.exec("ROLLBACK")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun beginImmediateThenRawEnd(): Unit = database.run {
-        beginImmediateTransaction()
-        assertTrue(inTransaction)
-        exec("END")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun beginImmediateThenRawEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.beginImmediateTransaction()
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun beginExclusiveThenRawEnd(): Unit = database.run {
-        beginExclusiveTransaction()
-        assertTrue(inTransaction)
-        exec("END")
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun beginExclusiveThenRawEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.beginExclusiveTransaction()
+        assertTrue(it.inTransaction)
+        it.exec("END")
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun rawBeginBeginRollbackThenEnd(): Unit = database.run {
-        exec("BEGIN")
-        exec("BEGIN")
-        exec("ROLLBACK")
-        assertTrue(inTransaction)
-        endTransaction()
-        assertFalse(inTransaction)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rawBeginBeginRollbackThenEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("BEGIN")
+        it.exec("BEGIN")
+        it.exec("ROLLBACK")
+        assertTrue(it.inTransaction)
+        it.endTransaction()
+        assertFalse(it.inTransaction)
     }
 
-    @Test
-    fun connectionHeldInTransaction(): Unit = database.run {
-        transact { assertTrue(inTransaction) }
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun connectionHeldInTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.transact { assertTrue(inTransaction) }
     }
 
-    @Test
-    fun connectionNotHeldOutOfTransaction(): Unit = database.run {
-        assertFalse(isCurrentThreadSessionActive)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun connectionNotHeldOutOfTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertFalse(it.isCurrentThreadSessionActive)
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun earlyEnd(): Unit = database.run {
-        endTransaction()
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun earlyEnd(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertThrows<IllegalStateException> {
+            it.endTransaction()
+        }
     }
 
-    @Test
-    fun transactionOnlyRead(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionOnlyRead(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             repeat(3) {
                 query("SELECT * FROM Foo", emptyArray())
             }
         }
     }
 
-    @Test
-    fun transactionReadThenWrite(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionReadThenWrite(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             query("SELECT * FROM Foo", emptyArray())
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
         }
     }
 
-    @Test
-    fun yieldTransactionBetweenInserts(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionBetweenInserts(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             yieldTransaction()
             insert("Foo", ContentValues().apply { put("bar", 43) }, ConflictAlgorithm.REPLACE)
         }
-        query("SELECT * FROM Foo", emptyArray()).use {
-            assertEquals(2, it.count)
+        it.query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+            assertEquals(2, cursor.count)
         }
     }
 
-    @Test
-    fun yieldNestedTransactionBetweenInserts(): Unit = database.run {
-        transact { transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldNestedTransactionBetweenInserts(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact { transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             yieldTransaction()
             insert("Foo", ContentValues().apply { put("bar", 43) }, ConflictAlgorithm.REPLACE)
         } }
-        query("SELECT * FROM Foo", emptyArray()).use {
-            assertEquals(2, it.count)
+        it.query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+            assertEquals(2, cursor.count)
         }
     }
 
-    @Test
-    fun yieldTransactionWithPauseBetweenInserts(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionWithPauseBetweenInserts(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
         val pauseMillis = 100L
-        transact {
+        it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             val now = System.currentTimeMillis()
             yieldTransaction(pauseMillis)
             assertTrue(System.currentTimeMillis() >= pauseMillis + now)
             insert("Foo", ContentValues().apply { put("bar", 43) }, ConflictAlgorithm.REPLACE)
         }
-        query("SELECT * FROM Foo", emptyArray()).use {
-            assertEquals(2, it.count)
+        it.query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+            assertEquals(2, cursor.count)
         }
     }
 
-    @Test
-    fun yieldTransactionCommits(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionCommits(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             yieldTransaction()
-            query("SELECT * FROM Foo", emptyArray()).use {
-                assertEquals(1, it.count)
+            query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+                assertEquals(1, cursor.count)
             }
         }
     }
 
-    @Test
-    fun yieldTransactionAllowsAnotherTransactionToProgress(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionAllowsAnotherTransactionToProgress(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             val latch = CountDownLatch(1)
             thread {
@@ -315,81 +354,100 @@ internal class SQLDatabaseTransactionTest(inputs: SQLTransactionTestInputs) {
             }
             latch.await()
             yieldTransaction(100L)
-            query("SELECT * FROM Foo", emptyArray()).use {
-                assertEquals(2, it.count)
+            query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+                assertEquals(2, cursor.count)
                 arrayOf(42, 43).forEach { x ->
-                    assertTrue(it.moveToNext())
-                    assertEquals(x, it.getInt(0))
+                    assertTrue(cursor.moveToNext())
+                    assertEquals(x, cursor.getInt(0))
                 }
             }
         }
     }
 
-    @Test
-    fun yieldTransactionAllowsAnotherMode(): Unit = database.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionAllowsAnotherMode(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
             yieldTransaction()
         }
-        beginExclusiveTransaction()
+        it.beginExclusiveTransaction()
         try {
-            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            setTransactionSuccessful()
+            it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
-        query("SELECT * FROM Foo", emptyArray()).use {
-            assertEquals(2, it.count)
-        }
-    }
-
-    @Test
-    fun yieldTransactionThrows(): Unit = database.run {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            yieldTransaction()
+        it.query("SELECT * FROM Foo", emptyArray()).use { cursor ->
+            assertEquals(2, cursor.count)
         }
     }
 
-    @Test
-    fun yieldTransactionThrowsIfTransactionMarkedAsSuccessful(): Unit = database.run {
-        beginExclusiveTransaction()
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionThrows(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertThrows<IllegalStateException> {
+            it.yieldTransaction()
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionThrowsIfTransactionMarkedAsSuccessful(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.beginExclusiveTransaction()
         try {
-            setTransactionSuccessful()
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-                yieldTransaction()
+            it.setTransactionSuccessful()
+            assertThrows<IllegalStateException> {
+                it.yieldTransaction()
             }
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
     }
 
-    @Test
-    fun yieldTransactionWithPauseThrows(): Unit = database.run {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            yieldTransaction(100L)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionWithPauseThrows(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertThrows<IllegalStateException> {
+            it.yieldTransaction(100L)
         }
     }
 
-    @Test
-    fun yieldTransactionRestoresTransactionListener(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionRestoresTransactionListener(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
-        yieldTransaction()
-        setTransactionSuccessful()
-        endTransaction()
+        it.beginExclusiveTransactionWithListener(listener)
+        it.yieldTransaction()
+        it.setTransactionSuccessful()
+        it.endTransaction()
         verify(listener, times(2)).onCommit()
         verify(listener, never()).onRollback()
     }
 
-    @Test
-    fun yieldTransactionMultipleRestoresTransactionListener(): Unit = database.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionMultipleRestoresTransactionListener(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
-        repeat(100) {
-            yieldTransaction()
+        it.beginExclusiveTransactionWithListener(listener)
+        repeat(100) { _ ->
+            it.yieldTransaction()
         }
-        setTransactionSuccessful()
-        endTransaction()
+        it.setTransactionSuccessful()
+        it.endTransaction()
         verify(listener, times(101)).onCommit()
         verify(listener, never()).onRollback()
     }

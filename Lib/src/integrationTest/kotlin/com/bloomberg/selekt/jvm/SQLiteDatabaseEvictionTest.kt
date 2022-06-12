@@ -27,16 +27,16 @@ import kotlin.test.assertFalse
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.File
 import java.util.Locale
 import java.util.concurrent.ThreadLocalRandom
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 private val body = "a".repeat(1_000_000)
 
 internal class SQLiteDatabaseEvictionTest {
-    private val file = File.createTempFile("test-eviction", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-eviction", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

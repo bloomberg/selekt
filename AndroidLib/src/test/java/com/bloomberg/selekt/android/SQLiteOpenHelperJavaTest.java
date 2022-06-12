@@ -21,30 +21,22 @@ import android.content.Context;
 import com.bloomberg.selekt.SQLiteJournalMode;
 import com.bloomberg.selekt.SQLiteTraceEventMode;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.DisableOnDebug;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static com.bloomberg.selekt.commons.DatabaseKt.deleteDatabase;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class SQLiteOpenHelperJavaTest {
-    @Rule
-    public final TestRule timeoutRule = new DisableOnDebug(new Timeout(10L, TimeUnit.SECONDS));
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+public final class SQLiteOpenHelperJavaTest {
     private final File file = File.createTempFile("test-java-open-helper", ".db");
     private final byte[] key = new byte[] {
         0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
@@ -58,13 +50,13 @@ public final class SQLiteOpenHelperJavaTest {
 
     public SQLiteOpenHelperJavaTest() throws IOException {}
 
-    @Before
+    @BeforeEach
     public void setUp() {
         file.deleteOnExit();
         when(targetContext.getDatabasePath(anyString())).thenReturn(file);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         final SQLiteOpenHelper helper = databaseHelper;
         if (helper != null) {

@@ -16,14 +16,11 @@
 
 package com.bloomberg.selekt.pools
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -44,12 +41,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-import kotlin.test.junit.JUnitAsserter.assertSame
 
 internal class CommonObjectPoolTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(20L, TimeUnit.SECONDS))
-
     private lateinit var pool: CommonObjectPool<String, PooledObject>
     private val other: SingleObjectPool<String, PooledObject> = mock()
     private val executor = Executors.newSingleThreadScheduledExecutor {
@@ -63,7 +56,7 @@ internal class CommonObjectPoolTest {
         maxTotal = 10
     )
 
-    @Before
+    @BeforeEach
     fun setUp() {
         val factory = object : IObjectFactory<PooledObject> {
             override fun close() = Unit
@@ -82,7 +75,7 @@ internal class CommonObjectPoolTest {
         )
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         pool.close()
         executor.shutdown()
@@ -90,7 +83,7 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun requiresAtLeastOneObject() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             CommonObjectPool(
                 mock(),
                 mock(),
@@ -103,7 +96,7 @@ internal class CommonObjectPoolTest {
     @Test
     fun sameObject() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -120,7 +113,7 @@ internal class CommonObjectPoolTest {
     fun sameObjectForKey() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         thread { borrowObject().also { returnObject(it) } }.join()
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -128,7 +121,7 @@ internal class CommonObjectPoolTest {
         val obj = borrowObject()
         evict()
         returnObject(obj)
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -138,13 +131,13 @@ internal class CommonObjectPoolTest {
             returnObject(borrowObject())
         }
         evict()
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
     fun sameSingleObjectForNewKey() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
-        assertSame("Pool must return the same object.", obj, borrowObject("not").also { returnObject(it) })
+        assertSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -154,7 +147,7 @@ internal class CommonObjectPoolTest {
         val other = executor.submit<PooledObject> { borrowObject() }.get()
         returnObject(obj)
         executor.submit { returnObject(other) }.get()
-        assertSame("Pool must not return the same object.", obj, borrowObject("not").also { returnObject(it) })
+        assertSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must not return the same object.")
         executor.shutdown()
     }
 
@@ -187,7 +180,7 @@ internal class CommonObjectPoolTest {
         }
         repeat(100) { i ->
             val first = borrowObject("first")
-            assertSame("Pool must return same object on iteration $i", initial, first)
+            assertSame(initial, first, "Pool must return same object on iteration $i")
             val second = borrowObject()
             returnObject(first)
             returnObject(second)
@@ -261,7 +254,7 @@ internal class CommonObjectPoolTest {
             it.returnObject(it.borrowObject())
         }
         Thread.sleep(300L)
-        assertSame("Object was evicted.", obj, it.borrowObject())
+        assertSame(obj, it.borrowObject(), "Object was evicted.")
     }
 
     @Test
@@ -282,7 +275,7 @@ internal class CommonObjectPoolTest {
     @Test
     fun throwsOnBorrowAfterClose(): Unit = pool.run {
         close()
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             borrowObject()
         }
     }
@@ -329,7 +322,7 @@ internal class CommonObjectPoolTest {
     fun borrowTwiceThenCloseInterrupts(): Unit = pool.run {
         borrowObject()
         val thread = thread {
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 borrowObject()
             }
         }
@@ -352,7 +345,7 @@ internal class CommonObjectPoolTest {
     fun awaitCanBeInterrupted(): Unit = pool.run {
         repeat(configuration.maxTotal) { borrowObject() }
         Thread.currentThread().interrupt()
-        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+        assertThrows<InterruptedException> {
             borrowObject()
         }
     }
@@ -360,7 +353,7 @@ internal class CommonObjectPoolTest {
     @Test
     fun borrowCanBeInterrupted(): Unit = pool.run {
         Thread.currentThread().interrupt()
-        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+        assertThrows<InterruptedException> {
             borrowObject()
         }
     }
@@ -538,7 +531,7 @@ internal class CommonObjectPoolTest {
 
             override fun makePrimaryObject() = throw IOException("Oh no!")
         }, executor, configuration, other).use {
-            assertThatExceptionOfType(IOException::class.java).isThrownBy {
+            assertThrows<IOException> {
                 it.borrowObject()
             }
         }
@@ -574,7 +567,7 @@ internal class CommonObjectPoolTest {
             override fun makePrimaryObject() = obj
         }, executor, configuration, other).use {
             it.borrowObject().apply { it.returnObject(this) }
-            assertThatExceptionOfType(IOException::class.java).isThrownBy {
+            assertThrows<IOException> {
                 it.evict(Priority.HIGH)
             }
         }
@@ -582,8 +575,6 @@ internal class CommonObjectPoolTest {
 }
 
 internal class CommonObjectPoolAsSingleObjectPoolTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(30L, TimeUnit.SECONDS))
 
     private val other: SingleObjectPool<String, PooledObject> = mock()
     private lateinit var pool: CommonObjectPool<String, PooledObject>
@@ -593,7 +584,7 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
         maxTotal = 2
     )
 
-    @Before
+    @BeforeEach
     fun setUp() {
         pool = CommonObjectPool(
             object : IObjectFactory<PooledObject> {
@@ -624,12 +615,10 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
             thread {
                 val localKey = key + Thread.currentThread().id
                 repeat(1_000) {
-                    assertSame("Pool must return the same object.",
-                        obj, borrowObject(localKey).also {
-                            Thread.sleep(1L)
-                            returnObject(it)
-                        }
-                    )
+                    assertSame(obj, borrowObject(localKey).also {
+                        Thread.sleep(1L)
+                        returnObject(it)
+                    }, "Pool must return the same object.")
                 }
             }
         }.forEach { it.join() }

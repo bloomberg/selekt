@@ -23,18 +23,18 @@ import android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
 import android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW
 import android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE
 import android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
+import com.bloomberg.selekt.jupiter.SelektTestExtension
 import com.bloomberg.selekt.pools.Priority
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
+@ExtendWith(SelektTestExtension::class)
 internal class MemoryComponentCallbackTest {
     @Test
     fun onConfigurationChangedDoesNotThrow() {

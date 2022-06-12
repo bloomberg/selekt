@@ -24,37 +24,34 @@ import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.annotations.DelicateApi
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import java.io.File
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 @DelicateApi
 internal class SQLiteDatabaseWALTest {
-    private val file = File.createTempFile("test-sql-database-wal", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-wal", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             try {
@@ -104,9 +101,11 @@ internal class SQLiteDatabaseWALTest {
         assertEquals(4_096L, pageSize)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun setPageSizeThrows(): Unit = database.run {
-        setPageSizeExponent(17)
+        assertThrows<IllegalArgumentException> {
+            setPageSizeExponent(17)
+        }
     }
 
     @Test
@@ -123,7 +122,7 @@ internal class SQLiteDatabaseWALTest {
 
     @Test
     fun integrityCheckIllegal(): Unit = database.run {
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
+        assertThrows<SQLiteException> {
             integrityCheck("foo")
         }
     }
@@ -228,7 +227,7 @@ internal class SQLiteDatabaseWALTest {
     @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyValues(): Unit = database.run {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             upsert("Foo", ContentValues(), arrayOf("bar"), "")
         }
     }
@@ -236,7 +235,7 @@ internal class SQLiteDatabaseWALTest {
     @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyColumns(): Unit = database.run {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             upsert("Foo", ContentValues().apply { put("bar", "hello") }, emptyArray(), "")
         }
     }
@@ -346,7 +345,7 @@ internal class SQLiteDatabaseWALTest {
             exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
             setTransactionSuccessful()
         } finally {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 endTransaction()
             }
         }
@@ -361,7 +360,7 @@ internal class SQLiteDatabaseWALTest {
     fun execUpsertBoundStringThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         exec("INSERT INTO 'Foo' VALUES ('hello', 0)")
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
+        assertThrows<SQLiteException> {
             exec("INSERT INTO 'Foo' VALUES ('hello', 0) ON CONFLICT DO UPDATE SET ?", arrayOf("count=count+1"))
         }
     }

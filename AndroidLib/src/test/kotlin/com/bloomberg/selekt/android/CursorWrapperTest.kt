@@ -19,36 +19,26 @@ package com.bloomberg.selekt.android
 import android.database.Cursor
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.junit.Assert
-import org.junit.Assert.assertArrayEquals
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import org.robolectric.RobolectricTestRunner
-import java.util.concurrent.TimeUnit
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 internal class CursorWrapperTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     @Mock lateinit var cursor: ICursor
     private lateinit var wrapper: Cursor
 
-    @Before
+    @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
         doReturn(emptyArray<String>()).whenever(cursor).columnNames()
@@ -91,10 +81,12 @@ internal class CursorWrapperTest {
         verify(cursor, times(1)).columnIndex(eq("foo"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun getColumnIndexOrThrowThrows() {
         whenever(cursor.columnIndex(eq("foo"))) doReturn -1
-        wrapper.getColumnIndexOrThrow("foo")
+        assertThrows<IllegalArgumentException> {
+            wrapper.getColumnIndexOrThrow("foo")
+        }
     }
 
     @Test
@@ -108,7 +100,7 @@ internal class CursorWrapperTest {
     fun getColumnNames() {
         val names = arrayOf("foo", "bar")
         whenever(cursor.columnNames()) doReturn names
-        assertArrayEquals(names, cursor.asAndroidCursor().columnNames)
+        assertContentEquals(names, cursor.asAndroidCursor().columnNames)
     }
 
     @Test
@@ -121,14 +113,14 @@ internal class CursorWrapperTest {
     @Test
     fun getDouble() {
         whenever(cursor.getDouble(1)) doReturn 42.0
-        Assert.assertEquals(42.0, wrapper.getDouble(1), 0.1)
+        assertEquals(42.0, wrapper.getDouble(1), 0.1)
         verify(cursor, times(1)).getDouble(eq(1))
     }
 
     @Test
     fun getFloat() {
         whenever(cursor.getFloat(1)) doReturn 42.0f
-        Assert.assertEquals(42.0f, wrapper.getFloat(1), 0.1f)
+        assertEquals(42.0f, wrapper.getFloat(1), 0.1f)
         verify(cursor, times(1)).getFloat(eq(1))
     }
 

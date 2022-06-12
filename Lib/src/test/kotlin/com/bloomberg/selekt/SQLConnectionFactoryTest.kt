@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
 internal class SQLConnectionFactoryTest {
@@ -25,7 +25,7 @@ internal class SQLConnectionFactoryTest {
     fun closeThenMakePrimaryThrows() {
         SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
             close()
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 makePrimaryObject()
             }
         }
@@ -35,7 +35,7 @@ internal class SQLConnectionFactoryTest {
     fun closeThenMakeThrows() {
         SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
             close()
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 makeObject()
             }
         }

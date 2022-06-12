@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 
@@ -41,7 +41,7 @@ internal class KeyTest {
     fun zeroThenUseThrows() {
         Key(ByteArray(32) { 0x42 }).apply {
             zero()
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 use {}
             }
         }

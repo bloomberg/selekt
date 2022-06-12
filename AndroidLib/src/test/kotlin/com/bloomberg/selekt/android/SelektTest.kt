@@ -18,22 +18,15 @@ package com.bloomberg.selekt.android
 
 import android.app.Application
 import com.bloomberg.selekt.annotations.Experimental
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class SelektTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     @Test
     fun gitCommitIsNotBlank() = Selekt.gitCommit().let {
         assertTrue(it.isNotBlank())

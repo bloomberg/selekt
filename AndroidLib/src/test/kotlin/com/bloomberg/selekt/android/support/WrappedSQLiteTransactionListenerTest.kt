@@ -17,11 +17,11 @@
 package com.bloomberg.selekt.android.support
 
 import android.database.sqlite.SQLiteTransactionListener
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 

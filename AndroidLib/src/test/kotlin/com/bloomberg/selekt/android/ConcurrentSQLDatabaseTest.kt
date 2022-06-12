@@ -20,35 +20,28 @@ import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import java.io.File
-import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class ConcurrentSQLDatabaseTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-concurrent-sql-database", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-concurrent-sql-database", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = SQLDatabase(file.absolutePath, SQLite, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             try {

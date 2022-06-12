@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.android
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 
 internal class SQLiteDatabaseRegistryTest {
@@ -26,7 +26,7 @@ internal class SQLiteDatabaseRegistryTest {
         mock<SQLiteDatabase>().let {
             SQLiteDatabaseRegistry.register(it)
             try {
-                assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+                assertThrows<IllegalArgumentException> {
                     SQLiteDatabaseRegistry.register(it)
                 }
             } finally {
@@ -37,7 +37,7 @@ internal class SQLiteDatabaseRegistryTest {
 
     @Test
     fun unregisterThrows() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             SQLiteDatabaseRegistry.unregister(mock())
         }
     }

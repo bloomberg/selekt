@@ -26,9 +26,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.File
 import java.util.Locale
 import java.util.concurrent.ThreadLocalRandom
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -40,7 +40,7 @@ private val text = "a".repeat(1_000)
 private val args = arrayOf(text)
 
 internal class SQLiteDatabaseLargeTransactionTest {
-    private val file = File.createTempFile("test-large-transaction", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-large-transaction", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

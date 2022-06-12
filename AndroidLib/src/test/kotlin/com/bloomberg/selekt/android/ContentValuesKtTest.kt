@@ -17,17 +17,14 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.AbstractMap.SimpleEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 internal class ContentValuesKtTest {
     @Test
     fun asSelektContentValuesGetString() {
@@ -173,7 +170,7 @@ internal class ContentValuesKtTest {
     @Test
     fun iteratorNextThrows() {
         val iterator = ContentValues().asSelektContentValues().entrySet.iterator()
-        assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
+        assertThrows<NoSuchElementException> {
             iterator.next()
         }
     }

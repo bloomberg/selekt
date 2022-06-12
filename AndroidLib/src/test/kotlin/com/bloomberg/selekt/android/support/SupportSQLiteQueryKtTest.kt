@@ -25,8 +25,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import kotlin.test.assertEquals
@@ -35,7 +35,7 @@ import kotlin.test.assertSame
 internal class SupportSQLiteQueryKtTest {
     @Mock lateinit var query: SupportSQLiteQuery
 
-    @Before
+    @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
         doReturn(42).whenever(query).argCount

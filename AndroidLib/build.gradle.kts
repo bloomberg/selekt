@@ -78,26 +78,29 @@ dependencies {
     implementation(selekt("android-sqlcipher", sqlcipherVersionName))
     implementation(selekt("java", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
-    testImplementation("org.robolectric:robolectric:${Versions.ROBOLECTRIC}")
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
+    testImplementation("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT5}")
+    testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
 }
 
 tasks.register<Copy>("copyJniLibs") {
     from(fileTree("${project(":SQLite3").buildDir.absolutePath}/intermediates/libs"))
+    from(fileTree("${project(":AndroidNativeFixturesLib").buildDir.absolutePath}/lib/main/debug"))
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
-tasks.register<Task>("buildHostSQLite") {
+tasks.register<Task>("buildNativeHost") {
     dependsOn(":SQLite3:buildHost")
+    dependsOn(":AndroidNativeFixturesLib:assemble")
     finalizedBy("copyJniLibs")
 }
 
 afterEvaluate {
     arrayOf("debug", "release").forEach {
-        tasks.getByName("pre${it.capitalize(Locale.ROOT)}UnitTestBuild").dependsOn("buildHostSQLite")
+        tasks.getByName("pre${it.capitalize(Locale.ROOT)}UnitTestBuild").dependsOn("buildNativeHost")
     }
 }
 

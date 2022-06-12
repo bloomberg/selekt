@@ -21,35 +21,32 @@ import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
+import kotlin.io.path.createTempFile
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 @OptIn(Experimental::class)
 internal class SQLiteDatabaseBlobTest {
-    private val file = File.createTempFile("test-sql-database-blob", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-blob", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             try {
