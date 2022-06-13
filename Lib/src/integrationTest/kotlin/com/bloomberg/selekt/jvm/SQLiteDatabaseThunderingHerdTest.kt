@@ -29,11 +29,14 @@ import kotlin.test.assertFalse
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseThunderingHerdTest {
     private val file = createTempFile("test-thundering-herd", ".db").toFile().also { it.deleteOnExit() }
 

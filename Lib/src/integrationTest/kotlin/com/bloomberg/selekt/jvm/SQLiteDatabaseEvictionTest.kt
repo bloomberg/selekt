@@ -27,14 +27,17 @@ import kotlin.test.assertFalse
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import java.util.Locale
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 private val body = "a".repeat(1_000_000)
 
+@Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseEvictionTest {
     private val file = createTempFile("test-eviction", ".db").toFile().also { it.deleteOnExit() }
 
