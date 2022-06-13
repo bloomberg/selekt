@@ -48,15 +48,15 @@ internal class SQLiteOpenHelperTest {
 
     @AfterEach
     fun tearDown() {
-        databaseHelper?.writableDatabase?.run {
-            try {
+        try {
+            databaseHelper?.writableDatabase?.run {
                 if (isOpen) {
                     close()
                 }
                 assertFalse(isOpen)
-            } finally {
-                assertTrue(deleteDatabase(file))
             }
+        } finally {
+            assertTrue(deleteDatabase(file))
         }
     }
 

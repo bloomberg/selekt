@@ -46,8 +46,12 @@ internal data class SQLInputs(
     val journalMode: SQLiteJournalMode,
     val key: ByteArray?
 ) {
-    override fun toString() = "$journalMode;${if (key != null) "keyed" else "not-keyed"}"
+    override fun toString() = "$journalMode-${if (key != null) "keyed" else "not-keyed"}"
 }
+
+private fun createFile(
+    input: SQLInputs
+) = createTempFile("test-sql-database-$input-", ".db").toFile()
 
 internal class SampleSQLArgumentsProvider : ArgumentsProvider {
     override fun provideArguments(
@@ -59,13 +63,16 @@ internal class SampleSQLArgumentsProvider : ArgumentsProvider {
 }
 
 internal class SQLDatabaseTest {
-    private val file = createTempFile("test-sql-database", ".db").toFile().also { it.deleteOnExit() }
-
     @ParameterizedTest
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun delete(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
         val rowId = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
@@ -81,7 +88,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun deleteAll(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
@@ -102,7 +114,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun exec(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
     }
@@ -111,7 +128,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun execInvalidSQL(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         assertThrows<SQLException> {
             it.exec("NOT SQL", emptyArray())
@@ -122,7 +144,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun executeCompileStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val statement = it.compileStatement("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         statement.execute()
@@ -134,7 +161,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun executeInsertCompileStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (42)", emptyArray())
@@ -146,7 +178,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun executeInsertNumberCompileStatementThrows(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)", arrayOf(mock<Number>()))
@@ -159,7 +196,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun executeUpdateDeleteCompileStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -172,7 +214,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun execAfterDatabaseHasClosed(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.close()
         assertFalse(it.isOpen())
@@ -185,7 +232,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun executeStatementsOnAnotherThread(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val statement = it.compileStatement("CREATE TABLE 'Foo' (bar INT)")
         Thread {
@@ -201,7 +253,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun simpleQueryForStringCompileStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val statement = it.compileStatement("PRAGMA journal_mode", emptyArray())
         assertEquals(inputs.journalMode.name, statement.simpleQueryForString()?.uppercase(Locale.US))
@@ -211,7 +268,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun simpleQueryForNullStringCompileStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val statement = it.compileStatement("SELECT null", emptyArray())
         assertNull(statement.simpleQueryForString())
@@ -221,7 +283,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertByteWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.toByte()) }
@@ -233,7 +300,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertDoubleWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar DOUBLE)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0) }
@@ -245,7 +317,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertIntWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
@@ -257,7 +334,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertLongWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42L) }
@@ -269,7 +351,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertShortWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.toShort()) }
@@ -281,7 +368,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertStringWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val values = ContentValues().apply { put("bar", "xyz") }
@@ -293,7 +385,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertFloatAsIntWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0f) }
@@ -310,7 +407,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertIntAsFloatWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar FLOAT)", emptyArray())
         val values = ContentValues().apply { put("bar", 42) }
@@ -327,7 +429,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertFloatWithOnConflictGetAsInt(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar Float)", emptyArray())
         val values = ContentValues().apply { put("bar", 42.0f) }
@@ -344,7 +451,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertIntWithOnConflictMultipleTimes(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
@@ -358,7 +470,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertBlobWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
         val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
@@ -377,7 +494,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertNullWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val values = ContentValues().apply { putNull("bar") }
@@ -394,7 +516,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertJapaneseText(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val text = "日本語"
         it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
@@ -412,7 +539,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertBlobGetByColumnName(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar BLOB)")
         val values = ContentValues().apply { put("bar", ByteArray(1) { 42 }) }
@@ -433,7 +565,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertAndGetBlobWithStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar BLOB)")
         val statement = it.compileStatement("INSERT INTO Foo VALUES (?)")
@@ -454,7 +591,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertDoubleAsCompiledStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val value = 42.0
         it.exec("CREATE TABLE 'Foo' (bar INT)")
@@ -472,7 +614,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertIntAsCompiledStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val value = 42
         it.exec("CREATE TABLE 'Foo' (bar INT)")
@@ -490,7 +637,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertNullAsCompiledStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
@@ -508,7 +660,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertStringAsCompiledStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val text = "greetings"
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
@@ -526,7 +683,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertStringAsCompiledStatementWithTableBind(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         assertThrows<SQLiteException> {
@@ -538,7 +700,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun clearCompiledStatement(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
@@ -556,7 +723,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun closeCompiledStatementClears(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)")
@@ -574,7 +746,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun upsertString(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         val values = ContentValues().apply { put("bar", "hello") }
@@ -591,7 +768,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun query(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -608,7 +790,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryMultiple(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT, xyz INT)", emptyArray())
         it.insert("Foo", ContentValues().apply {
@@ -630,7 +817,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryDistinct(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         repeat(2) { _ ->
@@ -645,7 +837,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryAll(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -662,7 +859,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryTableWithEmptyName(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         assertThrows<SQLException> {
             it.query(false, "", emptyArray(), "", emptyArray(), null, null, null, null).use {}
@@ -673,7 +875,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryQueryNoArgs(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -690,7 +897,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryQueryWithArgs(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -707,7 +919,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun rawQuery(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -724,7 +941,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun rawQueryWithPadding(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -737,7 +959,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryThenAlterThenQueryIgnoresSchemaChange(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)")
         it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
@@ -753,7 +980,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun queryByChar(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         it.insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
@@ -766,7 +998,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertAsQuery(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)")
         it.query("INSERT INTO 'Foo' VALUES (42)", emptyArray()).close()
@@ -780,7 +1017,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun updateWithOnConflict(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
@@ -799,7 +1041,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun simpleQueryForLong(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         val value = 42L
         it.exec("CREATE TABLE 'Foo' (bar INT)")
@@ -813,7 +1060,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertBigInt(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar BIGINT)", emptyArray())
         it.insert("Foo", ContentValues().apply { put("bar", Long.MAX_VALUE) },
@@ -829,7 +1081,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun version(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.version = 42
         assertEquals(42, it.version)
@@ -839,7 +1096,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun directReadInsideTransaction(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.transact {
             exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
@@ -854,7 +1116,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun readConnectionIsReturnedToReadPool(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.query("SELECT date()", emptyArray())
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
@@ -865,7 +1132,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun secureDeleteIsFast(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         assertEquals(2, it.pragma("secure_delete").toInt())
     }
@@ -874,7 +1146,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun batchInsert(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         assertEquals(2, it.batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43))))
@@ -884,7 +1161,12 @@ internal class SQLDatabaseTest {
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertOneHundredUnboundThenOneBound(
         inputs: SQLInputs
-    ): Unit = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar INT)")
         repeat(100) { i -> it.exec("INSERT INTO 'Foo' VALUES ($i)") }

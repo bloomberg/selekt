@@ -31,6 +31,7 @@ import androidx.room.RoomDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.jupiter.SelektTestExtension
 import com.bloomberg.selekt.android.SQLiteDatabase
+import com.bloomberg.selekt.commons.deleteDatabase
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -73,7 +74,7 @@ interface UserDao {
 
 @ExtendWith(SelektTestExtension::class)
 internal class SupportSQLiteOpenHelperFactoryTest {
-    private val file = createTempFile("test-room", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-room", ".db").toFile()
     private val context = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
@@ -84,7 +85,11 @@ internal class SupportSQLiteOpenHelperFactoryTest {
 
     @AfterEach
     fun tearDown() {
-        database.close()
+        try {
+            database.close()
+        } finally {
+            deleteDatabase(file)
+        }
     }
 
     @Test
