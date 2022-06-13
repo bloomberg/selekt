@@ -63,7 +63,12 @@ internal class SQLDatabaseSampleTests {
     @ArgumentsSource(SampleArgumentsProvider::class)
     fun insertSample(
         inputs: SQLSampleInputs
-    ): Unit = SQLDatabase(createFile(inputs).absolutePath, SQLite, inputs.journalMode.databaseConfiguration, key = null).use {
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        key = null
+    ).use {
         it.transact {
             exec("CREATE TABLE 'Foo' (bar TEXT)")
             val json = javaClass.classLoader!!.getResource(inputs.resourceFileName).readText(StandardCharsets.UTF_8)
