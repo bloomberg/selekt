@@ -16,19 +16,28 @@
 
 import java.util.Locale
 
-plugins {
-    id("cpp-library")
-}
-
 repositories {
     mavenCentral()
 }
 
-library {
-    targetMachines.addAll(
-        machines.linux.x86_64,
-        machines.macOS.x86_64 // FIXME M1.
+tasks.register<Exec>("cmakeSelektric") {
+    doFirst {
+        mkdir(".cxx-host")
+    }
+    workingDir(".cxx-host")
+    commandLine("cmake")
+    args(
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DUSE_CCACHE=1",
+        "-DSLKT_TARGET_ABI=${platformIdentifier()}",
+        projectDir
     )
+}
+
+tasks.register<Exec>("makeSelektric") {
+    dependsOn("cmakeSelektric")
+    workingDir(".cxx-host")
+    commandLine("make", "selektric")
 }
 
 fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
@@ -39,8 +48,28 @@ fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
     }
 }
 
-tasks.withType<CppCompile>().configureEach {
-    val javaInclude = "${System.getProperty("java.home")}${File.separatorChar}include"
-    includes(file(javaInclude))
-    includes(file("$javaInclude${File.separatorChar}${osName()}"))
+fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+
+tasks.register<Task>("buildHost") {
+    dependsOn("makeSelektric")
+    doLast {
+        "${buildDir.path}/intermediates/libs/${platformIdentifier()}".let {
+            mkdir(it)
+            copy {
+                logger.quiet("Copying to: $it")
+                from(fileTree(".cxx-host") {
+                    include("**/*.dll", "**/*.dylib", "**/*.so")
+                }.files)
+                into(it)
+            }
+        }
+    }
+}
+
+tasks.register<Delete>("deleteCxxHost") {
+    delete(".cxx-host")
+}
+
+tasks.register("clean") {
+    dependsOn("deleteCxxHost")
 }

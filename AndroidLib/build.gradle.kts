@@ -88,13 +88,13 @@ dependencies {
 
 tasks.register<Copy>("copyJniLibs") {
     from(fileTree("${project(":SQLite3").buildDir.absolutePath}/intermediates/libs"))
-    from(fileTree("${project(":AndroidNativeFixturesLib").buildDir.absolutePath}/lib/main/debug"))
+    from(fileTree("${project(":AndroidNativeFixturesLib").buildDir.absolutePath}/intermediates/libs"))
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
 tasks.register<Task>("buildNativeHost") {
     dependsOn(":SQLite3:buildHost")
-    dependsOn(":AndroidNativeFixturesLib:assemble")
+    dependsOn(":AndroidNativeFixturesLib:buildHost")
     finalizedBy("copyJniLibs")
 }
 
