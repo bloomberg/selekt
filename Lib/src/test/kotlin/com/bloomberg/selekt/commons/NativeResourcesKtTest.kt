@@ -29,7 +29,7 @@ internal class NativeResourcesKtTest {
 
     @Test
     fun osNameDarwin() {
-        assertEquals(listOf("darwin", "mac", "osx"), osNames("Mac OS"))
+        assertEquals(listOf("darwin", "mac", "macos", "osx"), osNames("Mac OS"))
     }
 
     @Test
