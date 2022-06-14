@@ -40,12 +40,10 @@ static jstring SystemProperties_get(
     if (strcmp("ro.product.cpu.abilist", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("arm64-v8a,armeabi-v7a");
-    }
-    if (strcmp("ro.product.cpu.abilist32", key)) {
+    } else if (strcmp("ro.product.cpu.abilist32", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("armeabi-v7a");
-    }
-    if (strcmp("ro.product.cpu.abilist64", key)) {
+    } else if (strcmp("ro.product.cpu.abilist64", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("arm64-v8a");
     }
@@ -103,8 +101,8 @@ Java_com_bloomberg_selekt_android_NativeFixtures_nativeInit(
     JNIEnv* env,
     jobject obj
 ) {
-    jclass clazz = env->FindClass(LOG_CLASS_PATH);
-    jint result = env->RegisterNatives(clazz, kLogMethods, LOG_METHOD_COUNT);
+    auto clazz = env->FindClass(LOG_CLASS_PATH);
+    auto result = env->RegisterNatives(clazz, kLogMethods, LOG_METHOD_COUNT);
     if (result != 0) {
         return result;
     }
