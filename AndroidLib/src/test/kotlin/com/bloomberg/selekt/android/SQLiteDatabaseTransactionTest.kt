@@ -19,10 +19,12 @@ package com.bloomberg.selekt.android
 import android.content.Context
 import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.SQLTransactionListener
-import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTransactionMode
 import com.bloomberg.selekt.annotations.DelicateApi
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -31,23 +33,13 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import java.io.File
-import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 private fun createSQLiteOpenHelper(
     context: Context,
-    inputs: TransactionTestInputs
+    journalMode: SQLiteJournalMode
 ): ISQLiteOpenHelper = SQLiteOpenHelper(
     context,
     ISQLiteOpenHelper.Configuration(
@@ -59,281 +51,338 @@ private fun createSQLiteOpenHelper(
             override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
         },
         key = null,
-        name = "test-transactions"
+        name = "test-transactions-$journalMode"
     ),
     1,
-    SQLiteOpenParams(inputs.journalMode)
+    SQLiteOpenParams(journalMode)
 )
 
-internal data class TransactionTestInputs(
-    val journalMode: SQLiteJournalMode
-) {
-    override fun toString() = "$journalMode"
-}
-
-@RunWith(Parameterized::class)
 @DelicateApi
-internal class SQLiteDatabaseTransactionTest(inputs: TransactionTestInputs) {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    companion object {
-        @Parameters(name = "{0}")
-        @JvmStatic
-        fun initParameters(): Iterable<TransactionTestInputs> = arrayOf(
-            SQLiteJournalMode.DELETE,
-            SQLiteJournalMode.WAL
-        ).map { TransactionTestInputs(it) }
-    }
-
-    private val file = File.createTempFile("test-transactions", ".db").also { it.deleteOnExit() }
+internal class SQLiteDatabaseTransactionTest {
+    private val file = createTempFile("test-transactions", ".db").toFile()
 
     private val targetContext = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
-    private val databaseHelper = createSQLiteOpenHelper(targetContext, inputs)
 
-    @After
-    fun tearDown() {
-        databaseHelper.writableDatabase.run {
-            try {
-                close()
-                assertFalse(isOpen)
-            } finally {
-                assertTrue(deleteDatabase(file))
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun isConnectionHeldByCurrentThreadInTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.run {
+            transact {
+                assertTrue(isConnectionHeldByCurrentThread)
             }
         }
     }
 
-    @Test
-    fun isConnectionHeldByCurrentThreadInTransaction() = databaseHelper.writableDatabase.run {
-        transact {
-            assertTrue(isConnectionHeldByCurrentThread)
-        }
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun isConnectionNotHeldByCurrentThreadOutsideTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        assertFalse(it.isConnectionHeldByCurrentThread)
     }
 
-    @Test
-    fun isConnectionNotHeldByCurrentThreadOutsideTransaction() = databaseHelper.writableDatabase.run {
-        assertFalse(isConnectionHeldByCurrentThread)
-    }
-
-    @Test
-    fun isTransactionOpenedByCurrentThreadInTransaction() = databaseHelper.writableDatabase.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun isTransactionOpenedByCurrentThreadInTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
             assertTrue(isTransactionOpenedByCurrentThread)
         }
     }
 
-    @Test
-    fun isTransactionNotOpenedByCurrentThreadOutsideTransaction() = databaseHelper.writableDatabase.run {
-        assertFalse(isTransactionOpenedByCurrentThread)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun isTransactionNotOpenedByCurrentThreadOutsideTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun transactDefault() = databaseHelper.writableDatabase.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactDefault(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
             assertTrue(isTransactionOpenedByCurrentThread)
         }
-        assertFalse(isTransactionOpenedByCurrentThread)
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun transactExclusively() = databaseHelper.writableDatabase.run {
-        transact(SQLiteTransactionMode.EXCLUSIVE) {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactExclusively(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact(SQLiteTransactionMode.EXCLUSIVE) {
             assertTrue(isTransactionOpenedByCurrentThread)
         }
-        assertFalse(isTransactionOpenedByCurrentThread)
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun transactImmediately() = databaseHelper.writableDatabase.run {
-        transact(SQLiteTransactionMode.IMMEDIATE) {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactImmediately(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact(SQLiteTransactionMode.IMMEDIATE) {
             assertTrue(isTransactionOpenedByCurrentThread)
         }
-        assertFalse(isTransactionOpenedByCurrentThread)
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun setImmediateTransactionSuccessful() = databaseHelper.writableDatabase.run {
-        beginImmediateTransaction()
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setImmediateTransactionSuccessful(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.beginImmediateTransaction()
         try {
-            assertTrue(isTransactionOpenedByCurrentThread)
-            setTransactionSuccessful()
+            assertTrue(it.isTransactionOpenedByCurrentThread)
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
-        assertFalse(isTransactionOpenedByCurrentThread)
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun setExclusiveTransactionSuccessful() = databaseHelper.writableDatabase.run {
-        beginExclusiveTransaction()
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setExclusiveTransactionSuccessful(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.beginExclusiveTransaction()
         try {
-            assertTrue(isTransactionOpenedByCurrentThread)
-            setTransactionSuccessful()
+            assertTrue(it.isTransactionOpenedByCurrentThread)
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
-        assertFalse(isTransactionOpenedByCurrentThread)
+        assertFalse(it.isTransactionOpenedByCurrentThread)
     }
 
-    @Test
-    fun setTransactionSuccessfulTwiceThrows(): Unit = databaseHelper.writableDatabase.run {
-        beginExclusiveTransaction()
-        setTransactionSuccessful()
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            setTransactionSuccessful()
-        }
-    }
-
-    @Test(expected = SQLiteException::class)
-    fun vacuumInsideTransaction() = databaseHelper.writableDatabase.run { transact { vacuum() } }
-
-    @Test(expected = IllegalStateException::class)
-    fun setJournalModeInsideTransaction(): Unit = databaseHelper.writableDatabase.run {
-        transact {
-            setJournalMode(if (SQLiteJournalMode.WAL == journalMode) SQLiteJournalMode.DELETE else SQLiteJournalMode.WAL)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setTransactionSuccessfulTwiceThrows(
+        input: SQLiteJournalMode
+    ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.beginExclusiveTransaction()
+        it.setTransactionSuccessful()
+        assertThrows<IllegalStateException> {
+            it.setTransactionSuccessful()
         }
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun setForeignKeyConstraintsEnabledInsideTransaction() = databaseHelper.writableDatabase.run {
-        transact {
-            setForeignKeyConstraintsEnabled(true)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun vacuumInsideTransaction(
+        input: SQLiteJournalMode
+    ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
+            assertThrows<SQLiteException> {
+                vacuum()
+            }
         }
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun setForeignKeyConstraintsDisabledInsideTransaction() = databaseHelper.writableDatabase.run {
-        transact {
-            setForeignKeyConstraintsEnabled(false)
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setJournalModeInsideTransaction(
+        input: SQLiteJournalMode
+    ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
+            assertThrows<IllegalStateException> {
+                setJournalMode(if (SQLiteJournalMode.WAL == journalMode) SQLiteJournalMode.DELETE else SQLiteJournalMode.WAL)
+            }
         }
     }
 
-    @Test
-    fun throwInTransaction() = databaseHelper.writableDatabase.run {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setForeignKeyConstraintsEnabledInsideTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
+            assertThrows<IllegalStateException> {
+                setForeignKeyConstraintsEnabled(true)
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setForeignKeyConstraintsDisabledInsideTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
+            assertThrows<IllegalStateException> {
+                setForeignKeyConstraintsEnabled(false)
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun throwInTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        assertThrows<IllegalStateException> {
+            it.transact {
                 error("Bad")
             }
         }
-        exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+        it.exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
     }
 
-    @Test
-    fun throwInNestedTransaction() = databaseHelper.writableDatabase.run {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun throwInNestedTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        assertThrows<IllegalStateException> {
+            it.transact {
                 transact {
                     error("Bad")
                 }
             }
         }
-        exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(42))
+        it.exec("INSERT INTO 'Foo' VALUES (?)", arrayOf(42))
     }
 
-    @Test
-    fun interruptInTransaction() = databaseHelper.writableDatabase.run {
-        transact {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun interruptInTransaction(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
+        it.transact {
             Thread.currentThread().interrupt()
         }
-        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
-            exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+        assertThrows<InterruptedException> {
+            it.exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
         }
         assertFalse(Thread.interrupted())
-        exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
+        it.exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
     }
 
-    @Test
-    fun exclusiveTransactionWithListenerCommit() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun exclusiveTransactionWithListenerCommit(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
+        it.beginExclusiveTransactionWithListener(listener)
         verify(listener, times(1)).onBegin()
         try {
-            setTransactionSuccessful()
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
         verify(listener, times(1)).onCommit()
         verify(listener, never()).onRollback()
     }
 
-    @Test
-    fun exclusiveTransactionWithListenerRollback() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun exclusiveTransactionWithListenerRollback(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
+        it.beginExclusiveTransactionWithListener(listener)
         verify(listener, times(1)).onBegin()
-        endTransaction()
+        it.endTransaction()
         verify(listener, never()).onCommit()
         verify(listener, times(1)).onRollback()
     }
 
-    @Test
-    fun immediateTransactionWithListenerCommit() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun immediateTransactionWithListenerCommit(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginImmediateTransactionWithListener(listener)
+        it.beginImmediateTransactionWithListener(listener)
         verify(listener, times(1)).onBegin()
         try {
-            setTransactionSuccessful()
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
         verify(listener, times(1)).onCommit()
         verify(listener, never()).onRollback()
     }
 
-    @Test
-    fun immediateTransactionWithListenerRollback() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun immediateTransactionWithListenerRollback(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginImmediateTransactionWithListener(listener)
+        it.beginImmediateTransactionWithListener(listener)
         verify(listener, times(1)).onBegin()
-        endTransaction()
+        it.endTransaction()
         verify(listener, never()).onCommit()
         verify(listener, times(1)).onRollback()
     }
 
-    @Test
-    fun transactionListenerIsEventuallyCleared() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionListenerIsEventuallyCleared(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
-        endTransaction()
-        beginExclusiveTransaction()
+        it.beginExclusiveTransactionWithListener(listener)
+        it.endTransaction()
+        it.beginExclusiveTransaction()
         verify(listener, times(1)).onBegin()
     }
 
-    @Test
-    fun transactionListenerNotifiedOnceInNestedTransactions() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionListenerNotifiedOnceInNestedTransactions(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
-        transact { }
+        it.beginExclusiveTransactionWithListener(listener)
+        it.transact { }
         verify(listener, times(1)).onBegin()
         try {
-            setTransactionSuccessful()
+            it.setTransactionSuccessful()
         } finally {
-            endTransaction()
+            it.endTransaction()
         }
         verify(listener, times(1)).onCommit()
         verify(listener, never()).onRollback()
     }
 
-    @Test
-    fun transactionListenerNotifiedOnceInNestedTransactionRollback() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionListenerNotifiedOnceInNestedTransactionRollback(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>()
-        beginExclusiveTransactionWithListener(listener)
-        transact { }
+        it.beginExclusiveTransactionWithListener(listener)
+        it.transact { }
         verify(listener, times(1)).onBegin()
-        endTransaction()
+        it.endTransaction()
         verify(listener, never()).onCommit()
         verify(listener, times(1)).onRollback()
     }
 
-    @Test
-    fun transactionWithListenerWillRollbackWithOnBeginThrow() = databaseHelper.writableDatabase.run {
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionWithListenerWillRollbackWithOnBeginThrow(
+        input: SQLiteJournalMode
+    ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         val listener = mock<SQLTransactionListener>().apply {
             whenever(onBegin()) doThrow IllegalStateException("Bad")
         }
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
-            beginExclusiveTransactionWithListener(listener)
+        assertThrows<IllegalStateException> {
+            it.beginExclusiveTransactionWithListener(listener)
         }
         verify(listener, times(1)).onRollback()
     }

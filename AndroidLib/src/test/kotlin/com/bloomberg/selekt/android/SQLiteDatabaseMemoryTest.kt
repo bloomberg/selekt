@@ -18,24 +18,21 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-@RunWith(RobolectricTestRunner::class)
 internal class SQLiteDatabaseMemoryTest {
     private lateinit var database: SQLiteDatabase
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database = SQLiteDatabase.createInMemoryDatabase()
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             close()

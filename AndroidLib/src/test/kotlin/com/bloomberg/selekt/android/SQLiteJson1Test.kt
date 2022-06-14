@@ -27,35 +27,25 @@ import com.bloomberg.selekt.SQL_OPEN_READWRITE
 import com.bloomberg.selekt.SQL_ROW
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import java.io.File
-import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 internal class SQLiteJson1Test {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-sqlite-json1", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sqlite-json1", ".db").toFile().also { it.deleteOnExit() }
 
     private var db: Pointer = NULL
 
-    @Before
+    @BeforeEach
     fun setUp() {
         db = openConnection()
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         try {
             assertEquals(SQL_OK, SQLite.closeV2(db))

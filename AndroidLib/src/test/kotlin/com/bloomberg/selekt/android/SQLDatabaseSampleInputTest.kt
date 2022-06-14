@@ -16,22 +16,18 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.commons.times
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.After
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import java.io.File
+import org.junit.jupiter.api.extension.ExtensionContext
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.ArgumentsProvider
+import org.junit.jupiter.params.provider.ArgumentsSource
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.TimeUnit
+import java.util.stream.Stream
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -42,56 +38,45 @@ internal data class SQLSampleInputs(
     val journalMode: SQLiteJournalMode,
     val key: ByteArray?
 ) {
-    override fun toString() = resourceFileName
+    override fun toString() = "$resourceFileName-$journalMode-${if (key != null) { "keyed" } else { null }}"
 }
 
-@RunWith(Parameterized::class)
-internal class SQLDatabaseSampleTests(private val inputs: SQLSampleInputs) {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
+internal class SampleArgumentsProvider : ArgumentsProvider {
+    override fun provideArguments(context: ExtensionContext): Stream<out Arguments> = (arrayOf(
+        "html.json",
+        "japanese.txt",
+        "magic_spaces.txt",
+        "sample.json",
+        "sample.txt",
+        "tricky.txt"
+    ) * arrayOf(SQLiteJournalMode.DELETE)).map {
+        SQLSampleInputs(it.first, it.second, ByteArray(32) { 0x42 })
+    }.stream().map { Arguments.of(it) }
+}
 
-    companion object {
-        @Parameters(name = "{0}")
-        @JvmStatic
-        fun initParameters(): Iterable<SQLSampleInputs> = (arrayOf(
-            "html.json",
-            "japanese.txt",
-            "magic_spaces.txt",
-            "sample.json",
-            "sample.txt",
-            "tricky.txt"
-        ) * arrayOf(SQLiteJournalMode.DELETE)).map {
-            SQLSampleInputs(it.first, it.second, ByteArray(32) { 0x42 })
-        }
-    }
+private fun createFile(
+    input: SQLSampleInputs
+) = createTempFile("test-samples-$input-", ".db").toFile().also { it.deleteOnExit() }
 
-    private val file = File.createTempFile("test-samples", ".db").also { it.deleteOnExit() }
-
-    private val database = SQLDatabase(file.absolutePath, SQLite, inputs.journalMode.databaseConfiguration, inputs.key)
-
-    @After
-    fun tearDown() {
-        database.run {
-            try {
-                close()
-                assertFalse(isOpen())
-            } finally {
-                assertTrue(deleteDatabase(file))
-            }
-        }
-    }
-
-    @Test
-    fun insertSample(): Unit = database.run {
-        transact {
+internal class SQLDatabaseSampleTests {
+    @ParameterizedTest
+    @ArgumentsSource(SampleArgumentsProvider::class)
+    fun insertSample(
+        inputs: SQLSampleInputs
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        key = null
+    ).use {
+        it.transact {
             exec("CREATE TABLE 'Foo' (bar TEXT)")
-            val json = requireNotNull(javaClass.classLoader?.getResource(inputs.resourceFileName))
-                .readText(StandardCharsets.UTF_8)
+            val json = javaClass.classLoader!!.getResource(inputs.resourceFileName).readText(StandardCharsets.UTF_8)
             insert("Foo", ContentValues().apply { put("bar", json) }, ConflictAlgorithm.REPLACE)
-            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
-                assertTrue(it.moveToNext())
-                assertEquals(json, it.getString(0))
-                assertFalse(it.moveToNext())
+            query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
+                assertTrue(cursor.moveToNext())
+                assertEquals(json, cursor.getString(0))
+                assertFalse(cursor.moveToNext())
             }
         }
     }

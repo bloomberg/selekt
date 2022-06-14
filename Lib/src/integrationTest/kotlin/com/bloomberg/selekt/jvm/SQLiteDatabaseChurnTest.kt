@@ -30,13 +30,16 @@ import kotlin.test.assertFalse
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.File
+import org.junit.jupiter.api.Timeout
+import java.util.concurrent.TimeUnit
 import java.util.Locale
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseChurnTest {
-    private val file = File.createTempFile("test-stress", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-stress", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

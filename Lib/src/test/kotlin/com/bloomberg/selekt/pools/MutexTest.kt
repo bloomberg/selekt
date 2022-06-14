@@ -16,11 +16,8 @@
 
 package com.bloomberg.selekt.pools
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -28,13 +25,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class MutexTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     @Test
     fun negativeNanos() {
         Mutex().let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            assertThrows<IllegalArgumentException> {
                 it.tryLock(-1L)
             }
         }
@@ -56,7 +50,7 @@ internal class MutexTest {
     @Test
     fun tryLockWithCancellation() {
         Mutex().apply { cancel() }.let {
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 it.tryLock(0L, true)
             }
         }
@@ -78,7 +72,7 @@ internal class MutexTest {
     fun cancelThenLock() {
         Mutex().apply {
             assertTrue(cancel())
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 lock()
             }
         }
@@ -92,7 +86,7 @@ internal class MutexTest {
             Thread.sleep(100L)
             lock.cancel()
         }
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             lock.lock()
         }
     }
@@ -120,7 +114,7 @@ internal class MutexTest {
             lock()
         }.let {
             Thread.currentThread().interrupt()
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 it.lock()
             }
         }
@@ -130,7 +124,7 @@ internal class MutexTest {
     fun interruptThenTryLock() {
         Mutex().apply {
             val thread = Thread.currentThread().apply { interrupt() }
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 tryLock(0L, false)
             }
             assertFalse(thread.isInterrupted)
@@ -141,7 +135,7 @@ internal class MutexTest {
     fun lockInterrupts() {
         Mutex().apply {
             val thread = Thread.currentThread().apply { interrupt() }
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 lock()
             }
             assertFalse(thread.isInterrupted)
@@ -153,7 +147,7 @@ internal class MutexTest {
         Mutex().apply {
             cancel()
             Thread.currentThread().interrupt()
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 lock()
             }
         }
@@ -164,7 +158,7 @@ internal class MutexTest {
         Mutex().apply {
             cancel()
             Thread.currentThread().interrupt()
-            assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+            assertThrows<InterruptedException> {
                 tryLock(0L, true)
             }
         }
@@ -183,7 +177,7 @@ internal class MutexTest {
         }
     }
 
-    @Test(timeout = 2_000L)
+    @Test
     fun interruptWaiterThenUnlockUnparksNext() {
         Mutex().apply {
             lock()
@@ -199,7 +193,7 @@ internal class MutexTest {
         }
     }
 
-    @Test(timeout = 2_000L)
+    @Test
     fun interruptedWaiterExits() {
         Mutex().apply {
             lock()
@@ -213,7 +207,7 @@ internal class MutexTest {
         }
     }
 
-    @Test(timeout = 10_000L)
+    @Test
     fun contention() {
         val executor = Executors.newFixedThreadPool(3)
         try {

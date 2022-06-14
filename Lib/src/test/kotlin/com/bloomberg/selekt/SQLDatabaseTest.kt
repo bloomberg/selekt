@@ -16,14 +16,10 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Rule
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.RuleChain
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
@@ -44,10 +40,6 @@ private val databaseConfiguration = DatabaseConfiguration(
 )
 
 internal class SQLDatabaseTest {
-    @Rule
-    @JvmField
-    val rule: RuleChain = RuleChain.outerRule(DisableOnDebug(Timeout.seconds(10L)))
-
     @Mock lateinit var sqlite: SQLite
 
     private lateinit var database: SQLDatabase
@@ -88,7 +80,7 @@ internal class SQLDatabaseTest {
 
     @Test
     fun badNestedTransactionThenGoodTransaction() {
-        assertThatExceptionOfType(Exception::class.java).isThrownBy {
+        assertThrows<Exception> {
             database.apply {
                 transact { transact { error("uh-oh") } }
             }
@@ -107,7 +99,7 @@ internal class SQLDatabaseTest {
     fun execAfterDatabaseHasClosed() {
         database.run {
             close()
-            assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            assertThrows<IllegalStateException> {
                 exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             }
         }
@@ -115,14 +107,14 @@ internal class SQLDatabaseTest {
 
     @Test
     fun insertVerifiesValues(): Unit = database.run {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             insert("Foo", ContentValues(), ConflictAlgorithm.REPLACE)
         }
     }
 
     @Test
     fun updateVerifiesValues(): Unit = database.run {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             update("Foo", ContentValues(), "", emptyArray(), ConflictAlgorithm.REPLACE)
         }
     }

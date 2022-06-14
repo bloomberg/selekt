@@ -20,22 +20,19 @@ import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.util.UUID
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 internal class SQLiteDatabaseAttachTest {
-    private val file = File.createTempFile("test-sql-database-sharding", ".db").also { it.deleteOnExit() }
-    private val otherFile = File.createTempFile("test-sql-database-sharding-other", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-sharding", ".db").toFile().also { it.deleteOnExit() }
+    private val otherFile = createTempFile("test-sql-database-sharding-other", ".db").toFile().also { it.deleteOnExit() }
 
     // DELETE mode because it has one connection. Databases must be attached per connection.
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.DELETE.databaseConfiguration,
@@ -43,12 +40,12 @@ internal class SQLiteDatabaseAttachTest {
     private val other = SQLiteDatabase.openOrCreateDatabase(
         otherFile, SQLiteJournalMode.DELETE.databaseConfiguration, ByteArray(32) { 0x42 })
 
-    @Before
+    @BeforeEach
     fun setUp() {
         database.exec("PRAGMA journal_mode=${SQLiteJournalMode.DELETE}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         database.run {
             try {

@@ -16,8 +16,7 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -114,7 +113,7 @@ internal class SimpleSQLQueryTest {
     @Test
     fun bindNumber() {
         mock<ISQLProgram>().let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            assertThrows<IllegalArgumentException> {
                 SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(mock<Number>())).bindTo(it)
             }
         }

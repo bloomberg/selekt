@@ -19,6 +19,9 @@ package com.bloomberg.selekt.android
 import android.content.Context
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -29,41 +32,31 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import java.io.File
-import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class SQLiteOpenHelperTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-open-helper", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-open-helper", ".db").toFile().also { it.deleteOnExit() }
 
     private val targetContext = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
     private var databaseHelper: SQLiteOpenHelper? = null
 
-    @After
+    @AfterEach
     fun tearDown() {
-        databaseHelper?.writableDatabase?.run {
-            try {
+        try {
+            databaseHelper?.writableDatabase?.run {
                 if (isOpen) {
                     close()
                 }
                 assertFalse(isOpen)
-            } finally {
-                assertTrue(deleteDatabase(file))
             }
+        } finally {
+            assertTrue(deleteDatabase(file))
         }
     }
 
@@ -85,7 +78,7 @@ internal class SQLiteOpenHelperTest {
 
     @Test
     fun zeroVersionThrows() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             createHelper(0, mock())
         }
     }

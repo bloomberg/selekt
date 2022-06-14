@@ -28,7 +28,6 @@ enum class Versions(
     ANDROID_SDK("31", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.4.1", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.4.2", URL("https://developer.android.com/jetpack/androidx/releases/room")),
-    ASSERT_J("3.22.0", URL("https://joel-costigliola.github.io/assertj")),
     CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.20.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
@@ -41,7 +40,7 @@ enum class Versions(
     JUNIT5_PLATFORM("1.7.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.7.0", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_COROUTINES("1.6.2", URL("https://github.com/Kotlin/kotlinx.coroutines")),
-    KOTLIN_TEST("1.4.32", URL("https://github.com/JetBrains/kotlin")),
+    KOTLIN_TEST(KOTLIN.version, URL("https://github.com/JetBrains/kotlin")),
     KOTLINX_KOVER("0.5.0", URL("https://github.com/Kotlin/kotlinx-kover")),
     KTLINT("0.45.2", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("10.3.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
@@ -49,7 +48,7 @@ enum class Versions(
     MOCKITO_KOTLIN("4.0.0", URL("https://github.com/mockito/mockito-kotlin")),
     NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
-    ROBOLECTRIC("4.8.1", URL("https://github.com/robolectric/robolectric"));
+    ROBOLECTRIC_ANDROID_ALL("12.1-robolectric-8229987", URL("https://github.com/robolectric/robolectric"));
 
     override fun toString() = version
 

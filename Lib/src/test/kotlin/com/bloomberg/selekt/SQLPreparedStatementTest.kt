@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -69,7 +69,7 @@ internal class SQLPreparedStatementTest {
             whenever(step(any())) doReturn SQL_BUSY
         }
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
-        assertThatExceptionOfType(Exception::class.java).isThrownBy {
+        assertThrows<Exception> {
             statement.step(0L)
         }
     }
@@ -97,7 +97,7 @@ internal class SQLPreparedStatementTest {
             whenever(stepWithoutThrowing(any())) doReturn SQL_BUSY
         }
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
-        assertThatExceptionOfType(Exception::class.java).isThrownBy {
+        assertThrows<Exception> {
             statement.step(2_000L)
         }
     }
@@ -105,7 +105,7 @@ internal class SQLPreparedStatementTest {
     @Test
     fun stepRejectsNegativeInterval() {
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", mock(), CommonThreadLocalRandom)
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             statement.step(-1L)
         }
     }

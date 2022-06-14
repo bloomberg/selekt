@@ -17,9 +17,9 @@
 package com.bloomberg.selekt.android.support
 
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
 
 internal class SupportSQLiteOpenHelperKtTest {
     @Test
@@ -28,9 +28,9 @@ internal class SupportSQLiteOpenHelperKtTest {
             .callback(mock())
             .build()
             .let {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
-                it.asSelektConfiguration(byteArrayOf())
+                assertThrows<IllegalArgumentException> {
+                    it.asSelektConfiguration(byteArrayOf())
+                }
             }
-        }
     }
 }

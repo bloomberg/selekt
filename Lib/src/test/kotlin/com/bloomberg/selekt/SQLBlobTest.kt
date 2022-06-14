@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -33,7 +33,7 @@ import kotlin.test.assertTrue
 internal class SQLBlobTest {
     @Test
     fun verifiesPointer() {
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             SQLBlob(0L, mock(), false)
         }
     }

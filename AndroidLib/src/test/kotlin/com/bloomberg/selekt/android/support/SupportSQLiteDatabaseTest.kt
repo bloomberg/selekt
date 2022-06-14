@@ -25,6 +25,9 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.ConflictAlgorithm
 import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.annotations.DelicateApi
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -37,18 +40,9 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import org.robolectric.RobolectricTestRunner
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
@@ -56,16 +50,12 @@ import kotlin.test.assertTrue
 
 private const val CONFLICT_REPLACE = 5
 
-@RunWith(RobolectricTestRunner::class)
 @DelicateApi
 internal class SupportSQLiteDatabaseTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
     @Mock lateinit var database: SQLiteDatabase
     private lateinit var supportDatabase: SupportSQLiteDatabase
 
-    @Before
+    @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
         supportDatabase = database.asSupportSQLiteDatabase()
@@ -354,14 +344,14 @@ internal class SupportSQLiteDatabaseTest {
 
     @Test
     fun setLocale() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             supportDatabase.setLocale(Locale.ROOT)
         }
     }
 
     @Test
     fun setMaxSqlCacheSize() {
-        assertThatExceptionOfType(UnsupportedOperationException::class.java).isThrownBy {
+        assertThrows<UnsupportedOperationException> {
             supportDatabase.setMaxSqlCacheSize(42)
         }
     }

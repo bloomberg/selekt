@@ -25,33 +25,26 @@ import com.bloomberg.selekt.SQL_OK
 import com.bloomberg.selekt.SQL_OPEN_CREATE
 import com.bloomberg.selekt.SQL_OPEN_READWRITE
 import com.bloomberg.selekt.SQL_ROW
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
-import java.io.File
-import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 internal class SQLiteTransactionTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-sqlite-transaction", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sqlite-transaction", ".db").toFile().also { it.deleteOnExit() }
 
     private var db: Pointer = NULL
 
-    @Before
+    @BeforeEach
     fun setUp() {
         db = openConnection()
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         try {
             assertEquals(SQL_OK, SQLite.closeV2(db))
@@ -73,7 +66,7 @@ internal class SQLiteTransactionTest {
                 SQLite.exec(otherDb, "BEGIN IMMEDIATE TRANSACTION")
                 SQLite.exec(otherDb, "INSERT INTO 'Foo' VALUES (43)")
                 SQLite.exec(otherDb, "END")
-                assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+                assertThrows<SQLiteDatabaseLockedException> {
                     SQLite.walCheckpointV2(otherDb, null, 1)
                 }
             }
@@ -87,7 +80,7 @@ internal class SQLiteTransactionTest {
         assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)"))
         assertEquals(SQL_OK, SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION"))
         openConnection().useConnection { otherDb ->
-            assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+            assertThrows<SQLiteDatabaseLockedException> {
                 SQLite.exec(otherDb, "BEGIN IMMEDIATE TRANSACTION")
             }
         }

@@ -26,9 +26,11 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.File
+import org.junit.jupiter.api.Timeout
 import java.util.Locale
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -39,8 +41,9 @@ private const val INSERT_SQL = "INSERT INTO 'Foo' VALUES (?)"
 private val text = "a".repeat(1_000)
 private val args = arrayOf(text)
 
+@Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseLargeTransactionTest {
-    private val file = File.createTempFile("test-large-transaction", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-large-transaction", ".db").toFile().also { it.deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

@@ -23,8 +23,8 @@ import android.database.sqlite.SQLiteDatabase.CONFLICT_NONE
 import android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE
 import android.database.sqlite.SQLiteDatabase.CONFLICT_ROLLBACK
 import com.bloomberg.selekt.android.ConflictAlgorithm
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 internal class ConflictAlgorithmsKtTest {
@@ -60,7 +60,7 @@ internal class ConflictAlgorithmsKtTest {
 
     @Test
     fun toConflictAlgorithmThrows() {
-        assertThatExceptionOfType(IndexOutOfBoundsException::class.java).isThrownBy {
+        assertThrows<IndexOutOfBoundsException> {
             Int.MAX_VALUE.toConflictAlgorithm()
         }
     }

@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt
+package com.bloomberg.selekt.android
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertFalse
+import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.commons.deleteDatabase
+import java.io.File
 
-internal class ContentValuesTest {
-    @Test
-    fun putInt() {
-        ContentValues().apply {
-            put("foo", 42)
-            assertFalse(isEmpty)
-        }
-    }
+internal fun <R> SQLiteDatabase.destroy(block: (SQLiteDatabase) -> R): R = try {
+    use(block)
+} finally {
+    deleteDatabase(File(path))
+}
+
+internal fun <R> SQLDatabase.destroy(block: (SQLDatabase) -> R): R = try {
+    use(block)
+} finally {
+    deleteDatabase(File(path))
 }

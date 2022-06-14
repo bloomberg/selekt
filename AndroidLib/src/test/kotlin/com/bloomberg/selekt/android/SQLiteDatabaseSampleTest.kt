@@ -17,13 +17,10 @@
 package com.bloomberg.selekt.android
 
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertTrue
 
-@RunWith(RobolectricTestRunner::class)
 internal class SQLiteDatabaseSampleTest {
     private val database = SQLiteDatabase.openOrCreateDatabase(
         File(requireNotNull(javaClass.classLoader?.getResource("databases/sample.sqlite")?.file)),

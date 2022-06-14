@@ -20,13 +20,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.rules.DisableOnDebug
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -51,12 +49,8 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-import kotlin.test.junit.JUnitAsserter.assertSame
 
 internal class SingleObjectPoolTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(org.junit.rules.Timeout(30L, TimeUnit.SECONDS))
-
     private lateinit var pool: SingleObjectPool<String, PooledObject>
     private val executor = Executors.newSingleThreadScheduledExecutor {
         Thread(it).apply {
@@ -64,7 +58,7 @@ internal class SingleObjectPoolTest {
         }
     }
 
-    @Before
+    @BeforeEach
     fun setUp() {
         pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
             override fun close() = Unit
@@ -77,7 +71,7 @@ internal class SingleObjectPoolTest {
         }, executor, 1_000L, 20_000L)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         pool.close()
         executor.shutdown()
@@ -106,7 +100,7 @@ internal class SingleObjectPoolTest {
     @Test
     fun sameObject() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -114,7 +108,7 @@ internal class SingleObjectPoolTest {
         val obj = borrowObject()
         evict()
         returnObject(obj)
-        assertSame("Pool must return the same object.", obj, borrowObject().also { returnObject(it) })
+        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
     }
 
     @Test
@@ -218,13 +212,13 @@ internal class SingleObjectPoolTest {
             it.returnObject(it.borrowObject())
         }
         Thread.sleep(1_500L)
-        assertSame("Object was evicted.", obj, it.borrowObject())
+        assertSame(obj, it.borrowObject(), "Object was evicted.")
     }
 
     @Test
     fun throwsOnBorrowAfterClose(): Unit = pool.run {
         close()
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             borrowObject()
         }
     }
@@ -237,7 +231,7 @@ internal class SingleObjectPoolTest {
             returnObject(obj)
         }
         close()
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             borrowObject()
         }
     }
@@ -290,7 +284,7 @@ internal class SingleObjectPoolTest {
             Thread.sleep(100L)
             close()
         }
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             borrowObject()
         }
     }
@@ -323,7 +317,7 @@ internal class SingleObjectPoolTest {
     fun borrowCanBeInterrupted(): Unit = pool.run {
         borrowObject()
         Thread.currentThread().interrupt()
-        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+        assertThrows<InterruptedException> {
             borrowObject()
         }
     }
@@ -347,8 +341,8 @@ internal class SingleObjectPoolTest {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         whenever(factory.makePrimaryObject()) doThrow IOException()
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
-            assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
-            assertThatExceptionOfType(IOException::class.java).isThrownBy { it.borrowObject() }
+            assertThrows<IOException> { it.borrowObject() }
+            assertThrows<IOException> { it.borrowObject() }
         }
     }
 
@@ -381,7 +375,7 @@ internal class SingleObjectPoolTest {
             Thread.sleep(100L)
             close()
         }
-        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+        assertThrows<IllegalStateException> {
             borrowObject()
         }
     }
@@ -422,7 +416,7 @@ internal class SingleObjectPoolTest {
     fun interruptBorrowerThenBorrow(): Unit = pool.run {
         borrowObject()
         Thread.currentThread().interrupt()
-        assertThatExceptionOfType(InterruptedException::class.java).isThrownBy {
+        assertThrows<InterruptedException> {
             borrowObject()
         }
     }
@@ -435,8 +429,11 @@ internal class SingleObjectPoolTest {
                 repeat(4) {
                     launch {
                         repeat(100_000) {
-                            assertSame("Pool must return the same object.",
-                                obj, borrowObject().also { returnObject(it) })
+                            assertSame(
+                                obj,
+                                borrowObject().also { returnObject(it) },
+                                "Pool must return the same object."
+                            )
                         }
                     }
                 }
@@ -522,7 +519,7 @@ internal class SingleObjectPoolTest {
             override fun makePrimaryObject() = obj
         }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
             it.borrowObject().apply { it.returnObject(this) }
-            assertThatExceptionOfType(IOException::class.java).isThrownBy {
+            assertThrows<IOException> {
                 it.evict(Priority.HIGH)
             }
         }

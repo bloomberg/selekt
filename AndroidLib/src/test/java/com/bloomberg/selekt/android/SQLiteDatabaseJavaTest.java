@@ -20,20 +20,20 @@ import android.content.Context;
 
 import com.bloomberg.selekt.SQLiteJournalMode;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 
 import static com.bloomberg.selekt.commons.DatabaseKt.deleteDatabase;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public final class SQLiteDatabaseJavaTest {
     private final Context targetContext = mock(Context.class);
@@ -49,13 +49,13 @@ public final class SQLiteDatabaseJavaTest {
 
     public SQLiteDatabaseJavaTest() throws IOException {}
 
-    @Before
+    @BeforeEach
     public void setUp() {
         file.deleteOnExit();
         when(targetContext.getDatabasePath(anyString())).thenReturn(file);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         final SQLiteDatabase database = this.database;
         if (database != null) {

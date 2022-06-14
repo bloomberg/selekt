@@ -18,13 +18,13 @@ package com.bloomberg.selekt.android.support
 
 import com.bloomberg.selekt.android.ISQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteDatabase
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
-import org.junit.Test
 import kotlin.test.assertSame
 
 internal class SupportSQLiteOpenHelperTest {

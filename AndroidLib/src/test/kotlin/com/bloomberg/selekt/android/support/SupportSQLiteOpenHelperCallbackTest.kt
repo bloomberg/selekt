@@ -17,12 +17,12 @@
 package com.bloomberg.selekt.android.support
 
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.junit.Test
 
 internal class SupportSQLiteOpenHelperCallbackTest {
     @Test

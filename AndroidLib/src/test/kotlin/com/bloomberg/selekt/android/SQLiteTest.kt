@@ -58,19 +58,14 @@ import com.bloomberg.selekt.SQL_OPEN_READWRITE
 import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_ROW
 import com.bloomberg.selekt.SQL_TOO_BIG
-import org.assertj.core.api.Assertions.assertThatCode
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.After
-import org.junit.Assert
-import org.junit.Test
-
-import org.junit.Before
-import org.junit.Rule
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.Timeout
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import java.io.File
 import java.lang.IllegalArgumentException
-import java.util.concurrent.TimeUnit
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
@@ -103,22 +98,19 @@ private inline fun Pair<Pointer, Pointer>.useTwoConnections(block: Pair<Pointer,
 }
 
 internal class SQLiteTest {
-    @get:Rule
-    val timeoutRule = DisableOnDebug(Timeout(10L, TimeUnit.SECONDS))
-
-    private val file = File.createTempFile("test-sqlite", ".db").also { it.deleteOnExit() }
+    private val file = createTempFile("test-sqlite", ".db").toFile().also { it.deleteOnExit() }
 
     private var db: Pointer = NULL
 
     private val key = ByteArray(32) { 0x42 }
     private val otherKey = ByteArray(32) { 0x43 }
 
-    @Before
+    @BeforeEach
     fun setUp() {
         db = openConnection()
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         try {
             assertEquals(SQL_OK, SQLite.closeV2(db))
@@ -144,7 +136,7 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         assertEquals(SQL_OK, SQLite.key(db, key))
-        assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
+        assertThrows<SQLiteDatabaseCorruptException> {
             SQLite.exec(db, "VACUUM")
         }
     }
@@ -160,24 +152,28 @@ internal class SQLiteTest {
         assertEquals(SQL_OK, SQLite.rekey(db, otherKey))
     }
 
-    @Test(expected = SQLiteDatabaseCorruptException::class)
+    @Test
     fun keyConnectionThenNoKeyAnotherConnection() {
         SQLite.key(db, key)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection {
-            SQLite.exec(it, "INSERT INTO 'Foo' VALUES (43)")
+            assertThrows<SQLiteDatabaseCorruptException> {
+                SQLite.exec(it, "INSERT INTO 'Foo' VALUES (43)")
+            }
         }
     }
 
-    @Test(expected = SQLiteDatabaseCorruptException::class)
+    @Test
     fun keyConnectionThenKeyIncorrectlyAnotherConnection() {
         SQLite.key(db, key)
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         openConnection().useConnection {
             SQLite.key(it, otherKey)
-            SQLite.exec(it, "SELECT * FROM 'Foo'")
+            assertThrows<SQLiteDatabaseCorruptException> {
+                SQLite.exec(it, "SELECT * FROM 'Foo'")
+            }
         }
     }
 
@@ -215,7 +211,7 @@ internal class SQLiteTest {
     @Test
     fun badRawKeyThrows() {
         openConnection().useConnection {
-            assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+            assertThrows<IllegalArgumentException> {
                 SQLite.rawKey(it, ByteArray(31) { 0x42 })
             }
         }
@@ -240,7 +236,7 @@ internal class SQLiteTest {
     fun closeConnectionTwiceDoesNotThrow() {
         openConnection().let {
             SQLite.closeV2(it)
-            assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+            assertThrows<SQLiteMisuseException> {
                 SQLite.closeV2(it)
             }
         }
@@ -250,7 +246,7 @@ internal class SQLiteTest {
     fun closeConnectionThenUse() {
         openConnection().let {
             SQLite.closeV2(it)
-            assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+            assertThrows<SQLiteMisuseException> {
                 SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
             }
         }
@@ -262,7 +258,7 @@ internal class SQLiteTest {
             SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
             prepareStatement(it, "INSERT INTO Foo VALUES (42)").usePreparedStatement { _ ->
                 SQLite.closeV2(it)
-                assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+                assertThrows<SQLiteMisuseException> {
                     prepareStatement(it, "INSERT INTO Foo VALUES (43)").usePreparedStatement { }
                 }
             }
@@ -451,7 +447,7 @@ internal class SQLiteTest {
     @Test
     fun prepareV2ThenFinalize() {
         prepareStatement(db, "CREATE TABLE 'Foo' (bar INT)").usePreparedStatement {
-            Assert.assertNotEquals(NULL, it)
+            assertNotEquals(NULL, it)
         }
     }
 
@@ -461,7 +457,7 @@ internal class SQLiteTest {
         prepareStatement(db, "CREATE TABLE 'Foo' (bar INT)").let {
             Assert.assertNotEquals(NULL, it)
             SQLite.finalize(it)
-            assertThatExceptionOfType(SQLiteException::class.java).isThrownBy { SQLite.finalize(it) }
+            assertThrows<SQLiteException> { SQLite.finalize(it) }
         }
     }
      */
@@ -537,11 +533,13 @@ internal class SQLiteTest {
         }
     }
 
-    @Test(expected = SQLiteBindOrColumnIndexOutOfRangeException::class)
+    @Test
     fun bindColumnOutOfBounds() {
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)"))
         prepareStatement(db, "SELECT ? FROM 'Foo'").usePreparedStatement {
-            SQLite.bindText(it, 2, "bar")
+            assertThrows<SQLiteBindOrColumnIndexOutOfRangeException> {
+                SQLite.bindText(it, 2, "bar")
+            }
         }
     }
 
@@ -565,9 +563,11 @@ internal class SQLiteTest {
         }
     }
 
-    @Test(expected = SQLiteException::class)
+    @Test
     fun preparePragmaStatement() {
-        prepareStatement(db, "PRAGMA ?").usePreparedStatement {}
+        assertThrows<SQLiteException> {
+            prepareStatement(db, "PRAGMA ?").usePreparedStatement {}
+        }
     }
 
     @Test
@@ -594,7 +594,7 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         assertTrue(deleteDatabase(file))
-        assertThatExceptionOfType(SQLiteReadOnlyDatabaseException::class.java).isThrownBy {
+        assertThrows<SQLiteReadOnlyDatabaseException> {
             SQLite.exec(db, "INSERT INTO 'Foo' VALUES (43)")
         }
     }
@@ -604,12 +604,12 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         assertTrue(deleteDatabase(file))
-        assertThatCode {
+        assertDoesNotThrow {
             prepareStatement(db, "SELECT * FROM 'Foo'").usePreparedStatement {
                 assertNotEquals(0, SQLite.statementReadOnly(it))
                 assertEquals(SQL_ROW, SQLite.step(it))
             }
-        }.doesNotThrowAnyException()
+        }
     }
 
     @Test
@@ -617,9 +617,9 @@ internal class SQLiteTest {
         SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)")
         assertTrue(deleteDatabase(file))
-        assertThatCode {
+        assertDoesNotThrow {
             SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION")
-        }.doesNotThrowAnyException()
+        }
     }
 
     @Test
@@ -676,10 +676,12 @@ internal class SQLiteTest {
         }
     }
 
-    @Test(expected = SQLiteReadOnlyDatabaseException::class)
+    @Test
     fun writeToReadOnly() {
         openConnection(SQL_OPEN_READONLY).useConnection {
-            SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
+            assertThrows<SQLiteReadOnlyDatabaseException> {
+                SQLite.exec(it, "CREATE TABLE 'Foo' (bar INT)")
+            }
         }
     }
 
@@ -733,126 +735,126 @@ internal class SQLiteTest {
 
     @Test
     fun exceptionForErrorOk() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             SQLite.throwSQLException(SQL_OK, SQL_OK, "")
         }
     }
 
     @Test
     fun exceptionForError() {
-        assertThatExceptionOfType(SQLiteException::class.java).isThrownBy {
+        assertThrows<SQLiteException> {
             SQLite.throwSQLException(Int.MIN_VALUE, Int.MIN_VALUE, "")
         }
     }
 
     @Test
     fun exceptionForErrorAbort() {
-        assertThatExceptionOfType(SQLiteAbortException::class.java).isThrownBy {
+        assertThrows<SQLiteAbortException> {
             SQLite.throwSQLException(SQL_ABORT, SQL_ABORT, "")
         }
     }
 
     @Test
     fun exceptionForErrorAuth() {
-        assertThatExceptionOfType(SQLiteCantOpenDatabaseException::class.java).isThrownBy {
+        assertThrows<SQLiteCantOpenDatabaseException> {
             SQLite.throwSQLException(SQL_AUTH, SQL_AUTH, "")
         }
     }
 
     @Test
     fun exceptionForErrorBusy() {
-        assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+        assertThrows<SQLiteDatabaseLockedException> {
             SQLite.throwSQLException(SQL_BUSY, SQL_BUSY, "")
         }
     }
 
     @Test
     fun exceptionForErrorCantOpen() {
-        assertThatExceptionOfType(SQLiteCantOpenDatabaseException::class.java).isThrownBy {
+        assertThrows<SQLiteCantOpenDatabaseException> {
             SQLite.throwSQLException(SQL_CANT_OPEN, SQL_CANT_OPEN, "")
         }
     }
 
     @Test
     fun exceptionForErrorConstraint() {
-        assertThatExceptionOfType(SQLiteConstraintException::class.java).isThrownBy {
+        assertThrows<SQLiteConstraintException> {
             SQLite.throwSQLException(SQL_CONSTRAINT, SQL_CONSTRAINT, "")
         }
     }
 
     @Test
     fun exceptionForErrorCorrupt() {
-        assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
+        assertThrows<SQLiteDatabaseCorruptException> {
             SQLite.throwSQLException(SQL_CORRUPT, SQL_CORRUPT, "")
         }
     }
 
     @Test
     fun exceptionForErrorFull() {
-        assertThatExceptionOfType(SQLiteFullException::class.java).isThrownBy {
+        assertThrows<SQLiteFullException> {
             SQLite.throwSQLException(SQL_FULL, SQL_FULL, "")
         }
     }
 
     @Test
     fun exceptionForErrorIO() {
-        assertThatExceptionOfType(SQLiteDiskIOException::class.java).isThrownBy {
+        assertThrows<SQLiteDiskIOException> {
             SQLite.throwSQLException(SQL_IO_ERROR, SQL_IO_ERROR, "")
         }
     }
 
     @Test
     fun exceptionForErrorLocked() {
-        assertThatExceptionOfType(SQLiteTableLockedException::class.java).isThrownBy {
+        assertThrows<SQLiteTableLockedException> {
             SQLite.throwSQLException(SQL_LOCKED, SQL_LOCKED, "")
         }
     }
 
     @Test
     fun exceptionForErrorMisuse() {
-        assertThatExceptionOfType(SQLiteMisuseException::class.java).isThrownBy {
+        assertThrows<SQLiteMisuseException> {
             SQLite.throwSQLException(SQL_MISUSE, SQL_MISUSE, "")
         }
     }
 
     @Test
     fun exceptionForErrorNoMemory() {
-        assertThatExceptionOfType(SQLiteOutOfMemoryException::class.java).isThrownBy {
+        assertThrows<SQLiteOutOfMemoryException> {
             SQLite.throwSQLException(SQL_NOMEM, SQL_NOMEM, "")
         }
     }
 
     @Test
     fun exceptionForErrorNotDatabase() {
-        assertThatExceptionOfType(SQLiteDatabaseCorruptException::class.java).isThrownBy {
+        assertThrows<SQLiteDatabaseCorruptException> {
             SQLite.throwSQLException(SQL_NOT_A_DATABASE, SQL_NOT_A_DATABASE, "")
         }
     }
 
     @Test
     fun exceptionForErrorNotFound() {
-        assertThatExceptionOfType(SQLiteCantOpenDatabaseException::class.java).isThrownBy {
+        assertThrows<SQLiteCantOpenDatabaseException> {
             SQLite.throwSQLException(SQL_NOT_FOUND, SQL_NOT_FOUND, "")
         }
     }
 
     @Test
     fun exceptionForErrorReadOnly() {
-        assertThatExceptionOfType(SQLiteReadOnlyDatabaseException::class.java).isThrownBy {
+        assertThrows<SQLiteReadOnlyDatabaseException> {
             SQLite.throwSQLException(SQL_READONLY, SQL_READONLY, "")
         }
     }
 
     @Test
     fun exceptionForErrorMismatch() {
-        assertThatExceptionOfType(SQLiteDatatypeMismatchException::class.java).isThrownBy {
+        assertThrows<SQLiteDatatypeMismatchException> {
             SQLite.throwSQLException(SQL_MISMATCH, SQL_MISMATCH, "")
         }
     }
 
     @Test
     fun exceptionForErrorTooBig() {
-        assertThatExceptionOfType(SQLiteBlobTooBigException::class.java).isThrownBy {
+        assertThrows<SQLiteBlobTooBigException> {
             SQLite.throwSQLException(SQL_TOO_BIG, SQL_TOO_BIG, "")
         }
     }
@@ -959,7 +961,7 @@ internal class SQLiteTest {
     @Test
     fun deleteFileThenWrite() {
         assertTrue(file.delete())
-        assertThatExceptionOfType(SQLiteDiskIOException::class.java).isThrownBy {
+        assertThrows<SQLiteDiskIOException> {
             SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         }
     }
@@ -967,7 +969,7 @@ internal class SQLiteTest {
     @Test
     fun deleteFileThenBeginImmediateTransaction() {
         assertTrue(file.delete())
-        assertThatExceptionOfType(SQLiteDiskIOException::class.java).isThrownBy {
+        assertThrows<SQLiteDiskIOException> {
             SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION")
         }
     }
@@ -1137,7 +1139,7 @@ internal class SQLiteTest {
         openConnection(SQL_OPEN_READONLY).useConnection {
             assertNotEquals(0, SQLite.databaseReadOnly(it, "main"))
             val holder = longArrayOf(0L)
-            assertThatExceptionOfType(SQLiteReadOnlyDatabaseException::class.java).isThrownBy {
+            assertThrows<SQLiteReadOnlyDatabaseException> {
                 blobOpen(it, "main", "Foo", "bar", 1L, 1, holder)
             }
         }
@@ -1220,7 +1222,7 @@ internal class SQLiteTest {
             exec(first, "BEGIN TRANSACTION")
             exec(first, "INSERT INTO 'Foo' VALUES (42)")
 
-            assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+            assertThrows<SQLiteDatabaseLockedException> {
                 exec(second, "INSERT INTO 'Foo' VALUES (1337)")
             }
 
@@ -1238,7 +1240,7 @@ internal class SQLiteTest {
 
             exec(second, "BEGIN TRANSACTION")
 
-            assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+            assertThrows<SQLiteDatabaseLockedException> {
                 exec(second, "INSERT INTO 'Foo' VALUES (1337)")
             }
 
@@ -1265,7 +1267,7 @@ internal class SQLiteTest {
              *
              * See https://www.sqlite.org/lang_transaction.html
              */
-            assertThatExceptionOfType(SQLiteDatabaseLockedException::class.java).isThrownBy {
+            assertThrows<SQLiteDatabaseLockedException> {
                 exec(first, "COMMIT TRANSACTION")
             }
             exec(second, "COMMIT TRANSACTION")

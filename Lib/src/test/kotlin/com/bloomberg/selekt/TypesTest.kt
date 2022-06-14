@@ -16,18 +16,10 @@
 
 package com.bloomberg.selekt
 
-import org.junit.Rule
 import org.junit.jupiter.api.Test
-import org.junit.rules.DisableOnDebug
-import org.junit.rules.RuleChain
-import org.junit.rules.Timeout
 import kotlin.test.assertEquals
 
 internal class TypesTest {
-    @Rule
-    @JvmField
-    val rule: RuleChain = RuleChain.outerRule(DisableOnDebug(Timeout.seconds(10L)))
-
     @Test
     fun any() {
         assertEquals(ColumnType.STRING, Any().toColumnType())

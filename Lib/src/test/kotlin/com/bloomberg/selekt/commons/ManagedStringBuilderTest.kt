@@ -16,14 +16,14 @@
 
 package com.bloomberg.selekt.commons
 
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertNotSame
 
 internal class ManagedStringBuilderTest {
     @Test
     fun illegalMaximumLimit() {
-        assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
+        assertThrows<IllegalArgumentException> {
             ManagedStringBuilder(maxRetainedLength = -1)
         }
     }

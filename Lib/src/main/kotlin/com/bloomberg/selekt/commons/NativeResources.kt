@@ -20,43 +20,50 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.file.Files
 import java.util.Locale
+import kotlin.io.path.createTempFile
 import kotlin.jvm.Throws
 
 @Suppress("Detekt.StringLiteralDuplication")
 @JvmSynthetic
-internal fun osName(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
+internal fun osNames(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
     when {
-        startsWith("mac") -> "darwin"
-        startsWith("windows") -> "windows"
-        else -> replace("\\s+", "_")
+        startsWith("mac") -> listOf("darwin", "mac", "macos", "osx")
+        startsWith("windows") -> listOf("windows")
+        else -> listOf(replace("\\s+", "_"))
     }
 }
 
 @JvmSynthetic
-internal fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
-
-@JvmSynthetic
-internal fun libraryExtension() = when (osName()) {
-    "darwin" -> ".dylib"
-    "windows" -> ".dll"
-    else -> ".so"
+internal fun platformIdentifiers() = osNames().flatMap {
+    val osArch = System.getProperty("os.arch")
+    listOf('-', File.separatorChar).map { s -> "$it$s$osArch" } + it
 }
 
 @JvmSynthetic
-internal fun libraryResourceName(parentDirectory: String, name: String) =
-    "$parentDirectory/${platformIdentifier()}${File.separatorChar}lib${name}${libraryExtension()}"
+internal fun libraryExtensions() = osNames().map {
+    when (it) {
+        "darwin", "mac", "osx" -> ".dylib"
+        "windows" -> ".dll"
+        else -> ".so"
+    }
+}.toSet()
+
+@JvmSynthetic
+internal fun libraryResourceNames(
+    parentDirectory: String,
+    name: String
+) = (platformIdentifiers() * libraryExtensions()).map {
+    "$parentDirectory${File.separatorChar}${it.first}${File.separatorChar}lib$name${it.second}"
+}
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = libraryResourceName(parentDirectory, name).let {
-        checkNotNull(loader.getResource(it)) { "Failed to find resource with name: $it" }
-    }
+    val url = checkNotNull(libraryResourceNames(parentDirectory, name).mapNotNull {
+        loader.getResource(it)
+    }.firstOrNull()) { "Failed to find resource with name: $name" }
     @Suppress("NewApi") // Not used by Android.
-    val file = Files.createTempFile("libselekt", "lib").toFile().apply {
-        deleteOnExit()
-    }
+    val file = createTempFile("lib$name", "lib").toFile().apply { deleteOnExit() }
     try {
         url.openStream().use { inputStream ->
             BufferedOutputStream(FileOutputStream(file)).use { outputStream -> inputStream.copyTo(outputStream) }
