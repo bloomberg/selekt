@@ -16,6 +16,7 @@
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.artifacts.DependencySubstitutions
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.kotlin.dsl.withType
@@ -32,6 +33,9 @@ fun DependencyHandler.kotlinX(module: String, version: String? = null): Any =
 
 fun DependencyHandler.selekt(module: String, version: String? = null): Any =
     "com.bloomberg:selekt-$module${version?.let { ":$version" }.orEmpty()}"
+
+fun DependencySubstitutions.selekt(module: String, version: String? = null) =
+    "com.bloomberg:selekt-$module${version?.let { ":$it" } ?: ""}"
 
 val <T> NamedDomainObjectContainer<T>.debug: T get() = requireNotNull(getByName("debug"))
 

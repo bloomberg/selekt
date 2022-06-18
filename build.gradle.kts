@@ -65,29 +65,18 @@ subprojects {
 subprojects {
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute(module("com.bloomberg:selekt-android")).apply {
-                using(project(":AndroidLib"))
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg:selekt-android-sqlcipher")).apply {
-                using(project(":AndroidSQLCipher"))
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg:selekt-annotations")).apply {
-                using(project(":Annotations"))
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg:selekt-api")).apply {
-                using(project(":ApiLib"))
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg:selekt-java")).apply {
-                using(project(":Lib"))
-                because("we work with an unreleased version")
-            }
-            substitute(module("com.bloomberg:selekt-sqlite3")).apply {
-                using(project(":SQLite3"))
-                because("we work with an unreleased version")
+            mapOf(
+                "android" to "AndroidLib",
+                "android-sqlcipher" to "AndroidSQLCipher",
+                "annotations" to "Annotations",
+                "api" to "ApiLib",
+                "java" to "Lib",
+                "sqlite3" to "SQLite3"
+            ).forEach {
+                substitute(module(selekt(it.key))).apply {
+                    using(project(":${it.value}"))
+                    because("we work with an unreleased version")
+                }
             }
         }
     }
