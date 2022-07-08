@@ -30,7 +30,7 @@ enum class Versions(
     ANDROIDX_ROOM("2.4.2", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.20.0", URL("https://github.com/arturbosch/detekt")),
-    DOKKA("1.7.0", URL("https://github.com/Kotlin/dokka")),
+    DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
     JACOCO("0.8.8", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JMH("1.35", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
