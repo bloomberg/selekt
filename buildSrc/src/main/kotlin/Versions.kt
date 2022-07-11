@@ -26,7 +26,7 @@ enum class Versions(
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("24.0.8215888", URL("https://developer.android.com/ndk")),
     ANDROID_SDK("32", URL("https://developer.android.com/sdk")),
-    ANDROIDX_LIVE_DATA("2.4.1", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
+    ANDROIDX_LIVE_DATA("2.5.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.4.2", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     CMAKE("3.18.1", URL("https://cmake.org")),
     DETEKT("1.20.0", URL("https://github.com/arturbosch/detekt")),
