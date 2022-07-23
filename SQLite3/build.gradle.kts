@@ -174,6 +174,6 @@ tasks.register<Delete>("deleteCxxHost") {
     delete(".cxx-host")
 }
 
-tasks.getByName("clean") {
+tasks.named("clean") {
     dependsOn("cleanSqlCipher", "deleteCxxHost")
 }

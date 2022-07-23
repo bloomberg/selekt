@@ -126,9 +126,9 @@ subprojects {
             val signingKey: String? by project
             val signingPassword: String? by project
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-            project.afterEvaluate {
-                configure<PublishingExtension> {
-                    publications.forEach { sign(it) }
+            configure<PublishingExtension> {
+                publications {
+                    sign(this)
                 }
             }
         }
