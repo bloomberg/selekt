@@ -25,8 +25,8 @@ plugins {
     id("bb-jacoco-android")
     id("app.cash.licensee") version Versions.GRADLE_LICENSEE_PLUGIN.version
     kotlin("kapt")
-    signing
     `maven-publish`
+    signing
 }
 
 repositories {
@@ -98,9 +98,11 @@ tasks.register<Task>("buildNativeHost") {
     finalizedBy("copyJniLibs")
 }
 
-afterEvaluate {
-    arrayOf("debug", "release").forEach {
-        tasks.getByName("pre${it.capitalize(Locale.ROOT)}UnitTestBuild").dependsOn("buildNativeHost")
+arrayOf("debug", "release").map { "pre${it.capitalize(Locale.ROOT)}UnitTestBuild" }.forEach {
+    tasks.whenTaskAdded {
+        if (it == name) {
+            dependsOn("buildNativeHost")
+        }
     }
 }
 
@@ -137,21 +139,21 @@ licensee {
     allow("Apache-2.0")
 }
 
-afterEvaluate {
-    publishing {
-        publications.create<MavenPublication>("main") {
-            groupId = selektGroupId
-            artifactId = "selekt-android"
-            version = selektVersionName
-            from(components["release"])
-            pom {
-                commonInitialisation(project)
-                description.set("Selekt Android SQLite library.")
+components.configureEach {
+    if ("release" == name) {
+        publishing {
+            publications.create<MavenPublication>("main") {
+                groupId = selektGroupId
+                artifactId = "selekt-android"
+                version = selektVersionName
+                from(this@configureEach)
+                pom {
+                    commonInitialisation(project)
+                    description.set("Selekt Android SQLite library.")
+                }
+                artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
+                artifact("$buildDir/libs/selekt-kdoc.jar") { classifier = "javadoc" }
             }
-            artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
-            artifact("$buildDir/libs/selekt-kdoc.jar") { classifier = "javadoc" }
-        }.also {
-            signing { sign(it) }
         }
     }
 }

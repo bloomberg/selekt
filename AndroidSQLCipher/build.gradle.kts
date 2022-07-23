@@ -18,8 +18,8 @@ import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
 plugins {
     id("com.android.library")
-    signing
     `maven-publish`
+    signing
 }
 
 repositories {
@@ -56,29 +56,29 @@ tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
     dependsOn(":SQLite3:amalgamate")
 }
 
-afterEvaluate {
-    publishing {
-        publications.create<MavenPublication>("main") {
-            groupId = selektGroupId
-            artifactId = "selekt-android-sqlcipher"
-            version = sqlcipherVersionName
-            from(components["release"])
-            pom {
-                commonInitialisation(project)
-                description.set("SQLCipher for Selekt's Android Library.")
-                licenses {
-                    license {
-                        name.set("Dual OpenSSL and SSLeay License")
-                        url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
-                    }
-                    license {
-                        name.set("Zetetic LLC")
-                        url.set("https://www.zetetic.net/sqlcipher/license")
+components.configureEach {
+    if ("release" == name) {
+        publishing {
+            publications.create<MavenPublication>("main") {
+                groupId = selektGroupId
+                artifactId = "selekt-android-sqlcipher"
+                version = sqlcipherVersionName
+                from(this@configureEach)
+                pom {
+                    commonInitialisation(project)
+                    description.set("SQLCipher for Selekt's Android Library.")
+                    licenses {
+                        license {
+                            name.set("Dual OpenSSL and SSLeay License")
+                            url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
+                        }
+                        license {
+                            name.set("Zetetic LLC")
+                            url.set("https://www.zetetic.net/sqlcipher/license")
+                        }
                     }
                 }
             }
-        }.also {
-            signing { sign(it) }
         }
     }
 }
