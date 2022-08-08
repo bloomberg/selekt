@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.16.3
+
+### Dependencies
+
+* Build Tools 33.0.0.
+* Gradle 7.5.1.
+* LiveData 2.5.0.
+* NDK 25.0.8775105.
+* OpenSSL 1.1.1q.
+* SQLCipher 4.5.2.
+
 ## Version 0.16.2
 
 ### Fixes
