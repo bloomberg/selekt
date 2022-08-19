@@ -15,6 +15,7 @@
  */
 
 import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
 import java.util.Locale
@@ -99,7 +100,7 @@ subprojects {
         }
     }
 
-    configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    configure<DetektExtension> {
         toolVersion = Versions.DETEKT.version
         source = files("src")
         config = files("${rootProject.projectDir}/config/detekt/config.yml")
@@ -108,7 +109,7 @@ subprojects {
         debug = false
         ignoreFailures = false
     }
-    tasks.withType<Detekt> {
+    tasks.withType<Detekt>().configureEach {
         exclude("**/res/**")
         exclude("**/tmp/**")
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
