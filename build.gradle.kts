@@ -30,7 +30,6 @@ repositories {
 }
 
 plugins {
-    jacoco
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
@@ -51,10 +50,6 @@ nexusPublishing {
         maxRetries.set(180)
         delayBetween.set(Duration.ofSeconds(10L))
     }
-}
-
-jacoco {
-    toolVersion = Versions.JACOCO.version
 }
 
 subprojects {
