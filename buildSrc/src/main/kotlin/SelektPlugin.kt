@@ -33,8 +33,8 @@ class SelektPlugin : Plugin<Project> {
         tasks.withType(Test::class.java) {
             systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
         }
-        pluginManager.apply {
-            withPlugin("java") {
+        plugins.apply {
+            withId("java") {
                 dependencies.apply {
                     configurations.getByName("testImplementation") {
                         add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
@@ -51,14 +51,14 @@ class SelektPlugin : Plugin<Project> {
                     }
                 }
             }
-            withPlugin("com.android.application") {
+            withId("com.android.application") {
                 androidExtension().apply {
                     lintOptions {
                         isWarningsAsErrors = true
                     }
                 }
             }
-            withPlugin("com.android.library") {
+            withId("com.android.library") {
                 dependencies.apply {
                     configurations.getByName("androidTestImplementation") {
                         add(name, kotlin("test", Versions.KOTLIN_TEST.version))
@@ -76,7 +76,7 @@ class SelektPlugin : Plugin<Project> {
                 }
             }
             arrayOf("java", "com.android.library").forEach { id ->
-                withPlugin(id) {
+                withId(id) {
                     dependencies.apply {
                         configurations.findByName("compileOnly")?.apply {
                             add(name, "com.google.code.findbugs:jsr305:${Versions.JSR_305}")

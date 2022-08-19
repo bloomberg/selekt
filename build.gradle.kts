@@ -114,13 +114,13 @@ subprojects {
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
 
-    pluginManager.withPlugin("jacoco") {
+    plugins.withType<JacocoPlugin> {
         configure<JacocoPluginExtension> {
             toolVersion = Versions.JACOCO.version
         }
     }
 
-    pluginManager.withPlugin("signing") {
+    plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
             val signingKeyId: String? by project
             val signingKey: String? by project
@@ -134,21 +134,19 @@ subprojects {
         }
     }
 
-    pluginManager.withPlugin("org.jetbrains.dokka") {
-        tasks.withType<DokkaTask>().configureEach {
-            moduleName.set("Selekt")
-            dokkaSourceSets.named("main") {
-                sourceLink {
-                    remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
-                        "${this@configureEach.project.name}/src/main/kotlin"))
-                    localDirectory.set(file("src/main/kotlin"))
-                }
-                includeNonPublic.set(false)
-                jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
-                noAndroidSdkLink.set(false)
-                noJdkLink.set(false)
-                noStdlibLink.set(false)
+    tasks.withType<DokkaTask>().configureEach {
+        moduleName.set("Selekt")
+        dokkaSourceSets.named("main") {
+            sourceLink {
+                remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
+                    "${this@configureEach.project.name}/src/main/kotlin"))
+                localDirectory.set(file("src/main/kotlin"))
             }
+            includeNonPublic.set(false)
+            jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
+            noAndroidSdkLink.set(false)
+            noJdkLink.set(false)
+            noStdlibLink.set(false)
         }
     }
 }
@@ -177,23 +175,23 @@ fun JacocoReportBase.initialise() {
         this@initialise.sourceDirectories.from(it.sourceDirectories)
     }
     subprojects {
-        pluginManager.withPlugin("bb-jacoco-android") {
-            pluginManager.withPlugin("com.android.library") {
+        plugins.withType<JacocoAndroidPlugin> {
+            plugins.withId("com.android.library") {
                 val capitalisedVariant = this@subprojects.extensions.getByType(
                     JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
-                tasks.withType<JacocoReport> {
+                tasks.withType<JacocoReport>().configureEach {
                     if (name.contains(capitalisedVariant)) {
-                        block(this@withType)
-                        this@initialise.dependsOn(this@withType)
+                        block(this)
+                        this@initialise.dependsOn(this@configureEach)
                     }
                 }
             }
         }
-        pluginManager.withPlugin("jacoco") {
-            pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
-                tasks.withType<JacocoReport> {
-                    block(this@withType)
-                    this@initialise.dependsOn(this@withType)
+        plugins.withId("org.jetbrains.kotlin.jvm") {
+            plugins.withType<JacocoPlugin> {
+                tasks.withType<JacocoReport>().configureEach {
+                    block(this)
+                    this@initialise.dependsOn(this@configureEach)
                 }
             }
         }
