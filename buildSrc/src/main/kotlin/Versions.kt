@@ -28,7 +28,7 @@ enum class Versions(
     ANDROID_SDK("33", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.5.0", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.4.2", URL("https://developer.android.com/jetpack/androidx/releases/room")),
-    CMAKE("3.18.1", URL("https://cmake.org")),
+    CMAKE("3.22.1", URL("https://cmake.org")),
     DETEKT("1.20.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.1.0", URL("https://github.com/cashapp/licensee")),
