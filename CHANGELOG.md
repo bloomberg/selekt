@@ -23,7 +23,6 @@ Change Log
 * Android Benchmark Gradle Plugin 1.1.0.
 * Android Gradle Plugin 7.2.1.
 * Android SDK 32.
-* Kotlin 1.7.10.
 * Kotlin Coroutines 1.6.2.
 * OpenSSL 1.1.1p.
 
