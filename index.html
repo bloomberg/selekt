@@ -402,7 +402,8 @@
 
   <h1>Overview</h1>
 
-<p>Selekt is a Kotlin and familiar Android wrapper over the community edition of SQLCipher, an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3: When enabled for WAL-journal mode, "readers do not block writers and a writer does not block readers. Reading and writing can proceed concurrently."</p>
+<p>Selekt is a Kotlin and familiar Android SQLite database library that by default wraps the community edition of <a href="https://www.zetetic.net/sqlcipher/open-source/">SQLCipher</a>, an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3: When enabled for WAL-journal mode, "readers do not block writers and a writer does not block readers. Reading and writing can proceed concurrently."</p>
+<p>The Selekt project is used to securely and efficiently store data in the <a href="https://play.google.com/store/apps/details?id=com.bloomberg.android.anywhere">Bloomberg Professional</a> application for Android.</p>
 <h2 id="licenses">Licenses</h2>
 <h3 id="selekt">Selekt</h3>
 <div class="highlight"><pre><span></span><code>Copyright 2022 Bloomberg Finance L.P.
