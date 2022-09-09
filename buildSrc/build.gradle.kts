@@ -15,7 +15,7 @@
  */
 
 // TODO Move me.
-val kotlinVersion = "1.7.0"
+val kotlinVersion = "1.7.10"
 
 plugins {
     `kotlin-dsl`
