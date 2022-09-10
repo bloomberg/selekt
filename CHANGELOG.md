@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.16.4
+
+### Dependencies
+
+* Android Gradle Plugin 7.2.2.
+* Android SDK 33.
+* CMake 3.22.1.
+* Kotlin 1.7.10.
+* Kotlin Coroutines 1.6.4.
+* NDK 25.1.8937393.
+
 ## Version 0.16.3
 
 ### Dependencies
