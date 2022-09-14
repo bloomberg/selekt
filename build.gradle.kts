@@ -187,7 +187,7 @@ fun JacocoReportBase.initialise() {
         }
         pluginManager.withPlugin("jacoco") {
             pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
-                tasks.withType<JacocoReport> {
+                tasks.withType<JacocoReport>().configureEach {
                     block(this)
                     this@initialise.dependsOn(this)
                 }

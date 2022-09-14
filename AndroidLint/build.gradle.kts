@@ -38,7 +38,7 @@ dependencies {
     implementation(kotlin("reflect", Versions.KOTLIN.version))
 }
 
-tasks.withType<Jar> {
+tasks.withType<Jar>().configureEach {
     manifest {
         attributes["Lint-Registry-v2"] = "com.bloomberg.selekt.android.lint.SelektIssueRegistry"
     }
