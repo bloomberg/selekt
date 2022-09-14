@@ -83,7 +83,7 @@ val Project.sqlcipherVersionName: String
     get() = "${checkNotNull(properties["sqlcipher.versionName"])}-$selektVersionName"
 
 fun Project.disableKotlinCompilerAssertions() {
-    tasks.withType<KotlinCompile> {
+    tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             freeCompilerArgs = listOf(
                 "-Xno-call-assertions",
