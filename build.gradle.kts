@@ -24,6 +24,7 @@ import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
+import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
 
 repositories {
     mavenCentral()
@@ -87,7 +88,7 @@ subprojects {
         plugin("io.gitlab.arturbosch.detekt")
     }
 
-    tasks.withType<KotlinCompile> {
+    tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
@@ -158,7 +159,7 @@ allprojects {
             reporter(ReporterType.HTML)
         }
     }
-    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask>().configureEach {
+    tasks.withType<GenerateReportsTask>().configureEach {
         reportsOutputDirectory.set(rootProject.layout.buildDirectory.dir("reports/ktlint/${project.name}/$name"))
     }
 }
@@ -178,7 +179,7 @@ fun JacocoReportBase.initialise() {
                 tasks.withType<JacocoReport>().configureEach {
                     if (name.contains(capitalisedVariant)) {
                         block(this)
-                        this@initialise.dependsOn(this@configureEach)
+                        this@initialise.dependsOn(this)
                     }
                 }
             }
@@ -187,7 +188,7 @@ fun JacocoReportBase.initialise() {
             plugins.withType<JacocoPlugin> {
                 tasks.withType<JacocoReport>().configureEach {
                     block(this)
-                    this@initialise.dependsOn(this@configureEach)
+                    this@initialise.dependsOn(this)
                 }
             }
         }
