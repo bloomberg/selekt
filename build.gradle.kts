@@ -15,6 +15,7 @@
  */
 
 import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
 import java.util.Locale
@@ -23,6 +24,7 @@ import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
+import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
 
 repositories {
     mavenCentral()
@@ -50,10 +52,6 @@ nexusPublishing {
         maxRetries.set(180)
         delayBetween.set(Duration.ofSeconds(10L))
     }
-}
-
-jacoco {
-    toolVersion = Versions.JACOCO.version
 }
 
 subprojects {
@@ -91,7 +89,7 @@ subprojects {
         plugin("io.gitlab.arturbosch.detekt")
     }
 
-    tasks.withType<KotlinCompile> {
+    tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
@@ -99,7 +97,7 @@ subprojects {
         }
     }
 
-    configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    configure<DetektExtension> {
         toolVersion = Versions.DETEKT.version
         source = files("src")
         config = files("${rootProject.projectDir}/config/detekt/config.yml")
@@ -108,19 +106,19 @@ subprojects {
         debug = false
         ignoreFailures = false
     }
-    tasks.withType<Detekt> {
+    tasks.withType<Detekt>().configureEach {
         exclude("**/res/**")
         exclude("**/tmp/**")
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
 
-    pluginManager.withPlugin("jacoco") {
+    plugins.withType<JacocoPlugin> {
         configure<JacocoPluginExtension> {
             toolVersion = Versions.JACOCO.version
         }
     }
 
-    pluginManager.withPlugin("signing") {
+    plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
             val signingKeyId: String? by project
             val signingKey: String? by project
@@ -134,21 +132,19 @@ subprojects {
         }
     }
 
-    pluginManager.withPlugin("org.jetbrains.dokka") {
-        tasks.withType<DokkaTask>().configureEach {
-            moduleName.set("Selekt")
-            dokkaSourceSets.named("main") {
-                sourceLink {
-                    remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
-                        "${this@configureEach.project.name}/src/main/kotlin"))
-                    localDirectory.set(file("src/main/kotlin"))
-                }
-                includeNonPublic.set(false)
-                jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
-                noAndroidSdkLink.set(false)
-                noJdkLink.set(false)
-                noStdlibLink.set(false)
+    tasks.withType<DokkaTask>().configureEach {
+        moduleName.set("Selekt")
+        dokkaSourceSets.named("main") {
+            sourceLink {
+                remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
+                    "${this@configureEach.project.name}/src/main/kotlin"))
+                localDirectory.set(file("src/main/kotlin"))
             }
+            includeNonPublic.set(false)
+            jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
+            noAndroidSdkLink.set(false)
+            noJdkLink.set(false)
+            noStdlibLink.set(false)
         }
     }
 }
@@ -164,7 +160,7 @@ allprojects {
             reporter(ReporterType.HTML)
         }
     }
-    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask>().configureEach {
+    tasks.withType<GenerateReportsTask>().configureEach {
         reportsOutputDirectory.set(rootProject.layout.buildDirectory.dir("reports/ktlint/${project.name}/$name"))
     }
 }
@@ -177,14 +173,14 @@ fun JacocoReportBase.initialise() {
         this@initialise.sourceDirectories.from(it.sourceDirectories)
     }
     subprojects {
-        pluginManager.withPlugin("bb-jacoco-android") {
+        plugins.withType<JacocoAndroidPlugin> {
             pluginManager.withPlugin("com.android.library") {
                 val capitalisedVariant = this@subprojects.extensions.getByType(
                     JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
-                tasks.withType<JacocoReport> {
+                tasks.withType<JacocoReport>().configureEach {
                     if (name.contains(capitalisedVariant)) {
-                        block(this@withType)
-                        this@initialise.dependsOn(this@withType)
+                        block(this)
+                        this@initialise.dependsOn(this)
                     }
                 }
             }
@@ -192,8 +188,8 @@ fun JacocoReportBase.initialise() {
         pluginManager.withPlugin("jacoco") {
             pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
                 tasks.withType<JacocoReport> {
-                    block(this@withType)
-                    this@initialise.dependsOn(this@withType)
+                    block(this)
+                    this@initialise.dependsOn(this)
                 }
             }
         }
