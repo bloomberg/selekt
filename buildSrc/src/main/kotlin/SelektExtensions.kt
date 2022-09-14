@@ -83,15 +83,13 @@ val Project.sqlcipherVersionName: String
     get() = "${checkNotNull(properties["sqlcipher.versionName"])}-$selektVersionName"
 
 fun Project.disableKotlinCompilerAssertions() {
-    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
-        tasks.withType<KotlinCompile> {
-            kotlinOptions {
-                freeCompilerArgs = listOf(
-                    "-Xno-call-assertions",
-                    "-Xno-receiver-assertions",
-                    "-Xno-param-assertions"
-                )
-            }
+    tasks.withType<KotlinCompile>().configureEach {
+        kotlinOptions {
+            freeCompilerArgs = listOf(
+                "-Xno-call-assertions",
+                "-Xno-receiver-assertions",
+                "-Xno-param-assertions"
+            )
         }
     }
 }
