@@ -8,11 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-    - name: 'Set environment'
-      run: |
-        if [[ ${GITHUB_REF} == 'refs/heads/main' ]]; then
-          echo 'SCAN=--scan' >> ${GITHUB_ENV}
-        fi
     - name: 'Install system packages'
       run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
     - uses: actions/checkout@v2
@@ -30,7 +25,7 @@ jobs:
     - name: 'Licenses'
       run: ./gradlew licensee
     - name: 'Analyse'
-      run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
+      run: ./gradlew detekt ktlintCheck lintDebug
     - uses: actions/upload-artifact@v2
       if: always()
       with:
@@ -38,12 +33,12 @@ jobs:
         path: |
           **/build/reports/detekt
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
+      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
     - name: 'Coverage'
       run: |
-        ./gradlew :jacocoSelektTestReport ${{ env.SCAN }}
+        ./gradlew :jacocoSelektTestReport
         bash scripts/codecov
-        ./gradlew :koverMergedHtmlReport ${{ env.SCAN }}
+        ./gradlew :koverMergedHtmlReport
     - uses: actions/upload-artifact@v2
       if: always()
       with:
@@ -55,7 +50,7 @@ jobs:
           Lib/build/reports/tests/test
     - name: 'Build Selekt'
       run: |
-        ./gradlew assembleSelekt ${{ env.SCAN }}
+        ./gradlew assembleSelekt
     - name: 'Verify coverage'
       run:
         ./gradlew :jacocoSelektCoverageVerification :koverMergedVerify
