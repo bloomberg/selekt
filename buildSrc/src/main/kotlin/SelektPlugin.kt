@@ -16,6 +16,7 @@
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.kotlin
@@ -34,7 +35,7 @@ class SelektPlugin : Plugin<Project> {
             systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
         }
         plugins.apply {
-            withId("java") {
+            withType(JavaPlugin::class.java) {
                 dependencies.apply {
                     configurations.getByName("testImplementation") {
                         add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
