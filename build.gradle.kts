@@ -174,7 +174,7 @@ fun JacocoReportBase.initialise() {
     }
     subprojects {
         plugins.withType<JacocoAndroidPlugin> {
-            pluginManager.withPlugin("com.android.library") {
+            plugins.withId("com.android.library") {
                 val capitalisedVariant = this@subprojects.extensions.getByType(
                     JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
                 tasks.withType<JacocoReport>().configureEach {
@@ -185,8 +185,8 @@ fun JacocoReportBase.initialise() {
                 }
             }
         }
-        pluginManager.withPlugin("jacoco") {
-            pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        plugins.withId("jacoco") {
+            plugins.withId("org.jetbrains.kotlin.jvm") {
                 tasks.withType<JacocoReport> {
                     block(this)
                     this@initialise.dependsOn(this)
