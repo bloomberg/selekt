@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://bloomberg.github.io/selekt/kdoc/AndroidLib/-selekt/com.bloomberg.selekt.android/-s-q-lite-database/transact/">
       
       <link rel="icon" href="../../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.0, mkdocs-material-8.5.3">
     
     
       
@@ -344,16 +344,14 @@
 
 <p>//<a href="../../../../">Selekt</a>/<a href="../../">com.bloomberg.selekt.android</a>/<a href="../">SQLiteDatabase</a>/<a href="./">transact</a></p>
 <h1 id="transact">transact</h1>
-<p>[androidJvm]<br />
-Content<br />
-fun &lt;<a href="./">T</a>&gt; <a href="./">transact</a>(transactionMode: <a href="../../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="../">SQLiteDatabase</a>.() -&gt; <a href="./">T</a>): <a href="./">T</a><br />
-More info  </p>
+<p>[androidJvm]\
+fun &lt;<a href="./">T</a>&gt; <a href="./">transact</a>(transactionMode: <a href="../../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="../">SQLiteDatabase</a>.() -&gt; <a href="./">T</a>): <a href="./">T</a></p>
 <p>Execute a block inside either an exclusive or an immediate database transaction. These transaction modes are the same in WAL-journal mode; in other journal modes, exclusive transaction mode prevents other connections from reading the database while the transaction is underway.</p>
 <p>Performing write operations within the block on this database on a thread other than the calling thread can result in deadlock.</p>
 <h4 id="return">Return</h4>
 <p>result of the transaction.</p>
 <h2 id="see-also">See also</h2>
-<p>androidJvm  </p>
+<p>androidJvm</p>
 <table>
 <thead>
 <tr>
@@ -363,13 +361,13 @@ More info  </p>
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a></td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a><br><br><a href="https://sqlite.org/lang_transaction.html">SQLite's transaction</a><br><br></td>
+<td></td>
+<td><a href="https://sqlite.org/lang_transaction.html">SQLite's transaction</a></td>
 </tr>
 </tbody>
 </table>
 <h2 id="parameters">Parameters</h2>
-<p>androidJvm  </p>
+<p>androidJvm</p>
 <table>
 <thead>
 <tr>
@@ -379,12 +377,12 @@ More info  </p>
 </thead>
 <tbody>
 <tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a>transactionMode</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a><br><br>of the transaction; the default is <a href="../../../../../ApiLib/-api-lib/com.bloomberg.selekt/-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/">SQLiteTransactionMode.EXCLUSIVE</a>.<br><br></td>
+<td>transactionMode</td>
+<td>of the transaction; the default is <a href="../../../../ApiLib/com.bloomberg.selekt/-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/index.md">SQLiteTransactionMode.EXCLUSIVE</a>.</td>
 </tr>
 <tr>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a>block</td>
-<td><a name="com.bloomberg.selekt.android/SQLiteDatabase/transact/#com.bloomberg.selekt.SQLiteTransactionMode#kotlin.Function1[com.bloomberg.selekt.android.SQLiteDatabase,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/"></a><br><br>to transact.<br><br></td>
+<td>block</td>
+<td>to transact.</td>
 </tr>
 </tbody>
 </table>
