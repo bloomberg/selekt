@@ -31,7 +31,7 @@ android {
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
         minSdk = 21
-        targetSdk = 30
+        targetSdk = 33
         versionCode = 1
         versionName = "0.1"
         ndk {
