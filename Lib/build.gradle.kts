@@ -95,9 +95,11 @@ tasks.register<Test>("integrationTest") {
     outputs.cacheIf { false }
     dependsOn("buildHostSQLite")
     shouldRunAfter("test")
+    /*
     extensions.configure<KoverTaskExtension> {
         isDisabled = true
     }
+     */
 }
 
 tasks.register<Task>("buildHostSQLite") {

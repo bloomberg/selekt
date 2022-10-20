@@ -26,6 +26,7 @@ buildscript {
 plugins {
     id("com.android.library")
     id("kotlin-android")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 apply {
@@ -79,4 +80,8 @@ dependencies {
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
     androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
     androidTestImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+}
+
+kover {
+    isDisabled.set(true)
 }

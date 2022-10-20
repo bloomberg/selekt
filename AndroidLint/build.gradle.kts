@@ -23,6 +23,7 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
 }
 
 java {

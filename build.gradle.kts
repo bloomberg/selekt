@@ -19,6 +19,7 @@ import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
 import java.util.Locale
+import kotlinx.kover.api.KoverMergedConfig
 import kotlinx.kover.api.VerificationValueType
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -227,16 +228,18 @@ tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
     mustRunAfter("jacocoSelektTestReport")
 }
 
-kover {
-    disabledProjects = setOf("AndroidCli", "AndroidLibBenchmark", "AndroidLint")
+configure<KoverMergedConfig> {
+    enable()
 }
 
-tasks.koverMergedVerify {
-    rule {
-        name = "Minimal line coverage"
-        bound {
-            minValue = 94
-            valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
+koverMerged {
+    verify {
+        rule {
+            name = "Minimal coverage"
+            bound {
+                minValue = 94
+                valueType = VerificationValueType.COVERED_PERCENTAGE
+            }
         }
     }
 }

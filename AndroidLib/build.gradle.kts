@@ -27,6 +27,7 @@ plugins {
     kotlin("kapt")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
 }
 
 repositories {
@@ -60,6 +61,7 @@ android {
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
 
+    /*
     testOptions {
         unitTests.all {
             if (!it.name.contains("debug", ignoreCase = true)) {
@@ -69,6 +71,8 @@ android {
             }
         }
     }
+
+     */
 }
 
 dependencies {
