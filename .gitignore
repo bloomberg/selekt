@@ -1,9 +1,11 @@
 .DS_Store
 
 .project
-.idea/
-build/
-.gradle/
+.idea
+.fleet
+.vscode
+build
+.gradle
 *.iml
 local.properties
 .externalNativeBuild
