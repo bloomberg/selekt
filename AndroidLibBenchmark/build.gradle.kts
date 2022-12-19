@@ -71,9 +71,9 @@ android {
 dependencies {
     androidTestImplementation(project(":AndroidLib"))
     androidTestImplementation("junit:junit:${Versions.JUNIT4}")
-    androidTestImplementation("androidx.test:runner:1.4.0")
-    androidTestImplementation("androidx.test:rules:1.4.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.3")
+    androidTestImplementation("androidx.test:runner:1.5.1")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation(androidX("benchmark", "junit4", "1.0.0"))
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
