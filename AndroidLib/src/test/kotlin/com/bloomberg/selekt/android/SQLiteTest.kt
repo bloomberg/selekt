@@ -438,8 +438,8 @@ internal class SQLiteTest {
     @Test
     fun lastInsertRowId() {
         assertEquals(SQL_OK, SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)"))
-        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-            assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES ($it)"))
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
+            assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES ($value)"))
             assertEquals((index + 1).toLong(), SQLite.lastInsertRowId(db))
         }
     }
