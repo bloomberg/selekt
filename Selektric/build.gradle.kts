@@ -20,6 +20,10 @@ repositories {
     mavenCentral()
 }
 
+plugins {
+    base
+}
+
 tasks.register<Exec>("cmakeSelektric") {
     doFirst {
         mkdir(".cxx-host")
@@ -70,6 +74,6 @@ tasks.register<Delete>("deleteCxxHost") {
     delete(".cxx-host")
 }
 
-tasks.register("clean") {
+tasks.getByName("clean") {
     dependsOn("deleteCxxHost")
 }
