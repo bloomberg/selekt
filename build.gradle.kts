@@ -99,6 +99,7 @@ subprojects {
             val signingPassword: String? by project
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             configure<PublishingExtension> {
+                isRequired = project.isRelease()
                 publications {
                     sign(this)
                 }
