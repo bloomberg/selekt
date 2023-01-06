@@ -40,21 +40,17 @@ repositories {
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
-
     defaultConfig {
         minSdkVersion(21)
         targetSdkVersion(32)
-
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(
             "androidx.benchmark.suppressErrors" to "EMULATOR,LOW_BATTERY,UNLOCKED"
         ))
     }
-
     arrayOf("androidTest").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-
     configurations.all {
         resolutionStrategy {
             // FIXME Please remove as soon as the project compiles without.
@@ -62,7 +58,6 @@ android {
             force("org.jetbrains.kotlin:kotlin-stdlib-common:${Versions.KOTLIN}")
         }
     }
-
     lintOptions {
         disable("OldTargetApi")
     }

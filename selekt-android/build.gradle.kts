@@ -37,12 +37,10 @@ repositories {
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
-
     defaultConfig {
         minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
     buildTypes {
         debug {
             buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "true")
@@ -54,7 +52,6 @@ android {
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
-
     arrayOf("debug", "main", "release", "test").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }

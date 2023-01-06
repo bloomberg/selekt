@@ -62,13 +62,11 @@ subprojects {
         plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")
     }
-
     plugins.withType<JavaPlugin>().configureEach {
         dependencies {
             "implementation"(platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version)))
         }
     }
-
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
@@ -76,7 +74,6 @@ subprojects {
             jvmTarget = "11"
         }
     }
-
     configure<DetektExtension> {
         toolVersion = Versions.DETEKT.version
         source = files("src")
@@ -91,7 +88,6 @@ subprojects {
         exclude("**/tmp/**")
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
-
     plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
             val signingKeyId: String? by project
@@ -106,7 +102,6 @@ subprojects {
             }
         }
     }
-
     tasks.withType<DokkaTask>().configureEach {
         moduleName.set("Selekt")
         dokkaSourceSets.named("main") {
