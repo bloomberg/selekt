@@ -32,14 +32,12 @@ android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
     ndkVersion = Versions.ANDROID_NDK.version
-
     defaultConfig {
         minSdk = 21
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
     }
-
     externalNativeBuild {
         cmake {
             path("$rootDir/selekt-sqlite3/CMakeLists.txt")
