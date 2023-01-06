@@ -22,7 +22,6 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
     id("org.jetbrains.dokka")
-    id("bb-jacoco-android")
     id("app.cash.licensee") version Versions.GRADLE_LICENSEE_PLUGIN.version
     kotlin("kapt")
     `maven-publish`

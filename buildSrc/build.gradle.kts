@@ -33,10 +33,6 @@ gradlePlugin {
             id = "selekt"
             implementationClass = "SelektPlugin"
         }
-        create("Bloomberg JaCoCo Android Plugin") {
-            id = "bb-jacoco-android"
-            implementationClass = "JacocoAndroidPlugin"
-        }
         create("Bloomberg JMH Plugin") {
             id = "bb-jmh"
             implementationClass = "JmhPlugin"

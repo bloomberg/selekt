@@ -31,7 +31,6 @@ repositories {
 }
 
 plugins {
-    jacoco
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
@@ -112,12 +111,6 @@ subprojects {
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
 
-    plugins.withType<JacocoPlugin> {
-        configure<JacocoPluginExtension> {
-            toolVersion = Versions.JACOCO.version
-        }
-    }
-
     plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
             val signingKeyId: String? by project
@@ -163,68 +156,6 @@ allprojects {
     tasks.withType<GenerateReportsTask>().configureEach {
         reportsOutputDirectory.set(rootProject.layout.buildDirectory.dir("reports/ktlint/${project.name}/$name"))
     }
-}
-
-fun JacocoReportBase.initialise() {
-    group = "verification"
-    val block: (JacocoReport) -> Unit = {
-        this@initialise.classDirectories.from(it.classDirectories)
-        this@initialise.executionData.from(it.executionData)
-        this@initialise.sourceDirectories.from(it.sourceDirectories)
-    }
-    subprojects {
-        plugins.withType<JacocoAndroidPlugin> {
-            plugins.withId("com.android.library") {
-                val capitalisedVariant = this@subprojects.extensions.getByType(
-                    JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
-                tasks.withType<JacocoReport>().all {
-                    if (name.contains(capitalisedVariant)) {
-                        block(this)
-                        this@initialise.dependsOn(this)
-                    }
-                }
-            }
-        }
-        plugins.withId("jacoco") {
-            plugins.withId("org.jetbrains.kotlin.jvm") {
-                tasks.withType<JacocoReport>().all {
-                    block(this)
-                    this@initialise.dependsOn(this)
-                }
-            }
-        }
-    }
-}
-
-tasks.register<JacocoReport>("jacocoSelektTestReport") {
-    initialise()
-    description = "Generates a global JaCoCo coverage report."
-    reports {
-        csv.required.set(false)
-        html.required.set(true)
-        xml.required.set(true)
-    }
-}
-
-tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
-    initialise()
-    description = "Verifies JaCoCo coverage bounds globally."
-    violationRules {
-        rule {
-            isEnabled = true
-            limit {
-                counter = "LINE"
-                value = "COVEREDRATIO"
-                minimum = "0.9761".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
-            }
-            limit {
-                counter = "BRANCH"
-                value = "COVEREDRATIO"
-                minimum = "0.9326".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
-            }
-        }
-    }
-    mustRunAfter("jacocoSelektTestReport")
 }
 
 kover {

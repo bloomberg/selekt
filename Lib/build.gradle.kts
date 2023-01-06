@@ -26,7 +26,6 @@ plugins {
     kotlin("jvm")
     kotlin("kapt")
     id("org.jetbrains.dokka")
-    jacoco
     `maven-publish`
     signing
     id("bb-jmh")

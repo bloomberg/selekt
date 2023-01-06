@@ -67,7 +67,6 @@ jobs:
       with:
         name: 'Unit test reports'
         path: |
-          build/reports/jacoco/jacocoSelektTestReport
           build/reports/kover/html
           AndroidLib/build/reports/tests/testDebugUnitTest
           Lib/build/reports/tests/test
@@ -76,7 +75,7 @@ jobs:
         ./gradlew assembleSelekt ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
-        ./gradlew :jacocoSelektCoverageVerification :koverMergedVerify
+        ./gradlew :koverMergedVerify
     - name: 'Build others'
       run: |
         ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses

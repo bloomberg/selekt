@@ -20,15 +20,6 @@ import java.util.Locale
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.kotlin.dsl.get
-import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
-import org.gradle.testing.jacoco.tasks.JacocoReport
-
-internal fun Task.jacocoTaskExtension() = extensions["jacoco"] as JacocoTaskExtension
-
-internal fun TaskContainer.jacocoTestReportTasks() = withType(JacocoReport::class.java)
-
-internal val TaskContainer.jacocoTestReportTask: JacocoReport?
-    get() = jacocoTestReportTasks().firstOrNull { it.name == "jacocoTestReport" }
 
 internal fun TaskContainer.unitTestTask(variant: BaseVariant) =
     getByName("test${variant.name.capitalize(Locale.ROOT)}UnitTest") as AndroidUnitTest
