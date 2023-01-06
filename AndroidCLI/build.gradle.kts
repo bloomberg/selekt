@@ -59,7 +59,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.androidLib)
+    implementation(projects.selektAndroid)
     implementation(androidX("appcompat", version = "1.0.2"))
     implementation(androidX("core", "ktx", version = "1.0.2"))
     implementation(androidX("paging", "runtime", "2.1.0"))

@@ -17,14 +17,14 @@
 rootProject.name = "Selekt"
 
 include(":AndroidCLI")
-include(":AndroidLib")
 include(":AndroidLibBenchmark")
-include(":AndroidLint")
-include(":AndroidSQLCipher")
-include(":ApiLib")
-include(":Lib")
 include(":OpenSSL")
 include(":Selektric")
-include(":SQLite3")
+include(":selekt-android")
+include(":selekt-android-lint")
+include(":selekt-android-sqlcipher")
+include(":selekt-api")
+include(":selekt-java")
+include(":selekt-sqlite3")
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

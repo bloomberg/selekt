@@ -53,37 +53,13 @@ nexusPublishing {
     }
 }
 
-subprojects {
-    apply {
-        plugin("selekt")
-    }
-}
-
-subprojects {
-    configurations.all {
-        resolutionStrategy.dependencySubstitution {
-            mapOf(
-                "android" to "AndroidLib",
-                "android-sqlcipher" to "AndroidSQLCipher",
-                "api" to "ApiLib",
-                "java" to "Lib",
-                "sqlite3" to "SQLite3"
-            ).forEach {
-                substitute(module(selekt(it.key))).apply {
-                    using(project(":${it.value}"))
-                    because("we work with an unreleased version")
-                }
-            }
-        }
-    }
-}
-
 dependencies {
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
 subprojects {
     apply {
+        plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")
     }
 
@@ -174,10 +150,10 @@ koverMerged {
                 listOf(
                     androidCLI,
                     androidLibBenchmark,
-                    androidLint,
                     openSSL,
+                    selektAndroidLint,
                     selektric,
-                    sqLite3
+                    selektSqlite3
                 ).map { it.name }
             })
         }

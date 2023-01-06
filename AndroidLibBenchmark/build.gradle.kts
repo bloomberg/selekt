@@ -69,7 +69,7 @@ android {
 }
 
 dependencies {
-    androidTestImplementation(projects.androidLib)
+    androidTestImplementation(projects.selektAndroid)
     androidTestImplementation("junit:junit:${Versions.JUNIT4}")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")

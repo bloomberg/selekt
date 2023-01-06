@@ -62,11 +62,11 @@ android {
 }
 
 dependencies {
-    api(selekt("api", selektVersionName))
+    api(projects.selektApi)
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
-    implementation(selekt("android-sqlcipher", sqlcipherVersionName))
-    implementation(selekt("java", selektVersionName))
-    implementation(selekt("sqlite3", selektVersionName))
+    implementation(projects.selektAndroidSqlcipher)
+    implementation(projects.selektJava)
+    implementation(projects.selektSqlite3)
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
@@ -84,13 +84,13 @@ tasks.withType<Test>().configureEach {
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree("${project(":SQLite3").buildDir.absolutePath}/intermediates/libs"))
+    from(fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"))
     from(fileTree("${project(":Selektric").buildDir.absolutePath}/intermediates/libs"))
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
 tasks.register<Task>("buildNativeHost") {
-    dependsOn(":SQLite3:buildHost")
+    dependsOn(":selekt-sqlite3:buildHost")
     dependsOn(":Selektric:buildHost")
     finalizedBy("copyJniLibs")
 }
@@ -140,9 +140,6 @@ components.configureEach {
     if ("release" == name) {
         publishing {
             publications.create<MavenPublication>("main") {
-                groupId = selektGroupId
-                artifactId = "selekt-android"
-                version = selektVersionName
                 from(this@configureEach)
                 pom {
                     commonInitialisation(project)

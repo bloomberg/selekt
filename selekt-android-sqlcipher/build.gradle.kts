@@ -42,7 +42,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            path("$rootDir/SQLite3/CMakeLists.txt")
+            path("$rootDir/selekt-sqlite3/CMakeLists.txt")
             version = Versions.CMAKE.version
         }
     }
@@ -62,7 +62,6 @@ components.configureEach {
         publishing {
             publications.create<MavenPublication>("main") {
                 groupId = selektGroupId
-                artifactId = "selekt-android-sqlcipher"
                 version = sqlcipherVersionName
                 from(this@configureEach)
                 pom {

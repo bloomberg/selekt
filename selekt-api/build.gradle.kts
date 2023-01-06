@@ -14,45 +14,44 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 repositories {
     mavenCentral()
-    google()
 }
 
 plugins {
     kotlin("jvm")
+    id("org.jetbrains.dokka")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
     withJavadocJar()
     withSourcesJar()
 }
 
-dependencies {
-    compileOnly("com.android.tools.lint:lint:${Versions.ANDROID_LINT}")
-    compileOnly("com.android.tools.lint:lint-api:${Versions.ANDROID_LINT}")
-    implementation(kotlin("reflect", Versions.KOTLIN.version))
+tasks.register("assembleSelekt") {
+    dependsOn("assemble")
 }
 
-tasks.withType<Jar>().configureEach {
-    manifest {
-        attributes["Lint-Registry-v2"] = "com.bloomberg.selekt.android.lint.SelektIssueRegistry"
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf(
+            "-Xinline-classes",
+            "-opt-in=kotlin.RequiresOptIn"
+        )
     }
 }
 
 publishing {
     publications.register<MavenPublication>("main") {
-        groupId = selektGroupId
-        artifactId = "selekt-android-lint"
-        version = selektVersionName
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt Android Lint library.")
+            description.set("Selekt shared API library.")
         }
     }
 }

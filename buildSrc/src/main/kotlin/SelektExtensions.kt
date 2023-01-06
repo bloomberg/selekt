@@ -31,12 +31,6 @@ fun DependencyHandler.androidX(module: String, suffix: String? = null, version: 
 fun DependencyHandler.kotlinX(module: String, version: String? = null): Any =
     "org.jetbrains.kotlinx:kotlinx-$module${version?.let { ":$version" }.orEmpty()}"
 
-fun DependencyHandler.selekt(module: String, version: String? = null): Any =
-    "com.bloomberg:selekt-$module${version?.let { ":$version" }.orEmpty()}"
-
-fun DependencySubstitutions.selekt(module: String, version: String? = null) =
-    "com.bloomberg:selekt-$module${version?.let { ":$it" } ?: ""}"
-
 val <T> NamedDomainObjectContainer<T>.debug: T get() = requireNotNull(getByName("debug"))
 
 fun <T> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = requireNotNull(getByName("debug", configure))

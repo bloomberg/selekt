@@ -75,9 +75,6 @@ tasks.register("assembleSelekt") {
 
 publishing {
     publications.register<MavenPublication>("main") {
-        groupId = selektGroupId
-        artifactId = "selekt-sqlite3"
-        version = selektVersionName
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)

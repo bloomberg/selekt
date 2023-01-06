@@ -53,10 +53,10 @@ val integrationTestImplementation: Configuration by configurations.getting {
 val integrationTestRuntimeOnly: Configuration by configurations.getting { extendsFrom(configurations.runtimeOnly.get()) }
 
 dependencies {
-    implementation(selekt("api", selektVersionName))
-    implementation(selekt("sqlite3", selektVersionName))
-    integrationTestImplementation(selekt("api", selektVersionName))
-    integrationTestImplementation(selekt("sqlite3", selektVersionName))
+    implementation(projects.selektApi)
+    implementation(projects.selektSqlite3)
+    integrationTestImplementation(projects.selektApi)
+    integrationTestImplementation(projects.selektSqlite3)
     integrationTestImplementation(kotlinX("coroutines-core"))
     integrationTestImplementation(kotlinX("coroutines-jdk8"))
     integrationTestImplementation(kotlin("test", Versions.KOTLIN_TEST.version))
@@ -74,9 +74,6 @@ tasks.register("assembleSelekt") {
 
 publishing {
     publications.register<MavenPublication>("main") {
-        groupId = selektGroupId
-        artifactId = "selekt-java"
-        version = selektVersionName
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)
