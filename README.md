@@ -1,6 +1,5 @@
 # Selekt
 
-[![Coverage Status](https://codecov.io/gh/bloomberg/selekt/branch/main/graph/badge.svg)](https://codecov.io/gh/bloomberg/selekt)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 [![Maven Central](https://img.shields.io/maven-central/v/com.bloomberg/selekt-android.svg)](https://search.maven.org/artifact/com.bloomberg/selekt-android)
 [![KDoc](https://img.shields.io/static/v1?label=docs&message=KDoc&color=1AA2D4)](https://bloomberg.github.io/selekt/kdoc/api/AndroidLib/index.html)
