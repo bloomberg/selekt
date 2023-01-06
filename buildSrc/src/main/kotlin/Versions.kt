@@ -33,6 +33,7 @@ enum class Versions(
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.6.0", URL("https://github.com/cashapp/licensee")),
     GRADLE_UNDERCOUCH_DOWNLOAD_PLUGIN("5.3.0", URL("https://github.com/michel-kraemer/gradle-download-task")),
+    IDE_EXT_GRADLE_PLUGIN("1.1.7", URL("https://github.com/JetBrains/gradle-idea-ext-plugin")),
     JMH("1.36", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.2", URL("https://github.com/junit-team/junit4")),
