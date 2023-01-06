@@ -28,6 +28,7 @@ plugins {
     id("org.jetbrains.dokka")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
     id("bb-jmh")
 }
 
@@ -94,7 +95,7 @@ tasks.register<Test>("integrationTest") {
     dependsOn("buildHostSQLite")
     shouldRunAfter("test")
     extensions.configure<KoverTaskExtension> {
-        isDisabled = true
+        isDisabled.set(true)
     }
 }
 

@@ -30,6 +30,7 @@ repositories {
 }
 
 plugins {
+    base
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
@@ -162,18 +163,38 @@ allprojects {
     }
 }
 
-kover {
-    disabledProjects = setOf("AndroidCli", "AndroidLibBenchmark", "AndroidLint")
-}
-
-tasks.koverMergedVerify {
-    rule {
-        name = "Minimal line coverage"
-        bound {
-            minValue = 94
-            valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
+koverMerged {
+    enable()
+    filters {
+        annotations {
+            excludes.add("com.bloomberg.selekt.annotations.ExcludeFromCoverage")
+        }
+        projects {
+            excludes.addAll(projects.run {
+                listOf(
+                    androidCLI,
+                    androidLibBenchmark,
+                    androidLint,
+                    openSSL,
+                    selektric,
+                    sqLite3
+                ).map { it.name }
+            })
         }
     }
+    verify {
+        rule {
+            name = "Minimal coverage"
+            bound {
+                minValue = 98
+                valueType = VerificationValueType.COVERED_PERCENTAGE
+            }
+        }
+    }
+}
+
+tasks.getByName("check") {
+    dependsOn("koverMergedVerify")
 }
 
 qodana {

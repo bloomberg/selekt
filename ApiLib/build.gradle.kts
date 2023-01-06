@@ -25,6 +25,7 @@ plugins {
     id("org.jetbrains.dokka")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
 }
 
 java {

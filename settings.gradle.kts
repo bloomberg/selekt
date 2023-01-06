@@ -26,3 +26,5 @@ include(":Lib")
 include(":OpenSSL")
 include(":Selektric")
 include(":SQLite3")
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

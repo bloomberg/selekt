@@ -26,6 +26,7 @@ plugins {
     kotlin("kapt")
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover")
 }
 
 repositories {
@@ -58,16 +59,6 @@ android {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
-
-    testOptions {
-        unitTests.all {
-            if (!it.name.contains("debug", ignoreCase = true)) {
-                it.extensions.configure<KoverTaskExtension> {
-                    isDisabled = true
-                }
-            }
-        }
-    }
 }
 
 dependencies {
@@ -82,6 +73,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT5}")
     testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
+}
+
+tasks.withType<Test>().configureEach {
+    if (!name.contains("debug", ignoreCase = true)) {
+        extensions.configure<KoverTaskExtension> {
+            isDisabled.set(true)
+        }
+    }
 }
 
 tasks.register<Copy>("copyJniLibs") {
