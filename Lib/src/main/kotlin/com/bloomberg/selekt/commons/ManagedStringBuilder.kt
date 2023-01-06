@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.commons
 
-import com.bloomberg.selekt.annotations.Generated
 import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -34,7 +33,6 @@ class ManagedStringBuilder(
     @JvmField
     internal var builder = StringBuilder(defaultLength)
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <T> use(block: StringBuilder.() -> T) = try {
         block(builder)
     } finally {

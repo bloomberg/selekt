@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.ThreadSafe
@@ -41,7 +40,6 @@ abstract class SharedCloseable : Closeable {
         }
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     internal inline fun <T> pledge(block: () -> T): T {
         retain()
         try {

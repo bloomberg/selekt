@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import java.io.Closeable
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.roundToInt
@@ -123,11 +122,9 @@ internal class SimpleCursorWindow : ICursorWindow {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun get(row: Int, column: Int) = rows[row][column]
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun append(value: Any?) = rows.last().add(value)
 }
 

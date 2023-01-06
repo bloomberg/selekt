@@ -52,7 +52,6 @@ val integrationTestImplementation: Configuration by configurations.getting {
 val integrationTestRuntimeOnly: Configuration by configurations.getting { extendsFrom(configurations.runtimeOnly.get()) }
 
 dependencies {
-    compileOnly(selekt("annotations", selektVersionName))
     implementation(selekt("api", selektVersionName))
     implementation(selekt("sqlite3", selektVersionName))
     integrationTestImplementation(selekt("api", selektVersionName))

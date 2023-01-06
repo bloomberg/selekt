@@ -16,11 +16,9 @@
 
 package com.bloomberg.selekt.commons
 
-import com.bloomberg.selekt.annotations.Generated
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 
-@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withTryLock(
     action: () -> T
 ): T? {
@@ -34,7 +32,6 @@ internal inline fun <T> Lock.withTryLock(
     return null
 }
 
-@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withTryLock(
     time: Long,
     unit: TimeUnit,
@@ -50,7 +47,6 @@ internal inline fun <T> Lock.withTryLock(
     return null
 }
 
-@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Lock.withLockInterruptibly(
     action: () -> T
 ): T? {

@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import javax.annotation.concurrent.NotThreadSafe
 
 private const val NO_RESIZE_LOAD_FACTOR = 1.1f
@@ -43,7 +42,6 @@ internal class LruCache<T : Any>(private val maxSize: Int, private val disposal:
             .forEach { disposal(it) }
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline operator fun get(key: String, supplier: () -> T): T = store.getOrPut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)

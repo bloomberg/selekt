@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.pools
 
-import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.LinkedDeque
 import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.commons.withLockInterruptibly
@@ -73,7 +72,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     @Suppress("Detekt.ReturnCount")
-    @Generated("Jacoco does not report coverage for inline methods")
     @Throws(InterruptedException::class)
     private inline fun internalBorrowObject(preferred: () -> T?): T {
         lock.withLockInterruptibly {

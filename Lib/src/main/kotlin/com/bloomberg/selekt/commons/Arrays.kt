@@ -16,9 +16,6 @@
 
 package com.bloomberg.selekt.commons
 
-import com.bloomberg.selekt.annotations.Generated
-
-@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     var i = 0
     while (i < size) {
@@ -26,7 +23,6 @@ internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     }
 }
 
-@Generated("Jacoco does not report coverage for inline methods")
 internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
     var i = 0
     while (i < size) {

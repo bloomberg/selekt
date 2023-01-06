@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
@@ -169,7 +168,6 @@ internal class SQLConnection constructor(
         sqlite.databaseReleaseMemory(pointer)
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         block: SQLPreparedStatement.() -> R
@@ -181,7 +179,6 @@ internal class SQLConnection constructor(
         }
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun <R> withPreparedStatement(
         sql: String,
         bindArgs: Array<*>,

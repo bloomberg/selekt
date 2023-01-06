@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.ManagedStringBuilder
 import com.bloomberg.selekt.commons.forUntil
 import com.bloomberg.selekt.pools.Priority
@@ -33,7 +32,6 @@ private object SharedSqlBuilder {
         override fun initialValue() = ManagedStringBuilder()
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <T> use(block: StringBuilder.() -> T) = threadLocal.get().use { block(this) }
 }
 

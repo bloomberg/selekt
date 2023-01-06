@@ -64,7 +64,6 @@ subprojects {
             mapOf(
                 "android" to "AndroidLib",
                 "android-sqlcipher" to "AndroidSQLCipher",
-                "annotations" to "Annotations",
                 "api" to "ApiLib",
                 "java" to "Lib",
                 "sqlite3" to "SQLite3"

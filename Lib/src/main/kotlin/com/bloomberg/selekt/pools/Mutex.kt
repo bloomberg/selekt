@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.pools
 
-import com.bloomberg.selekt.annotations.Generated
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import java.util.concurrent.locks.LockSupport
@@ -70,7 +69,6 @@ internal class Mutex {
         LockSupport.unpark(it)
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> withTryLock(
         block: () -> R
     ): R? = if (internalTryLock()) {
@@ -83,7 +81,6 @@ internal class Mutex {
         null
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> withTryLock(
         nanos: Long,
         isCancellable: Boolean,
@@ -99,7 +96,6 @@ internal class Mutex {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    @Generated("Jacoco does not report coverage for inline methods")
     private inline fun internalTryLock() = isLockedUpdater.compareAndSet(this, 0, 1)
 
     /**

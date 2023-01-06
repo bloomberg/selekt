@@ -72,7 +72,6 @@ android {
 
 dependencies {
     api(selekt("api", selektVersionName))
-    compileOnly(selekt("annotations", selektVersionName))
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     implementation(selekt("android-sqlcipher", sqlcipherVersionName))
     implementation(selekt("java", selektVersionName))

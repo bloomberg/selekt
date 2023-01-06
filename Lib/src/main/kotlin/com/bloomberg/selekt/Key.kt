@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.annotations.Generated
 import com.bloomberg.selekt.commons.zero
 import javax.annotation.concurrent.GuardedBy
 
@@ -34,7 +33,6 @@ internal class Key(value: ByteArray) {
         }
     }
 
-    @Generated("Jacoco does not report coverage for inline methods")
     inline fun <R> use(action: (ByteArray) -> R) = synchronized(lock) {
         check(!isDestroyed) { "Key is destroyed." }
         value.copyOf()

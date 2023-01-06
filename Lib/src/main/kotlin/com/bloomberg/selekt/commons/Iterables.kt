@@ -16,8 +16,6 @@
 
 package com.bloomberg.selekt.commons
 
-import com.bloomberg.selekt.annotations.Generated
-
 fun <T : Any?> emptyIterable() = object : Iterable<T> {
     private val iterator = emptyIterator<T>()
 
@@ -36,7 +34,6 @@ private fun <T : Any?> emptyIterator() = object : Iterator<T> {
     override fun next() = throw NoSuchElementException()
 }
 
-@Generated("Jacoco does not report coverage for inline methods")
 inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwable> {
     val throwables = mutableListOf<Throwable>()
     forEach {
