@@ -21,7 +21,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.kotlin
 
-private fun Test.configureJUnit5() {
+private fun Test.configureJupiter() {
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
     systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "60s")
@@ -84,7 +84,7 @@ class SelektPlugin : Plugin<Project> {
                     }
                     tasks.withType(Test::class.java) {
                         useJUnitPlatform()
-                        configureJUnit5()
+                        configureJupiter()
                     }
                 }
             }
