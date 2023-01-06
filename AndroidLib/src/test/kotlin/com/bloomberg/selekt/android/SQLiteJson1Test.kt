@@ -36,7 +36,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 internal class SQLiteJson1Test {
-    private val file = createTempFile("test-sqlite-json1", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-sqlite-json1", ".db").toFile().apply { deleteOnExit() }
 
     private var db: Pointer = NULL
 

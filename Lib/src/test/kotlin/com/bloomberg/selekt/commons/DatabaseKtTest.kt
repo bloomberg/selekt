@@ -29,7 +29,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class DatabaseKtTest {
-    private val parent = Files.createTempDirectory("foo").toFile().also { it.deleteOnExit() }
+    private val parent = Files.createTempDirectory("foo").toFile().apply { deleteOnExit() }
 
     @AfterEach
     fun tearDown() {

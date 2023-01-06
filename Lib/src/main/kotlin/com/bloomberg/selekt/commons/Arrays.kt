@@ -36,11 +36,11 @@ internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
 
 @JvmSynthetic
 internal fun <T, A : Appendable> Array<out T>.joinTo(buffer: A, separator: Char) = buffer.apply {
-    forEachByIndex { i, it ->
-        if (i > 0) {
+    forEachByIndex { index, value ->
+        if (index > 0) {
             append(separator)
         }
-        appendElement(it)
+        appendElement(value)
     }
 }
 

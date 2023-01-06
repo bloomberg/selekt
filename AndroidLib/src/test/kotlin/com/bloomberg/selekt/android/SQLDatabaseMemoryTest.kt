@@ -64,8 +64,8 @@ internal class SQLDatabaseMemoryTest {
     @Test
     fun deleteAll(): Unit = database.transact {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-            val values = ContentValues().apply { put("bar", it) }
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
+            val values = ContentValues().apply { put("bar", value) }
             val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
             assertEquals((index + 1).toLong(), rowId)
         }
@@ -156,8 +156,8 @@ internal class SQLDatabaseMemoryTest {
     @Test
     fun insertIntWithOnConflictMultipleTimes(): Unit = database.transact {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
-        arrayOf(42, 43, 44, 45).forEachIndexed { index, it ->
-            val values = ContentValues().apply { put("bar", it) }
+        arrayOf(42, 43, 44, 45).forEachIndexed { index, value ->
+            val values = ContentValues().apply { put("bar", value) }
             val rowId = insert("Foo", values, ConflictAlgorithm.REPLACE)
             assertEquals((index + 1).toLong(), rowId)
         }

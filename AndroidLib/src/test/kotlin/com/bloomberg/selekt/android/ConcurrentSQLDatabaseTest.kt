@@ -31,7 +31,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class ConcurrentSQLDatabaseTest {
-    private val file = createTempFile("test-concurrent-sql-database", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-concurrent-sql-database", ".db").toFile().apply { deleteOnExit() }
 
     private val database = SQLDatabase(file.absolutePath, SQLite, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })

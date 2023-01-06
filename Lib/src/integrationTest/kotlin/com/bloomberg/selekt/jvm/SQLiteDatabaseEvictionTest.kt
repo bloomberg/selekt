@@ -39,7 +39,7 @@ private val body = "a".repeat(1_000_000)
 
 @Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseEvictionTest {
-    private val file = createTempFile("test-eviction", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-eviction", ".db").toFile().apply { deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

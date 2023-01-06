@@ -39,7 +39,7 @@ import kotlin.test.assertTrue
 
 @Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseChurnTest {
-    private val file = createTempFile("test-stress", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-stress", ".db").toFile().apply { deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

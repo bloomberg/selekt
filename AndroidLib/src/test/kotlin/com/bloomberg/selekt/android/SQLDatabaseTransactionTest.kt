@@ -38,7 +38,7 @@ import kotlin.io.path.createTempFile
 
 private fun createFile(
     input: SQLiteJournalMode
-) = createTempFile("test-transactions-${input.name}-", ".db").toFile().also { it.deleteOnExit() }
+) = createTempFile("test-transactions-${input.name}-", ".db").toFile().apply { deleteOnExit() }
 
 internal class SQLDatabaseTransactionTest {
     @ParameterizedTest

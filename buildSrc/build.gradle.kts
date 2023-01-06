@@ -15,7 +15,7 @@
  */
 
 // TODO Move me.
-val kotlinVersion = "1.7.10"
+val kotlinVersion = "1.8.0"
 
 plugins {
     `kotlin-dsl`
@@ -48,4 +48,5 @@ dependencies {
     compileOnly(gradleApi())
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
     implementation("com.android.tools.build:gradle:7.3.1")
+    implementation("de.undercouch:gradle-download-task:5.3.0")
 }

@@ -56,7 +56,7 @@ internal class SampleArgumentsProvider : ArgumentsProvider {
 
 private fun createFile(
     input: SQLSampleInputs
-) = createTempFile("test-samples-$input-", ".db").toFile().also { it.deleteOnExit() }
+) = createTempFile("test-samples-$input-", ".db").toFile().apply { deleteOnExit() }
 
 internal class SQLDatabaseSampleTests {
     @ParameterizedTest

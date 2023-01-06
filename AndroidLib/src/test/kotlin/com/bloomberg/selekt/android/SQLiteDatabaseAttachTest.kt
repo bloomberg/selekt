@@ -31,8 +31,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class SQLiteDatabaseAttachTest {
-    private val file = createTempFile("test-sql-database-sharding", ".db").toFile().also { it.deleteOnExit() }
-    private val otherFile = createTempFile("test-sql-database-sharding-other", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-sharding", ".db").toFile().apply { deleteOnExit() }
+    private val otherFile = createTempFile("test-sql-database-sharding-other", ".db").toFile().apply { deleteOnExit() }
 
     // DELETE mode because it has one connection. Databases must be attached per connection.
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.DELETE.databaseConfiguration,

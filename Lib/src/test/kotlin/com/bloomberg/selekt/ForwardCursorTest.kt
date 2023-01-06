@@ -215,6 +215,7 @@ internal class ForwardCursorTest {
     }
 
     @Test
+    @Suppress("Detekt.CognitiveComplexMethod")
     fun moveToNext() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")

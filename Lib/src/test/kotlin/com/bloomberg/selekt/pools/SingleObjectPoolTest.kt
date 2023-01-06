@@ -354,8 +354,8 @@ internal class SingleObjectPoolTest {
                 initialDelay: Long,
                 period: Long,
                 unit: TimeUnit
-            ) = this@SingleObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).also {
-                it.cancel(false)
+            ) = this@SingleObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).apply {
+                cancel(false)
             }
         }
         SingleObjectPool(mock<IObjectFactory<PooledObject>>().apply {
