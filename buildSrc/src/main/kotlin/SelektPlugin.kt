@@ -79,8 +79,13 @@ class SelektPlugin : Plugin<Project> {
             arrayOf("java", "com.android.library").forEach { id ->
                 withId(id) {
                     dependencies.apply {
-                        configurations.findByName("compileOnly")?.apply {
-                            add(name, "com.google.code.findbugs:jsr305:${Versions.JSR_305}")
+                        configurations.getByName("compileOnly").apply {
+                            constraints.add(name, "com.google.code.findbugs:jsr305") {
+                                version {
+                                    strictly("[2.0.2, ${Versions.JSR_305}]")
+                                }
+                            }
+                            add(name, "com.google.code.findbugs:jsr305:+")
                         }
                     }
                     dependencies.apply {
