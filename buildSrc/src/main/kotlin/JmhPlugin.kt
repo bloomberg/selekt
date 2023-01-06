@@ -27,6 +27,7 @@ class JmhPlugin : Plugin<Project> {
         }
         dependencies.apply {
             configurations.getByName("jmhImplementation") {
+                extendsFrom(configurations.getByName("implementation"))
                 add(name, project)
                 add(name, "org.openjdk.jmh:jmh-core:${Versions.JMH}")
             }
