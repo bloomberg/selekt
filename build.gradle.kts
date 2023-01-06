@@ -19,6 +19,8 @@ import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
 import kotlinx.kover.api.VerificationValueType
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.gradle.ext.copyright
 import org.jetbrains.gradle.ext.settings
@@ -75,6 +77,23 @@ subprojects {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
             jvmTarget = "11"
+        }
+    }
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+            exceptionFormat = TestExceptionFormat.FULL
+            showCauses = true
+            showExceptions = true
+            showStackTraces = true
+        }
+        useJUnitPlatform()
+        mapOf(
+            "junit.jupiter.execution.timeout.lifecycle.method.default" to "60s",
+            "junit.jupiter.execution.timeout.mode" to "disabled_on_debug",
+            "junit.jupiter.execution.timeout.testable.method.default" to "60s"
+        ).forEach {
+            systemProperty(it.key, it.value)
         }
     }
     configure<DetektExtension> {

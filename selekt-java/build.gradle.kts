@@ -57,12 +57,9 @@ dependencies {
     implementation(projects.selektSqlite3)
     integrationTestImplementation(projects.selektApi)
     integrationTestImplementation(projects.selektSqlite3)
+    integrationTestImplementation(kotlin("test-junit5"))
     integrationTestImplementation(kotlinX("coroutines-core"))
     integrationTestImplementation(kotlinX("coroutines-jdk8"))
-    integrationTestImplementation(kotlin("test", Versions.KOTLIN_TEST.version))
-    integrationTestImplementation(kotlin("test-junit", Versions.KOTLIN_TEST.version))
-    integrationTestImplementation("org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
-    integrationTestRuntimeOnly("org.junit.platform:junit-platform-launcher:${Versions.JUNIT5_PLATFORM}")
     jmhImplementation(kotlinX("coroutines-core"))
     jmhImplementation(kotlinX("coroutines-jdk8"))
 }
