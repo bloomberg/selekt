@@ -18,7 +18,6 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
-import java.util.Locale
 import kotlinx.kover.api.VerificationValueType
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -86,6 +85,12 @@ dependencies {
 subprojects {
     apply {
         plugin("io.gitlab.arturbosch.detekt")
+    }
+
+    plugins.withType<JavaPlugin>().configureEach {
+        dependencies {
+            "implementation"(platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version)))
+        }
     }
 
     tasks.withType<KotlinCompile>().configureEach {

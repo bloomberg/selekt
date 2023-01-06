@@ -57,14 +57,14 @@ dependencies {
     implementation(selekt("sqlite3", selektVersionName))
     integrationTestImplementation(selekt("api", selektVersionName))
     integrationTestImplementation(selekt("sqlite3", selektVersionName))
-    integrationTestImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
-    integrationTestImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+    integrationTestImplementation(kotlinX("coroutines-core"))
+    integrationTestImplementation(kotlinX("coroutines-jdk8"))
     integrationTestImplementation(kotlin("test", Versions.KOTLIN_TEST.version))
     integrationTestImplementation(kotlin("test-junit", Versions.KOTLIN_TEST.version))
     integrationTestImplementation("org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
     integrationTestRuntimeOnly("org.junit.platform:junit-platform-launcher:${Versions.JUNIT5_PLATFORM}")
-    jmhImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
-    jmhImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+    jmhImplementation(kotlinX("coroutines-core"))
+    jmhImplementation(kotlinX("coroutines-jdk8"))
 }
 
 tasks.register("assembleSelekt") {

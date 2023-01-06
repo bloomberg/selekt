@@ -77,6 +77,6 @@ dependencies {
     androidTestImplementation(androidX("benchmark", "junit4", "1.0.0"))
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
-    androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
-    androidTestImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+    androidTestImplementation(kotlinX("coroutines-core"))
+    androidTestImplementation(kotlinX("coroutines-jdk8"))
 }
