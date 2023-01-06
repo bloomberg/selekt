@@ -80,12 +80,7 @@ class SelektPlugin : Plugin<Project> {
                 withId(id) {
                     dependencies.apply {
                         configurations.getByName("compileOnly").apply {
-                            constraints.add(name, "com.google.code.findbugs:jsr305") {
-                                version {
-                                    strictly("[2.0.2, ${Versions.JSR_305}]")
-                                }
-                            }
-                            add(name, "com.google.code.findbugs:jsr305:+")
+                            add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${Versions.JSR_305}]")
                         }
                     }
                     dependencies.apply {
