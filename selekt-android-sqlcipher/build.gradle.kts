@@ -54,7 +54,7 @@ tasks.register("assembleSelekt") {
 
 tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
     dependsOn(":OpenSSL:assembleAndroid")
-    dependsOn(":SQLite3:amalgamate")
+    dependsOn(":selekt-sqlite3:amalgamate")
 }
 
 components.configureEach {
