@@ -32,6 +32,7 @@ enum class Versions(
     DETEKT("1.22.0", URL("https://github.com/arturbosch/detekt")),
     DOKKA("1.6.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_LICENSEE_PLUGIN("1.6.0", URL("https://github.com/cashapp/licensee")),
+    GRADLE_UNDERCOUCH_DOWNLOAD_PLUGIN("5.3.0", URL("https://github.com/michel-kraemer/gradle-download-task")),
     JACOCO("0.8.8", URL("https://www.jacoco.org/jacoco/trunk/doc/changes.html")),
     JMH("1.36", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),

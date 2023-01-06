@@ -48,4 +48,5 @@ dependencies {
     compileOnly(gradleApi())
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
     implementation("com.android.tools.build:gradle:7.3.1")
+    implementation("de.undercouch:gradle-download-task:5.3.0")
 }
