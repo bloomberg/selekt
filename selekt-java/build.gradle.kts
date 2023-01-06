@@ -97,12 +97,12 @@ tasks.register<Test>("integrationTest") {
 }
 
 tasks.register<Task>("buildHostSQLite") {
-    dependsOn(":SQLite3:buildHost")
+    dependsOn(":selekt-sqlite3:buildHost")
     finalizedBy("copyJniLibs")
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree("${project(":SQLite3").buildDir.absolutePath}/intermediates/libs"))
+    from(fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"))
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
