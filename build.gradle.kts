@@ -163,6 +163,11 @@ koverMerged {
         annotations {
             excludes.add("com.bloomberg.selekt.annotations.ExcludeFromCoverage")
         }
+        classes {
+            excludes.addAll(listOf(
+                "*.BuildConfig"
+            ))
+        }
         projects {
             excludes.addAll(projects.run {
                 listOf(
