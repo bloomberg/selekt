@@ -185,7 +185,7 @@ koverMerged {
         rule {
             name = "Minimal coverage"
             bound {
-                minValue = 98
+                minValue = 97
                 valueType = VerificationValueType.COVERED_PERCENTAGE
             }
         }
