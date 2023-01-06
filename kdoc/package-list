@@ -174,7 +174,7 @@ $dokka.location:com.bloomberg.selekt//SQL_OPEN_SHARED_CACHE/#/PointingToDeclarat
 $dokka.location:com.bloomberg.selekt//SQL_TEXT/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-l_-t-e-x-t.md
 $dokka.location:com.bloomberg.selekt/ColumnType.BLOB///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-b-l-o-b/index.md
 $dokka.location:com.bloomberg.selekt/ColumnType.Companion///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-companion/index.md
-$dokka.location:com.bloomberg.selekt/ColumnType.Companion/toColumnType/#kotlin.Int/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-companion/to-column-type.md
+$dokka.location:com.bloomberg.selekt/ColumnType.Companion/toColumnType/#SQLDataType/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-companion/to-column-type.md
 $dokka.location:com.bloomberg.selekt/ColumnType.FLOAT///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-f-l-o-a-t/index.md
 $dokka.location:com.bloomberg.selekt/ColumnType.INTEGER///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-i-n-t-e-g-e-r/index.md
 $dokka.location:com.bloomberg.selekt/ColumnType.NULL///PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-column-type/-n-u-l-l/index.md
@@ -408,7 +408,7 @@ $dokka.location:com.bloomberg.selekt/SQLite/statementStatus/#kotlin.Long#kotlin.
 $dokka.location:com.bloomberg.selekt/SQLite/step/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/step.md
 $dokka.location:com.bloomberg.selekt/SQLite/stepWithoutThrowing/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/step-without-throwing.md
 $dokka.location:com.bloomberg.selekt/SQLite/threadsafe/#/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/threadsafe.md
-$dokka.location:com.bloomberg.selekt/SQLite/throwSQLException/#kotlin.Int#kotlin.Int#kotlin.String#kotlin.String?/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/throw-s-q-l-exception.md
+$dokka.location:com.bloomberg.selekt/SQLite/throwSQLException/#SQLCode#SQLCode#kotlin.String#kotlin.String?/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/throw-s-q-l-exception.md
 $dokka.location:com.bloomberg.selekt/SQLite/throwSQLException/#kotlin.Long#kotlin.String?/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/throw-s-q-l-exception.md
 $dokka.location:com.bloomberg.selekt/SQLite/totalChanges/#kotlin.Long/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/total-changes.md
 $dokka.location:com.bloomberg.selekt/SQLite/traceV2/#kotlin.Long#kotlin.Int/PointingToDeclaration/Lib/-lib/com.bloomberg.selekt/-s-q-lite/trace-v2.md
