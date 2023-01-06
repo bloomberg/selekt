@@ -38,7 +38,7 @@ import kotlin.test.assertTrue
 
 @Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseThunderingHerdTest {
-    private val file = createTempFile("test-thundering-herd", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-thundering-herd", ".db").toFile().apply { deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

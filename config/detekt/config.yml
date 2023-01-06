@@ -14,7 +14,7 @@ output-reports:
 
 comments:
   active: true
-  excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+  excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
   CommentOverPrivateFunction:
     active: true
   CommentOverPrivateProperty:
@@ -45,7 +45,7 @@ complexity:
     active: false
   LargeClass:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
   LongMethod:
     active: true
     threshold: 62 # TODO Adjust, ideally by reducing. Detekt was refactored for 1.0.0-RC13 to count lines of source code.
@@ -64,14 +64,14 @@ complexity:
     active: true
   StringLiteralDuplication:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     excludeStringsWithLessThan5Characters: true
     ignoreAnnotation: true
     ignoreStringsRegex: '$^'
     threshold: 3
   TooManyFunctions:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     ignoreOverridden: true
     ignorePrivate: true
     thresholdInClasses: 16
@@ -128,7 +128,7 @@ exceptions:
     active: true
   SwallowedException:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
   ThrowingExceptionFromFinally:
     active: true
   ThrowingExceptionInMain:
@@ -145,7 +145,7 @@ exceptions:
       - IndexOutOfBoundsException
       - NullPointerException
       - RuntimeException
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
   TooGenericExceptionThrown:
     active: true
     exceptionNames:
@@ -153,7 +153,7 @@ exceptions:
       - Exception
       - RuntimeException
       - Throwable
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
 
 naming:
   active: true
@@ -173,15 +173,15 @@ naming:
     forbiddenName: []
   FunctionMaxLength:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     maximumFunctionNameLength: 40
   FunctionMinLength:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     minimumFunctionNameLength: 2
   FunctionNaming:
     active: false # DSL.
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     functionPattern: '[a-z$][a-zA-Z$0-9]*'
   MatchingDeclarationName:
     active: true
@@ -199,7 +199,7 @@ naming:
     active: true
   VariableMaxLength:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     maximumVariableNameLength: 40
   VariableMinLength:
     active: false
@@ -276,7 +276,7 @@ style:
     active: false
   MagicNumber:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     ignoreAnnotation: false
     ignoreCompanionObjectPropertyDeclaration: true
     ignoreConstantDeclaration: true
@@ -288,7 +288,7 @@ style:
     active: true
   MaxLineLength:
     active: true
-    excludes: ['**/integrationTest/**','**/jmh/**','**/test/**']
+    excludes: ['**/androidTest/**','**/integrationTest/**/**','**/jmh/**','**/test/**']
     excludeImportStatements: false
     excludePackageStatements: false
     excludeCommentStatements: true

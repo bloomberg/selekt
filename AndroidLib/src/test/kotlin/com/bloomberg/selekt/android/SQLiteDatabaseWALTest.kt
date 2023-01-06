@@ -41,7 +41,7 @@ import kotlin.test.assertTrue
 
 @DelicateApi
 internal class SQLiteDatabaseWALTest {
-    private val file = createTempFile("test-sql-database-wal", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-wal", ".db").toFile().apply { deleteOnExit() }
 
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })

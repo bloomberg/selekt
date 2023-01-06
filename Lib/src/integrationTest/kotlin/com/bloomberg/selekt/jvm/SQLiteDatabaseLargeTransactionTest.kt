@@ -43,7 +43,7 @@ private val args = arrayOf(text)
 
 @Timeout(value = 1L, unit = TimeUnit.HOURS)
 internal class SQLiteDatabaseLargeTransactionTest {
-    private val file = createTempFile("test-large-transaction", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-large-transaction", ".db").toFile().apply { deleteOnExit() }
 
     private val database = openOrCreateDatabase(
         file,

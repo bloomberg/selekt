@@ -98,7 +98,7 @@ private inline fun Pair<Pointer, Pointer>.useTwoConnections(block: Pair<Pointer,
 }
 
 internal class SQLiteTest {
-    private val file = createTempFile("test-sqlite", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-sqlite", ".db").toFile().apply { deleteOnExit() }
 
     private var db: Pointer = NULL
 

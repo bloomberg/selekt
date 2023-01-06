@@ -36,7 +36,7 @@ import kotlin.test.assertTrue
 
 @OptIn(Experimental::class)
 internal class SQLiteDatabaseBlobTest {
-    private val file = createTempFile("test-sql-database-blob", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-sql-database-blob", ".db").toFile().apply { deleteOnExit() }
 
     private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration,
         ByteArray(32) { 0x42 })

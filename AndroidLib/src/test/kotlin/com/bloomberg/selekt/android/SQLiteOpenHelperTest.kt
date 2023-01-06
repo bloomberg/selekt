@@ -39,7 +39,7 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class SQLiteOpenHelperTest {
-    private val file = createTempFile("test-open-helper", ".db").toFile().also { it.deleteOnExit() }
+    private val file = createTempFile("test-open-helper", ".db").toFile().apply { deleteOnExit() }
 
     private val targetContext = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
