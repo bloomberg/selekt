@@ -17,8 +17,8 @@
 package com.bloomberg.selekt.android
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import kotlin.test.assertFailsWith
 
 internal class SQLiteDatabaseRegistryTest {
     @Test
@@ -26,7 +26,7 @@ internal class SQLiteDatabaseRegistryTest {
         mock<SQLiteDatabase>().let {
             SQLiteDatabaseRegistry.register(it)
             try {
-                assertThrows<IllegalArgumentException> {
+                assertFailsWith<IllegalArgumentException> {
                     SQLiteDatabaseRegistry.register(it)
                 }
             } finally {
@@ -37,7 +37,7 @@ internal class SQLiteDatabaseRegistryTest {
 
     @Test
     fun unregisterThrows() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SQLiteDatabaseRegistry.unregister(mock())
         }
     }

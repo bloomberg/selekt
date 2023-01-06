@@ -21,7 +21,6 @@ import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.mock
@@ -35,6 +34,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.io.path.createTempFile
+import kotlin.test.assertFailsWith
 
 private fun createFile(
     input: SQLiteJournalMode
@@ -241,7 +241,7 @@ internal class SQLDatabaseTransactionTest {
     fun earlyEnd(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.endTransaction()
         }
     }
@@ -391,7 +391,7 @@ internal class SQLDatabaseTransactionTest {
     fun yieldTransactionThrows(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.yieldTransaction()
         }
     }
@@ -404,7 +404,7 @@ internal class SQLDatabaseTransactionTest {
         it.beginExclusiveTransaction()
         try {
             it.setTransactionSuccessful()
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 it.yieldTransaction()
             }
         } finally {
@@ -417,7 +417,7 @@ internal class SQLDatabaseTransactionTest {
     fun yieldTransactionWithPauseThrows(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.yieldTransaction(100L)
         }
     }

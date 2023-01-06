@@ -27,7 +27,6 @@ import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.annotations.DelicateApi
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -44,6 +43,7 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import java.util.Locale
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -344,14 +344,14 @@ internal class SupportSQLiteDatabaseTest {
 
     @Test
     fun setLocale() {
-        assertThrows<UnsupportedOperationException> {
+        assertFailsWith<UnsupportedOperationException> {
             supportDatabase.setLocale(Locale.ROOT)
         }
     }
 
     @Test
     fun setMaxSqlCacheSize() {
-        assertThrows<UnsupportedOperationException> {
+        assertFailsWith<UnsupportedOperationException> {
             supportDatabase.setMaxSqlCacheSize(42)
         }
     }

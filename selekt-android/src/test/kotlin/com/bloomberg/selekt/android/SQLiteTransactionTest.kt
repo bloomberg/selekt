@@ -28,9 +28,9 @@ import com.bloomberg.selekt.SQL_ROW
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -66,7 +66,7 @@ internal class SQLiteTransactionTest {
                 SQLite.exec(otherDb, "BEGIN IMMEDIATE TRANSACTION")
                 SQLite.exec(otherDb, "INSERT INTO 'Foo' VALUES (43)")
                 SQLite.exec(otherDb, "END")
-                assertThrows<SQLiteDatabaseLockedException> {
+                assertFailsWith<SQLiteDatabaseLockedException> {
                     SQLite.walCheckpointV2(otherDb, null, 1)
                 }
             }
@@ -80,7 +80,7 @@ internal class SQLiteTransactionTest {
         assertEquals(SQL_OK, SQLite.exec(db, "INSERT INTO 'Foo' VALUES (42)"))
         assertEquals(SQL_OK, SQLite.exec(db, "BEGIN IMMEDIATE TRANSACTION"))
         openConnection().useConnection { otherDb ->
-            assertThrows<SQLiteDatabaseLockedException> {
+            assertFailsWith<SQLiteDatabaseLockedException> {
                 SQLite.exec(otherDb, "BEGIN IMMEDIATE TRANSACTION")
             }
         }

@@ -17,10 +17,10 @@
 package com.bloomberg.selekt.pools
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -28,7 +28,7 @@ internal class MutexTest {
     @Test
     fun negativeNanos() {
         Mutex().let {
-            assertThrows<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 it.tryLock(-1L)
             }
         }
@@ -50,7 +50,7 @@ internal class MutexTest {
     @Test
     fun tryLockWithCancellation() {
         Mutex().apply { cancel() }.let {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 it.tryLock(0L, true)
             }
         }
@@ -72,7 +72,7 @@ internal class MutexTest {
     fun cancelThenLock() {
         Mutex().apply {
             assertTrue(cancel())
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 lock()
             }
         }
@@ -86,7 +86,7 @@ internal class MutexTest {
             Thread.sleep(100L)
             lock.cancel()
         }
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             lock.lock()
         }
     }
@@ -114,7 +114,7 @@ internal class MutexTest {
             lock()
         }.let {
             Thread.currentThread().interrupt()
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 it.lock()
             }
         }
@@ -124,7 +124,7 @@ internal class MutexTest {
     fun interruptThenTryLock() {
         Mutex().apply {
             val thread = Thread.currentThread().apply { interrupt() }
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 tryLock(0L, false)
             }
             assertFalse(thread.isInterrupted)
@@ -135,7 +135,7 @@ internal class MutexTest {
     fun lockInterrupts() {
         Mutex().apply {
             val thread = Thread.currentThread().apply { interrupt() }
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 lock()
             }
             assertFalse(thread.isInterrupted)
@@ -147,7 +147,7 @@ internal class MutexTest {
         Mutex().apply {
             cancel()
             Thread.currentThread().interrupt()
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 lock()
             }
         }
@@ -158,7 +158,7 @@ internal class MutexTest {
         Mutex().apply {
             cancel()
             Thread.currentThread().interrupt()
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 tryLock(0L, true)
             }
         }

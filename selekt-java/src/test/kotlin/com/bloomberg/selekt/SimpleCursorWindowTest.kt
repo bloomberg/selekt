@@ -17,8 +17,8 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -66,7 +66,7 @@ internal class SimpleCursorWindowTest {
     fun getBlobAsLong(): Unit = window.run {
         allocateRow()
         put(1L)
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             getBlob(0, 0)
         }
     }
@@ -344,7 +344,7 @@ internal class SimpleCursorWindowTest {
 
     @Test
     fun putBeforeAllocatingRow(): Unit = window.run {
-        assertThrows<NoSuchElementException> {
+        assertFailsWith<NoSuchElementException> {
             put("foo")
         }
     }

@@ -17,17 +17,17 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import kotlin.test.assertFailsWith
 
 internal class SimpleSQLQueryTest {
     @Test
     fun bindAny() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(Any())).bindTo(mock())
         }
     }
@@ -51,21 +51,21 @@ internal class SimpleSQLQueryTest {
 
     @Test
     fun bindBooleanTrue() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(true)).bindTo(mock())
         }
     }
 
     @Test
     fun bindBooleanFalse() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(false)).bindTo(mock())
         }
     }
 
     @Test
     fun bindChar() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf('a')).bindTo(mock())
         }
     }
@@ -113,7 +113,7 @@ internal class SimpleSQLQueryTest {
     @Test
     fun bindNumber() {
         mock<ISQLProgram>().let {
-            assertThrows<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 SimpleSQLQuery("SELECT * FROM Foo WHERE bar=?", arrayOf(mock<Number>())).bindTo(it)
             }
         }

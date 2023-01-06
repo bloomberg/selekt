@@ -20,7 +20,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -37,6 +36,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
@@ -83,7 +83,7 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun requiresAtLeastOneObject() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             CommonObjectPool(
                 mock(),
                 mock(),
@@ -275,7 +275,7 @@ internal class CommonObjectPoolTest {
     @Test
     fun throwsOnBorrowAfterClose(): Unit = pool.run {
         close()
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             borrowObject()
         }
     }
@@ -322,7 +322,7 @@ internal class CommonObjectPoolTest {
     fun borrowTwiceThenCloseInterrupts(): Unit = pool.run {
         borrowObject()
         val thread = thread {
-            assertThrows<InterruptedException> {
+            assertFailsWith<InterruptedException> {
                 borrowObject()
             }
         }
@@ -345,7 +345,7 @@ internal class CommonObjectPoolTest {
     fun awaitCanBeInterrupted(): Unit = pool.run {
         repeat(configuration.maxTotal) { borrowObject() }
         Thread.currentThread().interrupt()
-        assertThrows<InterruptedException> {
+        assertFailsWith<InterruptedException> {
             borrowObject()
         }
     }
@@ -353,7 +353,7 @@ internal class CommonObjectPoolTest {
     @Test
     fun borrowCanBeInterrupted(): Unit = pool.run {
         Thread.currentThread().interrupt()
-        assertThrows<InterruptedException> {
+        assertFailsWith<InterruptedException> {
             borrowObject()
         }
     }
@@ -531,7 +531,7 @@ internal class CommonObjectPoolTest {
 
             override fun makePrimaryObject() = throw IOException("Oh no!")
         }, executor, configuration, other).use {
-            assertThrows<IOException> {
+            assertFailsWith<IOException> {
                 it.borrowObject()
             }
         }
@@ -567,7 +567,7 @@ internal class CommonObjectPoolTest {
             override fun makePrimaryObject() = obj
         }, executor, configuration, other).use {
             it.borrowObject().apply { it.returnObject(this) }
-            assertThrows<IOException> {
+            assertFailsWith<IOException> {
                 it.evict(Priority.HIGH)
             }
         }

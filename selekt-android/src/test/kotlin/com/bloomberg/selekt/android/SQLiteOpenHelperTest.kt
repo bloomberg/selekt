@@ -21,7 +21,6 @@ import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -34,6 +33,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -78,7 +78,7 @@ internal class SQLiteOpenHelperTest {
 
     @Test
     fun zeroVersionThrows() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             createHelper(0, mock())
         }
     }

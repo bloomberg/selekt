@@ -27,7 +27,6 @@ import com.bloomberg.selekt.annotations.DelicateApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -35,6 +34,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -103,7 +103,7 @@ internal class SQLiteDatabaseWALTest {
 
     @Test
     fun setPageSizeThrows(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             setPageSizeExponent(17)
         }
     }
@@ -122,7 +122,7 @@ internal class SQLiteDatabaseWALTest {
 
     @Test
     fun integrityCheckIllegal(): Unit = database.run {
-        assertThrows<SQLiteException> {
+        assertFailsWith<SQLiteException> {
             integrityCheck("foo")
         }
     }
@@ -227,7 +227,7 @@ internal class SQLiteDatabaseWALTest {
     @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyValues(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             upsert("Foo", ContentValues(), arrayOf("bar"), "")
         }
     }
@@ -235,7 +235,7 @@ internal class SQLiteDatabaseWALTest {
     @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyColumns(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             upsert("Foo", ContentValues().apply { put("bar", "hello") }, emptyArray(), "")
         }
     }
@@ -345,7 +345,7 @@ internal class SQLiteDatabaseWALTest {
             exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
             setTransactionSuccessful()
         } finally {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 endTransaction()
             }
         }
@@ -360,7 +360,7 @@ internal class SQLiteDatabaseWALTest {
     fun execUpsertBoundStringThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         exec("INSERT INTO 'Foo' VALUES ('hello', 0)")
-        assertThrows<SQLiteException> {
+        assertFailsWith<SQLiteException> {
             exec("INSERT INTO 'Foo' VALUES ('hello', 0) ON CONFLICT DO UPDATE SET ?", arrayOf("count=count+1"))
         }
     }

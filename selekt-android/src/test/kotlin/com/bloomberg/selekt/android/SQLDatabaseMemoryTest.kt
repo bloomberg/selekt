@@ -23,10 +23,10 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.math.roundToInt
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -85,7 +85,7 @@ internal class SQLDatabaseMemoryTest {
 
     @Test
     fun execInvalidSQL() {
-        assertThrows<SQLException> {
+        assertFailsWith<SQLException> {
             database.exec("NOT SQL", emptyArray())
         }
     }
@@ -196,7 +196,7 @@ internal class SQLDatabaseMemoryTest {
     fun execAfterDatabaseHasClosed(): Unit = database.run {
         close()
         assertFalse(isOpen())
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
         }
     }

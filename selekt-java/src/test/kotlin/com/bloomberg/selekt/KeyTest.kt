@@ -17,8 +17,8 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotSame
 
 internal class KeyTest {
@@ -41,7 +41,7 @@ internal class KeyTest {
     fun zeroThenUseThrows() {
         Key(ByteArray(32) { 0x42 }).apply {
             zero()
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 use {}
             }
         }

@@ -17,8 +17,8 @@
 package com.bloomberg.selekt.commons
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 
 internal class IterablesTest {
@@ -53,17 +53,17 @@ internal class IterablesTest {
 
     @Test
     fun nextEmpty() {
-        assertThrows<NoSuchElementException> { (emptyList<Int>() * emptyList<Int>()).iterator().next() }
+        assertFailsWith<NoSuchElementException> { (emptyList<Int>() * emptyList<Int>()).iterator().next() }
     }
 
     @Test
     fun nextEmptyIterable() {
-        assertThrows<NoSuchElementException> { emptyIterable<Int>().iterator().next() }
+        assertFailsWith<NoSuchElementException> { emptyIterable<Int>().iterator().next() }
     }
 
     @Test
     fun nextFinished() {
-        assertThrows<NoSuchElementException> {
+        assertFailsWith<NoSuchElementException> {
             (listOf(0) * listOf(0)).iterator().run {
                 next()
                 next()

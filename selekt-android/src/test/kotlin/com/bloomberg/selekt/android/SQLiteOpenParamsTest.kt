@@ -19,20 +19,20 @@ package com.bloomberg.selekt.android
 import com.bloomberg.selekt.android.SQLiteOpenParams.Companion.HIGHEST_PAGE_SIZE_EXPONENT
 import com.bloomberg.selekt.android.SQLiteOpenParams.Companion.LOWEST_PAGE_SIZE_EXPONENT
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.lang.IllegalArgumentException
+import kotlin.test.assertFailsWith
 
 internal class SQLiteOpenParamsTest {
     @Test
     fun excessivePageSizeExponent() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SQLiteOpenParams(pageSizeExponent = HIGHEST_PAGE_SIZE_EXPONENT + 1)
         }
     }
 
     @Test
     fun deficientPageSizeExponent() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             SQLiteOpenParams(pageSizeExponent = LOWEST_PAGE_SIZE_EXPONENT - 1)
         }
     }

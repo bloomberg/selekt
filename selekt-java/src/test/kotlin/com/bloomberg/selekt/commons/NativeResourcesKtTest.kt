@@ -17,8 +17,8 @@
 package com.bloomberg.selekt.commons
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 internal class NativeResourcesKtTest {
@@ -61,6 +61,6 @@ internal class NativeResourcesKtTest {
 
     @Test
     fun loadNonExistentEmbeddedLibrary() {
-        assertThrows<IllegalStateException> { loadEmbeddedLibrary(javaClass.classLoader, "jni", "foo") }
+        assertFailsWith<IllegalStateException> { loadEmbeddedLibrary(javaClass.classLoader, "jni", "foo") }
     }
 }

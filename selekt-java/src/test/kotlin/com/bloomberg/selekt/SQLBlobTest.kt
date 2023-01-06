@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -27,13 +26,14 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class SQLBlobTest {
     @Test
     fun verifiesPointer() {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             SQLBlob(0L, mock(), false)
         }
     }

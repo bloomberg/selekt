@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -29,6 +28,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -69,7 +69,7 @@ internal class SQLPreparedStatementTest {
             whenever(step(any())) doReturn SQL_BUSY
         }
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
-        assertThrows<Exception> {
+        assertFailsWith<Exception> {
             statement.step(0L)
         }
     }
@@ -97,7 +97,7 @@ internal class SQLPreparedStatementTest {
             whenever(stepWithoutThrowing(any())) doReturn SQL_BUSY
         }
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
-        assertThrows<Exception> {
+        assertFailsWith<Exception> {
             statement.step(2_000L)
         }
     }
@@ -105,7 +105,7 @@ internal class SQLPreparedStatementTest {
     @Test
     fun stepRejectsNegativeInterval() {
         val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", mock(), CommonThreadLocalRandom)
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             statement.step(-1L)
         }
     }

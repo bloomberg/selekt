@@ -23,7 +23,6 @@ import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SimpleSQLQuery
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -36,6 +35,7 @@ import kotlin.io.path.createTempFile
 import kotlin.math.roundToInt
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -135,7 +135,7 @@ internal class SQLDatabaseTest {
         inputs.key
     ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
-        assertThrows<SQLException> {
+        assertFailsWith<SQLException> {
             it.exec("NOT SQL", emptyArray())
         }
     }
@@ -187,7 +187,7 @@ internal class SQLDatabaseTest {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         val statement = it.compileStatement("INSERT INTO 'Foo' VALUES (?)", arrayOf(mock<Number>()))
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             statement.executeInsert()
         }
     }
@@ -223,7 +223,7 @@ internal class SQLDatabaseTest {
         it.pragma("journal_mode", inputs.journalMode)
         it.close()
         assertFalse(it.isOpen())
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.exec("CREATE TABLE 'Foo' (bar BLOB)", emptyArray())
         }
     }
@@ -691,7 +691,7 @@ internal class SQLDatabaseTest {
     ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
-        assertThrows<SQLiteException> {
+        assertFailsWith<SQLiteException> {
             it.compileStatement("INSERT INTO ? VALUES (?)")
         }
     }
@@ -866,7 +866,7 @@ internal class SQLDatabaseTest {
         inputs.key
     ).destroy {
         it.pragma("journal_mode", inputs.journalMode)
-        assertThrows<SQLException> {
+        assertFailsWith<SQLException> {
             it.query(false, "", emptyArray(), "", emptyArray(), null, null, null, null).use {}
         }
     }
@@ -989,7 +989,7 @@ internal class SQLDatabaseTest {
         it.pragma("journal_mode", inputs.journalMode)
         it.exec("CREATE TABLE 'Foo' (bar TEXT)")
         it.insert("Foo", ContentValues().apply { put("bar", "x") }, ConflictAlgorithm.REPLACE)
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             it.query("SELECT * FROM 'Foo' WHERE bar=?", arrayOf('x')).close()
         }
     }

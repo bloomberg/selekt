@@ -19,7 +19,6 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
@@ -28,6 +27,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -80,7 +80,7 @@ internal class SQLDatabaseTest {
 
     @Test
     fun badNestedTransactionThenGoodTransaction() {
-        assertThrows<Exception> {
+        assertFailsWith<Exception> {
             database.apply {
                 transact { transact { error("uh-oh") } }
             }
@@ -99,7 +99,7 @@ internal class SQLDatabaseTest {
     fun execAfterDatabaseHasClosed() {
         database.run {
             close()
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
             }
         }
@@ -107,14 +107,14 @@ internal class SQLDatabaseTest {
 
     @Test
     fun insertVerifiesValues(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             insert("Foo", ContentValues(), ConflictAlgorithm.REPLACE)
         }
     }
 
     @Test
     fun updateVerifiesValues(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             update("Foo", ContentValues(), "", emptyArray(), ConflictAlgorithm.REPLACE)
         }
     }

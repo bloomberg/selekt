@@ -22,7 +22,6 @@ import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTransactionMode
 import com.bloomberg.selekt.annotations.DelicateApi
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
@@ -34,6 +33,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.io.path.createTempFile
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -173,7 +173,7 @@ internal class SQLiteDatabaseTransactionTest {
     ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.beginExclusiveTransaction()
         it.setTransactionSuccessful()
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.setTransactionSuccessful()
         }
     }
@@ -184,7 +184,7 @@ internal class SQLiteDatabaseTransactionTest {
         input: SQLiteJournalMode
     ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.transact {
-            assertThrows<SQLiteException> {
+            assertFailsWith<SQLiteException> {
                 vacuum()
             }
         }
@@ -196,7 +196,7 @@ internal class SQLiteDatabaseTransactionTest {
         input: SQLiteJournalMode
     ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.transact {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 setJournalMode(if (SQLiteJournalMode.WAL == journalMode) SQLiteJournalMode.DELETE else SQLiteJournalMode.WAL)
             }
         }
@@ -208,7 +208,7 @@ internal class SQLiteDatabaseTransactionTest {
         input: SQLiteJournalMode
     ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.transact {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 setForeignKeyConstraintsEnabled(true)
             }
         }
@@ -220,7 +220,7 @@ internal class SQLiteDatabaseTransactionTest {
         input: SQLiteJournalMode
     ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.transact {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 setForeignKeyConstraintsEnabled(false)
             }
         }
@@ -231,7 +231,7 @@ internal class SQLiteDatabaseTransactionTest {
     fun throwInTransaction(
         input: SQLiteJournalMode
     ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.transact {
                 error("Bad")
             }
@@ -244,7 +244,7 @@ internal class SQLiteDatabaseTransactionTest {
     fun throwInNestedTransaction(
         input: SQLiteJournalMode
     ) = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.transact {
                 transact {
                     error("Bad")
@@ -262,7 +262,7 @@ internal class SQLiteDatabaseTransactionTest {
         it.transact {
             Thread.currentThread().interrupt()
         }
-        assertThrows<InterruptedException> {
+        assertFailsWith<InterruptedException> {
             it.exec("INSERT INTO Foo VALUES (?)", arrayOf(42))
         }
         assertFalse(Thread.interrupted())
@@ -381,7 +381,7 @@ internal class SQLiteDatabaseTransactionTest {
         val listener = mock<SQLTransactionListener>().apply {
             whenever(onBegin()) doThrow IllegalStateException("Bad")
         }
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             it.beginExclusiveTransactionWithListener(listener)
         }
         verify(listener, times(1)).onRollback()

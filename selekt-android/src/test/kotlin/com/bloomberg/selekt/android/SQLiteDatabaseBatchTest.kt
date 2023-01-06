@@ -22,9 +22,9 @@ import com.bloomberg.selekt.commons.deleteDatabase
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -84,7 +84,7 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertBooleanTrueThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(true)))
         }
     }
@@ -92,7 +92,7 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertBooleanFalseThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(false)))
         }
     }
@@ -100,14 +100,14 @@ internal class SQLiteDatabaseBatchTest {
     @Test
     fun batchSequenceInsertAnyFails(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(Any())))
         }
     }
 
     @Test
     fun batchRequiresUpdate(): Unit = database.run {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             batch("SELECT * FROM Foo", sequence { })
         }
     }

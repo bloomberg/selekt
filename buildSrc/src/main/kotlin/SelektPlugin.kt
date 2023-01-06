@@ -36,16 +36,6 @@ class SelektPlugin : Plugin<Project> {
         }
         plugins.apply {
             withType(JavaPlugin::class.java) {
-                dependencies.apply {
-                    configurations.getByName("testImplementation") {
-                        add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
-                    }
-                    configurations.getByName("testRuntimeOnly") {
-                        add(name, "org.junit.platform:junit-platform-launcher:${Versions.JUNIT5_PLATFORM}")
-                        add(name, "org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT5}")
-                        add(name, "org.junit.vintage:junit-vintage-engine:${Versions.JUNIT5}")
-                    }
-                }
                 tasks.withType(Jar::class.java).configureEach {
                     metaInf {
                         from("$rootDir/LICENSE")

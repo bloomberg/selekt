@@ -18,9 +18,9 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.AbstractMap.SimpleEntry
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -170,7 +170,7 @@ internal class ContentValuesKtTest {
     @Test
     fun iteratorNextThrows() {
         val iterator = ContentValues().asSelektContentValues().entrySet.iterator()
-        assertThrows<NoSuchElementException> {
+        assertFailsWith<NoSuchElementException> {
             iterator.next()
         }
     }

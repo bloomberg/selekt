@@ -19,13 +19,13 @@ package com.bloomberg.selekt.commons
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 internal class DatabaseKtTest {
@@ -54,7 +54,7 @@ internal class DatabaseKtTest {
 
     @Test
     fun deleteDatabaseDirectory() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             deleteDatabase(parent)
         }
     }

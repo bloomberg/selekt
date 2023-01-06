@@ -17,13 +17,13 @@
 package com.bloomberg.selekt.commons
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotSame
 
 internal class ManagedStringBuilderTest {
     @Test
     fun illegalMaximumLimit() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             ManagedStringBuilder(maxRetainedLength = -1)
         }
     }

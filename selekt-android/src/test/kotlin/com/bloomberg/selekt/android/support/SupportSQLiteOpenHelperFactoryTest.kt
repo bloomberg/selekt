@@ -38,10 +38,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 private fun <T : RoomDatabase> buildRoomDatabase(
     context: Context,
@@ -105,7 +105,7 @@ internal class SupportSQLiteOpenHelperFactoryTest {
     fun encryption() {
         database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
         SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, null).use {
-            assertThrows<SQLiteDatabaseCorruptException> {
+            assertFailsWith<SQLiteDatabaseCorruptException> {
                 it.journalMode
             }
         }

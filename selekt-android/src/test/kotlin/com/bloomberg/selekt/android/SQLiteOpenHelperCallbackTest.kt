@@ -18,13 +18,13 @@ package com.bloomberg.selekt.android
 
 import android.database.sqlite.SQLiteException
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import kotlin.test.assertFailsWith
 
 internal class SQLiteOpenHelperCallbackTest {
     @Test
     fun downgradeThrowsByDefault() {
-        assertThrows<SQLiteException> {
+        assertFailsWith<SQLiteException> {
             object : ISQLiteOpenHelper.Callback {
                 override fun onCreate(database: SQLiteDatabase) = Unit
 

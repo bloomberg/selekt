@@ -17,15 +17,15 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import kotlin.test.assertFailsWith
 
 internal class SQLConnectionFactoryTest {
     @Test
     fun closeThenMakePrimaryThrows() {
         SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
             close()
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 makePrimaryObject()
             }
         }
@@ -35,7 +35,7 @@ internal class SQLConnectionFactoryTest {
     fun closeThenMakeThrows() {
         SQLConnectionFactory("", mock(), mock(), mock(), mock()).apply {
             close()
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 makeObject()
             }
         }

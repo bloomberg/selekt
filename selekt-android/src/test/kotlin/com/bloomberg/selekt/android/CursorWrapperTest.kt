@@ -21,7 +21,6 @@ import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
@@ -31,6 +30,7 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -84,7 +84,7 @@ internal class CursorWrapperTest {
     @Test
     fun getColumnIndexOrThrowThrows() {
         whenever(cursor.columnIndex(eq("foo"))) doReturn -1
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             wrapper.getColumnIndexOrThrow("foo")
         }
     }

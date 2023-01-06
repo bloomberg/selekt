@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -26,6 +25,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 internal class SQLBlobInputStreamTest {
     @Test
@@ -49,7 +49,7 @@ internal class SQLBlobInputStreamTest {
     @Test
     fun inputStreamChecksOffset() {
         BlobInputStream(mock()).run {
-            assertThrows<ArrayIndexOutOfBoundsException> {
+            assertFailsWith<ArrayIndexOutOfBoundsException> {
                 read(ByteArray(1), -1, 1)
             }
         }
@@ -58,7 +58,7 @@ internal class SQLBlobInputStreamTest {
     @Test
     fun inputStreamChecksLength() {
         BlobInputStream(mock()).run {
-            assertThrows<ArrayIndexOutOfBoundsException> {
+            assertFailsWith<ArrayIndexOutOfBoundsException> {
                 read(ByteArray(1), 0, -1)
             }
         }
@@ -70,7 +70,7 @@ internal class SQLBlobInputStreamTest {
             whenever(size) doReturn 1
         }
         BlobInputStream(blob).run {
-            assertThrows<ArrayIndexOutOfBoundsException> {
+            assertFailsWith<ArrayIndexOutOfBoundsException> {
                 read(ByteArray(1), 2, 1)
             }
         }
@@ -82,7 +82,7 @@ internal class SQLBlobInputStreamTest {
             whenever(size) doReturn 2
         }
         BlobInputStream(blob).run {
-            assertThrows<ArrayIndexOutOfBoundsException> {
+            assertFailsWith<ArrayIndexOutOfBoundsException> {
                 read(ByteArray(1), 0, 2)
             }
         }
@@ -90,28 +90,28 @@ internal class SQLBlobInputStreamTest {
 
     @Test
     fun readFromNegativeStart() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             BlobInputStream(mock(), start = -1)
         }
     }
 
     @Test
     fun readFromTooAdvancedStart() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             BlobInputStream(mock(), start = 1)
         }
     }
 
     @Test
     fun readWithTooFewBytes() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             BlobInputStream(mock(), limit = -1)
         }
     }
 
     @Test
     fun readWithTooManyBytes() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             BlobInputStream(mock(), limit = 1)
         }
     }

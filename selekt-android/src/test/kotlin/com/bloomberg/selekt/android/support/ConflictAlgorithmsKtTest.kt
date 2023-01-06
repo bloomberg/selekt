@@ -24,8 +24,8 @@ import android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE
 import android.database.sqlite.SQLiteDatabase.CONFLICT_ROLLBACK
 import com.bloomberg.selekt.android.ConflictAlgorithm
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 internal class ConflictAlgorithmsKtTest {
     @Test
@@ -60,7 +60,7 @@ internal class ConflictAlgorithmsKtTest {
 
     @Test
     fun toConflictAlgorithmThrows() {
-        assertThrows<IndexOutOfBoundsException> {
+        assertFailsWith<IndexOutOfBoundsException> {
             Int.MAX_VALUE.toConflictAlgorithm()
         }
     }

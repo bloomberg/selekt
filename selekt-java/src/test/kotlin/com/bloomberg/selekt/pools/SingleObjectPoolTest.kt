@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -43,6 +42,7 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -218,7 +218,7 @@ internal class SingleObjectPoolTest {
     @Test
     fun throwsOnBorrowAfterClose(): Unit = pool.run {
         close()
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             borrowObject()
         }
     }
@@ -231,7 +231,7 @@ internal class SingleObjectPoolTest {
             returnObject(obj)
         }
         close()
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             borrowObject()
         }
     }
@@ -284,7 +284,7 @@ internal class SingleObjectPoolTest {
             Thread.sleep(100L)
             close()
         }
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             borrowObject()
         }
     }
@@ -317,7 +317,7 @@ internal class SingleObjectPoolTest {
     fun borrowCanBeInterrupted(): Unit = pool.run {
         borrowObject()
         Thread.currentThread().interrupt()
-        assertThrows<InterruptedException> {
+        assertFailsWith<InterruptedException> {
             borrowObject()
         }
     }
@@ -341,8 +341,8 @@ internal class SingleObjectPoolTest {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         whenever(factory.makePrimaryObject()) doThrow IOException()
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
-            assertThrows<IOException> { it.borrowObject() }
-            assertThrows<IOException> { it.borrowObject() }
+            assertFailsWith<IOException> { it.borrowObject() }
+            assertFailsWith<IOException> { it.borrowObject() }
         }
     }
 
@@ -375,7 +375,7 @@ internal class SingleObjectPoolTest {
             Thread.sleep(100L)
             close()
         }
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             borrowObject()
         }
     }
@@ -416,7 +416,7 @@ internal class SingleObjectPoolTest {
     fun interruptBorrowerThenBorrow(): Unit = pool.run {
         borrowObject()
         Thread.currentThread().interrupt()
-        assertThrows<InterruptedException> {
+        assertFailsWith<InterruptedException> {
             borrowObject()
         }
     }
@@ -519,7 +519,7 @@ internal class SingleObjectPoolTest {
             override fun makePrimaryObject() = obj
         }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
             it.borrowObject().apply { it.returnObject(this) }
-            assertThrows<IOException> {
+            assertFailsWith<IOException> {
                 it.evict(Priority.HIGH)
             }
         }

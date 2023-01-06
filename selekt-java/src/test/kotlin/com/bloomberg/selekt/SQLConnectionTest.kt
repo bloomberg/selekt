@@ -18,7 +18,6 @@ package com.bloomberg.selekt
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
@@ -33,6 +32,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -58,7 +58,7 @@ internal class SQLConnectionTest {
     @Test
     fun exceptionInConstruction() {
         whenever(sqlite.busyTimeout(any(), any())) doThrow IllegalStateException()
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
@@ -69,7 +69,7 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
@@ -85,7 +85,7 @@ internal class SQLConnectionTest {
             0
         }
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).apply {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 prepare("INSERT INTO Foo VALUES (?)")
             }
         }
@@ -131,7 +131,7 @@ internal class SQLConnectionTest {
         }
         whenever(sqlite.bindParameterCount(any())) doReturn 1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThrows<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
             }
         }
@@ -141,7 +141,7 @@ internal class SQLConnectionTest {
     fun connectionRejectsUnrecognisedColumnType() {
         whenever(sqlite.columnType(any(), any())) doReturn -1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThrows<IllegalStateException> {
+            assertFailsWith<IllegalStateException> {
                 it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
             }
         }
@@ -304,7 +304,7 @@ internal class SQLConnectionTest {
         whenever(sqlite.columnCount(any())) doReturn 1
         whenever(sqlite.columnType(any(), any())) doReturn -1
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThrows<IllegalStateException>("Failed to allocate a window row.") {
+            assertFailsWith<IllegalStateException>("Failed to allocate a window row.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
             }
         }
@@ -327,7 +327,7 @@ internal class SQLConnectionTest {
             whenever(allocateRow()) doReturn true
         }
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertThrows<IllegalStateException>("Unrecognised column type for column 0.") {
+            assertFailsWith<IllegalStateException>("Unrecognised column type for column 0.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), cursorWindow)
             }
         }
