@@ -209,8 +209,8 @@ internal class CommonObjectPoolTest {
         val objects = executors.map {
             it.submit<PooledObject> { borrowObject() }.get()
         }
-        executors.forEachIndexed { i, it ->
-            it.submit { returnObject(objects[i]) }.get()
+        executors.forEachIndexed { i, value ->
+            value.submit { returnObject(objects[i]) }.get()
         }
         evict()
         evict()
@@ -462,8 +462,8 @@ internal class CommonObjectPoolTest {
                 initialDelay: Long,
                 period: Long,
                 unit: TimeUnit
-            ) = this@CommonObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).also {
-                it.cancel(false)
+            ) = this@CommonObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).apply {
+                cancel(false)
             }
         }
         CommonObjectPool(mock<IObjectFactory<PooledObject>>().apply {

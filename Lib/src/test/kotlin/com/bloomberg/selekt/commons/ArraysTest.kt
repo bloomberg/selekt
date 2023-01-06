@@ -70,17 +70,17 @@ internal class ArraysTest {
 
     @Test
     fun forEachByIndex() {
-        arrayOf(42).forEachByIndex { i, it ->
+        arrayOf(42).forEachByIndex { i, value ->
             assertEquals(0, i)
-            assertEquals(42, it)
+            assertEquals(42, value)
         }
     }
 
     @Test
     fun forEachByPosition() {
-        arrayOf(42).forEachByPosition { it, i ->
+        arrayOf(42).forEachByPosition { value, i ->
             assertEquals(1, i)
-            assertEquals(42, it)
+            assertEquals(42, value)
         }
     }
 }
