@@ -25,7 +25,7 @@ jobs:
     - name: 'Gradle'
       run: echo 'org.gradle.caching=false' >> gradle.properties
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test
+      run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test
     - name: 'Build Selekt'
       run: |
         ./gradlew clean \
@@ -33,7 +33,7 @@ jobs:
           :OpenSSL:assembleArmeabi-v7a \
           :OpenSSL:assembleX86 \
           :OpenSSL:assembleX86_64
-        ./gradlew :SQLite3:amalgamate
+        ./gradlew :selekt-sqlite3:amalgamate
         ./gradlew assembleSelekt
     - name: 'Publish snapshot to OSSRH'
       if: github.event_name == 'push'

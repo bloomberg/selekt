@@ -58,18 +58,15 @@ jobs:
         path: |
           **/build/reports/detekt
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
-    - name: 'Coverage'
-      run: |
-        ./gradlew :koverMergedHtmlReport ${{ env.SCAN }}
+      run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverMergedHtmlReport ${{ env.SCAN }}
     - uses: actions/upload-artifact@v3
       if: always()
       with:
         name: 'Unit test reports'
         path: |
           build/reports/kover/html
-          AndroidLib/build/reports/tests/testDebugUnitTest
-          Lib/build/reports/tests/test
+          selekt-android/build/reports/tests/testDebugUnitTest
+          selekt-java/build/reports/tests/test
     - name: 'Build Selekt'
       run: |
         ./gradlew assembleSelekt ${{ env.SCAN }}
@@ -78,7 +75,7 @@ jobs:
         ./gradlew :koverMergedVerify
     - name: 'Build others'
       run: |
-        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
+        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble jmhClasses
     - name: 'Tear down'
       if: always()
       run: |
