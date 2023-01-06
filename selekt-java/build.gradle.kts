@@ -48,18 +48,15 @@ sourceSets {
 }
 
 val integrationTestImplementation: Configuration by configurations.getting {
-    extendsFrom(configurations.implementation.get())
+    extendsFrom(configurations.testImplementation.get())
 }
-val integrationTestRuntimeOnly: Configuration by configurations.getting { extendsFrom(configurations.runtimeOnly.get()) }
+val integrationTestRuntimeOnly: Configuration by configurations.getting {
+    extendsFrom(configurations.testRuntimeOnly.get())
+}
 
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3)
-    integrationTestImplementation(projects.selektApi)
-    integrationTestImplementation(projects.selektSqlite3)
-    integrationTestImplementation(kotlin("test-junit5"))
-    integrationTestImplementation(kotlinX("coroutines-core"))
-    integrationTestImplementation(kotlinX("coroutines-jdk8"))
     jmhImplementation(kotlinX("coroutines-core"))
     jmhImplementation(kotlinX("coroutines-jdk8"))
 }
