@@ -47,10 +47,9 @@ android {
             version = Versions.CMAKE.version
         }
     }
-}
-
-tasks.register("assembleSelekt") {
-    dependsOn("assembleRelease")
+    publishing {
+        singleVariant("release")
+    }
 }
 
 tasks.withType<ExternalNativeBuildJsonTask>().configureEach {

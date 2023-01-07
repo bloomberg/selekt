@@ -61,10 +61,6 @@ dependencies {
     jmhImplementation(kotlinX("coroutines-jdk8"))
 }
 
-tasks.register("assembleSelekt") {
-    dependsOn("assemble", "sourcesJar")
-}
-
 publishing {
     publications.register<MavenPublication>("main") {
         from(components.getByName("java"))

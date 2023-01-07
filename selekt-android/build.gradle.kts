@@ -16,7 +16,6 @@
 
 import java.util.Locale
 import kotlinx.kover.api.KoverTaskExtension
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 plugins {
     id("com.android.library")
@@ -55,6 +54,12 @@ android {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
+    publishing {
+        singleVariant("release") {
+            withJavadocJar()
+            withSourcesJar()
+        }
+    }
 }
 
 dependencies {
@@ -99,27 +104,6 @@ arrayOf("debug", "release").map { "pre${it.capitalize(Locale.ROOT)}UnitTestBuild
     }
 }
 
-tasks.register("assembleSelekt") {
-    dependsOn("assembleRelease", "sourcesJar", "dokkaHtmlJar")
-}
-
-tasks.register<Jar>("sourcesJar") {
-    from(android.sourceSets["main"].java.srcDirs)
-    setProperty("archiveBaseName", "selekt")
-    setProperty("archiveClassifier", "sources")
-}
-
-tasks.withType<DokkaTaskPartial>().configureEach {
-    moduleName.set("Selekt")
-}
-
-tasks.register<Jar>("dokkaHtmlJar") {
-    dependsOn("dokkaHtml")
-    setProperty("archiveBaseName", "selekt")
-    setProperty("archiveClassifier", "javadoc")
-    from("$buildDir/dokka/html")
-}
-
 licensee {
     allow("Apache-2.0")
 }
@@ -131,9 +115,6 @@ components.matching { "release" == it.name }.configureEach {
             pom {
                 commonInitialisation(project)
                 description.set("Selekt Android SQLite library.")
-            }
-            listOf("dokkaHtmlJar", "sourcesJar").forEach {
-                artifact(tasks.getByName(it))
             }
         }
     }

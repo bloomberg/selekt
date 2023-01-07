@@ -69,10 +69,6 @@ java {
     withSourcesJar()
 }
 
-tasks.register("assembleSelekt") {
-    dependsOn("assemble")
-}
-
 publishing {
     publications.register<MavenPublication>("main") {
         from(components.getByName("java"))

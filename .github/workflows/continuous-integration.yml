@@ -69,7 +69,7 @@ jobs:
           selekt-java/build/reports/tests/test
     - name: 'Build Selekt'
       run: |
-        ./gradlew assembleSelekt ${{ env.SCAN }}
+        ./gradlew assembleRelease ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
         ./gradlew :koverMergedVerify

@@ -33,10 +33,6 @@ java {
     withSourcesJar()
 }
 
-tasks.register("assembleSelekt") {
-    dependsOn("assemble")
-}
-
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         freeCompilerArgs = freeCompilerArgs + listOf(
