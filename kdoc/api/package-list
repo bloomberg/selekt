@@ -1,13 +1,13 @@
 $dokka.format:html-v1
 $dokka.linkExtension:html
 
-module:Selekt
+module:selekt-android
 com.bloomberg.selekt.android
 com.bloomberg.selekt.android.support
-module:ApiLib
+module:selekt-api
 com.bloomberg.selekt
 com.bloomberg.selekt.annotations
-module:Lib
+module:selekt-java
 com.bloomberg.selekt
 com.bloomberg.selekt.commons
 com.bloomberg.selekt.pools
