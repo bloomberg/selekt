@@ -45,7 +45,6 @@ android {
         debug {
             buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "true")
         }
-
         release {
             isMinifyEnabled = false
             buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "false")
