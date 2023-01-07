@@ -124,18 +124,16 @@ licensee {
     allow("Apache-2.0")
 }
 
-components.configureEach {
-    if ("release" == name) {
-        publishing {
-            publications.register<MavenPublication>("main") {
-                from(this@configureEach)
-                pom {
-                    commonInitialisation(project)
-                    description.set("Selekt Android SQLite library.")
-                }
-                listOf("dokkaHtmlJar", "sourcesJar").forEach {
-                    artifact(tasks.getByName(it))
-                }
+components.matching { "release" == it.name }.configureEach {
+    publishing {
+        publications.register<MavenPublication>("main") {
+            from(this@configureEach)
+            pom {
+                commonInitialisation(project)
+                description.set("Selekt Android SQLite library.")
+            }
+            listOf("dokkaHtmlJar", "sourcesJar").forEach {
+                artifact(tasks.getByName(it))
             }
         }
     }

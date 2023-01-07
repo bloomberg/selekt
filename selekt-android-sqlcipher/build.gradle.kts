@@ -58,23 +58,21 @@ tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
     dependsOn(":selekt-sqlite3:amalgamate")
 }
 
-components.configureEach {
-    if ("release" == name) {
-        publishing {
-            publications.register<MavenPublication>("main") {
-                from(this@configureEach)
-                pom {
-                    commonInitialisation(project)
-                    description.set("SQLCipher for Selekt's Android Library.")
-                    licenses {
-                        license {
-                            name.set("Dual OpenSSL and SSLeay License")
-                            url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
-                        }
-                        license {
-                            name.set("Zetetic LLC")
-                            url.set("https://www.zetetic.net/sqlcipher/license")
-                        }
+components.matching { "release" == it.name }.configureEach {
+    publishing {
+        publications.register<MavenPublication>("main") {
+            from(this@configureEach)
+            pom {
+                commonInitialisation(project)
+                description.set("SQLCipher for Selekt's Android Library.")
+                licenses {
+                    license {
+                        name.set("Dual OpenSSL and SSLeay License")
+                        url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
+                    }
+                    license {
+                        name.set("Zetetic LLC")
+                        url.set("https://www.zetetic.net/sqlcipher/license")
                     }
                 }
             }
