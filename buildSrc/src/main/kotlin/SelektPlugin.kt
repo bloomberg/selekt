@@ -21,14 +21,6 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.kotlin
 
-private fun Test.configureJupiter() {
-    systemProperty("junit.jupiter.execution.parallel.enabled", true)
-    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
-    systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "60s")
-    systemProperty("junit.jupiter.execution.timeout.mode", "disabled_on_debug")
-    systemProperty("junit.jupiter.execution.timeout.testable.method.default", "60s")
-}
-
 class SelektPlugin : Plugin<Project> {
     override fun apply(project: Project): Unit = project.run {
         tasks.withType(Test::class.java) {
@@ -75,10 +67,6 @@ class SelektPlugin : Plugin<Project> {
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                             add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                         }
-                    }
-                    tasks.withType(Test::class.java) {
-                        useJUnitPlatform()
-                        configureJupiter()
                     }
                 }
             }
