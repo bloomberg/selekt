@@ -16,6 +16,9 @@
 
 import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
+version = sqlcipherVersionName
+logger.quiet("SQLCipher version: {}", sqlcipherVersionName)
+
 plugins {
     id("com.android.library")
     `maven-publish`
@@ -59,8 +62,6 @@ components.configureEach {
     if ("release" == name) {
         publishing {
             publications.create<MavenPublication>("main") {
-                groupId = selektGroupId
-                version = sqlcipherVersionName
                 from(this@configureEach)
                 pom {
                     commonInitialisation(project)

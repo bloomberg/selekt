@@ -29,10 +29,6 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
     base
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
@@ -44,9 +40,13 @@ plugins {
     id("org.jetbrains.gradle.plugin.idea-ext") version Versions.IDE_EXT_GRADLE_PLUGIN.version
 }
 
+repositories {
+    mavenCentral()
+}
+
 group = selektGroupId
 version = selektVersionName
-logger.quiet("Group: $group; Version: $version")
+logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
     repositories {
@@ -63,6 +63,8 @@ dependencies {
 }
 
 subprojects {
+    group = rootProject.group
+    version = rootProject.version
     apply {
         plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")

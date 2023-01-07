@@ -101,9 +101,7 @@ arrayOf("debug", "release").map { "pre${it.capitalize(Locale.ROOT)}UnitTestBuild
 }
 
 tasks.register("assembleSelekt") {
-    dependsOn("assembleRelease")
-    dependsOn("sourcesJar")
-    dependsOn("dokkaHtmlJar")
+    dependsOn("assembleRelease", "sourcesJar", "dokkaHtmlJar")
 }
 
 tasks.register<Jar>("sourcesJar") {
@@ -119,7 +117,7 @@ tasks.withType<DokkaTaskPartial>().configureEach {
 tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn("dokkaHtml")
     setProperty("archiveBaseName", "selekt")
-    setProperty("archiveClassifier", "kdoc")
+    setProperty("archiveClassifier", "javadoc")
     from("$buildDir/dokka/html")
 }
 
@@ -136,8 +134,9 @@ components.configureEach {
                     commonInitialisation(project)
                     description.set("Selekt Android SQLite library.")
                 }
-                artifact("$buildDir/libs/selekt-sources.jar") { classifier = "sources" }
-                artifact("$buildDir/libs/selekt-kdoc.jar") { classifier = "javadoc" }
+                listOf("dokkaHtmlJar", "sourcesJar").forEach {
+                    artifact(tasks.getByName(it))
+                }
             }
         }
     }

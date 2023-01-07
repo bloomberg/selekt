@@ -62,8 +62,7 @@ dependencies {
 }
 
 tasks.register("assembleSelekt") {
-    dependsOn("assemble")
-    dependsOn("sourcesJar")
+    dependsOn("assemble", "sourcesJar")
 }
 
 publishing {
