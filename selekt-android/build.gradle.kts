@@ -128,7 +128,7 @@ licensee {
 components.configureEach {
     if ("release" == name) {
         publishing {
-            publications.create<MavenPublication>("main") {
+            publications.register<MavenPublication>("main") {
                 from(this@configureEach)
                 pom {
                     commonInitialisation(project)
