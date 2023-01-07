@@ -21,7 +21,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.kotlin
 
-private fun Test.configureJUnit5() {
+private fun Test.configureJupiter() {
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
     systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "60s")
@@ -36,16 +36,6 @@ class SelektPlugin : Plugin<Project> {
         }
         plugins.apply {
             withType(JavaPlugin::class.java) {
-                dependencies.apply {
-                    configurations.getByName("testImplementation") {
-                        add(name, "org.junit.jupiter:junit-jupiter:${Versions.JUNIT5}")
-                    }
-                    configurations.getByName("testRuntimeOnly") {
-                        add(name, "org.junit.platform:junit-platform-launcher:${Versions.JUNIT5_PLATFORM}")
-                        add(name, "org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT5}")
-                        add(name, "org.junit.vintage:junit-vintage-engine:${Versions.JUNIT5}")
-                    }
-                }
                 tasks.withType(Jar::class.java).configureEach {
                     metaInf {
                         from("$rootDir/LICENSE")
@@ -80,26 +70,21 @@ class SelektPlugin : Plugin<Project> {
                 withId(id) {
                     dependencies.apply {
                         configurations.getByName("compileOnly").apply {
-                            constraints.add(name, "com.google.code.findbugs:jsr305") {
-                                version {
-                                    strictly("[2.0.2, ${Versions.JSR_305}]")
-                                }
-                            }
-                            add(name, "com.google.code.findbugs:jsr305:+")
+                            add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${Versions.JSR_305}]")
                         }
                     }
                     dependencies.apply {
                         configurations.getByName("testImplementation") {
                             add(name, kotlin("test-junit5", Versions.KOTLIN_TEST.version))
-                            add(name, kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
-                            add(name, kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+                            add(name, kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
+                            add(name, kotlinX("coroutines-jdk8", Versions.KOTLINX_COROUTINES.version))
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                             add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                         }
                     }
                     tasks.withType(Test::class.java) {
                         useJUnitPlatform()
-                        configureJUnit5()
+                        configureJupiter()
                     }
                 }
             }

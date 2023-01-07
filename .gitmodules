@@ -1,3 +1,3 @@
-[submodule "SQLite3/src/main/external/sqlcipher"]
-	path = SQLite3/src/main/external/sqlcipher
+[submodule "selekt-sqlite3/src/main/external/sqlcipher"]
+	path = selekt-sqlite3/src/main/external/sqlcipher
 	url = https://github.com/sqlcipher/sqlcipher.git

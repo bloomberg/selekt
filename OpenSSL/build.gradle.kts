@@ -22,6 +22,10 @@ repositories {
     mavenCentral()
 }
 
+plugins {
+    base
+}
+
 fun Project.openSslVersion() = arrayOf(
     "${property("openssl.version")}",
     "${property("openssl.version.suffix")}"
@@ -182,8 +186,4 @@ tasks.register<Task>("assembleHost") {
             }
         }
     }
-}
-
-tasks.register<Delete>("clean") {
-    delete(buildDir)
 }

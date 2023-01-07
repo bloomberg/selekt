@@ -34,7 +34,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     - name: 'ccache'
-      uses: hendrikmuhs/ccache-action@v1
+      uses: hendrikmuhs/ccache-action@v1.2
     - name: 'Gradle configuration'
       run: |
         echo 'org.gradle.caching=true' >> gradle.properties
@@ -58,28 +58,24 @@ jobs:
         path: |
           **/build/reports/detekt
     - name: 'Unit tests'
-      run: ./gradlew :AndroidLib:testDebugUnitTest :Lib:test ${{ env.SCAN }}
-    - name: 'Coverage'
-      run: |
-        ./gradlew :koverMergedHtmlReport ${{ env.SCAN }}
+      run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverMergedHtmlReport ${{ env.SCAN }}
     - uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: 'Unit test reports'
+        name: 'Unit test and coverage reports'
         path: |
-          build/reports/jacoco/jacocoSelektTestReport
-          build/reports/kover/html
-          AndroidLib/build/reports/tests/testDebugUnitTest
-          Lib/build/reports/tests/test
+          build/reports/kover/merged/html
+          selekt-android/build/reports/tests/testDebugUnitTest
+          selekt-java/build/reports/tests/test
     - name: 'Build Selekt'
       run: |
-        ./gradlew assembleSelekt ${{ env.SCAN }}
+        ./gradlew assembleRelease ${{ env.SCAN }}
     - name: 'Verify coverage'
       run:
-        ./gradlew :jacocoSelektCoverageVerification :koverMergedVerify
+        ./gradlew :koverMergedVerify
     - name: 'Build others'
       run: |
-        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :AndroidLint:assemble jmhClasses
+        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble jmhClasses
     - name: 'Tear down'
       if: always()
       run: |

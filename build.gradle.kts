@@ -18,31 +18,35 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
-import java.util.Locale
 import kotlinx.kover.api.VerificationValueType
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.gradle.ext.copyright
+import org.jetbrains.gradle.ext.settings
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
-    jacoco
+    base
     id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
     id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
     id("org.jetbrains.dokka") version Versions.DOKKA.version
     id("org.jetbrains.kotlinx.kover") version Versions.KOTLINX_KOVER.version
     id("org.jetbrains.qodana") version Versions.QODANA_PLUGIN.version
     id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
+    id("org.jetbrains.gradle.plugin.idea-ext") version Versions.IDE_EXT_GRADLE_PLUGIN.version
+}
+
+repositories {
+    mavenCentral()
 }
 
 group = selektGroupId
 version = selektVersionName
-logger.quiet("Group: $group; Version: $version")
+logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
     repositories {
@@ -54,41 +58,22 @@ nexusPublishing {
     }
 }
 
-subprojects {
-    apply {
-        plugin("selekt")
-    }
-}
-
-subprojects {
-    configurations.all {
-        resolutionStrategy.dependencySubstitution {
-            mapOf(
-                "android" to "AndroidLib",
-                "android-sqlcipher" to "AndroidSQLCipher",
-                "annotations" to "Annotations",
-                "api" to "ApiLib",
-                "java" to "Lib",
-                "sqlite3" to "SQLite3"
-            ).forEach {
-                substitute(module(selekt(it.key))).apply {
-                    using(project(":${it.value}"))
-                    because("we work with an unreleased version")
-                }
-            }
-        }
-    }
-}
-
 dependencies {
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
 subprojects {
+    group = rootProject.group
+    version = rootProject.version
     apply {
+        plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")
     }
-
+    plugins.withType<JavaPlugin>().configureEach {
+        dependencies {
+            "implementation"(platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version)))
+        }
+    }
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
@@ -96,7 +81,23 @@ subprojects {
             jvmTarget = "11"
         }
     }
-
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+            exceptionFormat = TestExceptionFormat.FULL
+            showCauses = true
+            showExceptions = true
+            showStackTraces = true
+        }
+        useJUnitPlatform()
+        mapOf(
+            "junit.jupiter.execution.timeout.lifecycle.method.default" to "60s",
+            "junit.jupiter.execution.timeout.mode" to "disabled_on_debug",
+            "junit.jupiter.execution.timeout.testable.method.default" to "60s"
+        ).forEach {
+            systemProperty(it.key, it.value)
+        }
+    }
     configure<DetektExtension> {
         toolVersion = Versions.DETEKT.version
         source = files("src")
@@ -111,13 +112,6 @@ subprojects {
         exclude("**/tmp/**")
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
     }
-
-    plugins.withType<JacocoPlugin> {
-        configure<JacocoPluginExtension> {
-            toolVersion = Versions.JACOCO.version
-        }
-    }
-
     plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
             val signingKeyId: String? by project
@@ -125,13 +119,13 @@ subprojects {
             val signingPassword: String? by project
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             configure<PublishingExtension> {
+                isRequired = project.isRelease()
                 publications {
                     sign(this)
                 }
             }
         }
     }
-
     tasks.withType<DokkaTask>().configureEach {
         moduleName.set("Selekt")
         dokkaSourceSets.named("main") {
@@ -165,78 +159,64 @@ allprojects {
     }
 }
 
-fun JacocoReportBase.initialise() {
-    group = "verification"
-    val block: (JacocoReport) -> Unit = {
-        this@initialise.classDirectories.from(it.classDirectories)
-        this@initialise.executionData.from(it.executionData)
-        this@initialise.sourceDirectories.from(it.sourceDirectories)
-    }
-    subprojects {
-        plugins.withType<JacocoAndroidPlugin> {
-            plugins.withId("com.android.library") {
-                val capitalisedVariant = this@subprojects.extensions.getByType(
-                    JacocoAndroidUnitTestReportExtension::class.java).preferredVariant.capitalize(Locale.ROOT)
-                tasks.withType<JacocoReport>().all {
-                    if (name.contains(capitalisedVariant)) {
-                        block(this)
-                        this@initialise.dependsOn(this)
-                    }
-                }
-            }
+koverMerged {
+    enable()
+    filters {
+        classes {
+            excludes.addAll(listOf(
+                "*.BuildConfig"
+            ))
         }
-        plugins.withId("jacoco") {
-            plugins.withId("org.jetbrains.kotlin.jvm") {
-                tasks.withType<JacocoReport>().all {
-                    block(this)
-                    this@initialise.dependsOn(this)
-                }
-            }
+        projects {
+            excludes.addAll(projects.run {
+                listOf(
+                    androidCLI,
+                    androidLibBenchmark,
+                    openSSL,
+                    selektAndroidLint,
+                    selektAndroidSqlcipher,
+                    selektric,
+                    selektSqlite3
+                ).map { it.name }
+            } + rootProject.name)
         }
     }
-}
-
-tasks.register<JacocoReport>("jacocoSelektTestReport") {
-    initialise()
-    description = "Generates a global JaCoCo coverage report."
-    reports {
-        csv.required.set(false)
-        html.required.set(true)
-        xml.required.set(true)
-    }
-}
-
-tasks.register<JacocoCoverageVerification>("jacocoSelektCoverageVerification") {
-    initialise()
-    description = "Verifies JaCoCo coverage bounds globally."
-    violationRules {
+    verify {
         rule {
-            isEnabled = true
-            limit {
-                counter = "LINE"
-                value = "COVEREDRATIO"
-                minimum = "0.9761".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
-            }
-            limit {
-                counter = "BRANCH"
-                value = "COVEREDRATIO"
-                minimum = "0.9326".toBigDecimal() // Does not include inlined blocks. Jacoco can't yet cover these.
+            name = "Minimal coverage"
+            bound {
+                minValue = 97
+                valueType = VerificationValueType.COVERED_PERCENTAGE
             }
         }
     }
-    mustRunAfter("jacocoSelektTestReport")
 }
 
-kover {
-    disabledProjects = setOf("AndroidCli", "AndroidLibBenchmark", "AndroidLint")
+tasks.getByName("check") {
+    dependsOn("koverMergedVerify")
 }
 
-tasks.koverMergedVerify {
-    rule {
-        name = "Minimal line coverage"
-        bound {
-            minValue = 94
-            valueType = VerificationValueType.COVERED_LINES_PERCENTAGE
+idea.project.settings {
+    copyright {
+        useDefault = "Bloomberg"
+        profiles {
+            create("Bloomberg") {
+                notice = """
+Copyright ${'$'}today.year Bloomberg Finance L.P.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+""".trimIndent()
+            }
         }
     }
 }

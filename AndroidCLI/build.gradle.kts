@@ -27,7 +27,6 @@ repositories {
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
-
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
         minSdk = 21
@@ -38,7 +37,6 @@ android {
             abiFilters.addAll(arrayOf("arm64-v8a", "x86_64"))
         }
     }
-
     arrayOf("main").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
@@ -48,18 +46,16 @@ android {
             isMinifyEnabled = false
         }
     }
-
     buildFeatures {
         viewBinding = true
     }
-
     lint {
         disable.add("OldTargetApi")
     }
 }
 
 dependencies {
-    implementation(project(":AndroidLib"))
+    implementation(projects.selektAndroid)
     implementation(androidX("appcompat", version = "1.0.2"))
     implementation(androidX("core", "ktx", version = "1.0.2"))
     implementation(androidX("paging", "runtime", "2.1.0"))

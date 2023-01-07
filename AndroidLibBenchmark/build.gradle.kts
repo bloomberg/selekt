@@ -40,21 +40,17 @@ repositories {
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
-
     defaultConfig {
         minSdkVersion(21)
         targetSdkVersion(32)
-
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(
             "androidx.benchmark.suppressErrors" to "EMULATOR,LOW_BATTERY,UNLOCKED"
         ))
     }
-
     arrayOf("androidTest").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-
     configurations.all {
         resolutionStrategy {
             // FIXME Please remove as soon as the project compiles without.
@@ -62,14 +58,13 @@ android {
             force("org.jetbrains.kotlin:kotlin-stdlib-common:${Versions.KOTLIN}")
         }
     }
-
     lintOptions {
         disable("OldTargetApi")
     }
 }
 
 dependencies {
-    androidTestImplementation(project(":AndroidLib"))
+    androidTestImplementation(projects.selektAndroid)
     androidTestImplementation("junit:junit:${Versions.JUNIT4}")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
@@ -77,6 +72,6 @@ dependencies {
     androidTestImplementation(androidX("benchmark", "junit4", "1.0.0"))
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
-    androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLIN_COROUTINES.version))
-    androidTestImplementation(kotlinX("coroutines-jdk8", Versions.KOTLIN_COROUTINES.version))
+    androidTestImplementation(kotlinX("coroutines-core"))
+    androidTestImplementation(kotlinX("coroutines-jdk8"))
 }
