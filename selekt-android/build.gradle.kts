@@ -91,8 +91,7 @@ tasks.register<Copy>("copyJniLibs") {
 }
 
 tasks.register<Task>("buildNativeHost") {
-    dependsOn(":selekt-sqlite3:buildHost")
-    dependsOn(":Selektric:buildHost")
+    dependsOn(":selekt-sqlite3:buildHost", ":Selektric:buildHost")
     finalizedBy("copyJniLibs")
 }
 

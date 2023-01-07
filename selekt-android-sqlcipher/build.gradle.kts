@@ -53,8 +53,7 @@ android {
 }
 
 tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
-    dependsOn(":OpenSSL:assembleAndroid")
-    dependsOn(":selekt-sqlite3:amalgamate")
+    dependsOn(":OpenSSL:assembleAndroid", ":selekt-sqlite3:amalgamate")
 }
 
 components.matching { "release" == it.name }.configureEach {

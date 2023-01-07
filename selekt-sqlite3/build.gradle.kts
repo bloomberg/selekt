@@ -110,8 +110,7 @@ tasks.register<Exec>("amalgamate") {
 }
 
 tasks.register<Exec>("cmakeSQLite") {
-    dependsOn(":OpenSSL:assembleHost")
-    dependsOn("amalgamate")
+    dependsOn(":OpenSSL:assembleHost", "amalgamate")
     doFirst {
         mkdir(".cxx-host")
     }
