@@ -177,10 +177,11 @@ koverMerged {
                     androidLibBenchmark,
                     openSSL,
                     selektAndroidLint,
+                    selektAndroidSqlcipher,
                     selektric,
                     selektSqlite3
                 ).map { it.name }
-            })
+            } + rootProject.name)
         }
     }
     verify {
