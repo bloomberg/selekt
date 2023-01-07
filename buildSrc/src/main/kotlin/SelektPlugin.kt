@@ -50,13 +50,6 @@ class SelektPlugin : Plugin<Project> {
                 }
             }
             withId("com.android.library") {
-                dependencies.apply {
-                    configurations.getByName("androidTestImplementation") {
-                        add(name, kotlin("test", Versions.KOTLIN_TEST.version))
-                        add(name, kotlin("test-junit", Versions.KOTLIN_TEST.version))
-                        add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
-                    }
-                }
                 androidExtension().apply {
                     lintOptions {
                         isWarningsAsErrors = true
@@ -75,7 +68,7 @@ class SelektPlugin : Plugin<Project> {
                     }
                     dependencies.apply {
                         configurations.getByName("testImplementation") {
-                            add(name, kotlin("test-junit5", Versions.KOTLIN_TEST.version))
+                            add(name, kotlin("test", Versions.KOTLIN_TEST.version))
                             add(name, kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
                             add(name, kotlinX("coroutines-jdk8", Versions.KOTLINX_COROUTINES.version))
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
