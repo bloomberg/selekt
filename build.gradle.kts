@@ -69,11 +69,6 @@ subprojects {
         plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")
     }
-    plugins.withType<JavaPlugin>().configureEach {
-        dependencies {
-            "implementation"(platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version)))
-        }
-    }
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             allWarningsAsErrors = true

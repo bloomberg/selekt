@@ -65,12 +65,13 @@ class SelektPlugin : Plugin<Project> {
                         configurations.getByName("compileOnly").apply {
                             add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${Versions.JSR_305}]")
                         }
-                    }
-                    dependencies.apply {
+                        configurations.getByName("implementation").apply {
+                            platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version))
+                        }
                         configurations.getByName("testImplementation") {
                             add(name, kotlin("test", Versions.KOTLIN_TEST.version))
-                            add(name, kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
-                            add(name, kotlinX("coroutines-jdk8", Versions.KOTLINX_COROUTINES.version))
+                            add(name, kotlinX("coroutines-core"))
+                            add(name, kotlinX("coroutines-jdk8"))
                             add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                             add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                         }
