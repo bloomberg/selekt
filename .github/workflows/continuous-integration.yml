@@ -62,9 +62,9 @@ jobs:
     - uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: 'Unit test reports'
+        name: 'Unit test and coverage reports'
         path: |
-          build/reports/kover/html
+          build/reports/kover/merged/html
           selekt-android/build/reports/tests/testDebugUnitTest
           selekt-java/build/reports/tests/test
     - name: 'Build Selekt'
