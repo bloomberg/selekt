@@ -29,10 +29,6 @@ repositories {
 
 gradlePlugin {
     plugins {
-        create("Selekt Plugin") {
-            id = "selekt"
-            implementationClass = "SelektPlugin"
-        }
         create("Bloomberg JMH Plugin") {
             id = "bb-jmh"
             implementationClass = "JmhPlugin"
