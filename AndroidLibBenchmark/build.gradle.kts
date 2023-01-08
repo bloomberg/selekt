@@ -51,13 +51,6 @@ android {
     arrayOf("androidTest").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-    configurations.all {
-        resolutionStrategy {
-            // FIXME Please remove as soon as the project compiles without.
-            force("org.jetbrains.kotlin:kotlin-stdlib:${Versions.KOTLIN}")
-            force("org.jetbrains.kotlin:kotlin-stdlib-common:${Versions.KOTLIN}")
-        }
-    }
     lintOptions {
         disable("OldTargetApi")
     }

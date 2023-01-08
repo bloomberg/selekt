@@ -24,6 +24,7 @@ repositories {
 
 plugins {
     base
+    id("de.undercouch.download") version Versions.GRADLE_DOWNLOAD_TASK_PLUGIN.version
 }
 
 fun Project.openSslVersion() = arrayOf(
