@@ -73,4 +73,5 @@ dependencies {
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
     androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
+    testImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
 }
