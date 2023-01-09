@@ -51,13 +51,6 @@ android {
     arrayOf("androidTest").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-    configurations.all {
-        resolutionStrategy {
-            // FIXME Please remove as soon as the project compiles without.
-            force("org.jetbrains.kotlin:kotlin-stdlib:${Versions.KOTLIN}")
-            force("org.jetbrains.kotlin:kotlin-stdlib-common:${Versions.KOTLIN}")
-        }
-    }
     lintOptions {
         disable("OldTargetApi")
     }
@@ -72,6 +65,6 @@ dependencies {
     androidTestImplementation(androidX("benchmark", "junit4", "1.0.0"))
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
-    androidTestImplementation(kotlinX("coroutines-core"))
-    androidTestImplementation(kotlinX("coroutines-jdk8"))
+    androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
+    testImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
 }

@@ -68,12 +68,12 @@ dependencies {
     implementation(projects.selektAndroidSqlcipher)
     implementation(projects.selektJava)
     implementation(projects.selektSqlite3)
+    kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
     testImplementation("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT5}")
     testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
-    kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
 }
 
 tasks.withType<Test>().configureEach {
