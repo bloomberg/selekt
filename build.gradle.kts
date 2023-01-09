@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import com.android.build.gradle.TestedExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
@@ -66,13 +67,47 @@ subprojects {
     group = rootProject.group
     version = rootProject.version
     apply {
-        plugin("selekt")
         plugin("io.gitlab.arturbosch.detekt")
     }
     plugins.withType<JavaPlugin>().configureEach {
-        dependencies {
-            "implementation"(platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version)))
+        tasks.withType<Jar>().configureEach {
+            metaInf {
+                from("$rootDir/LICENSE")
+            }
         }
+    }
+    listOf("java", "com.android.library").forEach {
+        plugins.withId(it) {
+            dependencies {
+                configurations.getByName("compileOnly").apply {
+                    add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${Versions.JSR_305}]")
+                }
+                configurations.getByName("implementation").apply {
+                    platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version))
+                }
+                configurations.getByName("testImplementation") {
+                    add(name, kotlin("test", Versions.KOTLIN_TEST.version))
+                    add(name, kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
+                    add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
+                    add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
+                }
+            }
+        }
+    }
+    listOf("com.android.application", "com.android.library").forEach {
+        plugins.withId(it) {
+            extensions.getByType<TestedExtension>().apply {
+                lintOptions {
+                    isWarningsAsErrors = true
+                }
+                testOptions {
+                    unitTests.isIncludeAndroidResources = true
+                }
+            }
+        }
+    }
+    tasks.withType<Test>().configureEach {
+        systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
     }
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
@@ -91,6 +126,8 @@ subprojects {
         }
         useJUnitPlatform()
         mapOf(
+            "junit.jupiter.execution.parallel.enabled" to true,
+            "junit.jupiter.execution.parallel.mode.default" to "concurrent",
             "junit.jupiter.execution.timeout.lifecycle.method.default" to "60s",
             "junit.jupiter.execution.timeout.mode" to "disabled_on_debug",
             "junit.jupiter.execution.timeout.testable.method.default" to "60s"
