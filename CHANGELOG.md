@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.17.0
+
+### Dependencies
+
+* Android Build Tools 33.0.1.
+* Android Gradle Plugin 7.3.1.
+* Gradle 7.6.
+* Kotlin 1.8.0.
+* OpenSSL 1.1.1s.
+* SQLCipher 4.5.3.
+
 ## Version 0.16.4
 
 ### Dependencies
