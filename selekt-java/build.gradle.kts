@@ -57,8 +57,7 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3)
-    jmhImplementation(kotlinX("coroutines-core"))
-    jmhImplementation(kotlinX("coroutines-jdk8"))
+    jmhImplementation(kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
 }
 
 publishing {

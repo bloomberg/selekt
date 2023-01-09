@@ -87,8 +87,7 @@ subprojects {
                 }
                 configurations.getByName("testImplementation") {
                     add(name, kotlin("test", Versions.KOTLIN_TEST.version))
-                    add(name, kotlinX("coroutines-core"))
-                    add(name, kotlinX("coroutines-jdk8"))
+                    add(name, kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
                     add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
                     add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
                 }
@@ -103,11 +102,6 @@ subprojects {
                 }
                 testOptions {
                     unitTests.isIncludeAndroidResources = true
-                }
-            }
-            dependencies {
-                configurations.getByName("androidTestImplementation").apply {
-                    platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version))
                 }
             }
         }
