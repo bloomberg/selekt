@@ -59,7 +59,7 @@ object Selekt {
     fun gitCommit() = sqlite.gitCommit()
 
     /**
-     * Allow Selekt to register a component callback with an Application, allowing Selekt to respond to important memory
+     * Tell Selekt to register a component callback with an Application, allowing Selekt to respond to important memory
      * pressure events during the Application's lifecycle.
      *
      * @param application with which to register the callback.
@@ -74,7 +74,7 @@ object Selekt {
     fun sqliteLibVersionNumber() = sqlite.libVersionNumber()
 
     /**
-     * Allow Selekt to unregister its component callback from an Application.
+     * Tell Selekt to unregister its component callback from an Application.
      *
      * @param application from which to unregister the callback.
      * @since 0.10.0
