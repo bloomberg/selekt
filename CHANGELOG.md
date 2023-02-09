@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.17.1
+
+### Dependencies
+
+* Android Gradle Plugin 7.4.1.
+* Kotlin 1.8.10.
+
 ## Version 0.17.0
 
 ### Dependencies
