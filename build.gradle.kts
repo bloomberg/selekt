@@ -97,6 +97,10 @@ subprojects {
     listOf("com.android.application", "com.android.library").forEach {
         plugins.withId(it) {
             extensions.getByType<TestedExtension>().apply {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_11
+                    targetCompatibility = JavaVersion.VERSION_11
+                }
                 lintOptions {
                     isWarningsAsErrors = true
                 }
