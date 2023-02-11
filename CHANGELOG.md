@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.18.0
+
+### Dependencies
+
+* OpenSSL 1.1.1t.
+
 ## Version 0.17.1
 
 ### Dependencies
