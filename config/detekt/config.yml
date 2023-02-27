@@ -346,5 +346,7 @@ style:
     active: true
   UseSumOfInsteadOfFlatMapSize:
     active: true
+  VarCouldBeVal:
+    active: true
   WildcardImport:
     active: true
