@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: '0 22 * * SUN'
 
-permissions: read-all
-
 jobs:
   ci-pipeline:
     name: 'Continuous Integration'
