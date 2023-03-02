@@ -2,8 +2,6 @@ name: 'Continuous Integration'
 
 on: [pull_request, push]
 
-permissions: read-all
-
 jobs:
   ci-pipeline:
     name: 'Continuous Integration'
