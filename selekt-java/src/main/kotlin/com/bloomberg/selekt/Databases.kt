@@ -67,6 +67,18 @@ class SQLDatabase constructor(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
+    fun batch(
+        sql: String,
+        bindArgs: Sequence<Array<out Any?>>,
+        size: Int
+    ): Int = bindArgs.map {
+        it.copyOf()
+    }.chunked(size).sumOf {
+        transact {
+            batch(sql, it.asSequence())
+        }
+    }
+
     override fun beginExclusiveTransaction() = pledge { session.get().beginExclusiveTransaction() }
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {

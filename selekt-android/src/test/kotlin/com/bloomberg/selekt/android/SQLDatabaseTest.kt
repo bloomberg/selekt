@@ -1159,6 +1159,28 @@ internal class SQLDatabaseTest {
 
     @ParameterizedTest
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
+    fun batchLimitInsert(
+        inputs: SQLInputs
+    ): Unit = SQLDatabase(
+        createFile(inputs).absolutePath,
+        SQLite,
+        inputs.journalMode.databaseConfiguration,
+        inputs.key
+    ).destroy {
+        it.pragma("journal_mode", inputs.journalMode)
+        it.exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        assertEquals(2, it.batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43)), 1))
+        it.query("SELECT * FROM 'Foo'", emptyArray()).use { cursor ->
+            assertEquals(2, cursor.count)
+            assertTrue(cursor.moveToNext())
+            assertEquals(42, cursor.getInt(0))
+            assertTrue(cursor.moveToNext())
+            assertEquals(43, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(SampleSQLArgumentsProvider::class)
     fun insertOneHundredUnboundThenOneBound(
         inputs: SQLInputs
     ): Unit = SQLDatabase(

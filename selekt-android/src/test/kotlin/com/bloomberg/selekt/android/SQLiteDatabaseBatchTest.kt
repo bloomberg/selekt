@@ -63,6 +63,12 @@ internal class SQLiteDatabaseBatchTest {
     }
 
     @Test
+    fun batchLimitSequenceInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequenceOf(arrayOf(42), arrayOf(43)), 1))
+    }
+
+    @Test
     fun batchSequenceInsertWithCommonArray(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val args = Array(1) { 0 }
@@ -72,6 +78,25 @@ internal class SQLiteDatabaseBatchTest {
             args[0] = 43
             yield(args)
         }))
+        query("SELECT * FROM 'Foo'", null).use {
+            assertEquals(2, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
+            assertTrue(it.moveToNext())
+            assertEquals(43, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun batchLimitSequenceInsertWithCommonArray(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val args = Array(1) { 0 }
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", sequence {
+            args[0] = 42
+            yield(args)
+            args[0] = 43
+            yield(args)
+        }, 2))
         query("SELECT * FROM 'Foo'", null).use {
             assertEquals(2, it.count)
             assertTrue(it.moveToFirst())

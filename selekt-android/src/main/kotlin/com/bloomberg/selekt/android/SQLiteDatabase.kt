@@ -172,6 +172,27 @@ class SQLiteDatabase private constructor(
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
+     * Transacts to the database in exclusive mode batches of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement.
+     * It is safe for the sequence to recycle the array with each yield.
+     *
+     * Each batch is committed in its own transaction, and each transaction is committed before reading the next batch.
+     *
+     * @param sql statement.
+     * @param bindArgs sequence of standard type arguments for binding to the statement.
+     * @param size limit on each transacted batch.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(
+        @Language("RoomSql") sql: String,
+        bindArgs: Sequence<Array<out Any?>>,
+        size: Int
+    ): Int = database.batch(sql, bindArgs, size)
+
+    /**
      * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.
      *
      * Transactions can be nested. When the outer transaction is ended all of the work done in that transaction and all of
