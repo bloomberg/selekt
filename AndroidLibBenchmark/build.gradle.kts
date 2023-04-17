@@ -40,6 +40,7 @@ repositories {
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
         minSdkVersion(21)
         targetSdkVersion(32)

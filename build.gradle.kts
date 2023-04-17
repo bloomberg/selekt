@@ -98,8 +98,8 @@ subprojects {
         plugins.withId(it) {
             extensions.getByType<TestedExtension>().apply {
                 compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_11
-                    targetCompatibility = JavaVersion.VERSION_11
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
                 }
                 lintOptions {
                     isWarningsAsErrors = true
@@ -117,7 +117,7 @@ subprojects {
         kotlinOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
     tasks.withType<Test>().configureEach {
@@ -176,7 +176,7 @@ subprojects {
                 localDirectory.set(file("src/main/kotlin"))
             }
             includeNonPublic.set(false)
-            jdkVersion.set(JavaVersion.VERSION_11.majorVersion.toInt())
+            jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
             noAndroidSdkLink.set(false)
             noJdkLink.set(false)
             noStdlibLink.set(false)

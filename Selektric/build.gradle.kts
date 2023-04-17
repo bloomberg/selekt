@@ -44,7 +44,7 @@ tasks.register<Exec>("makeSelektric") {
     commandLine("make", "selektric")
 }
 
-fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
+fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
         startsWith("windows") -> "windows"

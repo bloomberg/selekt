@@ -130,7 +130,7 @@ tasks.register<Exec>("makeSQLite") {
     commandLine("make", "selekt")
 }
 
-fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
+fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
         startsWith("windows") -> "windows"
