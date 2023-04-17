@@ -37,6 +37,9 @@
     <div>0.19.0-SNAPSHOT
     </div>
     <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":selekt-android:dokkaHtmlPartial/release">androidJvm</button>
+        </div>
         <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
         <div id="searchBar"></div>
     </div>
@@ -46,106 +49,112 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" id="content" pageids="selekt-android::com.bloomberg.selekt.android/SQLiteOpenParams///PointingToDeclaration//1521004861">
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-android::com.bloomberg.selekt.android/SQLiteOpenParams///PointingToDeclaration//1521004861">
   <div class="breadcrumbs"><a href="../../index.html">selekt-android</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt.android</a><span class="delimiter">/</span><span class="current">SQLiteOpenParams</span></div>
   <div class="cover ">
     <h1 class="cover"><span>SQLite</span><wbr><span>Open</span><wbr><span><span>Params</span></span></h1>
     <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">SQLiteOpenParams</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div><p class="paragraph">Wrapper for configuration parameters that are used for opening a <a href="../-s-q-lite-database/index.html">SQLiteDatabase</a>.</p></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,FUNCTION,PROPERTY">Members</button></div>
     <div class="tabs-section-body">
-      <h2 class="tabbedcontent">Constructors</h2>
-      <div class="table" data-togglable="Constructors"><a data-name="644945205%2FConstructors%2F1521004861" anchor-label="SQLiteOpenParams" id="644945205%2FConstructors%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue TabbedContent">
-            <div class=""><span class="inline-flex">
-                <div><a href="-s-q-lite-open-params.html"><span>SQLite</span><wbr><span>Open</span><wbr><span><span>Params</span></span></a></div>
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="644945205%2FConstructors%2F1521004861" anchor-label="SQLiteOpenParams" id="644945205%2FConstructors%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-q-lite-open-params.html"><span>SQLite</span><wbr><span>Open</span><wbr><span><span>Params</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="644945205%2FConstructors%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="-s-q-lite-open-params.html"><span class="token function">SQLiteOpenParams</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Types</h2>
-      <div class="table" data-togglable="Types"><a data-name="2022331854%2FClasslikes%2F1521004861" anchor-label="Builder" id="2022331854%2FClasslikes%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-builder/index.html"><span><span>Builder</span></span></a></div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="2022331854%2FClasslikes%2F1521004861" anchor-label="Builder" id="2022331854%2FClasslikes%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
+          <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-builder/index.html"><span><span>Builder</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2022331854%2FClasslikes%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/NotThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">NotThreadSafe</span></span></div></div><span class="token keyword">class </span><a href="-builder/index.html">Builder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/NotThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">NotThreadSafe</span></span></div></div><span class="token keyword">class </span><a href="-builder/index.html">Builder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1359602307%2FClasslikes%2F1521004861" anchor-label="Companion" id="-1359602307%2FClasslikes%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1359602307%2FClasslikes%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Properties</h2>
-      <div class="table" data-togglable="Properties"><a data-name="-397810244%2FProperties%2F1521004861" anchor-label="journalMode" id="-397810244%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="journal-mode.html"><span>journal</span><wbr><span><span>Mode</span></span></a></div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-397810244%2FProperties%2F1521004861" anchor-label="journalMode" id="-397810244%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
+          <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="journal-mode.html"><span>journal</span><wbr><span><span>Mode</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-397810244%2FProperties%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><a data-name="-397810244%2FProperties%2F1521004861" anchor-label="journalMode" id="-397810244%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="journal-mode.html">journalMode</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="journal-mode.html">journalMode</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1659004923%2FProperties%2F1521004861" anchor-label="pageSizeExponent" id="-1659004923%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="page-size-exponent.html"><span>page</span><wbr><span>Size</span><wbr><span><span>Exponent</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="page-size-exponent.html"><span>page</span><wbr><span>Size</span><wbr><span><span>Exponent</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1659004923%2FProperties%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><a data-name="-1659004923%2FProperties%2F1521004861" anchor-label="pageSizeExponent" id="-1659004923%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="page-size-exponent.html">pageSizeExponent</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="page-size-exponent.html">pageSizeExponent</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1624832239%2FProperties%2F1521004861" anchor-label="trace" id="-1624832239%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a>
-        <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="trace.html"><span><span>trace</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-android:dokkaHtmlPartial/release" data-filterable-set=":selekt-android:dokkaHtmlPartial/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="trace.html"><span><span>trace</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1624832239%2FProperties%2F1521004861"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><a data-name="-1624832239%2FProperties%2F1521004861" anchor-label="trace" id="-1624832239%2FProperties%2F1521004861" data-filterable-set=":selekt-android:dokkaHtmlPartial/release"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android:dokkaHtmlPartial/release"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -159,6 +168,6 @@
       </div>
     </div>
 </div>
-
-</body></html>
+</body>
+</html>
 

@@ -37,6 +37,9 @@
     <div>0.19.0-SNAPSHOT
     </div>
     <div class="pull-right d-flex">
+        <div class="filter-section" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":selekt-api:dokkaHtmlPartial/main">jvm</button>
+        </div>
         <button id="theme-toggle-button"><span id="theme-toggle"></span></button>
         <div id="searchBar"></div>
     </div>
@@ -46,181 +49,187 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" id="content" pageids="selekt-api::com.bloomberg.selekt/DatabaseConfiguration///PointingToDeclaration//-256820953">
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-api::com.bloomberg.selekt/DatabaseConfiguration///PointingToDeclaration//-256820953">
   <div class="breadcrumbs"><a href="../../index.html">selekt-api</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt</a><span class="delimiter">/</span><span class="current">DatabaseConfiguration</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Database</span><wbr><span><span>Configuration</span></span></h1>
     <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">DatabaseConfiguration</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>borrowWaitTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span>-1L<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>busyTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>evictionDelayMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>maxConnectionPoolSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>maxSqlCacheSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>name<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span><span class="token string">"main"</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>secureDelete<span class="token operator">: </span><a href="../-s-q-lite-secure-delete/index.html">SQLiteSecureDelete</a><span class="token operator"> = </span>SQLiteSecureDelete.FAST<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>timeBetweenEvictionRunsMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>trace<span class="token operator">: </span><a href="../-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,FUNCTION,PROPERTY">Members</button></div>
     <div class="tabs-section-body">
-      <h2 class="tabbedcontent">Constructors</h2>
-      <div class="table" data-togglable="Constructors"><a data-name="-1492631243%2FConstructors%2F-256820953" anchor-label="DatabaseConfiguration" id="-1492631243%2FConstructors%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue TabbedContent">
-            <div class=""><span class="inline-flex">
-                <div><a href="-database-configuration.html"><span>Database</span><wbr><span><span>Configuration</span></span></a></div>
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1492631243%2FConstructors%2F-256820953" anchor-label="DatabaseConfiguration" id="-1492631243%2FConstructors%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-database-configuration.html"><span>Database</span><wbr><span><span>Configuration</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1492631243%2FConstructors%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="-database-configuration.html"><span class="token function">DatabaseConfiguration</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">borrowWaitTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span>-1L<span class="token punctuation">, </span></span><span class="parameter ">busyTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span><span class="token punctuation">, </span></span><span class="parameter ">evictionDelayMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">maxConnectionPoolSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">maxSqlCacheSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span><span class="token string">"main"</span><span class="token punctuation">, </span></span><span class="parameter ">secureDelete<span class="token operator">: </span><a href="../-s-q-lite-secure-delete/index.html">SQLiteSecureDelete</a><span class="token operator"> = </span>SQLiteSecureDelete.FAST<span class="token punctuation">, </span></span><span class="parameter ">timeBetweenEvictionRunsMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">borrowWaitTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token operator"> = </span>-1L<span class="token punctuation">, </span></span><span class="parameter ">busyTimeoutMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span><span class="token punctuation">, </span></span><span class="parameter ">evictionDelayMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">maxConnectionPoolSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">maxSqlCacheSize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator"> = </span><span class="token string">"main"</span><span class="token punctuation">, </span></span><span class="parameter ">secureDelete<span class="token operator">: </span><a href="../-s-q-lite-secure-delete/index.html">SQLiteSecureDelete</a><span class="token operator"> = </span>SQLiteSecureDelete.FAST<span class="token punctuation">, </span></span><span class="parameter ">timeBetweenEvictionRunsMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Types</h2>
-      <div class="table" data-togglable="Types"><a data-name="42238035%2FClasslikes%2F-256820953" anchor-label="Companion" id="42238035%2FClasslikes%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="42238035%2FClasslikes%2F-256820953" anchor-label="Companion" id="42238035%2FClasslikes%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="42238035%2FClasslikes%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Properties</h2>
-      <div class="table" data-togglable="Properties"><a data-name="2073680207%2FProperties%2F-256820953" anchor-label="borrowWaitTimeoutMillis" id="2073680207%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="borrow-wait-timeout-millis.html"><span>borrow</span><wbr><span>Wait</span><wbr><span>Timeout</span><wbr><span><span>Millis</span></span></a></div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="2073680207%2FProperties%2F-256820953" anchor-label="borrowWaitTimeoutMillis" id="2073680207%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="borrow-wait-timeout-millis.html"><span>borrow</span><wbr><span>Wait</span><wbr><span>Timeout</span><wbr><span><span>Millis</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2073680207%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="2073680207%2FProperties%2F-256820953" anchor-label="borrowWaitTimeoutMillis" id="2073680207%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="borrow-wait-timeout-millis.html">borrowWaitTimeoutMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="borrow-wait-timeout-millis.html">borrowWaitTimeoutMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-218428866%2FProperties%2F-256820953" anchor-label="busyTimeoutMillis" id="-218428866%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="busy-timeout-millis.html"><span>busy</span><wbr><span>Timeout</span><wbr><span><span>Millis</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="busy-timeout-millis.html"><span>busy</span><wbr><span>Timeout</span><wbr><span><span>Millis</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-218428866%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="-218428866%2FProperties%2F-256820953" anchor-label="busyTimeoutMillis" id="-218428866%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="busy-timeout-millis.html">busyTimeoutMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="busy-timeout-millis.html">busyTimeoutMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1964204414%2FProperties%2F-256820953" anchor-label="evictionDelayMillis" id="-1964204414%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="eviction-delay-millis.html"><span>eviction</span><wbr><span>Delay</span><wbr><span><span>Millis</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="eviction-delay-millis.html"><span>eviction</span><wbr><span>Delay</span><wbr><span><span>Millis</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1964204414%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="-1964204414%2FProperties%2F-256820953" anchor-label="evictionDelayMillis" id="-1964204414%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="eviction-delay-millis.html">evictionDelayMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="eviction-delay-millis.html">evictionDelayMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1042457005%2FProperties%2F-256820953" anchor-label="maxConnectionPoolSize" id="1042457005%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="max-connection-pool-size.html"><span>max</span><wbr><span>Connection</span><wbr><span>Pool</span><wbr><span><span>Size</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="max-connection-pool-size.html"><span>max</span><wbr><span>Connection</span><wbr><span>Pool</span><wbr><span><span>Size</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1042457005%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="1042457005%2FProperties%2F-256820953" anchor-label="maxConnectionPoolSize" id="1042457005%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="max-connection-pool-size.html">maxConnectionPoolSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="max-connection-pool-size.html">maxConnectionPoolSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="295956979%2FProperties%2F-256820953" anchor-label="maxSqlCacheSize" id="295956979%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="max-sql-cache-size.html"><span>max</span><wbr><span>Sql</span><wbr><span>Cache</span><wbr><span><span>Size</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="max-sql-cache-size.html"><span>max</span><wbr><span>Sql</span><wbr><span>Cache</span><wbr><span><span>Size</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="295956979%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="295956979%2FProperties%2F-256820953" anchor-label="maxSqlCacheSize" id="295956979%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="max-sql-cache-size.html">maxSqlCacheSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div><div class="brief "><a data-name="295956979%2FProperties%2F-256820953" anchor-label="maxSqlCacheSize" id="295956979%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><p class="paragraph">Maximum size of the prepared statement cache.</p></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="max-sql-cache-size.html">maxSqlCacheSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div><div class="brief "><p class="paragraph">Maximum size of the prepared statement cache.</p></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-2026018077%2FProperties%2F-256820953" anchor-label="name" id="-2026018077%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="name.html"><span><span>name</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="name.html"><span><span>name</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2026018077%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="-2026018077%2FProperties%2F-256820953" anchor-label="name" id="-2026018077%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="name.html">name</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="name.html">name</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1110257740%2FProperties%2F-256820953" anchor-label="secureDelete" id="1110257740%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="secure-delete.html"><span>secure</span><wbr><span><span>Delete</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="secure-delete.html"><span>secure</span><wbr><span><span>Delete</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1110257740%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="1110257740%2FProperties%2F-256820953" anchor-label="secureDelete" id="1110257740%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="secure-delete.html">secureDelete</a><span class="token operator">: </span><a href="../-s-q-lite-secure-delete/index.html">SQLiteSecureDelete</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="secure-delete.html">secureDelete</a><span class="token operator">: </span><a href="../-s-q-lite-secure-delete/index.html">SQLiteSecureDelete</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-688560508%2FProperties%2F-256820953" anchor-label="timeBetweenEvictionRunsMillis" id="-688560508%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="time-between-eviction-runs-millis.html"><span>time</span><wbr><span>Between</span><wbr><span>Eviction</span><wbr><span>Runs</span><wbr><span><span>Millis</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="time-between-eviction-runs-millis.html"><span>time</span><wbr><span>Between</span><wbr><span>Eviction</span><wbr><span>Runs</span><wbr><span><span>Millis</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-688560508%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="-688560508%2FProperties%2F-256820953" anchor-label="timeBetweenEvictionRunsMillis" id="-688560508%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="time-between-eviction-runs-millis.html">timeBetweenEvictionRunsMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div><div class="brief "><a data-name="-688560508%2FProperties%2F-256820953" anchor-label="timeBetweenEvictionRunsMillis" id="-688560508%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><p class="paragraph">Time between idle connection eviction runs in milliseconds, -1L for never.</p></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="time-between-eviction-runs-millis.html">timeBetweenEvictionRunsMillis</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></div><div class="brief "><p class="paragraph">Time between idle connection eviction runs in milliseconds, -1L for never.</p></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1445706521%2FProperties%2F-256820953" anchor-label="trace" id="-1445706521%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a>
-        <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="trace.html"><span><span>trace</span></span></a></div>
+          <div class="table-row" data-filterable-current=":selekt-api:dokkaHtmlPartial/main" data-filterable-set=":selekt-api:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="trace.html"><span><span>trace</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1445706521%2FProperties%2F-256820953"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><a data-name="-1445706521%2FProperties%2F-256820953" anchor-label="trace" id="-1445706521%2FProperties%2F-256820953" data-filterable-set=":selekt-api:dokkaHtmlPartial/main"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -234,6 +243,6 @@
       </div>
     </div>
 </div>
-
-</body></html>
+</body>
+</html>
 

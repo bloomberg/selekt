@@ -354,14 +354,12 @@
 
 <p>//<a href="../../../">selekt-java</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">SQLDatabase</a></p>
 <h1 id="sqldatabase">SQLDatabase</h1>
-<p>[jvm]\
-@ThreadSafe</p>
+<p>@ThreadSafe</p>
 <p>class <a href="./">SQLDatabase</a>(val path: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, sqlite: <a href="../-s-q-lite/">SQLite</a>, configuration: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/">DatabaseConfiguration</a>, key: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a>?, random: <a href="../-i-random/">IRandom</a> = CommonThreadLocalRandom) : <a href="../-shared-closeable/">SharedCloseable</a>, <a href="../-i-database/">IDatabase</a></p>
 <p>The use of ThreadLocal underpins <a href="./">SQLDatabase</a>'s thread-safety.</p>
 <p>A thread can acquire at most one connection session per database instance. Sessions hold at most one connection at any given time, and exclusively. Sessions control all access to a database's connections and each session is thread-bound. This prevents two threads from ever sharing a single connection.</p>
 <p>This is the same strategy Google employs in the Android SDK.</p>
 <h4 id="see-also">See also</h4>
-<p>jvm</p>
 <table>
 <thead>
 <tr>
@@ -387,7 +385,7 @@
 <tbody>
 <tr>
 <td><a href="-s-q-l-database/">SQLDatabase</a></td>
-<td>[jvm]<br>fun <a href="-s-q-l-database/">SQLDatabase</a>(path: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, sqlite: <a href="../-s-q-lite/">SQLite</a>, configuration: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/">DatabaseConfiguration</a>, key: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a>?, random: <a href="../-i-random/">IRandom</a> = CommonThreadLocalRandom)</td>
+<td>[jvm]<br>constructor(path: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, sqlite: <a href="../-s-q-lite/">SQLite</a>, configuration: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/">DatabaseConfiguration</a>, key: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a>?, random: <a href="../-i-random/">IRandom</a> = CommonThreadLocalRandom)</td>
 </tr>
 </tbody>
 </table>

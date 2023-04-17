@@ -310,15 +310,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#functions" class="md-nav__link">
-    Functions
+  <a href="#inheritors" class="md-nav__link">
+    Inheritors
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#inheritors" class="md-nav__link">
-    Inheritors
+  <a href="#functions" class="md-nav__link">
+    Functions
   </a>
   
 </li>
@@ -340,8 +340,20 @@
 
 <p>//<a href="../../../">selekt-java</a>/<a href="../">com.bloomberg.selekt</a>/<a href="./">IReadableDatabase</a></p>
 <h1 id="ireadabledatabase">IReadableDatabase</h1>
-<p>[jvm]\
-interface <a href="./">IReadableDatabase</a> : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></p>
+<p>interface <a href="./">IReadableDatabase</a> : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></p>
+<h4 id="inheritors">Inheritors</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../-i-database/">IDatabase</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="functions">Functions</h2>
 <table>
 <thead>
@@ -362,19 +374,6 @@ interface <a href="./">IReadableDatabase</a> : <a href="https://docs.oracle.com/
 <tr>
 <td><a href="query/">query</a></td>
 <td>[jvm]<br>abstract fun <a href="query/">query</a>(query: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-query/">ISQLQuery</a>): <a href="../-i-cursor/">ICursor</a><br>abstract fun <a href="query/">query</a>(sql: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;): <a href="../-i-cursor/">ICursor</a><br>abstract fun <a href="query/">query</a>(distinct: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, table: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, columns: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>&gt;, selection: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, selectionArgs: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html">Array</a>&lt;out <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?&gt;, groupBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, having: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, orderBy: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>?, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>?): <a href="../-i-cursor/">ICursor</a></td>
-</tr>
-</tbody>
-</table>
-<h2 id="inheritors">Inheritors</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="../-i-database/">IDatabase</a></td>
 </tr>
 </tbody>
 </table>
