@@ -62,11 +62,11 @@ private class SupportSQLiteDatabase constructor(
 
     override fun beginTransactionNonExclusive() = database.beginImmediateTransaction()
 
-    override fun beginTransactionWithListener(listener: SQLiteTransactionListener) =
-        database.beginExclusiveTransactionWithListener(listener.asSQLTransactionListener())
+    override fun beginTransactionWithListener(transactionListener: SQLiteTransactionListener) =
+        database.beginExclusiveTransactionWithListener(transactionListener.asSQLTransactionListener())
 
-    override fun beginTransactionWithListenerNonExclusive(listener: SQLiteTransactionListener) =
-        database.beginImmediateTransactionWithListener(listener.asSQLTransactionListener())
+    override fun beginTransactionWithListenerNonExclusive(transactionListener: SQLiteTransactionListener) =
+        database.beginImmediateTransactionWithListener(transactionListener.asSQLTransactionListener())
 
     override fun close() = database.close()
 
@@ -76,8 +76,8 @@ private class SupportSQLiteDatabase constructor(
     override fun delete(
         table: String,
         whereClause: String?,
-        whereArgs: Array<out Any>?
-    ) = database.delete(
+        whereArgs: Array<out Any?>?
+    ): Int = database.delete(
         table,
         whereClause,
         whereArgs
@@ -91,22 +91,33 @@ private class SupportSQLiteDatabase constructor(
 
     override fun execSQL(@Language("RoomSql") sql: String) = database.exec(sql)
 
-    override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<out Any>) = database.exec(sql, bindArgs)
+    override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
 
-    override fun getAttachedDbs() = database.query("PRAGMA database_list", null).use {
-        List<Pair<String, String>>(it.count) { _ ->
-            it.moveToNext()
-            Pair(it.getString(1), it.getString(2))
+    override val attachedDbs: List<Pair<String, String>>
+        get() = database.query("PRAGMA database_list", null).use {
+            List(it.count) { _ ->
+                it.moveToNext()
+                Pair(it.getString(1), it.getString(2))
+            }
         }
-    }
 
-    override fun getMaximumSize() = database.maximumSize
+    override val maximumSize: Long
+        get() = database.maximumSize
 
-    override fun getPageSize() = database.pageSize
+    override var pageSize: Long
+        get() = database.pageSize
+        set(value) {
+            database.pageSize = value
+        }
 
-    override fun getPath() = database.path
+    override val path: String
+        get() = database.path
 
-    override fun getVersion() = database.version
+    override var version: Int
+        get() = database.version
+        set(value) {
+            database.version = value
+        }
 
     override fun insert(
         table: String,
@@ -120,8 +131,9 @@ private class SupportSQLiteDatabase constructor(
 
     override fun inTransaction() = database.isTransactionOpenedByCurrentThread
 
-    override fun isDatabaseIntegrityOk(): Boolean {
-        attachedDbs.forEach {
+    override val isDatabaseIntegrityOk: Boolean
+        get() {
+            attachedDbs.forEach {
             if (!database.integrityCheck(it.first)) {
                 return false
             }
@@ -129,26 +141,29 @@ private class SupportSQLiteDatabase constructor(
         return true
     }
 
-    override fun isDbLockedByCurrentThread() = database.isConnectionHeldByCurrentThread
+    override val isDbLockedByCurrentThread: Boolean
+        get() = database.isConnectionHeldByCurrentThread
 
-    override fun isOpen() = database.isOpen
+    override val isOpen: Boolean
+        get() = database.isOpen
 
-    override fun isReadOnly() = false
+    override val isReadOnly: Boolean = false
 
-    override fun isWriteAheadLoggingEnabled() = SQLiteJournalMode.WAL == database.journalMode
+    override val isWriteAheadLoggingEnabled: Boolean
+        get() = SQLiteJournalMode.WAL == database.journalMode
 
     override fun needUpgrade(newVersion: Int) = database.version < newVersion
 
     override fun query(query: String) = database.query(query, null)
 
-    override fun query(query: String, bindArgs: Array<out Any>) = database.query(query, bindArgs)
+    override fun query(query: String, bindArgs: Array<out Any?>) = database.query(query, bindArgs)
 
     override fun query(query: SupportSQLiteQuery) = database.query(query.asSelektSQLQuery())
 
     // TODO Implement using the cancellation signal.
-    override fun query(query: SupportSQLiteQuery, cancellationSignal: CancellationSignal) = query(query)
+    override fun query(query: SupportSQLiteQuery, cancellationSignal: CancellationSignal?) = query(query)
 
-    override fun setForeignKeyConstraintsEnabled(enable: Boolean) = database.setForeignKeyConstraintsEnabled(enable)
+    override fun setForeignKeyConstraintsEnabled(enabled: Boolean) = database.setForeignKeyConstraintsEnabled(enabled)
 
     override fun setLocale(locale: Locale) = throw UnsupportedOperationException()
 
@@ -156,25 +171,19 @@ private class SupportSQLiteDatabase constructor(
 
     override fun setMaxSqlCacheSize(cacheSize: Int) = throw UnsupportedOperationException()
 
-    override fun setPageSize(numBytes: Long) {
-        database.pageSize = numBytes
-    }
-
     override fun setTransactionSuccessful() = database.setTransactionSuccessful()
-
-    override fun setVersion(version: Int) {
-        database.version = version
-    }
 
     override fun update(
         table: String,
         conflictAlgorithm: Int,
         values: ContentValues,
         whereClause: String?,
-        whereArgs: Array<out Any>?
+        whereArgs: Array<out Any?>?
     ) = database.update(table, values, whereClause, whereArgs, conflictAlgorithm.toConflictAlgorithm())
 
     override fun yieldIfContendedSafely() = yieldIfContendedSafely(0L)
 
-    override fun yieldIfContendedSafely(sleepAfterYieldDelay: Long) = database.yieldTransaction(sleepAfterYieldDelay)
+    override fun yieldIfContendedSafely(
+        sleepAfterYieldDelayMillis: Long
+    ) = database.yieldTransaction(sleepAfterYieldDelayMillis)
 }
