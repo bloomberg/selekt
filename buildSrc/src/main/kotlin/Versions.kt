@@ -37,7 +37,7 @@ enum class Versions(
     JMH("1.36", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.2", URL("https://github.com/junit-team/junit4")),
-    JUNIT5("5.9.1", URL("https://junit.org/junit5/")),
+    JUNIT5("5.9.2", URL("https://junit.org/junit5/")),
     KOTLIN("1.8.20", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_TEST(KOTLIN.version, URL("https://github.com/JetBrains/kotlin")),
     KOTLINX_COROUTINES("1.6.4", URL("https://github.com/Kotlin/kotlinx.coroutines")),
