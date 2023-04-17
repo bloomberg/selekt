@@ -24,7 +24,7 @@ enum class Versions(
     ANDROID_BUILD_TOOLS("33.0.1", URL("https://developer.android.com/studio/releases/build-tools")),
     ANDROID_GRADLE_PLUGIN("7.4.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
-    ANDROID_NDK("25.1.8937393", URL("https://developer.android.com/ndk")),
+    ANDROID_NDK("25.2.9519653", URL("https://developer.android.com/ndk")),
     ANDROID_SDK("33", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.5.1", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
     ANDROIDX_ROOM("2.5.1", URL("https://developer.android.com/jetpack/androidx/releases/room")),
