@@ -56,7 +56,7 @@ import com.bloomberg.selekt.SQL_TOO_BIG
 object Selekt {
     internal const val TAG = "SLKT"
 
-    fun gitCommit() = sqlite.gitCommit()
+    fun gitCommit(): String = sqlite.gitCommit()
 
     /**
      * Tell Selekt to register a component callback with an Application, allowing Selekt to respond to important memory
@@ -69,9 +69,9 @@ object Selekt {
     fun registerComponentCallbackWith(application: Application) =
         application.registerComponentCallbacks(MemoryComponentCallback)
 
-    fun sqliteLibVersion() = sqlite.libVersion()
+    fun sqliteLibVersion(): String = sqlite.libVersion()
 
-    fun sqliteLibVersionNumber() = sqlite.libVersionNumber()
+    fun sqliteLibVersionNumber(): Int = sqlite.libVersionNumber()
 
     /**
      * Tell Selekt to unregister its component callback from an Application.
