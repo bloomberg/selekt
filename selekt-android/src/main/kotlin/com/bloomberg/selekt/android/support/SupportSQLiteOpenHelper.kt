@@ -50,11 +50,12 @@ internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = @DelicateApi object
 
     override fun close() = this@asSupportSQLiteOpenHelper.close()
 
-    override fun getDatabaseName() = this@asSupportSQLiteOpenHelper.databaseName
+    override val databaseName: String
+        get() = this@asSupportSQLiteOpenHelper.databaseName
 
-    override fun getReadableDatabase() = database
+    override val readableDatabase: SupportSQLiteDatabase = database
 
-    override fun getWritableDatabase() = database
+    override val writableDatabase: SupportSQLiteDatabase = database
 
     override fun setWriteAheadLoggingEnabled(enabled: Boolean) {
         database.apply {
