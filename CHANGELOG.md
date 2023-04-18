@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.18.2
+
+### Dependencies
+
+* Room 2.5.1.
+
 ## Version 0.18.1
 
 ### Dependencies
