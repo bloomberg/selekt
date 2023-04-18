@@ -95,5 +95,5 @@ tasks.register<Copy>("copyJniLibs") {
 }
 
 tasks.withType<ProcessResources>().configureEach {
-    mustRunAfter("buildHostSQLite")
+    mustRunAfter("buildHostSQLite", ":selekt-android:copyJniLibs")
 }
