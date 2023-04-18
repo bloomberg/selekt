@@ -358,7 +358,7 @@ internal class SupportSQLiteDatabaseTest {
 
     @Test
     fun setMaximumSize() {
-        supportDatabase.maximumSize = 42L
+        supportDatabase.setMaximumSize(42L)
         verify(database, times(1)).setMaximumSize(eq(42L))
     }
 

@@ -28,9 +28,14 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertSame
 
 internal class SupportSQLiteOpenHelperTest {
+    private val database = mock<SQLiteDatabase>()
+    private val helper = mock<ISQLiteOpenHelper>().apply {
+        whenever(writableDatabase) doReturn database
+    }
+
     @Test
     fun close() {
-        mock<ISQLiteOpenHelper>().let {
+        helper.let {
             it.asSupportSQLiteOpenHelper().close()
             verify(it, times(1)).close()
         }
@@ -39,7 +44,7 @@ internal class SupportSQLiteOpenHelperTest {
     @Test
     fun databaseName() {
         val name = "foo"
-        mock<ISQLiteOpenHelper>().let {
+        helper.let {
             whenever(it.databaseName) doReturn name
             assertSame(name, it.asSupportSQLiteOpenHelper().databaseName)
             verify(it, times(1)).databaseName
@@ -48,9 +53,7 @@ internal class SupportSQLiteOpenHelperTest {
 
     @Test
     fun readableDatabase() {
-        val database = mock<SQLiteDatabase>()
-        mock<ISQLiteOpenHelper>().let {
-            whenever(it.writableDatabase) doReturn database
+        helper.let {
             it.asSupportSQLiteOpenHelper().readableDatabase
             verify(it, times(1)).writableDatabase
         }
@@ -58,9 +61,7 @@ internal class SupportSQLiteOpenHelperTest {
 
     @Test
     fun setWriteAheadLoggingEnabledFalse() {
-        val database = mock<SQLiteDatabase>()
-        mock<ISQLiteOpenHelper>().let {
-            whenever(it.writableDatabase) doReturn database
+        helper.let {
             it.asSupportSQLiteOpenHelper().setWriteAheadLoggingEnabled(false)
             verifyNoMoreInteractions(database)
         }
@@ -68,9 +69,7 @@ internal class SupportSQLiteOpenHelperTest {
 
     @Test
     fun setWriteAheadLoggingEnabledTrue() {
-        val database = mock<SQLiteDatabase>()
-        mock<ISQLiteOpenHelper>().let {
-            whenever(it.writableDatabase) doReturn database
+        helper.let {
             it.asSupportSQLiteOpenHelper().setWriteAheadLoggingEnabled(true)
             verify(database, times(1)).journalMode
             verifyNoMoreInteractions(database)
@@ -79,9 +78,7 @@ internal class SupportSQLiteOpenHelperTest {
 
     @Test
     fun writableDatabase() {
-        val database = mock<SQLiteDatabase>()
-        mock<ISQLiteOpenHelper>().let {
-            whenever(it.writableDatabase) doReturn database
+        helper.let {
             it.asSupportSQLiteOpenHelper().writableDatabase
             verify(it, times(1)).writableDatabase
         }
