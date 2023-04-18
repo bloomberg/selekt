@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import java.util.Locale
 import kotlinx.kover.api.KoverTaskExtension
 
 plugins {
@@ -36,6 +35,7 @@ repositories {
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
+    namespace = "com.bloomberg.selekt.android"
     defaultConfig {
         minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -95,10 +95,18 @@ tasks.register<Task>("buildNativeHost") {
     finalizedBy("copyJniLibs")
 }
 
-arrayOf("debug", "release").map { "pre${it.capitalize(Locale.ROOT)}UnitTestBuild" }.forEach {
+arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {
     tasks.whenTaskAdded {
         if (it == name) {
             dependsOn("buildNativeHost")
+        }
+    }
+}
+
+arrayOf("Debug", "Release").map { "process${it}UnitTestJavaRes" }.forEach {
+    tasks.whenTaskAdded {
+        if (it == name) {
+            dependsOn("copyJniLibs")
         }
     }
 }

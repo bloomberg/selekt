@@ -27,4 +27,12 @@ include(":selekt-api")
 include(":selekt-java")
 include(":selekt-sqlite3")
 
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        google()
+    }
+}
+
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

@@ -34,6 +34,7 @@ repositories {
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
+    namespace = "com.bloomberg.selekt.android.sqlcipher"
     ndkVersion = Versions.ANDROID_NDK.version
     defaultConfig {
         minSdk = 21

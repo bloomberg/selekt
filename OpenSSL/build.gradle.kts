@@ -113,12 +113,12 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
 }
 
 tasks.register("assembleAndroid") {
-    arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
-        dependsOn("assemble${it.capitalize(Locale.US)}")
+    arrayOf("Armeabi-v7a", "Arm64-v8a", "X86", "X86_64").forEach {
+        dependsOn("assemble$it")
     }
 }
 
-fun osName() = System.getProperty("os.name").toLowerCase(Locale.US).run {
+fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
         startsWith("windows") -> "windows"

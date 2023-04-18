@@ -20,9 +20,9 @@ enum class Versions(
     val version: String,
     private val url: URL
 ) {
-    ANDROID_BENCHMARK_GRADLE_PLUGIN("1.1.1", URL("https://developer.android.com/studio/profile/benchmark")),
+    ANDROID_BENCHMARK("1.2.0-alpha13", URL("https://developer.android.com/studio/profile/benchmark")),
     ANDROID_BUILD_TOOLS("33.0.1", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("7.4.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_GRADLE_PLUGIN("8.0.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("25.2.9519653", URL("https://developer.android.com/ndk")),
     ANDROID_SDK("33", URL("https://developer.android.com/sdk")),
