@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        google()
-    }
-    dependencies {
-        classpath("androidx.benchmark:benchmark-gradle-plugin:${Versions.ANDROID_BENCHMARK_GRADLE_PLUGIN}")
-    }
-}
-
 plugins {
     id("com.android.library")
     id("kotlin-android")
-}
-
-apply {
-    plugin("androidx.benchmark")
+    id("androidx.benchmark") version Versions.ANDROID_BENCHMARK.version
 }
 
 repositories {
@@ -63,7 +51,7 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation(androidX("benchmark", "junit4", "1.0.0"))
+    androidTestImplementation(androidX("benchmark", "junit4", Versions.ANDROID_BENCHMARK.version))
     androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
     androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
     androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
