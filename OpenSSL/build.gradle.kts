@@ -113,8 +113,8 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
 }
 
 tasks.register("assembleAndroid") {
-    arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
-        dependsOn("assemble${it.capitalize(Locale.US)}")
+    arrayOf("Armeabi-v7a", "Arm64-v8a", "X86", "X86_64").forEach {
+        dependsOn("assemble$it")
     }
 }
 
