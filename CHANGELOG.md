@@ -1,6 +1,19 @@
 Change Log
 ==========
 
+## Version 0.18.1
+
+### Dependencies
+
+* Android Benchmark Gradle Plugin 1.1.1.
+* Android Gradle Plugin 7.4.2.
+* Dokka 1.8.10.
+* Gradle 7.6.1.
+* JUnit 5.9.2.
+* Kotlin 1.8.20.
+* Mockito 5.3.0.
+* NDK 25.2.9519653.
+
 ## Version 0.18.0
 
 ### Dependencies
