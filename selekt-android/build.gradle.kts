@@ -103,6 +103,14 @@ arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {
     }
 }
 
+arrayOf("Debug", "Release").map { "process${it}UnitTestJavaRes" }.forEach {
+    tasks.whenTaskAdded {
+        if (it == name) {
+            dependsOn("copyJniLibs")
+        }
+    }
+}
+
 licensee {
     allow("Apache-2.0")
 }
