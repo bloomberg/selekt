@@ -17,6 +17,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import kotlinx.kover.api.KoverTaskExtension
+import org.jetbrains.dokka.gradle.DokkaTask
 
 repositories {
     mavenCentral()
@@ -96,4 +97,8 @@ tasks.register<Copy>("copyJniLibs") {
 
 tasks.withType<ProcessResources>().configureEach {
     mustRunAfter("buildHostSQLite")
+}
+
+tasks.withType<DokkaTask>().configureEach {
+    dependsOn("kaptKotlin")
 }
