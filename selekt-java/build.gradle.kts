@@ -18,6 +18,7 @@
 
 import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 repositories {
     mavenCentral()
@@ -100,5 +101,9 @@ tasks.withType<ProcessResources>().configureEach {
 }
 
 tasks.withType<DokkaTask>().configureEach {
-    dependsOn("kaptKotlin")
+    dependsOn("kaptKotlin") // FIXME Remove?
+}
+
+tasks.withType<DokkaTaskPartial>().configureEach {
+    dependsOn("kaptKotlin") // FIXME Remove?
 }
