@@ -87,14 +87,15 @@ fun openSslWorkingDir(target: String) = archive.run {
 }.path
 
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
-    tasks.register<Copy>("unpackOpenSsl${it.capitalize(Locale.US)}") {
+    val titleCaseName = it.replaceFirstChar { c -> c.uppercaseChar() }
+    tasks.register<Copy>("unpackOpenSsl$titleCaseName") {
         from(tarTree(archive))
         into("$buildDir/generated/$it")
         dependsOn("downloadOpenSsl")
     }
 
-    tasks.register<Exec>("assemble${it.capitalize(Locale.US)}") {
-        dependsOn("unpackOpenSsl${it.capitalize(Locale.US)}")
+    tasks.register<Exec>("assemble$titleCaseName") {
+        dependsOn("unpackOpenSsl$titleCaseName")
         inputs.file("$projectDir/build_libraries.sh")
         inputs.property("version", openSslVersion())
         outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
