@@ -22,7 +22,7 @@ enum class Versions(
 ) {
     ANDROID_BENCHMARK("1.2.0-alpha13", URL("https://developer.android.com/studio/profile/benchmark")),
     ANDROID_BUILD_TOOLS("33.0.1", URL("https://developer.android.com/studio/releases/build-tools")),
-    ANDROID_GRADLE_PLUGIN("8.0.0", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
+    ANDROID_GRADLE_PLUGIN("8.0.1", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("25.2.9519653", URL("https://developer.android.com/ndk")),
     ANDROID_SDK("33", URL("https://developer.android.com/sdk")),
@@ -38,7 +38,7 @@ enum class Versions(
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.2", URL("https://github.com/junit-team/junit4")),
     JUNIT5("5.9.2", URL("https://junit.org/junit5/")),
-    KOTLIN("1.8.20", URL("https://github.com/JetBrains/kotlin")),
+    KOTLIN("1.8.21", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_TEST(KOTLIN.version, URL("https://github.com/JetBrains/kotlin")),
     KOTLINX_COROUTINES("1.6.4", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KOTLINX_KOVER("0.6.1", URL("https://github.com/Kotlin/kotlinx-kover")),

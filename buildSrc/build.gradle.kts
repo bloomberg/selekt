@@ -15,7 +15,7 @@
  */
 
 // TODO Move me.
-val kotlinVersion = "1.8.20"
+val kotlinVersion = "1.8.21"
 
 plugins {
     `kotlin-dsl`
@@ -38,5 +38,5 @@ gradlePlugin {
 
 dependencies {
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
-    implementation("com.android.tools.build:gradle:8.0.0")
+    implementation("com.android.tools.build:gradle:8.0.1")
 }
