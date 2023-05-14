@@ -65,7 +65,7 @@ static jint rawKey(
     int i;
     char * const hex = sql + prefix.length();
     for (i = 0; i < keyLength; ++i) {
-        std::sprintf(hex + (2 * i), "%02x", key[i]);
+        std::snprintf(hex + (2 * i), 3, "%02x", key[i]);
     }
     std::strcpy(sql + length - suffix.length(), suffix.c_str());
     auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
