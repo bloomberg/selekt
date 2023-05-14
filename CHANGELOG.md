@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.19.0
+
+### Dependencies
+
+* Android Benchmark 1.2.0-alpha13.
+* Android Gradle Plugin 8.0.1.
+* Gradle 8.1.1.
+* Java 17.
+* Kotlin 1.8.21.
+* SQLCipher 4.5.4.
+
 ## Version 0.18.2
 
 ### Dependencies
