@@ -97,7 +97,7 @@ tasks.register<Copy>("copyJniLibs") {
 }
 
 tasks.withType<ProcessResources>().configureEach {
-    mustRunAfter("buildHostSQLite")
+    dependsOn("buildHostSQLite", "copyJniLibs")
 }
 
 tasks.withType<DokkaTask>().configureEach {
