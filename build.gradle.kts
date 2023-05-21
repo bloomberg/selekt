@@ -205,6 +205,12 @@ allprojects {
 
 koverReport {
     defaults {
+        filters {
+            excludes {
+                classes("*Test*")
+                packages("com.bloomberg.selekt.pools.jmh_generated")
+            }
+        }
         verify {
             rule("Minimal coverage") {
                 bound {
