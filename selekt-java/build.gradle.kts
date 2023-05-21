@@ -16,7 +16,6 @@
 
 @file:Suppress("UnstableApiUsage")
 
-import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
@@ -27,10 +26,10 @@ repositories {
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    id("org.jetbrains.kotlinx.kover")
     id("org.jetbrains.dokka")
     `maven-publish`
     signing
-    id("org.jetbrains.kotlinx.kover")
     id("bb-jmh")
 }
 
@@ -81,9 +80,6 @@ tasks.register<Test>("integrationTest") {
     outputs.cacheIf { false }
     dependsOn("buildHostSQLite")
     shouldRunAfter("test")
-    extensions.configure<KoverTaskExtension> {
-        isDisabled.set(true)
-    }
 }
 
 tasks.register<Task>("buildHostSQLite") {
