@@ -50,7 +50,7 @@ jobs:
         echo '    }' >> settings.gradle.kts
         echo '}' >> settings.gradle.kts
     - name: 'Licenses'
-      run: ./gradlew licensee
+      run: ./gradlew licensee --no-configuration-cache
     - name: 'Analyse'
       run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
     - uses: actions/upload-artifact@v3
