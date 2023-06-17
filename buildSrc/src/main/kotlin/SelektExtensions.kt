@@ -18,6 +18,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.DependencySubstitutions
 import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -37,23 +38,13 @@ fun <T> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = requireNo
 
 fun <T> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = requireNotNull(getByName("release", configure))
 
-fun Project.gitCommit() = ByteArrayOutputStream().apply {
-    exec {
-        commandLine("git", "rev-parse", "HEAD")
-        standardOutput = this@apply
-    }
-}.use {
-    it.toString(StandardCharsets.UTF_8.name()).trim()
-}
+fun Project.gitCommit(): Provider<String> = providers.exec {
+    commandLine("git", "rev-parse", "HEAD")
+}.standardOutput.asText
 
-fun Project.gitCommitShort() = ByteArrayOutputStream().apply {
-    exec {
-        commandLine("git", "rev-parse", "--short", "HEAD")
-        standardOutput = this@apply
-    }
-}.use {
-    it.toString(StandardCharsets.UTF_8.name()).trim()
-}
+fun Project.gitCommitShort(): Provider<String> = providers.exec {
+    commandLine("git", "rev-parse", "--short", "HEAD")
+}.standardOutput.asText
 
 fun Project.isRelease() = "true" == properties["release"]
 
