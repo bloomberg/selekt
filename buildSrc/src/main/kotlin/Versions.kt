@@ -46,7 +46,7 @@ enum class Versions(
     KTLINT_GRADLE_PLUGIN("11.0.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
     MOCKITO("5.4.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("5.0.0", URL("https://github.com/mockito/mockito-kotlin")),
-    NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
+    NEXUS_PLUGIN("1.3.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
     ROBOLECTRIC_ANDROID_ALL("12.1-robolectric-8229987", URL("https://github.com/robolectric/robolectric"));
 
