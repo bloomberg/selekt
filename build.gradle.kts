@@ -222,7 +222,7 @@ koverReport {
             excludes {
                 classes("*Test*")
                 packages(listOf(
-                    "*.benchamrks",
+                    "*.benchmarks",
                     "*_generated"
                 ))
             }

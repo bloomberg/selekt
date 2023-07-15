@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.pools.benchamrks
+package com.bloomberg.selekt.pools.benchmarks
 
 import com.bloomberg.selekt.pools.IObjectFactory
 import com.bloomberg.selekt.pools.IObjectPool
