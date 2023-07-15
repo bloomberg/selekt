@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2023 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.pools
+package com.bloomberg.selekt.pools.benchamrks
+
+import com.bloomberg.selekt.pools.IPooledObject
 
 class PooledObject(val key: String = Thread.currentThread().id.toString()) : IPooledObject<String> {
     override val isPrimary = false
