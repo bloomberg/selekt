@@ -208,7 +208,10 @@ koverReport {
         filters {
             excludes {
                 classes("*Test*")
-                packages("com.bloomberg.selekt.pools.jmh_generated")
+                packages(listOf(
+                    "*.benchamrks",
+                    "*_generated"
+                ))
             }
         }
         verify {
