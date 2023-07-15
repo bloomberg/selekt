@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.pools
+package com.bloomberg.selekt.pools.benchamrks
 
 import java.util.concurrent.Executors
 
