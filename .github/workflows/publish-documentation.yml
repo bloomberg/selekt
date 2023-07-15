@@ -29,10 +29,12 @@ jobs:
           python-version: 3.8
       - run: pip install mkdocs-material
       - name: 'Gradle'
-        run: echo 'org.gradle.caching=false' >> gradle.properties
+        run: |
+          echo 'org.gradle.caching=false' >> gradle.properties
+          echo 'org.gradle.configuration-cache=false' >> gradle.properties
       - name: 'Dokka'
         run: |
-          ./gradlew :dokkaGfmMultiModule :dokkaHtmlMultiModule --no-configuration-cache
+          ./gradlew :dokkaGfmMultiModule :dokkaHtmlMultiModule
           cp -R build/dokka/gfmMultiModule docs/kdoc
           cp -R build/dokka/htmlMultiModule docs/kdoc/api
       - name: 'Set version'
