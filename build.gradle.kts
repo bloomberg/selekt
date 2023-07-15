@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import com.android.build.gradle.TestedExtension
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.LibraryExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
@@ -97,19 +98,31 @@ subprojects {
             }
         }
     }
-    listOf("com.android.application", "com.android.library").forEach {
-        plugins.withId(it) {
-            extensions.getByType<TestedExtension>().apply {
-                compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
-                }
-                lintOptions {
-                    isWarningsAsErrors = true
-                }
-                testOptions {
-                    unitTests.isIncludeAndroidResources = true
-                }
+    plugins.withId("com.android.application") {
+        configure<ApplicationExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+            lint {
+                warningsAsErrors = true
+            }
+            testOptions {
+                unitTests.isIncludeAndroidResources = true
+            }
+        }
+    }
+    plugins.withId("com.android.library") {
+        configure<LibraryExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+            lint {
+                warningsAsErrors = true
+            }
+            testOptions {
+                unitTests.isIncludeAndroidResources = true
             }
         }
     }
