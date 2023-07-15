@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Locale
 
 repositories {
@@ -111,6 +113,10 @@ tasks.register<Exec>("amalgamate") {
 
 tasks.register<Exec>("cmakeSQLite") {
     dependsOn(":OpenSSL:assembleHost", "amalgamate")
+    val workingDir = Paths.get("$projectDir/.cxx-host")
+    doFirst {
+        Files.createDirectory(workingDir)
+    }
     workingDir(".cxx-host")
     commandLine("cmake")
     args(
