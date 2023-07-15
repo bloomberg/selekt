@@ -111,9 +111,6 @@ tasks.register<Exec>("amalgamate") {
 
 tasks.register<Exec>("cmakeSQLite") {
     dependsOn(":OpenSSL:assembleHost", "amalgamate")
-    doFirst {
-        mkdir(".cxx-host")
-    }
     workingDir(".cxx-host")
     commandLine("cmake")
     args(
