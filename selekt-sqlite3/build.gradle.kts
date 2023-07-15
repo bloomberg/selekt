@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Locale
 
 repositories {
@@ -90,29 +92,36 @@ tasks.register<Exec>("configureSqlCipher") {
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
-tasks.register<Exec>("amalgamate") {
+tasks.register("amalgamate") {
+    dependsOn("amalgamateSQLite", "copySQLiteHeader", "copySQLiteImplementation")
+}
+
+tasks.register<Exec>("amalgamateSQLite") {
     dependsOn("configureSqlCipher")
     workingDir = File("$projectDir/src/main/external/sqlcipher")
     commandLine("make")
     args("sqlite3.c")
-    doLast {
-        copy {
-            from(workingDir)
-            include("sqlite3.c")
-            into("$projectDir/sqlite3/generated/cpp")
-        }
-        copy {
-            from(workingDir)
-            include("sqlite3.h")
-            into("$projectDir/sqlite3/generated/include/sqlite3")
-        }
-    }
+}
+
+tasks.register<Copy>("copySQLiteHeader") {
+    mustRunAfter("amalgamateSQLite")
+    from("$projectDir/src/main/external/sqlcipher")
+    include("sqlite3.h")
+    into("$projectDir/sqlite3/generated/include/sqlite3")
+}
+
+tasks.register<Copy>("copySQLiteImplementation") {
+    mustRunAfter("amalgamateSQLite")
+    from("$projectDir/src/main/external/sqlcipher")
+    include("sqlite3.c")
+    into("$projectDir/sqlite3/generated/cpp")
 }
 
 tasks.register<Exec>("cmakeSQLite") {
     dependsOn(":OpenSSL:assembleHost", "amalgamate")
+    val workingDir = Paths.get("$projectDir/.cxx-host")
     doFirst {
-        mkdir(".cxx-host")
+        Files.createDirectories(workingDir)
     }
     workingDir(".cxx-host")
     commandLine("cmake")
@@ -140,20 +149,14 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 
 fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
-tasks.register<Task>("buildHost") {
+tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
-    doLast {
-        "${buildDir.path}/intermediates/libs/${platformIdentifier()}".let {
-            mkdir(it)
-            copy {
-                logger.quiet("Copying to: $it")
-                from(fileTree(".cxx-host") {
-                    include("**/*.dll", "**/*.dylib", "**/*.so")
-                }.files)
-                into(it)
-            }
-        }
-    }
+    with(project.copySpec {
+        from(fileTree(".cxx-host") {
+            include("**/*.dll", "**/*.dylib", "**/*.so")
+        }.files)
+    })
+    into("${buildDir.path}/intermediates/libs/${platformIdentifier()}")
 }
 
 tasks.register<Exec>("cleanSqlCipher") {

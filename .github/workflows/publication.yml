@@ -23,7 +23,9 @@ jobs:
         distribution: temurin
         java-version: 17
     - name: 'Gradle'
-      run: echo 'org.gradle.caching=false' >> gradle.properties
+      run: |
+        echo 'org.gradle.caching=false' >> gradle.properties
+        echo 'org.gradle.configuration-cache=false' >> gradle.properties
     - name: 'Unit tests'
       run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test
     - name: 'Build Selekt'
@@ -46,6 +48,7 @@ jobs:
       run: |
         ./gradlew \
           -Prelease=false \
+          --no-configuration-cache \
           publishMainPublicationToSonatypeRepository \
           closeSonatypeStagingRepository
     - name: 'Publish release to OSSRH'
@@ -59,5 +62,6 @@ jobs:
       run: |
         ./gradlew \
           -Prelease=true \
+          --no-configuration-cache \
           publishMainPublicationToSonatypeRepository \
           closeAndReleaseSonatypeStagingRepository
