@@ -167,25 +167,17 @@ tasks.register<Exec>("makeHost") {
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
-tasks.register<Task>("assembleHost") {
+tasks.register<Copy>("assembleHost") {
     dependsOn("makeHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
     val outputDir = "$buildDir/libs/${targetIdentifier()}"
     outputs.dir(outputDir).withPropertyName("libs")
     outputs.cacheIf { true }
-    doLast {
-        outputDir.let {
-            mkdir(it)
-            copy {
-                logger.quiet("Copying to: $it")
-                from(fileTree(openSslWorkingDir) {
-                    arrayOf(".a").forEach { e ->
-                        include("**/libcrypto$e")
-                    }
-                }.files)
-                into(it)
-            }
+    from(fileTree(openSslWorkingDir) {
+        arrayOf(".a").forEach { e ->
+            include("**/libcrypto$e")
         }
-    }
+    })
+    into(outputDir)
 }

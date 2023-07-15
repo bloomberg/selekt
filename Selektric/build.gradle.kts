@@ -15,6 +15,8 @@
  */
 
 import java.util.Locale
+import java.nio.file.Files
+import java.nio.file.Paths
 
 repositories {
     mavenCentral()
@@ -25,8 +27,9 @@ plugins {
 }
 
 tasks.register<Exec>("cmakeSelektric") {
+    val workingDir = Paths.get("$projectDir/.cxx-host")
     doFirst {
-        mkdir(".cxx-host")
+        Files.createDirectories(workingDir)
     }
     workingDir(".cxx-host")
     commandLine("cmake")
@@ -55,19 +58,15 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
 tasks.register<Task>("buildHost") {
+    dependsOn("makeSelektric", "copyLibraries")
+}
+
+tasks.register<Copy>("copyLibraries") {
     dependsOn("makeSelektric")
-    doLast {
-        "${buildDir.path}/intermediates/libs/${platformIdentifier()}".let {
-            mkdir(it)
-            copy {
-                logger.quiet("Copying to: $it")
-                from(fileTree(".cxx-host") {
-                    include("**/*.dll", "**/*.dylib", "**/*.so")
-                }.files)
-                into(it)
-            }
-        }
-    }
+    from(fileTree(".cxx-host") {
+        include("**/*.dll", "**/*.dylib", "**/*.so")
+    })
+    into("$buildDir/intermediates/libs/${platformIdentifier()}")
 }
 
 tasks.register<Delete>("deleteCxxHost") {
