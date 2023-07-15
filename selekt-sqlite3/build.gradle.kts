@@ -121,7 +121,7 @@ tasks.register<Exec>("cmakeSQLite") {
     dependsOn(":OpenSSL:assembleHost", "amalgamate")
     val workingDir = Paths.get("$projectDir/.cxx-host")
     doFirst {
-        Files.createDirectory(workingDir)
+        Files.createDirectories(workingDir)
     }
     workingDir(".cxx-host")
     commandLine("cmake")
