@@ -151,9 +151,11 @@ fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
 tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
-    from(fileTree(".cxx-host") {
-        include("**/*.dll", "**/*.dylib", "**/*.so")
-    }.files)
+    with(project.copySpec {
+        from(fileTree(".cxx-host") {
+            include("**/*.dll", "**/*.dylib", "**/*.so")
+        }.files)
+    })
     into("${buildDir.path}/intermediates/libs/${platformIdentifier()}")
 }
 
