@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import com.android.build.gradle.TestedExtension
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.LibraryExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
 import java.time.Duration
-import kotlinx.kover.api.VerificationValueType
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.dokka.gradle.DokkaTask
@@ -60,6 +61,9 @@ nexusPublishing {
 }
 
 dependencies {
+    kover(projects.selektAndroid)
+    kover(projects.selektApi)
+    kover(projects.selektJava)
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
@@ -94,19 +98,31 @@ subprojects {
             }
         }
     }
-    listOf("com.android.application", "com.android.library").forEach {
-        plugins.withId(it) {
-            extensions.getByType<TestedExtension>().apply {
-                compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
-                }
-                lintOptions {
-                    isWarningsAsErrors = true
-                }
-                testOptions {
-                    unitTests.isIncludeAndroidResources = true
-                }
+    plugins.withId("com.android.application") {
+        configure<ApplicationExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+            lint {
+                warningsAsErrors = true
+            }
+            testOptions {
+                unitTests.isIncludeAndroidResources = true
+            }
+        }
+    }
+    plugins.withId("com.android.library") {
+        configure<LibraryExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+            lint {
+                warningsAsErrors = true
+            }
+            testOptions {
+                unitTests.isIncludeAndroidResources = true
             }
         }
     }
@@ -200,41 +216,30 @@ allprojects {
     }
 }
 
-koverMerged {
-    enable()
-    filters {
-        classes {
-            excludes.addAll(listOf(
-                "*.BuildConfig"
-            ))
+koverReport {
+    defaults {
+        filters {
+            excludes {
+                classes("*Test*")
+                packages(listOf(
+                    "*.benchamrks",
+                    "*_generated"
+                ))
+            }
         }
-        projects {
-            excludes.addAll(projects.run {
-                listOf(
-                    androidCLI,
-                    androidLibBenchmark,
-                    openSSL,
-                    selektAndroidLint,
-                    selektAndroidSqlcipher,
-                    selektric,
-                    selektSqlite3
-                ).map { it.name }
-            } + rootProject.name)
-        }
-    }
-    verify {
-        rule {
-            name = "Minimal coverage"
-            bound {
-                minValue = 97
-                valueType = VerificationValueType.COVERED_PERCENTAGE
+        verify {
+            rule("Minimal coverage") {
+                bound {
+                    minValue = 97
+                    aggregation = AggregationType.COVERED_PERCENTAGE
+                }
             }
         }
     }
 }
 
 tasks.getByName("check") {
-    dependsOn("koverMergedVerify")
+    dependsOn("koverVerify")
 }
 
 idea.project.settings {

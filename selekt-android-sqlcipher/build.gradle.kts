@@ -23,7 +23,6 @@ plugins {
     id("com.android.library")
     `maven-publish`
     signing
-    id("org.jetbrains.kotlinx.kover")
 }
 
 repositories {

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import kotlinx.kover.api.KoverTaskExtension
-
 plugins {
     id("com.android.library")
     id("kotlin-android")
@@ -76,10 +74,17 @@ dependencies {
     testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
 }
 
-tasks.withType<Test>().configureEach {
-    if (!name.contains("debug", ignoreCase = true)) {
-        extensions.configure<KoverTaskExtension> {
-            isDisabled.set(true)
+koverReport {
+    defaults {
+        mergeWith("debug")
+    }
+    androidReports("debug") {
+        filters {
+            excludes {
+                classes(
+                    "*.BuildConfig"
+                )
+            }
         }
     }
 }
