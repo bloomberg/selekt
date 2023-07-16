@@ -88,7 +88,7 @@ tasks.register<Task>("buildHostSQLite") {
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"))
+    from(fileTree("${project(":selekt-sqlite3").buildDir}/intermediates/libs"))
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
