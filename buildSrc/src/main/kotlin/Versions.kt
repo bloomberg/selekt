@@ -21,7 +21,7 @@ enum class Versions(
     private val url: URL
 ) {
     ANDROID_BENCHMARK("1.2.0-alpha13", URL("https://developer.android.com/studio/profile/benchmark")),
-    ANDROID_BUILD_TOOLS("33.0.1", URL("https://developer.android.com/studio/releases/build-tools")),
+    ANDROID_BUILD_TOOLS("34.0.0", URL("https://developer.android.com/studio/releases/build-tools")),
     ANDROID_GRADLE_PLUGIN("8.0.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("25.2.9519653", URL("https://developer.android.com/ndk")),
@@ -43,10 +43,10 @@ enum class Versions(
     KOTLINX_COROUTINES("1.7.2", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KOTLINX_KOVER("0.7.2", URL("https://github.com/Kotlin/kotlinx-kover")),
     KTLINT("0.45.2", URL("https://github.com/pinterest/ktlint")),
-    KTLINT_GRADLE_PLUGIN("11.0.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
+    KTLINT_GRADLE_PLUGIN("11.5.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
     MOCKITO("5.4.0", URL("https://github.com/mockito/mockito")),
     MOCKITO_KOTLIN("5.0.0", URL("https://github.com/mockito/mockito-kotlin")),
-    NEXUS_PLUGIN("1.1.0", URL("https://github.com/gradle-nexus/publish-plugin")),
+    NEXUS_PLUGIN("1.3.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
     ROBOLECTRIC_ANDROID_ALL("12.1-robolectric-8229987", URL("https://github.com/robolectric/robolectric"));
 
