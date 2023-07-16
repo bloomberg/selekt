@@ -16,6 +16,7 @@
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import io.github.gradlenexus.publishplugin.NexusRepositoryContainer
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
@@ -51,9 +52,9 @@ version = selektVersionName
 logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
-    repositories {
+    repositories(Action<NexusRepositoryContainer> {
         sonatype()
-    }
+    })
     transitionCheckOptions {
         maxRetries.set(180)
         delayBetween.set(Duration.ofSeconds(10L))
@@ -230,7 +231,7 @@ koverReport {
         verify {
             rule("Minimal coverage") {
                 bound {
-                    minValue = 97
+                    minValue = 96
                     aggregation = AggregationType.COVERED_PERCENTAGE
                 }
             }

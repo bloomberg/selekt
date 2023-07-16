@@ -48,7 +48,6 @@ jobs:
       run: |
         ./gradlew \
           -Prelease=false \
-          --no-configuration-cache \
           publishMainPublicationToSonatypeRepository \
           closeSonatypeStagingRepository
     - name: 'Publish release to OSSRH'
@@ -62,6 +61,5 @@ jobs:
       run: |
         ./gradlew \
           -Prelease=true \
-          --no-configuration-cache \
           publishMainPublicationToSonatypeRepository \
           closeAndReleaseSonatypeStagingRepository
