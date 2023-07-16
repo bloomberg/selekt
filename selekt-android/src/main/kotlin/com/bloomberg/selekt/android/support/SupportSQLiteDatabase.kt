@@ -132,14 +132,9 @@ private class SupportSQLiteDatabase constructor(
     override fun inTransaction() = database.isTransactionOpenedByCurrentThread
 
     override val isDatabaseIntegrityOk: Boolean
-        get() {
-            attachedDbs.forEach {
-            if (!database.integrityCheck(it.first)) {
-                return false
-            }
+        get() = !attachedDbs.any {
+            !database.integrityCheck(it.first)
         }
-        return true
-    }
 
     override val isDbLockedByCurrentThread: Boolean
         get() = database.isConnectionHeldByCurrentThread
