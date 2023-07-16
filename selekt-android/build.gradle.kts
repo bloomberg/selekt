@@ -90,8 +90,10 @@ koverReport {
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"))
-    from(fileTree("${project(":Selektric").buildDir.absolutePath}/intermediates/libs"))
+    from(
+        fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"),
+        fileTree("${project(":Selektric").buildDir.absolutePath}/intermediates/libs")
+    )
     into("${buildDir.path}/intermediates/libs/jni")
 }
 
