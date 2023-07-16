@@ -207,7 +207,6 @@ allprojects {
     }
     configure<KtlintExtension> {
         version.set(Versions.KTLINT.version)
-        disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
         reporters {
             reporter(ReporterType.HTML)
         }
