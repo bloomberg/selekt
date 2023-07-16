@@ -56,7 +56,7 @@
     <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">class </span><a href="index.html">SQLDatabase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>path<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">sqlite<span class="token operator">: </span><a href="../-s-q-lite/index.html">SQLite</a><span class="token punctuation">, </span></span><span class="parameter ">configuration<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-database-configuration/index.html">DatabaseConfiguration</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">random<span class="token operator">: </span><a href="../-i-random/index.html">IRandom</a><span class="token operator"> = </span>CommonThreadLocalRandom</span></span><span class="token punctuation">)</span> : <a href="../-shared-closeable/index.html">SharedCloseable</a>, <a href="../-i-database/index.html">IDatabase</a></div><p class="paragraph">The use of ThreadLocal underpins <a href="index.html">SQLDatabase</a>'s thread-safety.</p><p class="paragraph">A thread can acquire at most one connection session per database instance. Sessions hold at most one connection at any given time, and exclusively. Sessions control all access to a database's connections and each session is thread-bound. This prevents two threads from ever sharing a single connection.</p><p class="paragraph">This is the same strategy Google employs in the Android SDK.</p><h4 class="">See also</h4><div class="table"><div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div></div></span></div><div><div class="title"><p class="paragraph"><a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a></p></div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,FUNCTION,PROPERTY">Members</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="">Constructors</h2>
@@ -71,6 +71,70 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">path<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">sqlite<span class="token operator">: </span><a href="../-s-q-lite/index.html">SQLite</a><span class="token punctuation">, </span></span><span class="parameter ">configuration<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-database-configuration/index.html">DatabaseConfiguration</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">random<span class="token operator">: </span><a href="../-i-random/index.html">IRandom</a><span class="token operator"> = </span>CommonThreadLocalRandom</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="158985477%2FProperties%2F-1932976865" anchor-label="inTransaction" id="158985477%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="in-transaction.html"><span>in</span><wbr><span><span>Transaction</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="158985477%2FProperties%2F-1932976865"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="in-transaction.html">inTransaction</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="739254649%2FProperties%2F-1932976865" anchor-label="isCurrentThreadSessionActive" id="739254649%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-current-thread-session-active.html"><span>is</span><wbr><span>Current</span><wbr><span>Thread</span><wbr><span>Session</span><wbr><span><span>Active</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="739254649%2FProperties%2F-1932976865"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-current-thread-session-active.html">isCurrentThreadSessionActive</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1785313673%2FProperties%2F-1932976865" anchor-label="path" id="-1785313673%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="path.html"><span><span>path</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1785313673%2FProperties%2F-1932976865"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="path.html">path</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1401918906%2FProperties%2F-1932976865" anchor-label="version" id="-1401918906%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
+          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="version.html"><span><span>version</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1401918906%2FProperties%2F-1932976865"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">var </span><a href="version.html">version</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -435,70 +499,6 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="yield-transaction.html"><span class="token function">yieldTransaction</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="yield-transaction.html"><span class="token function">yieldTransaction</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pauseMillis<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div data-togglable="PROPERTY">
-        <h2 class="">Properties</h2>
-        <div class="table"><a data-name="158985477%2FProperties%2F-1932976865" anchor-label="inTransaction" id="158985477%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
-          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="in-transaction.html"><span>in</span><wbr><span><span>Transaction</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="158985477%2FProperties%2F-1932976865"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">val </span><a href="in-transaction.html">inTransaction</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="739254649%2FProperties%2F-1932976865" anchor-label="isCurrentThreadSessionActive" id="739254649%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
-          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="is-current-thread-session-active.html"><span>is</span><wbr><span>Current</span><wbr><span>Thread</span><wbr><span>Session</span><wbr><span><span>Active</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="739254649%2FProperties%2F-1932976865"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-current-thread-session-active.html">isCurrentThreadSessionActive</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1785313673%2FProperties%2F-1932976865" anchor-label="path" id="-1785313673%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
-          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="path.html"><span><span>path</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1785313673%2FProperties%2F-1932976865"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="path.html">path</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1401918906%2FProperties%2F-1932976865" anchor-label="version" id="-1401918906%2FProperties%2F-1932976865" data-filterable-set=":selekt-java:dokkaHtmlPartial/main"></a>
-          <div class="table-row" data-filterable-current=":selekt-java:dokkaHtmlPartial/main" data-filterable-set=":selekt-java:dokkaHtmlPartial/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="version.html"><span><span>version</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1401918906%2FProperties%2F-1932976865"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java:dokkaHtmlPartial/main"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">var </span><a href="version.html">version</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></div></div></div>
                 </div>
               </div>
             </div>

@@ -326,15 +326,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#functions" class="md-nav__link">
-    Functions
+  <a href="#properties" class="md-nav__link">
+    Properties
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#properties" class="md-nav__link">
-    Properties
+  <a href="#functions" class="md-nav__link">
+    Functions
   </a>
   
 </li>
@@ -373,6 +373,61 @@
 <tr>
 <td><a href="-companion/">Companion</a></td>
 <td>[androidJvm]<br>object <a href="-companion/">Companion</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="properties">Properties</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="auto-vacuum/">autoVacuum</a></td>
+<td>[androidJvm]<br>var <a href="auto-vacuum/">autoVacuum</a>: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/">SQLiteAutoVacuumMode</a><br>Auto-vacuuming is only possible if the database stores some additional information that allows each database page to be traced backwards to its referrer. Therefore, auto-vacuuming must be turned on before any tables are created. It is not possible to enable or disable auto-vacuum after a table has been created.</td>
+</tr>
+<tr>
+<td><a href="is-connection-held-by-current-thread/">isConnectionHeldByCurrentThread</a></td>
+<td>[androidJvm]<br>val <a href="is-connection-held-by-current-thread/">isConnectionHeldByCurrentThread</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Get whether this thread currently holds a connection to the database.</td>
+</tr>
+<tr>
+<td><a href="is-open/">isOpen</a></td>
+<td>[androidJvm]<br>val <a href="is-open/">isOpen</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></td>
+</tr>
+<tr>
+<td><a href="is-transaction-opened-by-current-thread/">isTransactionOpenedByCurrentThread</a></td>
+<td>[androidJvm]<br>val <a href="is-transaction-opened-by-current-thread/">isTransactionOpenedByCurrentThread</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Get whether the current thread has an open transaction.</td>
+</tr>
+<tr>
+<td><a href="journal-mode/">journalMode</a></td>
+<td>[androidJvm]<br>val <a href="journal-mode/">journalMode</a>: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/">SQLiteJournalMode</a></td>
+</tr>
+<tr>
+<td><a href="maximum-size/">maximumSize</a></td>
+<td>[androidJvm]<br>val <a href="maximum-size/">maximumSize</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+</tr>
+<tr>
+<td><a href="max-page-count/">maxPageCount</a></td>
+<td>[androidJvm]<br>val <a href="max-page-count/">maxPageCount</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+</tr>
+<tr>
+<td><a href="page-count/">pageCount</a></td>
+<td>[androidJvm]<br>val <a href="page-count/">pageCount</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
+</tr>
+<tr>
+<td><a href="page-size/">pageSize</a></td>
+<td>[androidJvm]<br>var <a href="page-size/">pageSize</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
+</tr>
+<tr>
+<td><a href="path/">path</a></td>
+<td>[androidJvm]<br>val <a href="path/">path</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
+</tr>
+<tr>
+<td><a href="version/">version</a></td>
+<td>[androidJvm]<br>var <a href="version/">version</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>
@@ -484,61 +539,6 @@
 <tr>
 <td><a href="yield-transaction/">yieldTransaction</a></td>
 <td>[androidJvm]<br>@<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-overloads/index.html">JvmOverloads</a><br>fun <a href="yield-transaction/">yieldTransaction</a>(@<a href="https://developer.android.com/reference/kotlin/androidx/annotation/IntRange.html">IntRange</a>(from = 0)pauseMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a> = 0): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Temporarily end the transaction to allow other threads to make progress. The transaction is assumed to be successful thus far and committed, do not call <a href="set-transaction-successful/">setTransactionSuccessful</a>. When this method returns a new transaction will have been created but not yet marked as successful.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="properties">Properties</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Summary</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="auto-vacuum/">autoVacuum</a></td>
-<td>[androidJvm]<br>var <a href="auto-vacuum/">autoVacuum</a>: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/">SQLiteAutoVacuumMode</a><br>Auto-vacuuming is only possible if the database stores some additional information that allows each database page to be traced backwards to its referrer. Therefore, auto-vacuuming must be turned on before any tables are created. It is not possible to enable or disable auto-vacuum after a table has been created.</td>
-</tr>
-<tr>
-<td><a href="is-connection-held-by-current-thread/">isConnectionHeldByCurrentThread</a></td>
-<td>[androidJvm]<br>val <a href="is-connection-held-by-current-thread/">isConnectionHeldByCurrentThread</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Get whether this thread currently holds a connection to the database.</td>
-</tr>
-<tr>
-<td><a href="is-open/">isOpen</a></td>
-<td>[androidJvm]<br>val <a href="is-open/">isOpen</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a></td>
-</tr>
-<tr>
-<td><a href="is-transaction-opened-by-current-thread/">isTransactionOpenedByCurrentThread</a></td>
-<td>[androidJvm]<br>val <a href="is-transaction-opened-by-current-thread/">isTransactionOpenedByCurrentThread</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><br>Get whether the current thread has an open transaction.</td>
-</tr>
-<tr>
-<td><a href="journal-mode/">journalMode</a></td>
-<td>[androidJvm]<br>val <a href="journal-mode/">journalMode</a>: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/">SQLiteJournalMode</a></td>
-</tr>
-<tr>
-<td><a href="maximum-size/">maximumSize</a></td>
-<td>[androidJvm]<br>val <a href="maximum-size/">maximumSize</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
-</tr>
-<tr>
-<td><a href="max-page-count/">maxPageCount</a></td>
-<td>[androidJvm]<br>val <a href="max-page-count/">maxPageCount</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
-</tr>
-<tr>
-<td><a href="page-count/">pageCount</a></td>
-<td>[androidJvm]<br>val <a href="page-count/">pageCount</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
-</tr>
-<tr>
-<td><a href="page-size/">pageSize</a></td>
-<td>[androidJvm]<br>var <a href="page-size/">pageSize</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a></td>
-</tr>
-<tr>
-<td><a href="path/">path</a></td>
-<td>[androidJvm]<br>val <a href="path/">path</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a></td>
-</tr>
-<tr>
-<td><a href="version/">version</a></td>
-<td>[androidJvm]<br>var <a href="version/">version</a>: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a></td>
 </tr>
 </tbody>
 </table>
