@@ -66,7 +66,7 @@ tasks.register<Copy>("copyLibraries") {
     from(fileTree(".cxx-host") {
         include("**/*.dll", "**/*.dylib", "**/*.so")
     })
-    into("$buildDir/intermediates/libs/${platformIdentifier()}")
+    into("${layout.buildDirectory.get()}/intermediates/libs/${platformIdentifier()}")
 }
 
 tasks.register<Delete>("deleteCxxHost") {
