@@ -48,7 +48,6 @@ import com.bloomberg.selekt.SQL_MISUSE
 import com.bloomberg.selekt.SQL_NOMEM
 import com.bloomberg.selekt.SQL_NOT_A_DATABASE
 import com.bloomberg.selekt.SQL_NOT_FOUND
-import com.bloomberg.selekt.SQL_OK
 import com.bloomberg.selekt.SQL_RANGE
 import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_TOO_BIG
@@ -91,7 +90,6 @@ internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
         message: String,
         context: String?
     ): Nothing {
-        require(code != SQL_OK) { "Result code is not an error: $code" }
         val exceptionMessage = extendedErrorMessage(code, extendedCode, message, context)
         throw when (code) {
             SQL_BUSY -> SQLiteDatabaseLockedException(exceptionMessage)

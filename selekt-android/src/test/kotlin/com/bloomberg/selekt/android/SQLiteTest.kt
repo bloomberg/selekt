@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.android
 
-import android.database.SQLException
 import android.database.sqlite.SQLiteAbortException
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException
 import android.database.sqlite.SQLiteBlobTooBigException
@@ -144,7 +143,7 @@ internal class SQLiteTest {
 
     @Test
     fun openThenRekeyWithoutKeyFails() {
-        assertFailsWith<SQLException> {
+        assertFailsWith<SQLiteException> {
             SQLite.rekey(db, otherKey)
         }
     }
@@ -738,7 +737,7 @@ internal class SQLiteTest {
 
     @Test
     fun exceptionForErrorOk() {
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<SQLiteException> {
             SQLite.throwSQLException(SQL_OK, SQL_OK, "")
         }
     }
