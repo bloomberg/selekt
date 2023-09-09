@@ -142,8 +142,10 @@ internal class SQLiteTest {
     }
 
     @Test
-    fun openThenRekeySuccessfully() {
-        assertEquals(SQL_OK, SQLite.rekey(db, otherKey))
+    fun openThenRekeyWithoutKeyFails() {
+        assertFailsWith<SQLiteException> {
+            SQLite.rekey(db, otherKey)
+        }
     }
 
     @Test
@@ -735,7 +737,7 @@ internal class SQLiteTest {
 
     @Test
     fun exceptionForErrorOk() {
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<SQLiteException> {
             SQLite.throwSQLException(SQL_OK, SQL_OK, "")
         }
     }
