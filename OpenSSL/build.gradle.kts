@@ -101,7 +101,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
             .withPropertyName("headers")
         outputs.dir("${layout.buildDirectory.get()}/libs/$it").withPropertyName("lib")
-        outputs.cacheIf { true }
+        outputs.cacheIf { false } // TODO Restore me.
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
@@ -146,7 +146,7 @@ tasks.register<Exec>("configureHost") {
     inputs.property("version", openSslVersion())
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
@@ -162,7 +162,7 @@ tasks.register<Exec>("makeHost") {
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     workingDir(openSslWorkingDir)
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     commandLine("make")
     args("build_libs")
     logging.captureStandardOutput(LogLevel.INFO)
@@ -174,7 +174,7 @@ tasks.register<Copy>("assembleHost") {
     inputs.property("version", openSslVersion())
     val outputDir = "${layout.buildDirectory.get()}/libs/${targetIdentifier()}"
     outputs.dir(outputDir).withPropertyName("libs")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     from(fileTree(openSslWorkingDir) {
         arrayOf(".a").forEach { e ->
             include("**/libcrypto$e")

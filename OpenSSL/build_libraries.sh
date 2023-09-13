@@ -71,7 +71,7 @@ OPENSSL_CONFIGURE_OPTIONS="-fPIC -fstack-protector-all no-idea no-camellia \
 TOOLCHAIN_BIN="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/${TOOLCHAIN_SYSTEM}/bin/"
 PATH=${TOOLCHAIN_BIN}:${PATH}
 
-./Configure ${ARCH} \
+./config ${ARCH} \
     -D__ANDROID_API__=${ANDROID_API} \
     -D_FILE_OFFSET_BITS=${OFFSET} \
     ${OPENSSL_CONFIGURE_OPTIONS}
