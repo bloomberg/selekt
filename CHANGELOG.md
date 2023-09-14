@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 0.21.0
+
+Warning: This release migrates from OpenSSL 1.1.1v to OpenSSL 3.1.2.
+
+### Dependencies
+
+* Kotlin 1.9.10.
+* OpenSSL 3.1.2.
+
 ## Version 0.20.0
 
 ### Features
