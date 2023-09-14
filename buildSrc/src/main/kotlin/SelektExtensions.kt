@@ -22,9 +22,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.ByteArrayOutputStream
 import java.net.URI
-import java.nio.charset.StandardCharsets
 
 fun DependencyHandler.androidX(module: String, suffix: String? = null, version: String? = null): Any =
     "androidx.$module:$module${suffix?.let { "-$it" }.orEmpty()}${version?.let { ":$it" }.orEmpty()}"
