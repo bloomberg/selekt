@@ -52,7 +52,7 @@ internal class Mutex {
     }
 
     fun unlock() {
-        isLockedUpdater.set(this, 0)
+        isLockedUpdater[this] = 0
         LockSupport.unpark(waiters.peek())
     }
 
