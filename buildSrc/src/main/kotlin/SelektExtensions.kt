@@ -78,6 +78,7 @@ fun Project.disableKotlinCompilerAssertions() {
 }
 
 fun MavenPom.commonInitialisation(project: Project) {
+    val developerOrganization = "Bloomberg LP"
     ciManagement {
         name.set("Selekt")
         url.set("https://github.com/bloomberg/selekt/actions")
@@ -87,14 +88,14 @@ fun MavenPom.commonInitialisation(project: Project) {
             id.set("kennethshackleton")
             email.set("kshackleton1@bloomberg.net")
             name.set("Kenneth J. Shackleton")
-            organization.set("Bloomberg LP")
+            organization.set(developerOrganization)
             organizationUrl.set("https://github.com/bloomberg")
         }
         developer {
             id.set("xouabita")
             email.set("aabita@bloomberg.net")
             name.set("Alexandre Abita")
-            organization.set("Bloomberg LP")
+            organization.set(developerOrganization)
             organizationUrl.set("https://github.com/bloomberg")
         }
     }
@@ -111,7 +112,7 @@ fun MavenPom.commonInitialisation(project: Project) {
         }
     }
     organization {
-        name.set("Bloomberg LP")
+        name.set(developerOrganization)
         url.set("https://www.bloomberg.com")
     }
     scm {
