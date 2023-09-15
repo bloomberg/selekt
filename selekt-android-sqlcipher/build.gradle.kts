@@ -65,10 +65,6 @@ components.matching { "release" == it.name }.configureEach {
                 description.set("SQLCipher for Selekt's Android Library.")
                 licenses {
                     license {
-                        name.set("The Apache Software License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                    license {
                         name.set("Zetetic LLC")
                         url.set("https://www.zetetic.net/sqlcipher/license")
                     }
