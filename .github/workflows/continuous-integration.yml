@@ -60,7 +60,7 @@ jobs:
         path: |
           **/build/reports/detekt
     - name: 'Unit tests'
-      run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+      run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverHtmlReport :koverXmlReport -x integrationTest ${{ env.SCAN }}
     - uses: actions/upload-artifact@v3
       if: always()
       with:
@@ -69,6 +69,8 @@ jobs:
           build/reports/kover/html
           selekt-android/build/reports/tests/testDebugUnitTest
           selekt-java/build/reports/tests/test
+    - name: 'Publish coverage'
+      run: ./gradlew :sonar -Dsonar.host.url=https://sonarcloud.io
     - name: 'Build Selekt'
       run: |
         ./gradlew assembleRelease ${{ env.SCAN }}

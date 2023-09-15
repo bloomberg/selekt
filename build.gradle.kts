@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
+import org.sonarqube.gradle.SonarTask
 
 plugins {
     base
@@ -41,6 +42,7 @@ plugins {
     id("org.jetbrains.qodana") version Versions.QODANA_PLUGIN.version
     id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
     id("org.jetbrains.gradle.plugin.idea-ext") version Versions.IDE_EXT_GRADLE_PLUGIN.version
+    id("org.sonarqube") version Versions.SONAR.version
 }
 
 repositories {
@@ -215,6 +217,23 @@ allprojects {
     tasks.withType<GenerateReportsTask>().configureEach {
         reportsOutputDirectory.set(rootProject.layout.buildDirectory.dir("reports/ktlint/${project.name}/$name"))
     }
+}
+
+sonar {
+    properties {
+        property("sonar.organization", "bloomberg-1")
+        property("sonar.projectKey", "bloomberg_selekt")
+        property("sonar.projectName", "Selekt")
+        property("sonar.projectVersion", selektVersionName)
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            "${layout.buildDirectory.get()}/reports/kover/report.xml"
+        )
+    }
+}
+
+tasks.withType<SonarTask>().configureEach {
+    mustRunAfter("koverXmlReport")
 }
 
 koverReport {
