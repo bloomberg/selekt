@@ -32,6 +32,7 @@ repositories {
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
+    @Suppress("UnstableApiUsage")
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
     namespace = "com.bloomberg.selekt.android"
     defaultConfig {
@@ -51,7 +52,7 @@ android {
     arrayOf("debug", "main", "release", "test").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-    sourceSets["test"].resources.srcDir("$buildDir/intermediates/libs")
+    sourceSets["test"].resources.srcDir("${layout.buildDirectory.get()}/intermediates/libs")
     publishing {
         singleVariant("release") {
             withJavadocJar()
@@ -91,10 +92,10 @@ koverReport {
 
 tasks.register<Copy>("copyJniLibs") {
     from(
-        fileTree("${project(":selekt-sqlite3").buildDir.absolutePath}/intermediates/libs"),
-        fileTree("${project(":Selektric").buildDir.absolutePath}/intermediates/libs")
+        fileTree("${project(":selekt-sqlite3").layout.buildDirectory.get()}/intermediates/libs"),
+        fileTree("${project(":Selektric").layout.buildDirectory.get()}/intermediates/libs")
     )
-    into("${buildDir.path}/intermediates/libs/jni")
+    into("${layout.buildDirectory.get()}/intermediates/libs/jni")
 }
 
 tasks.register<Task>("buildNativeHost") {

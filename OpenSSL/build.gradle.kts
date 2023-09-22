@@ -36,7 +36,7 @@ val openSslBaseUrl = "https://www.openssl.org/source"
 fun Project.openSslUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.gz"
 fun Project.openSslPgpUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.gz.asc"
 
-val archive = File("$buildDir/tmp/openssl-${openSslVersion()}.tar.gz")
+val archive = File("${layout.buildDirectory.get()}/tmp/openssl-${openSslVersion()}.tar.gz")
 val archivePgp = File("${archive.path}.asc")
 
 tasks.register<Download>("downloadOpenSslPgp") {
@@ -83,14 +83,14 @@ tasks.register<Exec>("verifyOpenSslSignature") {
 }
 
 fun openSslWorkingDir(target: String) = archive.run {
-    File("$buildDir/generated/$target/${name.substringBefore(".tar.gz")}")
+    File("${layout.buildDirectory.get()}/generated/$target/${name.substringBefore(".tar.gz")}")
 }.path
 
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     val titleCaseName = it.replaceFirstChar { c -> c.uppercaseChar() }
     tasks.register<Copy>("unpackOpenSsl$titleCaseName") {
         from(tarTree(archive))
-        into("$buildDir/generated/$it")
+        into("${layout.buildDirectory.get()}/generated/$it")
         dependsOn("downloadOpenSsl")
     }
 
@@ -100,12 +100,13 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         inputs.property("version", openSslVersion())
         outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
             .withPropertyName("headers")
-        outputs.dir("$buildDir/libs/$it").withPropertyName("lib")
-        outputs.cacheIf { true }
+        outputs.dir("${layout.buildDirectory.get()}/libs/$it").withPropertyName("lib")
+        outputs.cacheIf { false } // TODO Restore me.
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
-            archive.run { File("$buildDir/generated/$it/${name.substringBefore(".tar.gz")}") }.path,
+            archive.run { File("${layout.buildDirectory.get()}/generated" +
+                "/$it/${name.substringBefore(".tar.gz")}") }.path,
             it,
             21
         )
@@ -134,7 +135,7 @@ val openSslWorkingDir: String = openSslWorkingDir(targetIdentifier())
 // FIXME Some of the host building logic parallels Android's above. Re-purpose?
 tasks.register<Copy>("unpackOpenSslHost") {
     from(tarTree(archive))
-    into("$buildDir/generated/${targetIdentifier()}")
+    into("${layout.buildDirectory.get()}/generated/${targetIdentifier()}")
     dependsOn("downloadOpenSsl")
     mustRunAfter("clean")
 }
@@ -145,7 +146,7 @@ tasks.register<Exec>("configureHost") {
     inputs.property("version", openSslVersion())
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     workingDir(openSslWorkingDir)
     commandLine("./config")
 }
@@ -161,7 +162,7 @@ tasks.register<Exec>("makeHost") {
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     workingDir(openSslWorkingDir)
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     commandLine("make")
     args("build_libs")
     logging.captureStandardOutput(LogLevel.INFO)
@@ -171,9 +172,9 @@ tasks.register<Copy>("assembleHost") {
     dependsOn("makeHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
-    val outputDir = "$buildDir/libs/${targetIdentifier()}"
+    val outputDir = "${layout.buildDirectory.get()}/libs/${targetIdentifier()}"
     outputs.dir(outputDir).withPropertyName("libs")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false } // TODO Restore me.
     from(fileTree(openSslWorkingDir) {
         arrayOf(".a").forEach { e ->
             include("**/libcrypto$e")

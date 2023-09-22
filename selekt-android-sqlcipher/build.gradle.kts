@@ -65,10 +65,6 @@ components.matching { "release" == it.name }.configureEach {
                 description.set("SQLCipher for Selekt's Android Library.")
                 licenses {
                     license {
-                        name.set("Dual OpenSSL and SSLeay License")
-                        url.set("https://www.openssl.org/source/license-openssl-ssleay.txt")
-                    }
-                    license {
                         name.set("Zetetic LLC")
                         url.set("https://www.zetetic.net/sqlcipher/license")
                     }

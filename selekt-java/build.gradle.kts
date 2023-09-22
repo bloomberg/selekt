@@ -44,7 +44,7 @@ sourceSets {
     create("integrationTest") {
         compileClasspath += sourceSets.main.get().output
         runtimeClasspath += sourceSets.main.get().output
-        resources.srcDir("$buildDir/intermediates/libs")
+        resources.srcDir("${layout.buildDirectory.get()}/intermediates/libs")
     }
 }
 
@@ -88,8 +88,8 @@ tasks.register<Task>("buildHostSQLite") {
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree("${project(":selekt-sqlite3").buildDir}/intermediates/libs"))
-    into("${buildDir.path}/intermediates/libs/jni")
+    from(fileTree("${project(":selekt-sqlite3").layout.buildDirectory.get()}/intermediates/libs"))
+    into("${layout.buildDirectory.get()}/intermediates/libs/jni")
 }
 
 tasks.withType<ProcessResources>().configureEach {

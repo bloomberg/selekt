@@ -1,6 +1,29 @@
 Change Log
 ==========
 
+## Version 0.21.0
+
+Warning: This release migrates from OpenSSL 1.1.1v to OpenSSL 3.1.2.
+
+### Dependencies
+
+* Kotlin 1.9.10.
+* OpenSSL 3.1.2.
+
+## Version 0.20.0
+
+### Features
+
+* Enable Gradle configuration cache.
+
+### Dependencies
+
+* Android Gradle Plugin 8.0.2.
+* Gradle 8.3.
+* Kotlin 1.9.0.
+* OpenSSL 1.1.1v.
+* SQLCipher 4.5.5.
+
 ## Version 0.19.0
 
 ### Dependencies

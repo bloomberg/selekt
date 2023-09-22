@@ -260,26 +260,26 @@ open class SQLite(
         throwSQLException(errorCode(db), extendedErrorCode(db), errorMessage(db), context)
 
     private fun checkSQLCode(code: SQLCode): SQLCode = when (code) {
-        SQL_OK -> code
+        SQL_OK -> SQL_OK
         else -> throwSQLException(code, -1, "Error information not accessible.")
     }
 
     private fun checkConnectionSQLCode(db: Long, code: SQLCode): SQLCode {
         if (SQL_OK == code) {
-            return code
+            return SQL_OK
         }
         throwSQLException(db)
     }
 
     private fun checkStatementSQLCode(statement: Long, code: SQLCode): SQLCode = if (SQL_OK == code) {
-        code
+        SQL_OK
     } else {
         throwSQLException(databaseHandle(statement))
     }
 
     private fun checkBindSQLCode(statement: Long, code: SQLCode): SQLCode {
         if (SQL_OK == code) {
-            return code
+            return SQL_OK
         }
         throwSQLException(databaseHandle(statement))
     }
