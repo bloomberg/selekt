@@ -38,5 +38,5 @@ gradlePlugin {
 
 dependencies {
     implementation(kotlin("gradle-plugin", version = kotlinVersion))
-    implementation("com.android.tools.build:gradle:8.1.0")
+    implementation("com.android.tools.build:gradle:8.1.1")
 }
