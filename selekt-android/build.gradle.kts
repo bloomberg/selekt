@@ -52,7 +52,7 @@ android {
     arrayOf("debug", "main", "release", "test").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-    sourceSets["test"].resources.srcDir("${layout.buildDirectory.get()}/intermediates/libs")
+    sourceSets["test"].resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     publishing {
         singleVariant("release") {
             withJavadocJar()
@@ -92,10 +92,10 @@ koverReport {
 
 tasks.register<Copy>("copyJniLibs") {
     from(
-        fileTree("${project(":selekt-sqlite3").layout.buildDirectory.get()}/intermediates/libs"),
-        fileTree("${project(":Selektric").layout.buildDirectory.get()}/intermediates/libs")
+        fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")),
+        fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
     )
-    into("${layout.buildDirectory.get()}/intermediates/libs/jni")
+    into(layout.buildDirectory.dir("intermediates/libs/jni"))
 }
 
 tasks.register<Task>("buildNativeHost") {
