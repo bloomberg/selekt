@@ -44,7 +44,7 @@ fun Project.gitCommitShort(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "--short", "HEAD")
 }.standardOutput.asText
 
-fun Project.isRelease() = "true" == properties["release"]
+fun Project.isRelease() = hasProperty("release")
 
 fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
     "https://oss.sonatype.org/service/local/staging/deploy/maven2"
