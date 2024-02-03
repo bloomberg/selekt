@@ -30,7 +30,7 @@ enum class Versions(
     ANDROIDX_ROOM("2.5.1", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     CMAKE("3.22.1", URL("https://cmake.org")),
     DETEKT("1.22.0", URL("https://github.com/arturbosch/detekt")),
-    DOKKA("1.8.20", URL("https://github.com/Kotlin/dokka")),
+    DOKKA("1.9.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_DOWNLOAD_TASK_PLUGIN("5.4.0", URL("https://github.com/michel-kraemer/gradle-download-task")),
     GRADLE_LICENSEE_PLUGIN("1.6.0", URL("https://github.com/cashapp/licensee")),
     IDE_EXT_GRADLE_PLUGIN("1.1.7", URL("https://github.com/JetBrains/gradle-idea-ext-plugin")),
