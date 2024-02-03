@@ -41,6 +41,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/entries/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/value-of/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -661,6 +666,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/entries/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/invoke/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -701,6 +711,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/entries/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/invoke/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -737,6 +752,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/database-configuration/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/entries/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -786,6 +806,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/entries/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/value-of/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -812,6 +837,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/entries/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -882,6 +912,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/entries/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -1021,6 +1056,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/entries/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/sql-data-type/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -1082,6 +1122,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/entries/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -1451,6 +1496,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-pointer/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
@@ -1587,6 +1637,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/yield-transaction/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-open-operation/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -2212,6 +2267,11 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/</loc>
+         <lastmod>2024-02-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/entries/</loc>
          <lastmod>2024-02-03</lastmod>
          <changefreq>daily</changefreq>
     </url>

@@ -10,6 +10,7 @@ $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm.NONE///PointingTo
 $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm.REPLACE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/-r-e-p-l-a-c-e/index.md
 $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm.ROLLBACK///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/-r-o-l-l-b-a-c-k/index.md
 $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm///PointingToDeclaration/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/index.md
+$dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm/entries/#/PointingToDeclaration/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/entries.md
 $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm/valueOf/#kotlin.String/PointingToDeclaration/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/value-of.md
 $dokka.location:com.bloomberg.selekt.android/ConflictAlgorithm/values/#/PointingToDeclaration/selekt-android/selekt-android/com.bloomberg.selekt.android/-conflict-algorithm/values.md
 $dokka.location:com.bloomberg.selekt.android/ISQLiteOpenHelper.Callback///PointingToDeclaration/selekt-android/selekt-android/com.bloomberg.selekt.android/-i-s-q-lite-open-helper/-callback/index.md
@@ -150,6 +151,7 @@ $dokka.location:com.bloomberg.selekt.pools/PoolConfiguration/maxTotal/#/Pointing
 $dokka.location:com.bloomberg.selekt.pools/Priority.HIGH///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/-h-i-g-h/index.md
 $dokka.location:com.bloomberg.selekt.pools/Priority.LOW///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/-l-o-w/index.md
 $dokka.location:com.bloomberg.selekt.pools/Priority///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/index.md
+$dokka.location:com.bloomberg.selekt.pools/Priority/entries/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/entries.md
 $dokka.location:com.bloomberg.selekt.pools/Priority/valueOf/#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/value-of.md
 $dokka.location:com.bloomberg.selekt.pools/Priority/values/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-priority/values.md
 $dokka.location:com.bloomberg.selekt.pools/SingleObjectPool///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-single-object-pool/index.md
@@ -182,6 +184,7 @@ $dokka.location:com.bloomberg.selekt/ColumnType.INTEGER///PointingToDeclaration/
 $dokka.location:com.bloomberg.selekt/ColumnType.NULL///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt/-column-type/-n-u-l-l/index.md
 $dokka.location:com.bloomberg.selekt/ColumnType.STRING///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt/-column-type/-s-t-r-i-n-g/index.md
 $dokka.location:com.bloomberg.selekt/ColumnType///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/index.md
+$dokka.location:com.bloomberg.selekt/ColumnType/entries/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/entries.md
 $dokka.location:com.bloomberg.selekt/ColumnType/sqlDataType/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/sql-data-type.md
 $dokka.location:com.bloomberg.selekt/ColumnType/valueOf/#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/value-of.md
 $dokka.location:com.bloomberg.selekt/ColumnType/values/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-column-type/values.md
@@ -194,6 +197,7 @@ $dokka.location:com.bloomberg.selekt/ConflictAlgorithm.NONE///PointingToDeclarat
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm.REPLACE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/-r-e-p-l-a-c-e/index.md
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm.ROLLBACK///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/-r-o-l-l-b-a-c-k/index.md
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/index.md
+$dokka.location:com.bloomberg.selekt/ConflictAlgorithm/entries/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/entries.md
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm/sql/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/sql.md
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm/valueOf/#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/value-of.md
 $dokka.location:com.bloomberg.selekt/ConflictAlgorithm/values/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-conflict-algorithm/values.md
@@ -309,6 +313,7 @@ $dokka.location:com.bloomberg.selekt/ISQLTransactor/inTransaction/#/PointingToDe
 $dokka.location:com.bloomberg.selekt/ISQLTransactor/setTransactionSuccessful/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-s-q-l-transactor/set-transaction-successful.md
 $dokka.location:com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-s-q-l-transactor/yield-transaction.md
 $dokka.location:com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-s-q-l-transactor/yield-transaction.md
+$dokka.location:com.bloomberg.selekt/Pointer///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-pointer/index.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/index.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/SQLDatabase/#kotlin.String#com.bloomberg.selekt.SQLite#com.bloomberg.selekt.DatabaseConfiguration#kotlin.ByteArray?#com.bloomberg.selekt.IRandom/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/-s-q-l-database.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
@@ -342,11 +347,13 @@ $dokka.location:com.bloomberg.selekt/SQLDatabase/version/#/PointingToDeclaration
 $dokka.location:com.bloomberg.selekt/SQLDatabase/writeToBlob/#kotlin.String#kotlin.String#kotlin.String#kotlin.Long#kotlin.Int#java.io.InputStream/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/write-to-blob.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/yieldTransaction/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/yield-transaction.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/yieldTransaction/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/yield-transaction.md
+$dokka.location:com.bloomberg.selekt/SQLOpenOperation///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-open-operation/index.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode.CLOSE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/-c-l-o-s-e/index.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode.PROFILE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/-p-r-o-f-i-l-e/index.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode.ROW///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/-r-o-w/index.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode.STATEMENT///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/-s-t-a-t-e-m-e-n-t/index.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/index.md
+$dokka.location:com.bloomberg.selekt/SQLTraceEventCode/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/entries.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode/invoke/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/invoke.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLTraceEventCode/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-l-trace-event-code/values.md
@@ -430,6 +437,7 @@ $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode.FULL///PointingToDecla
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode.INCREMENTAL///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-i-n-c-r-e-m-e-n-t-a-l/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode.NONE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/-n-o-n-e/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/index.md
+$dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/entries.md
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode/invoke/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/invoke.md
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLiteAutoVacuumMode/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-auto-vacuum-mode/values.md
@@ -441,18 +449,21 @@ $dokka.location:com.bloomberg.selekt/SQLiteJournalMode.TRUNCATE///PointingToDecl
 $dokka.location:com.bloomberg.selekt/SQLiteJournalMode.WAL///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/-w-a-l/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteJournalMode///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteJournalMode/databaseConfiguration/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/database-configuration.md
+$dokka.location:com.bloomberg.selekt/SQLiteJournalMode/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/entries.md
 $dokka.location:com.bloomberg.selekt/SQLiteJournalMode/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLiteJournalMode/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/values.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete.FAST///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/-f-a-s-t/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete.OFF///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/-o-f-f/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete.ON///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/-o-n/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/index.md
+$dokka.location:com.bloomberg.selekt/SQLiteSecureDelete/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/entries.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLiteSecureDelete/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-secure-delete/values.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode.MULTITHREAD///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/-m-u-l-t-i-t-h-r-e-a-d/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode.SERIALIZED///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-e-r-i-a-l-i-z-e-d/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode.SINGLETHREAD///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/-s-i-n-g-l-e-t-h-r-e-a-d/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/index.md
+$dokka.location:com.bloomberg.selekt/SQLiteThreadingMode/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/entries.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode/toString/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/to-string.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLiteThreadingMode/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-threading-mode/values.md
@@ -466,6 +477,7 @@ $dokka.location:com.bloomberg.selekt/SQLiteTraceEventMode/invoke/#/PointingToDec
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode.EXCLUSIVE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/-e-x-c-l-u-s-i-v-e/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode.IMMEDIATE///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/index.md
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/index.md
+$dokka.location:com.bloomberg.selekt/SQLiteTransactionMode/entries/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/entries.md
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode/sql/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/sql.md
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode/valueOf/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/value-of.md
 $dokka.location:com.bloomberg.selekt/SQLiteTransactionMode/values/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/values.md
