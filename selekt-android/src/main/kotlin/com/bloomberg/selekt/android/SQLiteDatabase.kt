@@ -88,7 +88,7 @@ class SQLiteDatabase private constructor(
      * not possible to enable or disable auto-vacuum after a table has been created.
      */
     var autoVacuum: SQLiteAutoVacuumMode
-        get() = SQLiteAutoVacuumMode.values()[Integer.parseInt(database.pragma("auto_vacuum"))]
+        get() = SQLiteAutoVacuumMode.entries[Integer.parseInt(database.pragma("auto_vacuum"))]
         set(value) { database.pragma("auto_vacuum", value) }
 
     /**
