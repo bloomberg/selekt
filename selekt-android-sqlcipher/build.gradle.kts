@@ -30,6 +30,9 @@ repositories {
     google()
 }
 
+val developmentABIs = listOf("arm64-v8a")
+val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
@@ -37,8 +40,17 @@ android {
     ndkVersion = Versions.ANDROID_NDK.version
     defaultConfig {
         minSdk = 21
-        ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+    }
+    buildTypes {
+        debug {
+            ndk {
+                abiFilters.addAll(developmentABIs)
+            }
+        }
+        release {
+            ndk {
+                abiFilters.addAll(allABIs)
+            }
         }
     }
     externalNativeBuild {
@@ -52,8 +64,12 @@ android {
     }
 }
 
-tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
-    dependsOn(":OpenSSL:assembleAndroid", ":selekt-sqlite3:amalgamate")
+allABIs.forEach { abi ->
+    tasks.matching {
+        it is ExternalNativeBuildJsonTask && it.name.contains(abi)
+    }.configureEach {
+        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":selekt-sqlite3:amalgamate")
+    }
 }
 
 components.matching { "release" == it.name }.configureEach {
