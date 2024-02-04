@@ -201,14 +201,13 @@ subprojects {
 }
 
 allprojects {
-    apply {
-        plugin("org.jlleitschuh.gradle.ktlint")
-    }
-    configure<KtlintExtension> {
-        version.set(Versions.KTLINT.version)
-        disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
-        reporters {
-            reporter(ReporterType.HTML)
+    plugins.withId("org.jlleitschuh.gradle.ktlint") {
+        configure<KtlintExtension> {
+            version.set(Versions.KTLINT.version)
+            disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
+            reporters {
+                reporter(ReporterType.HTML)
+            }
         }
     }
     tasks.withType<GenerateReportsTask>().configureEach {

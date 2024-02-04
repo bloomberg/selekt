@@ -18,6 +18,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 repositories {

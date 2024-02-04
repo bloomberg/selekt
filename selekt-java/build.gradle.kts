@@ -32,6 +32,7 @@ plugins {
     signing
     id("bb-jmh")
     id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 disableKotlinCompilerAssertions()
