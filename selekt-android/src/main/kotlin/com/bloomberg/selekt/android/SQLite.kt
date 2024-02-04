@@ -52,6 +52,8 @@ import com.bloomberg.selekt.SQL_RANGE
 import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_TOO_BIG
 
+internal val sqlite = loadSQLite()
+
 object Selekt {
     internal const val TAG = "SLKT"
 
