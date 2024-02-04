@@ -18,14 +18,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
-    kotlin("jvm")
-    `maven-publish`
-    signing
+    base
 }
 
 val cFlags = arrayOf(
@@ -63,23 +57,6 @@ val cFlags = arrayOf(
     "-DSQLITE_USE_ALLOCA",
     "-DSQLITE_USE_URI=1"
 )
-
-disableKotlinCompilerAssertions()
-
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-publishing {
-    publications.register<MavenPublication>("main") {
-        from(components.getByName("java"))
-        pom {
-            commonInitialisation(project)
-            description.set("Selekt Java SQLite interface library.")
-        }
-    }
-}
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")

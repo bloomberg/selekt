@@ -66,7 +66,7 @@ dependencies {
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     implementation(projects.selektAndroidSqlcipher)
     implementation(projects.selektJava)
-    implementation(projects.selektSqlite3)
+    implementation(projects.selektSqlite3Classes)
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))

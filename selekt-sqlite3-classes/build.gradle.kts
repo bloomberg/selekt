@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2024 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-rootProject.name = "Selekt"
-
-include(":AndroidCLI")
-include(":AndroidLibBenchmark")
-include(":OpenSSL")
-include(":Selektric")
-include(":selekt-android")
-include(":selekt-android-lint")
-include(":selekt-android-sqlcipher")
-include(":selekt-api")
-include(":selekt-java")
-include(":selekt-sqlite3")
-include(":selekt-sqlite3-classes")
-
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-        google()
-    }
+repositories {
+    mavenCentral()
 }
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+plugins {
+    kotlin("jvm")
+    `maven-publish`
+    signing
+}
+
+disableKotlinCompilerAssertions()
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        from(components.getByName("java"))
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt Java SQLite interface library.")
+        }
+    }
+}
