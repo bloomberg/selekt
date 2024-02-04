@@ -23,6 +23,7 @@ plugins {
     id("com.android.library")
     `maven-publish`
     signing
+    id("io.gitlab.arturbosch.detekt")
 }
 
 repositories {

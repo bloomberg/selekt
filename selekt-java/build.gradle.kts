@@ -31,6 +31,8 @@ plugins {
     `maven-publish`
     signing
     id("bb-jmh")
+    id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 disableKotlinCompilerAssertions()
@@ -57,7 +59,7 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 
 dependencies {
     implementation(projects.selektApi)
-    implementation(projects.selektSqlite3)
+    implementation(projects.selektSqlite3Classes)
     jmhImplementation(kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
 }
 

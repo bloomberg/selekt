@@ -26,6 +26,7 @@ include(":selekt-android-sqlcipher")
 include(":selekt-api")
 include(":selekt-java")
 include(":selekt-sqlite3")
+include(":selekt-sqlite3-classes")
 
 pluginManagement {
     repositories {
