@@ -65,6 +65,7 @@ dependencies {
     kover(projects.selektAndroid)
     kover(projects.selektApi)
     kover(projects.selektJava)
+    kover(projects.selektSqlite3Classes)
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
