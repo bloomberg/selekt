@@ -31,6 +31,7 @@ plugins {
     `maven-publish`
     signing
     id("bb-jmh")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 disableKotlinCompilerAssertions()

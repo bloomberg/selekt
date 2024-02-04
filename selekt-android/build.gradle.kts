@@ -23,6 +23,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jetbrains.kotlinx.kover")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 repositories {

@@ -18,6 +18,7 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
     id("androidx.benchmark") version Versions.ANDROID_BENCHMARK.version
+    id("io.gitlab.arturbosch.detekt")
 }
 
 repositories {

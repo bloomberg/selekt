@@ -23,6 +23,7 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     signing
+    id("io.gitlab.arturbosch.detekt")
 }
 
 java {
