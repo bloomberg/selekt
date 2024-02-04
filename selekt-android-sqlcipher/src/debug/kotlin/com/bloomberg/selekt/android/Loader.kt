@@ -16,12 +16,14 @@
 
 package com.bloomberg.selekt.android
 
+import com.bloomberg.selekt.ExternalSQLite
+import com.bloomberg.selekt.SQLite
 import com.bloomberg.selekt.commons.loadEmbeddedLibrary
 import com.bloomberg.selekt.externalSQLiteSingleton
 
 private const val CAN_USE_EMBEDDED_PROPERTY_KEY = "com.bloomberg.selekt.lib.can_use_embedded"
 
-internal val sqlite = externalSQLiteSingleton {
+fun loadSQLite(): ExternalSQLite = externalSQLiteSingleton {
     "selekt".let {
         try {
             System.loadLibrary(it)

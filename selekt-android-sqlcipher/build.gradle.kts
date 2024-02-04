@@ -21,6 +21,7 @@ logger.quiet("SQLCipher version: {}", sqlcipherVersionName)
 
 plugins {
     id("com.android.library")
+    id("kotlin-android")
     `maven-publish`
     signing
     id("io.gitlab.arturbosch.detekt")
@@ -49,6 +50,7 @@ android {
             }
         }
         release {
+            isMinifyEnabled = false
             ndk {
                 abiFilters.addAll(allABIs)
             }
@@ -63,6 +65,11 @@ android {
     publishing {
         singleVariant("release")
     }
+}
+
+dependencies {
+    implementation(projects.selektJava)
+    implementation(projects.selektSqlite3Classes)
 }
 
 allABIs.forEach { abi ->
