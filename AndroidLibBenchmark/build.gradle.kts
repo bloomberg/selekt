@@ -33,7 +33,7 @@ android {
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
         minSdkVersion(21)
-        targetSdkVersion(32)
+        targetSdkVersion(34)
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(
             "androidx.benchmark.suppressErrors" to "EMULATOR,LOW_BATTERY,UNLOCKED"
