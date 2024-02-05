@@ -1,5 +1,5 @@
 /*
-* Copyright 2022 Bloomberg Finance L.P.
+* Copyright 2020 Bloomberg Finance L.P.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -85,13 +85,13 @@ tasks.register<Test>("integrationTest") {
 }
 
 tasks.register<Task>("buildHostSQLite") {
-    dependsOn(":selekt-sqlite3:buildHost", "copyJniLibs")
+    dependsOn(":SQLite3:buildHost", "copyJniLibs")
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")))
+    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    mustRunAfter(":selekt-sqlite3:buildHost")
+    mustRunAfter(":SQLite3:buildHost")
 }
 
 tasks.withType<ProcessResources>().configureEach {
