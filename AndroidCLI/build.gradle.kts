@@ -33,7 +33,7 @@ android {
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
         minSdk = 21
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "0.1"
         ndk {
@@ -45,7 +45,7 @@ android {
     }
 
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = false
         }
     }
@@ -63,4 +63,5 @@ dependencies {
     implementation(androidX("core", "ktx", version = "1.0.2"))
     implementation(androidX("paging", "runtime", "2.1.0"))
     implementation(androidX("constraintlayout", version = "1.1.3"))
+    runtimeOnly(projects.selektAndroidSqlcipher)
 }
