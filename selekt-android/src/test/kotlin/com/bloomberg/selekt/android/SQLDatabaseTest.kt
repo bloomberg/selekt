@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ private fun createFile(
 internal class SampleSQLArgumentsProvider : ArgumentsProvider {
     override fun provideArguments(
         context: ExtensionContext
-    ): Stream<out Arguments> = (SQLiteJournalMode.values().filter { it != SQLiteJournalMode.MEMORY } *
+    ): Stream<out Arguments> = (SQLiteJournalMode.entries.filter { it != SQLiteJournalMode.MEMORY } *
         arrayOf(ByteArray(32) { 0x42 }, null)).map {
         SQLInputs(it.first, it.second)
     }.map { Arguments.of(it) }.stream()

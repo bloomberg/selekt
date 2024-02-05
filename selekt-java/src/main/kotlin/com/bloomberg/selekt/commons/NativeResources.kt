@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,9 @@ internal fun libraryResourceNames(
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = checkNotNull(libraryResourceNames(parentDirectory, name).mapNotNull {
+    val url = checkNotNull(libraryResourceNames(parentDirectory, name).firstNotNullOfOrNull {
         loader.getResource(it)
-    }.firstOrNull()) { "Failed to find resource with name: $name" }
+    }) { "Failed to find resource with name: $name" }
     @Suppress("NewApi") // Not used by Android.
     val file = createTempFile("lib$name", "lib").toFile().apply { deleteOnExit() }
     try {

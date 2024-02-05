@@ -35,7 +35,7 @@ jobs:
           :OpenSSL:assembleArmeabi-v7a \
           :OpenSSL:assembleX86 \
           :OpenSSL:assembleX86_64
-        ./gradlew :selekt-sqlite3:amalgamate
+        ./gradlew :SQLite3:amalgamate
         ./gradlew assembleRelease
     - name: 'Publish snapshot to OSSRH'
       if: github.event_name == 'push'

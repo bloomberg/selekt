@@ -1,5 +1,5 @@
 /*
-* Copyright 2022 Bloomberg Finance L.P.
+* Copyright 2020 Bloomberg Finance L.P.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ plugins {
     `maven-publish`
     signing
     id("bb-jmh")
+    id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 disableKotlinCompilerAssertions()
@@ -57,7 +59,7 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 
 dependencies {
     implementation(projects.selektApi)
-    implementation(projects.selektSqlite3)
+    implementation(projects.selektSqlite3Classes)
     jmhImplementation(kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
 }
 
@@ -83,17 +85,17 @@ tasks.register<Test>("integrationTest") {
 }
 
 tasks.register<Task>("buildHostSQLite") {
-    dependsOn(":selekt-sqlite3:buildHost")
-    finalizedBy("copyJniLibs")
+    dependsOn(":SQLite3:buildHost", "copyJniLibs")
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")))
+    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
+    mustRunAfter(":SQLite3:buildHost")
 }
 
 tasks.withType<ProcessResources>().configureEach {
-    dependsOn("buildHostSQLite", "copyJniLibs")
+    dependsOn("buildHostSQLite")
 }
 
 tasks.withType<DokkaTask>().configureEach {

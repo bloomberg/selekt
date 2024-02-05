@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,27 +25,27 @@ enum class Versions(
     ANDROID_GRADLE_PLUGIN("8.0.2", URL("https://developer.android.com/tools/revisions/gradle-plugin.html")),
     ANDROID_LINT("30.0.2", URL("https://github.com/googlesamples/android-custom-lint-rules")),
     ANDROID_NDK("26.1.10909125", URL("https://developer.android.com/ndk")),
-    ANDROID_SDK("33", URL("https://developer.android.com/sdk")),
+    ANDROID_SDK("34", URL("https://developer.android.com/sdk")),
     ANDROIDX_LIVE_DATA("2.5.1", URL("https://developer.android.com/topic/libraries/architecture/livedata")),
-    ANDROIDX_ROOM("2.5.1", URL("https://developer.android.com/jetpack/androidx/releases/room")),
+    ANDROIDX_ROOM("2.6.1", URL("https://developer.android.com/jetpack/androidx/releases/room")),
     CMAKE("3.22.1", URL("https://cmake.org")),
     DETEKT("1.22.0", URL("https://github.com/arturbosch/detekt")),
-    DOKKA("1.8.20", URL("https://github.com/Kotlin/dokka")),
+    DOKKA("1.9.10", URL("https://github.com/Kotlin/dokka")),
     GRADLE_DOWNLOAD_TASK_PLUGIN("5.4.0", URL("https://github.com/michel-kraemer/gradle-download-task")),
     GRADLE_LICENSEE_PLUGIN("1.6.0", URL("https://github.com/cashapp/licensee")),
     IDE_EXT_GRADLE_PLUGIN("1.1.7", URL("https://github.com/JetBrains/gradle-idea-ext-plugin")),
     JMH("1.36", URL("https://openjdk.java.net/projects/code-tools/jmh/")),
     JSR_305("3.0.2", URL("https://code.google.com/archive/p/jsr-305/")),
     JUNIT4("4.13.2", URL("https://github.com/junit-team/junit4")),
-    JUNIT5("5.9.3", URL("https://junit.org/junit5/")),
-    KOTLIN("1.9.10", URL("https://github.com/JetBrains/kotlin")),
+    JUNIT5("5.10.1", URL("https://junit.org/junit5/")),
+    KOTLIN("1.9.22", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_TEST(KOTLIN.version, URL("https://github.com/JetBrains/kotlin")),
-    KOTLINX_COROUTINES("1.7.2", URL("https://github.com/Kotlin/kotlinx.coroutines")),
+    KOTLINX_COROUTINES("1.7.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
     KOTLINX_KOVER("0.7.2", URL("https://github.com/Kotlin/kotlinx-kover")),
     KTLINT("0.45.2", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("11.5.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
-    MOCKITO("5.4.0", URL("https://github.com/mockito/mockito")),
-    MOCKITO_KOTLIN("5.0.0", URL("https://github.com/mockito/mockito-kotlin")),
+    MOCKITO("5.10.0", URL("https://github.com/mockito/mockito")),
+    MOCKITO_KOTLIN("5.2.1", URL("https://github.com/mockito/mockito-kotlin")),
     NEXUS_PLUGIN("1.3.0", URL("https://github.com/gradle-nexus/publish-plugin")),
     QODANA_PLUGIN("0.1.12", URL("https://www.jetbrains.com/help/qodana/qodana-gradle-plugin.html")),
     ROBOLECTRIC_ANDROID_ALL("12.1-robolectric-8229987", URL("https://github.com/robolectric/robolectric"));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ plugins {
     `maven-publish`
     signing
     id("org.jetbrains.kotlinx.kover")
+    id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 repositories {
@@ -40,17 +42,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug {
-            buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "true")
-        }
         release {
             isMinifyEnabled = false
-            buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "false")
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
-    }
-    arrayOf("debug", "main", "release", "test").forEach {
-        sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     publishing {
@@ -63,15 +58,16 @@ android {
 
 dependencies {
     api(projects.selektApi)
+    compileOnly(projects.selektAndroidSqlcipher)
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
-    implementation(projects.selektAndroidSqlcipher)
     implementation(projects.selektJava)
-    implementation(projects.selektSqlite3)
+    implementation(projects.selektSqlite3Classes)
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("lifecycle", "livedata-ktx", Versions.ANDROIDX_LIVE_DATA.version))
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
     testImplementation("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT5}")
+    testRuntimeOnly(projects.selektAndroidSqlcipher)
     testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
 }
 
@@ -92,14 +88,14 @@ koverReport {
 
 tasks.register<Copy>("copyJniLibs") {
     from(
-        fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")),
+        fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")),
         fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
     )
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
 }
 
 tasks.register<Task>("buildNativeHost") {
-    dependsOn(":selekt-sqlite3:buildHost", ":Selektric:buildHost")
+    dependsOn(":SQLite3:buildHost", ":Selektric:buildHost")
     finalizedBy("copyJniLibs")
 }
 

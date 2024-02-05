@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,19 @@ logger.quiet("SQLCipher version: {}", sqlcipherVersionName)
 
 plugins {
     id("com.android.library")
+    id("kotlin-android")
     `maven-publish`
     signing
+    id("io.gitlab.arturbosch.detekt")
 }
 
 repositories {
     mavenCentral()
     google()
 }
+
+val developmentABIs = listOf("arm64-v8a")
+val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
@@ -37,13 +42,23 @@ android {
     ndkVersion = Versions.ANDROID_NDK.version
     defaultConfig {
         minSdk = 21
-        ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+    }
+    buildTypes {
+        debug {
+            ndk {
+                abiFilters.addAll(developmentABIs)
+            }
+        }
+        release {
+            isMinifyEnabled = false
+            ndk {
+                abiFilters.addAll(allABIs)
+            }
         }
     }
     externalNativeBuild {
         cmake {
-            path("$rootDir/selekt-sqlite3/CMakeLists.txt")
+            path("$rootDir/SQLite3/CMakeLists.txt")
             version = Versions.CMAKE.version
         }
     }
@@ -52,8 +67,17 @@ android {
     }
 }
 
-tasks.withType<ExternalNativeBuildJsonTask>().configureEach {
-    dependsOn(":OpenSSL:assembleAndroid", ":selekt-sqlite3:amalgamate")
+dependencies {
+    implementation(projects.selektJava)
+    implementation(projects.selektSqlite3Classes)
+}
+
+allABIs.forEach { abi ->
+    tasks.matching {
+        it is ExternalNativeBuildJsonTask && it.name.contains(abi)
+    }.configureEach {
+        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":SQLite3:amalgamate")
+    }
 }
 
 components.matching { "release" == it.name }.configureEach {

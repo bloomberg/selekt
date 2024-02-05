@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,8 @@ import com.bloomberg.selekt.SQL_NOT_FOUND
 import com.bloomberg.selekt.SQL_RANGE
 import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_TOO_BIG
+
+internal val sqlite = loadSQLite()
 
 object Selekt {
     internal const val TAG = "SLKT"

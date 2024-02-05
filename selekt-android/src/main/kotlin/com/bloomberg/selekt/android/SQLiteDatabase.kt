@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ class SQLiteDatabase private constructor(
      * not possible to enable or disable auto-vacuum after a table has been created.
      */
     var autoVacuum: SQLiteAutoVacuumMode
-        get() = SQLiteAutoVacuumMode.values()[Integer.parseInt(database.pragma("auto_vacuum"))]
+        get() = SQLiteAutoVacuumMode.entries[Integer.parseInt(database.pragma("auto_vacuum"))]
         set(value) { database.pragma("auto_vacuum", value) }
 
     /**
