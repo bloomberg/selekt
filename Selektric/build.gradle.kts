@@ -18,10 +18,6 @@ import java.util.Locale
 import java.nio.file.Files
 import java.nio.file.Paths
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
     base
 }

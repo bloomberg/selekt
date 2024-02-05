@@ -14,29 +14,9 @@
  * limitations under the License.
  */
 
-// TODO Move me.
-val kotlinVersion = "1.9.22"
+package com.bloomberg.selekt.android
 
-plugins {
-    `kotlin-dsl`
-    `java-gradle-plugin`
-}
+import com.bloomberg.selekt.ExternalSQLite
+import com.bloomberg.selekt.externalSQLiteSingleton
 
-repositories {
-    mavenCentral()
-    google()
-}
-
-gradlePlugin {
-    plugins {
-        create("Bloomberg JMH Plugin") {
-            id = "bb-jmh"
-            implementationClass = "JmhPlugin"
-        }
-    }
-}
-
-dependencies {
-    implementation(kotlin("gradle-plugin", version = kotlinVersion))
-    implementation("com.android.tools.build:gradle:8.0.2")
-}
+fun loadSQLite(): ExternalSQLite = externalSQLiteSingleton()

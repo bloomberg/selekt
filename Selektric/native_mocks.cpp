@@ -36,7 +36,7 @@ static jstring SystemProperties_get(
     jstring keyJ,
     jstring defJ
 ) {
-    auto key = env->GetStringUTFChars(keyJ, NULL);
+    auto key = env->GetStringUTFChars(keyJ, nullptr);
     if (strcmp("ro.product.cpu.abilist", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("arm64-v8a,armeabi-v7a");

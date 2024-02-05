@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2024 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,42 +14,33 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-repositories {
-    mavenCentral()
-}
-
 plugins {
-    kotlin("jvm")
-    id("org.jetbrains.dokka")
+    `java-platform`
     `maven-publish`
     signing
-    id("org.jetbrains.kotlinx.kover")
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + listOf(
-            "-Xinline-classes",
-            "-opt-in=kotlin.RequiresOptIn"
-        )
+dependencies {
+    constraints {
+        projects.run {
+            listOf(
+                selektAndroid,
+                selektAndroidLint,
+                selektAndroidSqlcipher,
+                selektApi,
+                selektJava,
+                selektSqlite3Classes
+            )
+        }.forEach(::api)
     }
 }
 
 publishing {
     publications.register<MavenPublication>("main") {
-        from(components.getByName("java"))
+        from(components.getByName("javaPlatform"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt shared API library.")
+            description.set("Selekt BOM.")
         }
     }
 }

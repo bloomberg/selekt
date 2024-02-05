@@ -1,6 +1,29 @@
 Change Log
 ==========
 
+## Version 0.22.0
+
+Warning: This release decouples the choice of SQLite implementation from the main Android artifact, and requires an additional dependency declaration. Please refer to the [getting started](https://bloomberg.github.io/selekt/getting_started/#integration) guide.
+
+### Fixes
+
+* Use Kotlin's `Enum.entries` instead of `Enum.values()`.
+* Decouple the choice of SQLite implementation from the main Android artifact.
+* Publish a BOM.
+
+### Dependencies
+
+* Android SDK 34.
+* Dokka 1.9.10.
+* Gradle 8.6.
+* Junit 5.10.1.
+* Kotlin 1.9.22.
+* Kotlin Coroutines 1.7.3.
+* Mockito 5.10.0.
+* Mockito-Kotlin 5.2.1.
+* NDK 26.1.
+* Room 2.6.1.
+
 ## Version 0.21.0
 
 Warning: This release migrates from OpenSSL 1.1.1v to OpenSSL 3.1.2.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2024 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,31 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.android
+repositories {
+    mavenCentral()
+}
 
-import com.bloomberg.selekt.externalSQLiteSingleton
+plugins {
+    kotlin("jvm")
+    `maven-publish`
+    signing
+    id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
+}
 
-internal val sqlite = externalSQLiteSingleton()
+disableKotlinCompilerAssertions()
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications.register<MavenPublication>("main") {
+        from(components.getByName("java"))
+        pom {
+            commonInitialisation(project)
+            description.set("Selekt Java SQLite interface library.")
+        }
+    }
+}

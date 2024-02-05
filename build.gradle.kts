@@ -65,15 +65,13 @@ dependencies {
     kover(projects.selektAndroid)
     kover(projects.selektApi)
     kover(projects.selektJava)
+    kover(projects.selektSqlite3Classes)
     ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
 subprojects {
     group = rootProject.group
     version = rootProject.version
-    apply {
-        plugin("io.gitlab.arturbosch.detekt")
-    }
     plugins.withType<JavaPlugin>().configureEach {
         tasks.withType<Jar>().configureEach {
             metaInf {
@@ -156,14 +154,16 @@ subprojects {
             systemProperty(it.key, it.value)
         }
     }
-    configure<DetektExtension> {
-        toolVersion = Versions.DETEKT.version
-        source = files("src")
-        config = files("${rootProject.projectDir}/config/detekt/config.yml")
-        buildUponDefaultConfig = true
-        parallel = false
-        debug = false
-        ignoreFailures = false
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        configure<DetektExtension> {
+            toolVersion = Versions.DETEKT.version
+            source = files("src")
+            config = files("${rootProject.projectDir}/config/detekt/config.yml")
+            buildUponDefaultConfig = true
+            parallel = false
+            debug = false
+            ignoreFailures = false
+        }
     }
     tasks.withType<Detekt>().configureEach {
         exclude("**/res/**")
@@ -202,14 +202,13 @@ subprojects {
 }
 
 allprojects {
-    apply {
-        plugin("org.jlleitschuh.gradle.ktlint")
-    }
-    configure<KtlintExtension> {
-        version.set(Versions.KTLINT.version)
-        disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
-        reporters {
-            reporter(ReporterType.HTML)
+    plugins.withId("org.jlleitschuh.gradle.ktlint") {
+        configure<KtlintExtension> {
+            version.set(Versions.KTLINT.version)
+            disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
+            reporters {
+                reporter(ReporterType.HTML)
+            }
         }
     }
     tasks.withType<GenerateReportsTask>().configureEach {
