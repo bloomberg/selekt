@@ -58,7 +58,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path("$rootDir/selekt-sqlite3/CMakeLists.txt")
+            path("$rootDir/SQLite3/CMakeLists.txt")
             version = Versions.CMAKE.version
         }
     }
@@ -76,7 +76,7 @@ allABIs.forEach { abi ->
     tasks.matching {
         it is ExternalNativeBuildJsonTask && it.name.contains(abi)
     }.configureEach {
-        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":selekt-sqlite3:amalgamate")
+        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":SQLite3:amalgamate")
     }
 }
 

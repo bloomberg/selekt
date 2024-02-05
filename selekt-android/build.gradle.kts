@@ -88,14 +88,14 @@ koverReport {
 
 tasks.register<Copy>("copyJniLibs") {
     from(
-        fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")),
+        fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")),
         fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
     )
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
 }
 
 tasks.register<Task>("buildNativeHost") {
-    dependsOn(":selekt-sqlite3:buildHost", ":Selektric:buildHost")
+    dependsOn(":SQLite3:buildHost", ":Selektric:buildHost")
     finalizedBy("copyJniLibs")
 }
 
