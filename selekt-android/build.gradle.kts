@@ -42,17 +42,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug {
-            buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "true")
-        }
         release {
             isMinifyEnabled = false
-            buildConfigField("Boolean", "USE_EMBEDDED_LIBS", "false")
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
-    }
-    arrayOf("debug", "main", "release", "test").forEach {
-        sourceSets[it].java.srcDir("src/$it/kotlin")
     }
     sourceSets["test"].resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     publishing {
@@ -65,8 +58,8 @@ android {
 
 dependencies {
     api(projects.selektApi)
+    compileOnly(projects.selektAndroidSqlcipher)
     compileOnly(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
-    implementation(projects.selektAndroidSqlcipher)
     implementation(projects.selektJava)
     implementation(projects.selektSqlite3Classes)
     kaptTest(androidX("room", "compiler", Versions.ANDROIDX_ROOM.version))
@@ -74,6 +67,7 @@ dependencies {
     testImplementation(androidX("room", "runtime", Versions.ANDROIDX_ROOM.version))
     testImplementation(androidX("room", "ktx", Versions.ANDROIDX_ROOM.version))
     testImplementation("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT5}")
+    testRuntimeOnly(projects.selektAndroidSqlcipher)
     testRuntimeOnly("org.robolectric:android-all:${Versions.ROBOLECTRIC_ANDROID_ALL}")
 }
 

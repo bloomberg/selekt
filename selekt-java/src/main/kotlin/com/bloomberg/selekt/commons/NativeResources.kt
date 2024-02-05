@@ -59,9 +59,9 @@ internal fun libraryResourceNames(
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = checkNotNull(libraryResourceNames(parentDirectory, name).mapNotNull {
+    val url = checkNotNull(libraryResourceNames(parentDirectory, name).firstNotNullOfOrNull {
         loader.getResource(it)
-    }.firstOrNull()) { "Failed to find resource with name: $name" }
+    }) { "Failed to find resource with name: $name" }
     @Suppress("NewApi") // Not used by Android.
     val file = createTempFile("lib$name", "lib").toFile().apply { deleteOnExit() }
     try {
