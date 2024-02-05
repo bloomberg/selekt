@@ -85,13 +85,13 @@ tasks.register<Test>("integrationTest") {
 }
 
 tasks.register<Task>("buildHostSQLite") {
-    dependsOn(":selekt-sqlite3:buildHost", "copyJniLibs")
+    dependsOn(":SQLite3:buildHost", "copyJniLibs")
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(fileTree(project(":selekt-sqlite3").layout.buildDirectory.dir("intermediates/libs")))
+    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    mustRunAfter(":selekt-sqlite3:buildHost")
+    mustRunAfter(":SQLite3:buildHost")
 }
 
 tasks.withType<ProcessResources>().configureEach {
