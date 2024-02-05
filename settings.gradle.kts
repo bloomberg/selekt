@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ include(":AndroidCLI")
 include(":AndroidLibBenchmark")
 include(":OpenSSL")
 include(":Selektric")
+include(":SQLite3")
 include(":selekt-android")
 include(":selekt-android-lint")
 include(":selekt-android-sqlcipher")
 include(":selekt-api")
 include(":selekt-bom")
 include(":selekt-java")
-include(":selekt-sqlite3")
 include(":selekt-sqlite3-classes")
 
 pluginManagement {

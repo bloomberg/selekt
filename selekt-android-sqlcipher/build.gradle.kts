@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bloomberg Finance L.P.
+ * Copyright 2020 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path("$rootDir/selekt-sqlite3/CMakeLists.txt")
+            path("$rootDir/SQLite3/CMakeLists.txt")
             version = Versions.CMAKE.version
         }
     }
@@ -76,7 +76,7 @@ allABIs.forEach { abi ->
     tasks.matching {
         it is ExternalNativeBuildJsonTask && it.name.contains(abi)
     }.configureEach {
-        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":selekt-sqlite3:amalgamate")
+        dependsOn(":OpenSSL:assemble${abi.replaceFirstChar(Char::uppercaseChar)}", ":SQLite3:amalgamate")
     }
 }
 
