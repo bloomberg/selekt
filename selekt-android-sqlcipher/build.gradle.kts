@@ -63,7 +63,10 @@ android {
         }
     }
     publishing {
-        singleVariant("release")
+        singleVariant("release") {
+            withJavadocJar()
+            withSourcesJar()
+        }
     }
 }
 
