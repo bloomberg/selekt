@@ -125,6 +125,7 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 }
 
 fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+logger.quiet("Resolved platform identifier: {}", platformIdentifier())
 
 tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
