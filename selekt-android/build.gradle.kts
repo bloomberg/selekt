@@ -47,7 +47,7 @@ android {
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
-    sourceSets["test"].resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
+    sourceSets["test"].assets.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     publishing {
         singleVariant("release") {
             withJavadocJar()
@@ -92,6 +92,7 @@ tasks.register<Copy>("copyJniLibs") {
         fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
     )
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
+    mustRunAfter("buildNativeHost")
 }
 
 tasks.register<Task>("buildNativeHost") {
@@ -107,7 +108,7 @@ arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {
     }
 }
 
-arrayOf("Debug", "Release").map { "process${it}UnitTestJavaRes" }.forEach {
+arrayOf("Debug", "Release").map { "merge${it}UnitTestAssets" }.forEach {
     tasks.whenTaskAdded {
         if (it == name) {
             dependsOn("copyJniLibs")
