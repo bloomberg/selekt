@@ -54,7 +54,7 @@ internal class NativeResourcesKtTest {
 
     @Test
     fun commonLibraryResourceName() {
-        libraryResourceNames("jni", "selekt").forEach {
+        libraryNames("jni", "selekt").forEach {
             assertTrue(it.startsWith("jni"))
         }
     }
