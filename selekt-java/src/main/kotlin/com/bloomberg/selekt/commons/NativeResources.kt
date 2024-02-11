@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.commons
 
-import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -67,10 +66,12 @@ fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: Stri
         loader.getResource(it)
     }) { "Failed to find resource with name: $name in directory: $parentDirectory" }
     @Suppress("NewApi") // Not used by Android.
-    val file = createTempFile("lib$name", "lib").toFile().apply { deleteOnExit() }
+    val file = createTempFile("lib$name", "lib").toFile()
     try {
         url.openStream().use { inputStream ->
-            BufferedOutputStream(FileOutputStream(file)).use { outputStream -> inputStream.copyTo(outputStream) }
+            FileOutputStream(file).use {
+                inputStream.copyTo(it)
+            }
         }
         @Suppress("UnsafeDynamicallyLoadedCode")
         System.load(file.absolutePath)
