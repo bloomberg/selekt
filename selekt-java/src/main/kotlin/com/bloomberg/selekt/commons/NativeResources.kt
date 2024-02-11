@@ -20,9 +20,13 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
 import java.util.Locale
+import kotlin.io.path.Path
 import kotlin.io.path.createTempFile
 import kotlin.jvm.Throws
+
+private const val LIBRARY_PATH_KEY = "com.bloomberg.selekt.library_path"
 
 @Suppress("Detekt.StringLiteralDuplication")
 @JvmSynthetic
@@ -50,7 +54,7 @@ internal fun libraryExtensions() = osNames().map {
 }.toSet()
 
 @JvmSynthetic
-internal fun libraryResourceNames(
+internal fun libraryNames(
     parentDirectory: String,
     name: String
 ) = (platformIdentifiers() * libraryExtensions()).map {
@@ -59,7 +63,7 @@ internal fun libraryResourceNames(
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = checkNotNull(libraryResourceNames(parentDirectory, name).firstNotNullOfOrNull {
+    val url = checkNotNull(libraryNames(parentDirectory, name).firstNotNullOfOrNull {
         loader.getResource(it)
     }) { "Failed to find resource with name: $name in directory: $parentDirectory" }
     @Suppress("NewApi") // Not used by Android.
@@ -72,5 +76,32 @@ fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: Stri
         System.load(file.absolutePath)
     } finally {
         file.delete()
+    }
+}
+
+@Suppress("NewApi")
+private fun loadLibrary(
+    libraryPath: String,
+    parentDirectory: String,
+    name: String
+) {
+    val path = libraryNames(parentDirectory, name).map {
+        Path(libraryPath, it)
+    }.first {
+        Files.exists(it)
+    }.toAbsolutePath()
+    @Suppress("UnsafeDynamicallyLoadedCode")
+    System.load(path.toString())
+}
+
+@Throws(IOException::class)
+fun loadLibrary(
+    loader: ClassLoader,
+    parentDirectory: String,
+    name: String
+) {
+    when (val libraryPath = System.getProperty(LIBRARY_PATH_KEY)) {
+        null -> loadEmbeddedLibrary(loader, parentDirectory, name)
+        else -> loadLibrary(libraryPath, parentDirectory, name)
     }
 }
