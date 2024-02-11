@@ -126,7 +126,11 @@ subprojects {
         }
     }
     tasks.withType<Test>().configureEach {
-        systemProperty("com.bloomberg.selekt.lib.can_use_embedded", true)
+        systemProperty("com.bloomberg.selekt.can_use_load", true)
+        systemProperty(
+            "com.bloomberg.selekt.library_path",
+            layout.buildDirectory.dir("intermediates/assets/debugUnitTest").get().asFile.toString()
+        )
     }
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {

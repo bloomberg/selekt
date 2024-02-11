@@ -1,10 +1,10 @@
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.commons.loadEmbeddedLibrary
+import com.bloomberg.selekt.commons.loadLibrary
 
 internal object NativeFixtures {
     init {
-        loadEmbeddedLibrary(NativeFixtures::class.java.classLoader!!, "jni", "selektric")
+        loadLibrary(checkNotNull(NativeFixtures::class.java.classLoader), "jni", "selektric")
         check(nativeInit() == 0)
     }
 
