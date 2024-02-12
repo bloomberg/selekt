@@ -30,6 +30,40 @@
 
 ## Getting a database
 
+### Using Room
+
+=== "Kotlin"
+    ``` kotlin
+    private fun deriveKey(): ByteArray? = TODO(
+        "Optional key, must be exactly 32-bytes long.")
+
+    private val factory = createSupportSQLiteOpenHelperFactory(
+        SQLiteJournalMode.WAL,
+        deriveKey()
+    )
+
+    val database = Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
+        .openHelperFactory(factory)
+        .build()
+    ```
+
+=== "Java"
+    ``` java
+    private byte[] deriveKey() {
+        // TODO Optional key, must be exactly 32-bytes long.
+    }
+
+    private SupportSQLiteOpenHelper.Factory factory =
+        SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
+            SQLiteJournalMode.WAL,
+            deriveKey());
+
+    final RoomDatabase database = Room.databaseBuilder(
+        context, MyAppDatabase.class, "app"
+    ).openHelperFactory(factory)
+        .build();
+    ```
+
 ### Using an open helper
 
 === "Kotlin"
@@ -93,70 +127,6 @@
             "sample"
         )
     );
-    ```
-
-### Using Room
-
-=== "Kotlin"
-    ``` kotlin
-    private fun deriveKey(): ByteArray? = TODO(
-        "Optional key, must be exactly 32-bytes long.")
-
-    private val factory = createSupportSQLiteOpenHelperFactory(
-        SQLiteJournalMode.WAL,
-        deriveKey()
-    )
-
-    val database = Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
-        .openHelperFactory(factory)
-        .build()
-    ```
-
-=== "Java"
-    ``` java
-    private byte[] deriveKey() {
-        // TODO Optional key, must be exactly 32-bytes long.
-    }
-
-    private SupportSQLiteOpenHelper.Factory factory =
-        SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
-            SQLiteJournalMode.WAL,
-            deriveKey());
-
-    final RoomDatabase database = Room.databaseBuilder(
-        context, MyAppDatabase.class, "app"
-    ).openHelperFactory(factory)
-        .build();
-    ```
-
-### Directly
-
-=== "Kotlin"
-    ``` kotlin
-    private fun deriveKey(): ByteArray? = TODO(
-        "Optional key, must be exactly 32-bytes long.")
-
-    SQLiteDatabase.openOrCreateDatabase(
-        context.getDatabasePath("sample"),
-        SQLiteJournalMode.WAL.databaseConfiguration,
-        deriveKey()
-    ).apply {
-        exec("PRAGMA journal_mode=${SQLiteJournalMode.WAL}")
-    }
-    ```
-
-=== "Java"
-    ``` java
-    private byte[] deriveKey() {
-        // TODO Optional key, must be exactly 32-bytes long.
-    }
-
-    final SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(
-        targetContext.getDatabasePath("sample"),
-        SQLiteJournalMode.WAL.databaseConfiguration,
-        deriveKey()
-    );
-    database.exec("PRAGMA journal_mode=WAL");
     ```
 
 ## Interaction
