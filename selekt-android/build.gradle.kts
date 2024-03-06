@@ -1,3 +1,6 @@
+import com.android.build.gradle.internal.lint.AndroidLintAnalysisTask
+import com.android.build.gradle.internal.lint.LintModelWriterTask
+
 /*
  * Copyright 2020 Bloomberg Finance L.P.
  *
@@ -106,6 +109,14 @@ arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {
             dependsOn("buildNativeHost")
         }
     }
+}
+
+tasks.withType<AndroidLintAnalysisTask>().configureEach {
+    dependsOn("copyJniLibs")
+}
+
+tasks.withType<LintModelWriterTask>().configureEach {
+    dependsOn("copyJniLibs")
 }
 
 arrayOf("Debug", "Release").map { "merge${it}UnitTestAssets" }.forEach {
