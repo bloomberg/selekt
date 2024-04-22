@@ -129,7 +129,8 @@ subprojects {
         systemProperty("com.bloomberg.selekt.can_use_load", true)
         systemProperty(
             "com.bloomberg.selekt.library_path",
-            layout.buildDirectory.dir("intermediates/assets/debugUnitTest").get().asFile.toString()
+            layout.buildDirectory.dir("intermediates/assets/debugUnitTest/mergeDebugUnitTestAssets").get()
+                .asFile.toString()
         )
     }
     tasks.withType<KotlinCompile>().configureEach {
