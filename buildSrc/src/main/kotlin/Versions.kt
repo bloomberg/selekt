@@ -41,7 +41,7 @@ enum class Versions(
     KOTLIN("1.9.23", URL("https://github.com/JetBrains/kotlin")),
     KOTLIN_TEST(KOTLIN.version, URL("https://github.com/JetBrains/kotlin")),
     KOTLINX_COROUTINES("1.7.3", URL("https://github.com/Kotlin/kotlinx.coroutines")),
-    KOTLINX_KOVER("0.7.2", URL("https://github.com/Kotlin/kotlinx-kover")),
+    KOTLINX_KOVER("0.7.6", URL("https://github.com/Kotlin/kotlinx-kover")),
     KTLINT("0.45.2", URL("https://github.com/pinterest/ktlint")),
     KTLINT_GRADLE_PLUGIN("11.5.0", URL("https://github.com/JLLeitschuh/ktlint-gradle")),
     MOCKITO("5.11.0", URL("https://github.com/mockito/mockito")),
