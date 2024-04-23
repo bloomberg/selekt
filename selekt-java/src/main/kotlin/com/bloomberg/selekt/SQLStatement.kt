@@ -233,8 +233,8 @@ internal class SQLStatement private constructor(
     }
 }
 
-@Suppress("ArrayInDataClass")
-internal data class SQLStatementInformation(
+@Suppress("UseDataClass")
+internal class SQLStatementInformation(
     val isReadOnly: Boolean,
     val parameterCount: Int,
     val columnNames: Array<out String>
