@@ -49,7 +49,6 @@ android {
 
 dependencies {
     androidTestImplementation(projects.selektAndroid)
-    androidTestImplementation(libs.androidx.benchmark)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.junit.junit)

@@ -8,7 +8,6 @@ android-tools-lint = { group = "com.android.tools.lint", name = "lint", version 
 android-tools-lint-api = { group = "com.android.tools.lint", name = "lint-api", version = "31.3.2" }
 android-tools-gradle = { group = "com.android.tools.build", name = "gradle", version = "8.3.2" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.0.2" }
-androidx-benchmark = { group = "androidx.benchmark", name = "benchmark-junit4" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "1.1.3" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.0.2" }
 androidx-paging = { group = "androidx.paging", name = "paging-runtime", version = "2.1.0" }
