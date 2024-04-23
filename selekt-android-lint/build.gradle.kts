@@ -23,8 +23,8 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     signing
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 java {
@@ -33,9 +33,9 @@ java {
 }
 
 dependencies {
-    compileOnly("com.android.tools.lint:lint:${Versions.ANDROID_LINT}")
-    compileOnly("com.android.tools.lint:lint-api:${Versions.ANDROID_LINT}")
-    implementation(kotlin("reflect", Versions.KOTLIN.version))
+    compileOnly(libs.android.tools.lint.asProvider())
+    compileOnly(libs.android.tools.lint.api)
+    implementation(libs.kotlin.reflect)
 }
 
 tasks.withType<Jar>().configureEach {

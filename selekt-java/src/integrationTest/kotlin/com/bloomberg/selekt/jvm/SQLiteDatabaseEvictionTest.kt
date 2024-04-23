@@ -45,7 +45,8 @@ internal class SQLiteDatabaseEvictionTest {
         file,
         SQLiteJournalMode.WAL.databaseConfiguration.copy(
             evictionDelayMillis = 25L,
-            timeBetweenEvictionRunsMillis = 50L),
+            timeBetweenEvictionRunsMillis = 50L
+        ),
         null
     ).apply {
         pragma("journal_mode", SQLiteJournalMode.WAL)

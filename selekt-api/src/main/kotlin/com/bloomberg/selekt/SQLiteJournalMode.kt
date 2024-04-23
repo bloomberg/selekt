@@ -30,12 +30,14 @@ enum class SQLiteJournalMode(
      * conclusion of each transaction. Indeed, the delete operation is the action that causes the transaction to commit.
      */
     DELETE,
+
     /**
      * The MEMORY journaling mode stores the rollback journal in volatile RAM. This saves disk I/O but at the expense of
      * database safety and integrity. If the application using SQLite crashes in the middle of a transaction when the MEMORY
      * journaling mode is set, then the database file will very likely go corrupt.
      */
     MEMORY(commonInMemoryConfiguration),
+
     /**
      * The OFF journaling mode disables the rollback journal completely. No rollback journal is ever created and hence there
      * is never a rollback journal to delete. The OFF journaling mode disables the atomic commit and rollback capabilities
@@ -46,6 +48,7 @@ enum class SQLiteJournalMode(
      * in a corrupted state.
      */
     OFF,
+
     /**
      * The PERSIST journaling mode prevents the rollback journal from being deleted at the end of each transaction. Instead,
      * the header of the journal is overwritten with zeros. This will prevent other database connections from rolling the
@@ -53,12 +56,14 @@ enum class SQLiteJournalMode(
      * file is much more expensive than overwriting the first block of a file with zeros.
      */
     PERSIST,
+
     /**
      * The TRUNCATE journaling mode commits transactions by truncating the rollback journal to zero-length instead of
      * deleting it. On many systems, truncating a file is much faster than deleting the file since the containing directory
      * does not need to be changed.
      */
     TRUNCATE,
+
     /**
      * The WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions. The WAL
      * journaling mode is persistent; after being set it stays in effect across multiple database connections and after

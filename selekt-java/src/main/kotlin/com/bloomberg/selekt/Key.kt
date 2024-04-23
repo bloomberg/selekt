@@ -21,8 +21,10 @@ import javax.annotation.concurrent.GuardedBy
 
 internal class Key(value: ByteArray) {
     private val lock = Any()
+
     @GuardedBy("lock")
     private val value: ByteArray = value.copyOf()
+
     @GuardedBy("lock")
     private var isDestroyed = false
 

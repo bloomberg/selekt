@@ -91,10 +91,13 @@ internal class SQLiteDatabaseCacheBenchmark(private val inputs: CacheInputs) {
             CacheInputs("reuse", Array(10_000) {
                 Pair("SELECT * FROM 'Foo' WHERE bar=?", arrayOf<String?>("$it"))
             }.asIterable()),
-            CacheInputs("waste", Array(10_000) {
-                Pair("SELECT * FROM 'Foo' WHERE bar=$it", arrayOf<String?>())
-            }.asIterable()
-        )).asIterable()
+            CacheInputs(
+                "waste",
+                Array(10_000) {
+                    Pair("SELECT * FROM 'Foo' WHERE bar=$it", arrayOf<String?>())
+                }.asIterable()
+            )
+        ).asIterable()
     }
 
     @After

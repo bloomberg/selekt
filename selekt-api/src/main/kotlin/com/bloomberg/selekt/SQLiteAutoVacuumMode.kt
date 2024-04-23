@@ -24,6 +24,7 @@ enum class SQLiteAutoVacuumMode(private val value: Int) {
      * the entire database file and thus reclaim unused disk space.
      */
     NONE(0),
+
     /**
      * The freelist pages are moved to the end of the database file and the database file is truncated to remove the
      * freelist pages at every transaction commit. Note, however, that auto-vacuum only truncates the freelist pages from
@@ -31,6 +32,7 @@ enum class SQLiteAutoVacuumMode(private val value: Int) {
      * In fact, because it moves pages around within the file, auto-vacuum can actually make fragmentation worse.
      */
     FULL(1),
+
     /**
      * The additional information needed to do auto-vacuuming is stored in the database file but auto-vacuuming does not
      * occur automatically at each commit as it does with "full". In incremental mode, the separate incremental vacuum

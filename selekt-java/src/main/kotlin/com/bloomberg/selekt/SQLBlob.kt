@@ -28,7 +28,7 @@ internal fun SQLBlob.inputStream(offset: Int, limit: Int): InputStream = BlobInp
 internal fun SQLBlob.outputStream(offset: Int): OutputStream = BlobOutputStream(this, offset)
 
 @NotThreadSafe
-internal class SQLBlob constructor(
+internal class SQLBlob(
     private val pointer: Long,
     private val sqlite: SQLite,
     val readOnly: Boolean
@@ -98,7 +98,8 @@ internal class BlobInputStream(
                 minOf(it, length).also { len ->
                     if (offset + len > destination.size) {
                         throw ArrayIndexOutOfBoundsException(
-                            "Size: ${destination.size}; offset: $offset; length: $length; truncated length: $len")
+                            "Size: ${destination.size}; offset: $offset; length: $length; truncated length: $len"
+                        )
                     }
                     blob.read(index, destination, offset, len)
                     index += len

@@ -43,13 +43,19 @@ class ManagedStringBuilder(
         }
     }
 
-    @JvmSynthetic @PublishedApi internal fun validate() = builder.length <= maxRetainedLength
+    @JvmSynthetic
+    @PublishedApi
+    internal fun validate() = builder.length <= maxRetainedLength
 
-    @JvmSynthetic @PublishedApi internal fun passivate() {
+    @JvmSynthetic
+    @PublishedApi
+    internal fun passivate() {
         builder.clear()
     }
 
-    @JvmSynthetic @PublishedApi internal fun reset() {
+    @JvmSynthetic
+    @PublishedApi
+    internal fun reset() {
         builder = StringBuilder(defaultLength)
     }
 }

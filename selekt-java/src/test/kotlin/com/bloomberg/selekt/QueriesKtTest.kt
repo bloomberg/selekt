@@ -39,14 +39,16 @@ internal class QueriesKtTest {
     fun appendGroupByHaving() {
         assertEquals(
             "SELECT * FROM Foo GROUP BY bar HAVING COUNT(id) > 42",
-            StringBuilder("SELECT * FROM Foo").groupBy("bar").having("COUNT(id) > 42").toString())
+            StringBuilder("SELECT * FROM Foo").groupBy("bar").having("COUNT(id) > 42").toString()
+        )
     }
 
     @Test
     fun appendGroupByHavingNull() {
         assertEquals(
             "SELECT * FROM Foo GROUP BY bar",
-            StringBuilder("SELECT * FROM Foo").groupBy("bar").having(null).toString())
+            StringBuilder("SELECT * FROM Foo").groupBy("bar").having(null).toString()
+        )
     }
 
     @Test

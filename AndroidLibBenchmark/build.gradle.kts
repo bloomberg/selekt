@@ -17,9 +17,9 @@
 plugins {
     id("com.android.library")
     id("kotlin-android")
-    id("androidx.benchmark") version Versions.ANDROID_BENCHMARK.version
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.androidx.benchmark)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 repositories {
@@ -29,7 +29,7 @@ repositories {
 
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(Versions.ANDROID_BUILD_TOOLS.version)
+    buildToolsVersion(libs.android.tools.gradle.get().version!!)
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
         minSdkVersion(21)
@@ -49,13 +49,12 @@ android {
 
 dependencies {
     androidTestImplementation(projects.selektAndroid)
-    androidTestImplementation("junit:junit:${Versions.JUNIT4}")
-    androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.test:rules:1.5.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation(androidX("benchmark", "junit4", Versions.ANDROID_BENCHMARK.version))
-    androidTestImplementation(kotlin("test", Versions.KOTLIN.version))
-    androidTestImplementation(kotlin("test-junit", Versions.KOTLIN.version))
-    androidTestImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
-    testImplementation(kotlinX("coroutines-core", Versions.KOTLINX_COROUTINES.version))
+    androidTestImplementation(libs.androidx.benchmark)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.junit.junit)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlin.test.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.kotlinx.coroutines.core)
 }

@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-// TODO Move me.
-val kotlinVersion = "1.9.23"
-
 plugins {
     `kotlin-dsl`
     `java-gradle-plugin`
@@ -37,6 +34,6 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation(kotlin("gradle-plugin", version = kotlinVersion))
-    implementation("com.android.tools.build:gradle:8.3.2")
+    implementation(kotlin("gradle-plugin", version = libs.kotlin.bom.get().version))
+    implementation(libs.android.tools.gradle)
 }

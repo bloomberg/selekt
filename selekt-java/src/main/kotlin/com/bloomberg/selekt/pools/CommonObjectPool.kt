@@ -48,10 +48,13 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("lock")
     private val idleObjects = LinkedDeque<T>()
+
     @GuardedBy("lock")
     private var count = 0
+
     @GuardedBy("lock")
     private var future: Future<*>? = null
+
     @GuardedBy("lock")
     private var tag = false
 

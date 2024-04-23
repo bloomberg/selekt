@@ -53,7 +53,8 @@ internal fun openConnectionPool(
 ) = createObjectPool(
     SQLConnectionFactory(path, sqlite, configuration, random, key?.let { Key(it) }),
     sharedExecutor,
-    configuration.toPoolConfiguration())
+    configuration.toPoolConfiguration()
+)
 
 internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<String>
 

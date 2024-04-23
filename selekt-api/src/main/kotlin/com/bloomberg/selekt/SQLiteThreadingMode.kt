@@ -24,6 +24,7 @@ enum class SQLiteThreadingMode(private val value: Int) {
      * as long as no two threads attempt to use the same database connection at the same time.
      */
     MULTITHREAD(2),
+
     /**
      * This option sets the threading mode to "serialized". In other words, this option enables all mutexes including the
      * recursive mutexes on database connection and prepared statement objects. In this mode the SQLite library will itself
@@ -31,6 +32,7 @@ enum class SQLiteThreadingMode(private val value: Int) {
      * database connection or the same prepared statement in different threads at the same time.
      */
     SERIALIZED(1),
+
     /**
      * This option sets the threading mode to "single-thread". In other words, it disables all mutexing and puts SQLite into
      * a mode where it can only be used by a single thread.

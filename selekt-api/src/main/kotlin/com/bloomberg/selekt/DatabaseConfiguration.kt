@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt
 
-data class DatabaseConfiguration constructor(
+data class DatabaseConfiguration(
     val borrowWaitTimeoutMillis: Long = -1L,
     val busyTimeoutMillis: Int = 0,
     val evictionDelayMillis: Long,

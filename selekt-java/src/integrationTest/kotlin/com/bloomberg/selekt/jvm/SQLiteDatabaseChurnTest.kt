@@ -45,7 +45,8 @@ internal class SQLiteDatabaseChurnTest {
         file,
         SQLiteJournalMode.WAL.databaseConfiguration.copy(
             evictionDelayMillis = 50L,
-            timeBetweenEvictionRunsMillis = 100L),
+            timeBetweenEvictionRunsMillis = 100L
+        ),
         null
     ).apply {
         pragma("journal_mode", SQLiteJournalMode.WAL)

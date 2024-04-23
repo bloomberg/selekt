@@ -21,7 +21,7 @@ import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-internal class SQLConnection constructor(
+internal class SQLConnection(
     path: String,
     private val sqlite: SQLite,
     private val configuration: DatabaseConfiguration,

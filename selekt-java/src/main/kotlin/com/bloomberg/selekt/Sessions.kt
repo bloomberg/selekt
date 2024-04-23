@@ -227,7 +227,7 @@ interface ISQLTransactor {
 }
 
 @NotThreadSafe
-internal open class Session<K : Any, T : IPooledObject<K>> constructor(
+internal open class Session<K : Any, T : IPooledObject<K>>(
     private val pool: TieredObjectPool<K, T>
 ) {
     private var obj: T? = null

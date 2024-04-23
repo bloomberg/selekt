@@ -127,12 +127,14 @@ open class MultipleObjectInput {
 }
 
 open class CommonObjectPoolBenchmark {
-    @Benchmark @BenchmarkMode(Mode.Throughput)
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
     fun borrowThenReturnSingleObject(input: SingleObjectInput) = input.pool.run {
         borrowObject("").also { returnObject(it) }
     }
 
-    @Benchmark @BenchmarkMode(Mode.AverageTime)
+    @Benchmark
+    @BenchmarkMode(Mode.AverageTime)
     fun sequentialExactBorrowMultipleObjects(
         input: MultipleObjectInput
     ) = input.pool.run {
@@ -153,7 +155,8 @@ open class CommonObjectPoolBenchmark {
         }
     }
 
-    @Benchmark @BenchmarkMode(Mode.AverageTime)
+    @Benchmark
+    @BenchmarkMode(Mode.AverageTime)
     fun exactBorrowThenReturnMultipleObjects(input: MultipleObjectInput) = input.pool.run {
         runBlocking(Dispatchers.IO) {
             coroutineScope {
@@ -176,7 +179,8 @@ open class CommonObjectPoolBenchmark {
         }
     }
 
-    @Benchmark @BenchmarkMode(Mode.AverageTime)
+    @Benchmark
+    @BenchmarkMode(Mode.AverageTime)
     fun excessiveBorrowThenReturnMultipleObjects(input: MultipleObjectInput) = input.pool.run {
         runBlocking(Dispatchers.IO) {
             coroutineScope {
