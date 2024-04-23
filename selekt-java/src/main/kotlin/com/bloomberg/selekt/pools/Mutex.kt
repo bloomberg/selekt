@@ -25,8 +25,11 @@ import java.util.concurrent.locks.LockSupport
  */
 internal class Mutex {
     @Suppress("unused")
-    @Volatile private var isLocked = 0
-    @Volatile private var isCancelled = 0
+    @Volatile
+    private var isLocked = 0
+
+    @Volatile
+    private var isCancelled = 0
     private val waiters = ConcurrentLinkedQueue<Thread>()
 
     fun lock() {
@@ -159,10 +162,14 @@ internal class Mutex {
         private val ensureLoaded: Class<*> = LockSupport::class.java
 
         val isLockedUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java, "isLocked")
+            Mutex::class.java,
+            "isLocked"
+        )
 
         val isCancelledUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java, "isCancelled")
+            Mutex::class.java,
+            "isCancelled"
+        )
 
         fun cancellationError(): Nothing = error("Mutex received cancellation signal.")
     }

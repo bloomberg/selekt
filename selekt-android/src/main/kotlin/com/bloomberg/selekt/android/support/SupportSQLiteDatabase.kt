@@ -55,7 +55,7 @@ private class WrappedSQLiteTransactionListener(
 }
 
 @DelicateApi
-private class SupportSQLiteDatabase constructor(
+private class SupportSQLiteDatabase(
     private val database: SQLiteDatabase
 ) : SupportSQLiteDatabase {
     override fun beginTransaction() = database.beginExclusiveTransaction()

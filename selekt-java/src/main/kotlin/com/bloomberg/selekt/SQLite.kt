@@ -85,7 +85,8 @@ open class SQLite(
             row,
             flags,
             holder
-        ))
+        )
+    )
 
     fun blobRead(
         blob: Long,

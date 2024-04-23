@@ -22,8 +22,8 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     signing
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 disableKotlinCompilerAssertions()

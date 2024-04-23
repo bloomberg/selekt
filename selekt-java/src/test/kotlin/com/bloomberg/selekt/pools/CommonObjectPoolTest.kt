@@ -432,8 +432,10 @@ internal class CommonObjectPoolTest {
             }
         }.forEach { it.join() }
         assertTrue(objects.isNotEmpty())
-        assertTrue(objects.size <= configuration.maxTotal,
-            "Expected at most ${configuration.maxTotal}, found ${objects.size}.")
+        assertTrue(
+            objects.size <= configuration.maxTotal,
+            "Expected at most ${configuration.maxTotal}, found ${objects.size}."
+        )
     }
 
     @Test

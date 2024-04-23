@@ -24,7 +24,8 @@ plugins {
     id("kotlin-android")
     `maven-publish`
     signing
-    id("io.gitlab.arturbosch.detekt")
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 repositories {
@@ -37,9 +38,9 @@ val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
+    buildToolsVersion = libs.android.tools.gradle.get().version!!
     namespace = "com.bloomberg.selekt.android.sqlcipher"
-    ndkVersion = Versions.ANDROID_NDK.version
+    ndkVersion = "26.3.11579264"
     defaultConfig {
         minSdk = 21
     }
@@ -59,7 +60,7 @@ android {
     externalNativeBuild {
         cmake {
             path("$rootDir/SQLite3/CMakeLists.txt")
-            version = Versions.CMAKE.version
+            version = "3.22.1"
         }
     }
     publishing {

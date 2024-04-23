@@ -16,7 +16,6 @@
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
-import io.github.gradlenexus.publishplugin.NexusRepositoryContainer
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import java.net.URL
@@ -34,13 +33,13 @@ import org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask
 
 plugins {
     base
-    id("io.gitlab.arturbosch.detekt") version Versions.DETEKT.version
-    id("io.github.gradle-nexus.publish-plugin") version Versions.NEXUS_PLUGIN.version
-    id("org.jetbrains.dokka") version Versions.DOKKA.version
-    id("org.jetbrains.kotlinx.kover") version Versions.KOTLINX_KOVER.version
-    id("org.jetbrains.qodana") version Versions.QODANA_PLUGIN.version
-    id("org.jlleitschuh.gradle.ktlint") version Versions.KTLINT_GRADLE_PLUGIN.version
-    id("org.jetbrains.gradle.plugin.idea-ext") version Versions.IDE_EXT_GRADLE_PLUGIN.version
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.nexus)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.ideaExt)
+    alias(libs.plugins.qodana)
 }
 
 repositories {
@@ -52,12 +51,12 @@ version = selektVersionName
 logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
-    repositories(Action<NexusRepositoryContainer> {
+    repositories {
         sonatype()
-    })
+    }
     transitionCheckOptions {
-        maxRetries.set(180)
-        delayBetween.set(Duration.ofSeconds(10L))
+        maxRetries = 180
+        delayBetween = Duration.ofSeconds(10L)
     }
 }
 
@@ -66,7 +65,6 @@ dependencies {
     kover(projects.selektApi)
     kover(projects.selektJava)
     kover(projects.selektSqlite3Classes)
-    ktlint("com.pinterest:ktlint:${Versions.KTLINT}")
 }
 
 subprojects {
@@ -83,16 +81,17 @@ subprojects {
         plugins.withId(it) {
             dependencies {
                 configurations.getByName("compileOnly").apply {
-                    add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${Versions.JSR_305}]")
+                    add(name, "com.google.code.findbugs:jsr305:[2.0.2, ${libs.findbugs.jsr305.get().version}]")
                 }
                 configurations.getByName("implementation").apply {
-                    platform(kotlinX("coroutines-bom", version = Versions.KOTLINX_COROUTINES.version))
+                    add(name, platform(libs.kotlin.bom))
+                    add(name, platform(libs.kotlinx.coroutines.bom))
                 }
                 configurations.getByName("testImplementation") {
-                    add(name, kotlin("test", Versions.KOTLIN_TEST.version))
-                    add(name, kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
-                    add(name, "org.mockito:mockito-core:${Versions.MOCKITO}")
-                    add(name, "org.mockito.kotlin:mockito-kotlin:${Versions.MOCKITO_KOTLIN}")
+                    add(name, libs.kotlin.test)
+                    add(name, libs.kotlinx.coroutines.core)
+                    add(name, libs.mockito.core)
+                    add(name, libs.mockito.kotlin)
                 }
             }
         }
@@ -105,6 +104,9 @@ subprojects {
             }
             lint {
                 warningsAsErrors = true
+                disable.addAll(listOf(
+                    "GradleDependency"
+                ))
             }
             testOptions {
                 unitTests.isIncludeAndroidResources = true
@@ -119,6 +121,9 @@ subprojects {
             }
             lint {
                 warningsAsErrors = true
+                disable.addAll(listOf(
+                    "GradleDependency"
+                ))
             }
             testOptions {
                 unitTests.isIncludeAndroidResources = true
@@ -161,7 +166,6 @@ subprojects {
     }
     plugins.withId("io.gitlab.arturbosch.detekt") {
         configure<DetektExtension> {
-            toolVersion = Versions.DETEKT.version
             source = files("src")
             config = files("${rootProject.projectDir}/config/detekt/config.yml")
             buildUponDefaultConfig = true
@@ -193,9 +197,10 @@ subprojects {
         moduleName.set("Selekt")
         dokkaSourceSets.named("main") {
             sourceLink {
-                remoteUrl.set(URL("https://github.com/bloomberg/selekt/tree/master/" +
-                    "${this@configureEach.project.name}/src/main/kotlin"))
-                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl = URL(
+                    "https://github.com/bloomberg/selekt/tree/master/${this@configureEach.project.name}/src/main/kotlin"
+                )
+                localDirectory = file("src/main/kotlin")
             }
             includeNonPublic.set(false)
             jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
@@ -209,7 +214,6 @@ subprojects {
 allprojects {
     plugins.withId("org.jlleitschuh.gradle.ktlint") {
         configure<KtlintExtension> {
-            version.set(Versions.KTLINT.version)
             disabledRules.set(setOf("import-ordering", "indent", "wrapping"))
             reporters {
                 reporter(ReporterType.HTML)
@@ -273,5 +277,5 @@ limitations under the License.
 }
 
 qodana {
-    saveReport.set(true)
+    saveReport = true
 }

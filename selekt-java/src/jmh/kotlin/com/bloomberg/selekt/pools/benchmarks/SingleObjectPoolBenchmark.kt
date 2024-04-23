@@ -58,7 +58,8 @@ open class PoolInput {
 }
 
 open class SingleObjectPoolBenchmark {
-    @Benchmark @BenchmarkMode(Mode.Throughput)
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
     fun borrowThenReturnObject(input: PoolInput) = input.pool.run {
         borrowObject("").also { returnObject(it) }
     }

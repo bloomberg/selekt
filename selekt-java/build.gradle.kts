@@ -26,13 +26,13 @@ repositories {
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("org.jetbrains.kotlinx.kover")
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
     `maven-publish`
     signing
     id("bb-jmh")
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 disableKotlinCompilerAssertions()
@@ -60,7 +60,7 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
-    jmhImplementation(kotlinX("coroutines-core", version = Versions.KOTLINX_COROUTINES.version))
+    jmhImplementation(libs.kotlinx.coroutines.core)
 }
 
 publishing {

@@ -47,7 +47,7 @@ private object SharedSqlBuilder {
  * @see <a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a>
  */
 @ThreadSafe
-class SQLDatabase constructor(
+class SQLDatabase(
     val path: String,
     sqlite: SQLite,
     configuration: DatabaseConfiguration,
@@ -187,7 +187,13 @@ class SQLDatabase constructor(
     ): ICursor = query(SQLQuery.create(session, sql, sql.resolvedSqlStatementType(), selectionArgs))
 
     override fun query(query: ISQLQuery): ICursor = query(
-        SQLQuery.create(session, query.sql, query.sql.resolvedSqlStatementType(), query.argCount).also { query.bindTo(it) })
+        SQLQuery.create(
+            session,
+            query.sql,
+            query.sql.resolvedSqlStatementType(),
+            query.argCount
+        ).also { query.bindTo(it) }
+    )
 
     @Suppress("Detekt.LongParameterList")
     fun readFromBlob(

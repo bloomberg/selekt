@@ -44,7 +44,8 @@ internal class SQLiteDatabaseThunderingHerdTest {
         file,
         SQLiteJournalMode.WAL.databaseConfiguration.copy(
             evictionDelayMillis = 100L,
-            timeBetweenEvictionRunsMillis = 250L),
+            timeBetweenEvictionRunsMillis = 250L
+        ),
         null
     ).apply {
         pragma("journal_mode", SQLiteJournalMode.WAL)

@@ -30,10 +30,13 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val evictionIntervalMillis: Long
 ) : IObjectPool<K, T> {
     private val mutex = Mutex()
+
     @GuardedBy("mutex")
     private var obj: T? = null
+
     @GuardedBy("mutex")
     private var canEvict = false
+
     @GuardedBy("mutex")
     private var future: Future<*>? = null
 

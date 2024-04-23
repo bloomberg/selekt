@@ -16,25 +16,17 @@
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import org.gradle.api.artifacts.DependencySubstitutions
-import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.net.URI
 
-fun DependencyHandler.androidX(module: String, suffix: String? = null, version: String? = null): Any =
-    "androidx.$module:$module${suffix?.let { "-$it" }.orEmpty()}${version?.let { ":$it" }.orEmpty()}"
+val <T> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
 
-fun DependencyHandler.kotlinX(module: String, version: String? = null): Any =
-    "org.jetbrains.kotlinx:kotlinx-$module${version?.let { ":$version" }.orEmpty()}"
+fun <T> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = getByName("debug", configure)
 
-val <T> NamedDomainObjectContainer<T>.debug: T get() = requireNotNull(getByName("debug"))
-
-fun <T> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = requireNotNull(getByName("debug", configure))
-
-fun <T> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = requireNotNull(getByName("release", configure))
+fun <T> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = getByName("release", configure)
 
 fun Project.gitCommit(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "HEAD")

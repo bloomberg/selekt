@@ -17,8 +17,8 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 repositories {
@@ -28,7 +28,7 @@ repositories {
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = Versions.ANDROID_BUILD_TOOLS.version
+    buildToolsVersion = libs.android.tools.gradle.get().version!!
     namespace = "com.bloomberg.selekt.cli"
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
@@ -59,9 +59,9 @@ android {
 
 dependencies {
     implementation(projects.selektAndroid)
-    implementation(androidX("appcompat", version = "1.0.2"))
-    implementation(androidX("core", "ktx", version = "1.0.2"))
-    implementation(androidX("paging", "runtime", "2.1.0"))
-    implementation(androidX("constraintlayout", version = "1.1.3"))
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.paging)
     runtimeOnly(projects.selektAndroidSqlcipher)
 }
