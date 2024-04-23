@@ -104,6 +104,9 @@ subprojects {
             }
             lint {
                 warningsAsErrors = true
+                disable.addAll(listOf(
+                    "GradleDependency"
+                ))
             }
             testOptions {
                 unitTests.isIncludeAndroidResources = true
@@ -118,6 +121,9 @@ subprojects {
             }
             lint {
                 warningsAsErrors = true
+                disable.addAll(listOf(
+                    "GradleDependency"
+                ))
             }
             testOptions {
                 unitTests.isIncludeAndroidResources = true
