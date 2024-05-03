@@ -30,7 +30,7 @@ fun <T> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = getByNa
 
 fun Project.gitCommit(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "HEAD")
-}.standardOutput.asText
+}.standardOutput.asText.map { it.trim() }
 
 fun Project.gitCommitShort(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "--short", "HEAD")
