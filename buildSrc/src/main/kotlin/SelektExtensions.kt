@@ -94,7 +94,7 @@ fun MavenPom.commonInitialisation(project: Project) {
     inceptionYear.set("2019")
     issueManagement {
         system.set("GitHub")
-        url.set("https://github.com/bloomberg/Selekt/issues")
+        url.set("https://github.com/bloomberg/selekt/issues")
     }
     licenses {
         license {
@@ -111,7 +111,7 @@ fun MavenPom.commonInitialisation(project: Project) {
         connection.set("git@github.com:bloomberg/selekt.git")
         developerConnection.set("git@github.com:bloomberg/selekt.git")
         tag.set(project.gitCommit())
-        url.set("https://github.com/bloomberg/Selekt")
+        url.set("https://github.com/bloomberg/selekt")
     }
     url.set("https://bloomberg.github.io/selekt/")
 }
