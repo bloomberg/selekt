@@ -34,7 +34,7 @@ fun Project.gitCommit(): Provider<String> = providers.exec {
 
 fun Project.gitCommitShort(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "--short", "HEAD")
-}.standardOutput.asText
+}.standardOutput.asText.map { it.trim() }
 
 fun Project.isRelease() = hasProperty("release")
 
