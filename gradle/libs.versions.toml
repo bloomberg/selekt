@@ -17,8 +17,8 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.1
 androidx-paging = { group = "androidx.paging", name = "paging-runtime", version = "3.2.1" }
 androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version = "2.7.0" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit", version = "1.1.5" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version = "1.5.0" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version = "1.5.2" }
