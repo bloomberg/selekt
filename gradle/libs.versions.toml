@@ -27,7 +27,7 @@ jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "jmh" }
 junit-junit = { group = "junit", name = "junit", version = "4.13.2" }
 junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version = "5.10.2" }
-kotlin-bom = { group = "org.jetbrains.kotlin", name = "kotlin-bom", version = "1.9.23" }
+kotlin-bom = { group = "org.jetbrains.kotlin", name = "kotlin-bom", version = "1.9.24" }
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test" }
 kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit" }
