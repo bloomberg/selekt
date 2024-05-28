@@ -52,7 +52,7 @@ jobs:
     - name: 'Licenses'
       run: ./gradlew licensee --no-configuration-cache
     - name: 'Analyse'
-      run: ./gradlew detekt ktlintCheck lintDebug ${{ env.SCAN }}
+      run: ./gradlew detekt ktlintCheck lint -x lintRelease ${{ env.SCAN }}
     - uses: actions/upload-artifact@v3
       if: always()
       with:

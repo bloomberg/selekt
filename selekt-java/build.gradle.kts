@@ -21,11 +21,13 @@ import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 repositories {
     mavenCentral()
+    google()
 }
 
 plugins {
     kotlin("jvm")
     kotlin("kapt")
+    id("com.android.lint")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
     `maven-publish`

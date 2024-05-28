@@ -18,10 +18,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 repositories {
     mavenCentral()
+    google()
 }
 
 plugins {
     kotlin("jvm")
+    id("com.android.lint")
     alias(libs.plugins.dokka)
     `maven-publish`
     signing
