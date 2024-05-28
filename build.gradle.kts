@@ -105,6 +105,7 @@ subprojects {
             lint {
                 warningsAsErrors = true
                 disable.addAll(listOf(
+                    "AndroidGradlePluginVersion",
                     "GradleDependency"
                 ))
             }
@@ -122,6 +123,7 @@ subprojects {
             lint {
                 warningsAsErrors = true
                 disable.addAll(listOf(
+                    "AndroidGradlePluginVersion",
                     "GradleDependency"
                 ))
             }
