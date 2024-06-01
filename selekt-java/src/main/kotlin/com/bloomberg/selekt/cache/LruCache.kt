@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt
+package com.bloomberg.selekt.cache
 
 import javax.annotation.concurrent.NotThreadSafe
 
 private const val NO_RESIZE_LOAD_FACTOR = 1.1f
 
 @NotThreadSafe
-internal class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> Unit) {
-    private val store = object : LinkedHashMap<String, T>(maxSize, NO_RESIZE_LOAD_FACTOR, true) {
+class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> Unit) {
+    @PublishedApi
+    @JvmField
+    @JvmSynthetic
+    internal val store = object : LinkedHashMap<String, T>(maxSize, NO_RESIZE_LOAD_FACTOR, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, T>) = (size > maxSize).also {
             if (it) {
                 disposal(eldest.value)
