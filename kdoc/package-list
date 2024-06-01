@@ -103,6 +103,13 @@ $dokka.location:com.bloomberg.selekt.android/Selekt/unregisterComponentCallbackF
 $dokka.location:com.bloomberg.selekt.annotations////PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt.annotations/index.md
 $dokka.location:com.bloomberg.selekt.annotations/DelicateApi///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt.annotations/-delicate-api/index.md
 $dokka.location:com.bloomberg.selekt.annotations/Experimental///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt.annotations/-experimental/index.md
+$dokka.location:com.bloomberg.selekt.cache////PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/index.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/index.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache/LruCache/#kotlin.Int#kotlin.Function1[TypeParam(bounds=[kotlin.Any]),kotlin.Unit]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/-lru-cache.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache/containsKey/#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/contains-key.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache/evict/#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/evict.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache/evictAll/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/evict-all.md
+$dokka.location:com.bloomberg.selekt.cache/LruCache/get/#kotlin.String#kotlin.Function0[TypeParam(bounds=[kotlin.Any])]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/get.md
 $dokka.location:com.bloomberg.selekt.commons////PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/index.md
 $dokka.location:com.bloomberg.selekt.commons//deleteDatabase/#java.io.File/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/delete-database.md
 $dokka.location:com.bloomberg.selekt.commons//emptyIterable/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/empty-iterable.md
@@ -502,5 +509,6 @@ com.bloomberg.selekt
 com.bloomberg.selekt.annotations
 module:selekt-java
 com.bloomberg.selekt
+com.bloomberg.selekt.cache
 com.bloomberg.selekt.commons
 com.bloomberg.selekt.pools

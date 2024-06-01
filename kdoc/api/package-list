@@ -9,5 +9,6 @@ com.bloomberg.selekt
 com.bloomberg.selekt.annotations
 module:selekt-java
 com.bloomberg.selekt
+com.bloomberg.selekt.cache
 com.bloomberg.selekt.commons
 com.bloomberg.selekt.pools

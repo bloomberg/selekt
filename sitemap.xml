@@ -2066,6 +2066,41 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/-lru-cache/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/contains-key/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/evict-all/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/evict/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.cache/-lru-cache/get/</loc>
+         <lastmod>2024-06-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.commons/</loc>
          <lastmod>2024-06-01</lastmod>
          <changefreq>daily</changefreq>
