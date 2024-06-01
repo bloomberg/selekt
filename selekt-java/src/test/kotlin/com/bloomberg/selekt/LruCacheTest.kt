@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.cache.LruCache
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn

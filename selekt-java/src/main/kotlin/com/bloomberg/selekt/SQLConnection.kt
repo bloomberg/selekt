@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
