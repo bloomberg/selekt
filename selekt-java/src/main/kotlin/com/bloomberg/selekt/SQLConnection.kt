@@ -189,18 +189,16 @@ internal class SQLConnection(
         block()
     }
 
-    private fun acquirePreparedStatement(sql: String) = preparedStatements[
-        sql, {
-            val pointer = sqlite.prepare(pointer, sql)
-            pooledPreparedStatement.let {
-                if (it != null) {
-                    SQLPreparedStatement.recycle(it, pointer, sql).also { pooledPreparedStatement = null }
-                } else {
-                    SQLPreparedStatement(pointer, sql, sqlite, random)
-                }
+    private fun acquirePreparedStatement(sql: String) = preparedStatements.get(sql) {
+        val pointer = sqlite.prepare(pointer, sql)
+        pooledPreparedStatement.let {
+            if (it != null) {
+                SQLPreparedStatement.recycle(it, pointer, sql).also { pooledPreparedStatement = null }
+            } else {
+                SQLPreparedStatement(pointer, sql, sqlite, random)
             }
         }
-    ]
+    }
 
     private fun releasePreparedStatement(preparedStatement: SQLPreparedStatement) {
         if (runCatching { preparedStatement.resetAndClearBindings() }.isFailure) {

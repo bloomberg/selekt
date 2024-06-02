@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.cache.benchmarks
+package com.bloomberg.selekt.jdk.benchmarks
 
-import com.bloomberg.selekt.cache.LruCache
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -24,28 +23,38 @@ import org.openjdk.jmh.annotations.Mode
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
+import java.util.LinkedList
 
 @State(Scope.Thread)
-open class CacheInput {
-    internal lateinit var cache: LruCache<Any>
+open class LinkedListInput {
+    internal lateinit var list: LinkedList<Node>
+
+    data class Node(
+        val value: Any,
+        val next: Any?
+    )
 
     @Setup(Level.Iteration)
     fun setUp() {
-        cache = LruCache(1) {}
+        list = LinkedList<Node>().apply {
+            val next = Any()
+            add(Node(Any(), next))
+            add(Node(Any(), null))
+        }
     }
 }
 
-open class LruCacheBenchmark {
+open class LinkedListBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: CacheInput) = input.cache.run {
-        get("1") {}
+    fun getFirst(input: LinkedListInput) = input.list.run {
+        firstOrNull()
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithEviction(input: CacheInput) = input.cache.run {
-        get("1") {}
-        get("2") {}
+    fun getEntries(input: LinkedListInput) = input.list.run {
+        val first = firstOrNull()
+        first?.next
     }
 }

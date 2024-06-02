@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.cache.benchmarks
+package com.bloomberg.selekt.jdk.benchmarks
 
-import com.bloomberg.selekt.cache.LruCache
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -26,26 +25,29 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
-open class CacheInput {
-    internal lateinit var cache: LruCache<Any>
+open class ArrayListInput {
+    internal lateinit var list: ArrayList<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        cache = LruCache(1) {}
+        list = ArrayList<Any>(1).apply {
+            add(Any())
+            add(Any())
+        }
     }
 }
 
-open class LruCacheBenchmark {
+open class ArrayListBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: CacheInput) = input.cache.run {
-        get("1") {}
+    fun getFirst(input: ArrayListInput) = input.list.run {
+        firstOrNull()
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithEviction(input: CacheInput) = input.cache.run {
-        get("1") {}
-        get("2") {}
+    fun getEntries(input: ArrayListInput) = input.list.run {
+        firstOrNull()
+        this[1]
     }
 }

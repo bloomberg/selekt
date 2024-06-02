@@ -16,36 +16,25 @@
 
 package com.bloomberg.selekt.cache
 
+import com.bloomberg.selekt.collections.map.FastLinkedStringMap
 import javax.annotation.concurrent.NotThreadSafe
 
-private const val NO_RESIZE_LOAD_FACTOR = 1.1f
-
 @NotThreadSafe
-class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> Unit) {
+class LruCache<T : Any>(maxSize: Int, disposal: (T) -> Unit) {
     @PublishedApi
     @JvmField
     @JvmSynthetic
-    internal val store = object : LinkedHashMap<String, T>(maxSize, NO_RESIZE_LOAD_FACTOR, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, T>) = (size > maxSize).also {
-            if (it) {
-                disposal(eldest.value)
-            }
-        }
-
-        override fun remove(key: String): T? = super.remove(key)?.also { disposal(it) }
-    }
+    internal val store = FastLinkedStringMap(maxSize, maxSize, false, disposal)
 
     fun evict(key: String) {
-        store.remove(key)
+        store.removeKey(key)
     }
 
     fun evictAll() {
-        store.values.toList()
-            .also { store.clear() }
-            .forEach { disposal(it) }
+        store.clear()
     }
 
-    inline operator fun get(key: String, supplier: () -> T): T = store.getOrPut(key, supplier)
+    inline fun get(key: String, supplier: () -> T): T = store.getElsePut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)
 }

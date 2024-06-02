@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.cache.benchmarks
+package com.bloomberg.selekt.collections.map.benchmarks
 
-import com.bloomberg.selekt.cache.LruCache
+import com.bloomberg.selekt.collections.map.FastStringMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -26,26 +26,33 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
-open class CacheInput {
-    internal lateinit var cache: LruCache<Any>
+open class MapInput {
+    internal lateinit var map: FastStringMap<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        cache = LruCache(1) {}
+        map = FastStringMap(1)
     }
 }
 
-open class LruCacheBenchmark {
+open class FastStringMapBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: CacheInput) = input.cache.run {
-        get("1") {}
+    fun getEntry(input: MapInput) = input.map.run {
+        getEntryElsePut("1") { "" }
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithEviction(input: CacheInput) = input.cache.run {
-        get("1") {}
-        get("2") {}
+    fun getEntryWithCollision(input: MapInput) = input.map.run {
+        getEntryElsePut("1") { "" }
+        getEntryElsePut("2") { "" }
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getThenRemoveEntry(input: MapInput) = input.map.run {
+        getEntryElsePut("1") { "" }
+        removeEntry("1")
     }
 }
