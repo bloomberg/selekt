@@ -36,19 +36,19 @@ class JmhPlugin : Plugin<Project> {
             }
         }
         tasks.register("jmh", JavaExec::class.java) {
-            val reportDir = "$buildDir/reports/jmh"
-            val reportFile = "$reportDir/jmh.json"
+            val reportDir = layout.buildDirectory.dir("reports/jmh")
+            val reportFile = layout.buildDirectory.file("reports/jmh/jmh.json")
             group = "benchmark"
             dependsOn("jmhClasses")
             mainClass.set("org.openjdk.jmh.Main")
             args(
                 "-rf", "json",
-                "-rff", reportFile
+                "-rff", reportFile.get().asFile.absolutePath
             )
             classpath(sourceSets.getByName("jmh").runtimeClasspath)
-            doFirst { mkdir(reportDir) }
+            doFirst { reportDir.get().asFile.mkdir() }
             outputs.apply {
-                file(reportFile)
+                file(reportFile.get().asFile)
                 upToDateWhen { false }
             }
         }
