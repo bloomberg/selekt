@@ -19,6 +19,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.register
 
 class JmhPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = target.run {
@@ -35,15 +36,18 @@ class JmhPlugin : Plugin<Project> {
                 add(name, "org.openjdk.jmh:jmh-generator-annprocess:${Versions.JMH}")
             }
         }
-        tasks.register("jmh", JavaExec::class.java) {
+        tasks.register<JavaExec>("jmh") {
             val reportDir = layout.buildDirectory.dir("reports/jmh")
             val reportFile = layout.buildDirectory.file("reports/jmh/jmh.json")
             group = "benchmark"
             dependsOn("jmhClasses")
             mainClass.set("org.openjdk.jmh.Main")
             args(
-                "-rf", "json",
-                "-rff", reportFile.get().asFile.absolutePath
+                listOfNotNull(
+                    properties["jmh.include"]?.toString(),
+                    "-rf", "json",
+                    "-rff", reportFile.get().asFile.absolutePath
+                )
             )
             classpath(sourceSets.getByName("jmh").runtimeClasspath)
             doFirst { reportDir.get().asFile.mkdir() }
