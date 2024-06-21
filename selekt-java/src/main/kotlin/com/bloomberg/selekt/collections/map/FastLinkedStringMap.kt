@@ -61,6 +61,7 @@ class FastLinkedStringMap<T>(
     override fun clear() {
         super.clear()
         spare = null
+        head = null
         var entry = tail
         while (entry != null) {
             val previous = entry.previous
@@ -69,6 +70,7 @@ class FastLinkedStringMap<T>(
             entry.value = null
             entry = previous
         }
+        tail = null
     }
 
     private fun LinkedEntry<T>.unlink(): Entry<T> = apply {
