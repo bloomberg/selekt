@@ -65,6 +65,22 @@ class FastStampedStringMap<T>(
         return currentStamp
     }
 
+    internal fun asLinkedMap(
+        maxSize: Int = size,
+        disposal: (T) -> Unit
+    ) = FastLinkedStringMap(
+        maxSize = maxSize,
+        capacity = maxSize,
+        accessOrder = true,
+        disposal = disposal
+    ).apply {
+        entries().sortedBy {
+            (it as StampedEntry<T>).stamp
+        }.forEach {
+            addAssociation(it.index, it.hashCode, it.key, it.value!!)
+        }
+    }
+
     private fun entries(): Iterable<Entry<T>> = store.flatMap {
         sequence {
             var current = it
