@@ -19,11 +19,11 @@ package com.bloomberg.selekt.collections.map
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-class FastAccessOrderedStringMap<T>(
+class FastStampedStringMap<T>(
     capacity: Int
 ) : FastStringMap<T>(capacity) {
-    private var accessNumber = Int.MIN_VALUE
-    private var spare: AOEntry<T>? = null
+    private var currentStamp = Int.MIN_VALUE
+    private var spare: StampedEntry<T>? = null
 
     inline fun getElsePut(
         key: String,
@@ -32,7 +32,7 @@ class FastAccessOrderedStringMap<T>(
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         entryMatching(index, hashCode, key)?.let {
-            (it as AOEntry<T>).accessNumber = nextAccessCount()
+            (it as StampedEntry<T>).stamp = nextStamp()
             return it.value!!
         }
         return addAssociation(index, hashCode, key, supplier()).value!!
@@ -46,9 +46,9 @@ class FastAccessOrderedStringMap<T>(
     ): Entry<T> {
         spare?.let {
             spare = null
-            return it.update(index, hashCode, key, value, nextAccessCount(), store[index])
+            return it.update(index, hashCode, key, value, nextStamp(), store[index])
         }
-        return AOEntry(index, hashCode, key, value, nextAccessCount(), store[index])
+        return StampedEntry(index, hashCode, key, value, nextStamp(), store[index])
     }
 
     override fun clear() {
@@ -56,23 +56,13 @@ class FastAccessOrderedStringMap<T>(
         spare = null
     }
 
-    internal fun asLinkedMap(
-        capacity: Int = size
-    ) = FastLinkedStringMap<T>(capacity = capacity).apply {
-        entries().sortedBy {
-            (it as AOEntry<T>).accessNumber
-        }.forEach {
-            addAssociation(it.index, it.hashCode, it.key, it.value!!)
-        }
-    }
-
     @PublishedApi
-    internal fun nextAccessCount(): Int {
-        accessNumber += 1
-        if (accessNumber == Int.MIN_VALUE) {
-            resetAllAccessCounts()
+    internal fun nextStamp(): Int {
+        if (Int.MAX_VALUE == currentStamp) {
+            resetAllStamps()
         }
-        return accessNumber
+        currentStamp += 1
+        return currentStamp
     }
 
     private fun entries(): Iterable<Entry<T>> = store.flatMap {
@@ -85,21 +75,24 @@ class FastAccessOrderedStringMap<T>(
         }
     }.asIterable()
 
-    private fun resetAllAccessCounts() {
+    private fun resetAllStamps() {
         entries().sortedBy {
-            (it as AOEntry<T>).accessNumber
-        }.forEachIndexed { index, it ->
-            (it as AOEntry<T>).accessNumber = Int.MIN_VALUE + index
+            (it as StampedEntry<T>).stamp
+        }.run {
+            currentStamp = Int.MIN_VALUE + maxOf(0, size - 1)
+            forEachIndexed { index, it ->
+                (it as StampedEntry<T>).stamp = Int.MIN_VALUE + index
+            }
         }
     }
 
     @PublishedApi
-    internal class AOEntry<T>(
+    internal class StampedEntry<T>(
         index: Int,
         hashCode: Int,
         key: String,
         value: T,
-        var accessNumber: Int,
+        var stamp: Int,
         after: Entry<T>?
     ) : Entry<T>(index, hashCode, key, value, after) {
         @Suppress("NOTHING_TO_INLINE")
@@ -108,14 +101,14 @@ class FastAccessOrderedStringMap<T>(
             hashCode: Int,
             key: String,
             value: T,
-            accessCount: Int,
+            stamp: Int,
             after: Entry<T>?
         ) = apply {
             this.index = index
             this.hashCode = hashCode
             this.key = key
             this.value = value
-            this.accessNumber = accessCount
+            this.stamp = stamp
             this.after = after
         }
     }

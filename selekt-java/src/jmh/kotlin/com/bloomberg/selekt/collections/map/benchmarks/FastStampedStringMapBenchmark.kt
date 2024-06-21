@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.collections.map.benchmarks
 
-import com.bloomberg.selekt.collections.map.FastAccessOrderedStringMap
+import com.bloomberg.selekt.collections.map.FastStampedStringMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -26,32 +26,32 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
-open class LruMapInput {
-    internal lateinit var map: FastAccessOrderedStringMap<Any>
+open class StampedMapInput {
+    internal lateinit var map: FastStampedStringMap<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        map = FastAccessOrderedStringMap(1)
+        map = FastStampedStringMap(1)
     }
 }
 
 open class FastLruStringMapBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: LruMapInput) = input.map.run {
+    fun getEntry(input: StampedMapInput) = input.map.run {
         getEntryElsePut("1") { "" }
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithCollision(input: LruMapInput) = input.map.run {
+    fun getEntryWithCollision(input: StampedMapInput) = input.map.run {
         getEntryElsePut("1") { "" }
         getEntryElsePut("2") { "" }
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getThenRemoveEntry(input: LruMapInput) = input.map.run {
+    fun getThenRemoveEntry(input: StampedMapInput) = input.map.run {
         getEntryElsePut("1") { "" }
         removeEntry("1")
     }
