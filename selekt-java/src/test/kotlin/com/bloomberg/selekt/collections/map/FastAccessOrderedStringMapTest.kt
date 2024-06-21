@@ -30,18 +30,18 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-internal class FastLruStringMapTest {
+internal class FastAccessOrderedStringMapTest {
     @Test
     fun get() {
         val first = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         assertSame(first, map.getElsePut("1") { first })
     }
 
     @Test
     fun sizeOne() {
         val first = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         assertEquals(1, map.size)
     }
@@ -49,7 +49,7 @@ internal class FastLruStringMapTest {
     @Test
     fun getTwice() {
         val first = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         assertSame(first, map.getElsePut("1") { fail() })
     }
@@ -58,7 +58,7 @@ internal class FastLruStringMapTest {
     fun getWhenAbsent() {
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         val item = map.getElsePut("1", supplier)
         verify(supplier, times(1)).invoke()
         assertSame(item, map.getElsePut("1", supplier))
@@ -69,7 +69,7 @@ internal class FastLruStringMapTest {
     fun getTwo() {
         val first = Any()
         val second = Any()
-        val map = FastLruStringMap<Any>(64)
+        val map = FastAccessOrderedStringMap<Any>(64)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
         assertEquals(2, map.size)
@@ -79,7 +79,7 @@ internal class FastLruStringMapTest {
     fun getTwoWithCollisions() {
         val first = Any()
         val second = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
         assertSame(first, map.getElsePut("1") { fail() })
@@ -90,7 +90,7 @@ internal class FastLruStringMapTest {
     fun sizeTwo() {
         val first = Any()
         val second = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
         assertSame(first, map.getElsePut("1") { fail() })
@@ -100,7 +100,7 @@ internal class FastLruStringMapTest {
     @Test
     fun removeOne() {
         val first = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         assertSame(first, map.removeEntry("1").value)
     }
@@ -109,7 +109,7 @@ internal class FastLruStringMapTest {
     fun removeTwo() {
         val first = Any()
         val second = Any()
-        val map = FastLruStringMap<Any>(2)
+        val map = FastAccessOrderedStringMap<Any>(2)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
         assertSame(first, map.removeEntry("1").value)
@@ -120,7 +120,7 @@ internal class FastLruStringMapTest {
     fun removeTwoWithCollisions() {
         val first = Any()
         val second = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
         assertSame(first, map.removeEntry("1").value)
@@ -130,7 +130,7 @@ internal class FastLruStringMapTest {
     @Test
     fun removeThenSize() {
         val first = Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { first }
         map.removeEntry("1")
         assertEquals(0, map.size)
@@ -138,7 +138,7 @@ internal class FastLruStringMapTest {
 
     @Test
     fun removeWhenEmpty() {
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         assertThrows<NoSuchElementException> {
             map.removeEntry("1")
         }
@@ -147,7 +147,7 @@ internal class FastLruStringMapTest {
 
     @Test
     fun clear() {
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1") { Any() }
         assertEquals(1, map.size)
         map.clear()
@@ -156,7 +156,7 @@ internal class FastLruStringMapTest {
 
     @Test
     fun clearWhenEmpty() {
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.clear()
         assertTrue(map.isEmpty())
     }
@@ -165,7 +165,7 @@ internal class FastLruStringMapTest {
     fun containsFalse() {
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1", supplier)
         assertFalse(map.containsKey("2"))
     }
@@ -174,7 +174,7 @@ internal class FastLruStringMapTest {
     fun containsTrue() {
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val map = FastLruStringMap<Any>(1)
+        val map = FastAccessOrderedStringMap<Any>(1)
         map.getElsePut("1", supplier)
         assertTrue(map.containsKey("1"))
     }

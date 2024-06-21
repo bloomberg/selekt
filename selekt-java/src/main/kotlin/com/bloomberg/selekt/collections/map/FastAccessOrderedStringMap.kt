@@ -19,11 +19,11 @@ package com.bloomberg.selekt.collections.map
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-class FastLruStringMap<T>(
+class FastAccessOrderedStringMap<T>(
     capacity: Int
 ) : FastStringMap<T>(capacity) {
-    private var accessCount = Int.MIN_VALUE
-    private var spare: LruEntry<T>? = null
+    private var accessNumber = Int.MIN_VALUE
+    private var spare: AOEntry<T>? = null
 
     inline fun getElsePut(
         key: String,
@@ -32,7 +32,7 @@ class FastLruStringMap<T>(
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         entryMatching(index, hashCode, key)?.let {
-            (it as LruEntry<T>).accessCount = nextAccessCount()
+            (it as AOEntry<T>).accessNumber = nextAccessCount()
             return it.value!!
         }
         return addAssociation(index, hashCode, key, supplier()).value!!
@@ -48,7 +48,7 @@ class FastLruStringMap<T>(
             spare = null
             return it.update(index, hashCode, key, value, nextAccessCount(), store[index])
         }
-        return LruEntry(index, hashCode, key, value, nextAccessCount(), store[index])
+        return AOEntry(index, hashCode, key, value, nextAccessCount(), store[index])
     }
 
     override fun clear() {
@@ -56,38 +56,50 @@ class FastLruStringMap<T>(
         spare = null
     }
 
+    internal fun asLinkedMap(
+        capacity: Int = size
+    ) = FastLinkedStringMap<T>(capacity = capacity).apply {
+        entries().sortedBy {
+            (it as AOEntry<T>).accessNumber
+        }.forEach {
+            addAssociation(it.index, it.hashCode, it.key, it.value!!)
+        }
+    }
+
     @PublishedApi
     internal fun nextAccessCount(): Int {
-        accessCount += 1
-        if (accessCount == Int.MIN_VALUE) {
+        accessNumber += 1
+        if (accessNumber == Int.MIN_VALUE) {
             resetAllAccessCounts()
         }
-        return accessCount
+        return accessNumber
     }
 
+    private fun entries(): Iterable<Entry<T>> = store.flatMap {
+        sequence {
+            var current = it
+            while (current != null) {
+                yield(current)
+                current = current.after
+            }
+        }
+    }.asIterable()
+
     private fun resetAllAccessCounts() {
-        store.flatMap<Entry<T>?, Entry<T>> {
-            sequence {
-                var current = it
-                while (current != null) {
-                    yield(current)
-                    current = current.after
-                }
-            }.toList()
-        }.sortedBy {
-            (it as LruEntry<T>).accessCount
+        entries().sortedBy {
+            (it as AOEntry<T>).accessNumber
         }.forEachIndexed { index, it ->
-            (it as LruEntry<T>).accessCount = Int.MIN_VALUE + index
+            (it as AOEntry<T>).accessNumber = Int.MIN_VALUE + index
         }
     }
 
     @PublishedApi
-    internal class LruEntry<T>(
+    internal class AOEntry<T>(
         index: Int,
         hashCode: Int,
         key: String,
         value: T,
-        var accessCount: Int,
+        var accessNumber: Int,
         after: Entry<T>?
     ) : Entry<T>(index, hashCode, key, value, after) {
         @Suppress("NOTHING_TO_INLINE")
@@ -103,7 +115,7 @@ class FastLruStringMap<T>(
             this.hashCode = hashCode
             this.key = key
             this.value = value
-            this.accessCount = accessCount
+            this.accessNumber = accessCount
             this.after = after
         }
     }

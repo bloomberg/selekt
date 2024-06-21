@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.collections.map.benchmarks
 
-import com.bloomberg.selekt.collections.map.FastLruStringMap
+import com.bloomberg.selekt.collections.map.FastAccessOrderedStringMap
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -27,11 +27,11 @@ import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
 open class LruMapInput {
-    internal lateinit var map: FastLruStringMap<Any>
+    internal lateinit var map: FastAccessOrderedStringMap<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        map = FastLruStringMap(1)
+        map = FastAccessOrderedStringMap(1)
     }
 }
 
