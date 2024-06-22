@@ -28,7 +28,7 @@ class StampedCache<T : Any>(
 ) {
     @PublishedApi
     @JvmField
-    internal var store = FastStampedStringMap(capacity = capacity, disposal = disposal)
+    internal val store = FastStampedStringMap(capacity = capacity, disposal = disposal)
 
     fun evict(key: String) {
         store.removeKey(key)
