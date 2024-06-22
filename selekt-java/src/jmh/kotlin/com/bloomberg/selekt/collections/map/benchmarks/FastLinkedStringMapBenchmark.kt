@@ -94,4 +94,29 @@ open class FastLinkedStringMapBenchmark {
         getElsePut("1") { "" }
         removeKey("1")
     }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getManyEntriesAccessOrder(input: LinkedMapInput) = input.largeAccessMap.run {
+        getEntryElsePut("0") { "" }
+        getEntryElsePut("1") { "" }
+        getEntryElsePut("2") { "" }
+        getEntryElsePut("3") { "" }
+        getEntryElsePut("4") { "" }
+        getEntryElsePut("5") { "" }
+        getEntryElsePut("6") { "" }
+        getEntryElsePut("7") { "" }
+        getEntryElsePut("8") { "" }
+        getEntryElsePut("9") { "" }
+        getEntryElsePut("2") { "" }
+        getEntryElsePut("3") { "" }
+        getEntryElsePut("9") { "" }
+        getEntryElsePut("4") { "" }
+        getEntryElsePut("5") { "" }
+        getEntryElsePut("0") { "" }
+        getEntryElsePut("8") { "" }
+        getEntryElsePut("6") { "" }
+        getEntryElsePut("1") { "" }
+        getEntryElsePut("7") { "" }
+    }
 }

@@ -57,4 +57,29 @@ open class LinkedLruCacheBenchmark {
         get("1") { "" }
         get("2") { "" }
     }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getManyEntries(input: LinkedCacheInput) = input.largeCache.run {
+        get("0") { "" }
+        get("1") { "" }
+        get("2") { "" }
+        get("3") { "" }
+        get("4") { "" }
+        get("5") { "" }
+        get("6") { "" }
+        get("7") { "" }
+        get("8") { "" }
+        get("9") { "" }
+        get("2") { "" }
+        get("3") { "" }
+        get("9") { "" }
+        get("4") { "" }
+        get("5") { "" }
+        get("0") { "" }
+        get("8") { "" }
+        get("6") { "" }
+        get("1") { "" }
+        get("7") { "" }
+    }
 }

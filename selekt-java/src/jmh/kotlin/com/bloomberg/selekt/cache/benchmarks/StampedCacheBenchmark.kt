@@ -28,10 +28,12 @@ import org.openjdk.jmh.annotations.State
 @State(Scope.Thread)
 open class StampedCacheInput {
     internal lateinit var cache: StampedCache<Any>
+    internal lateinit var largeCache: StampedCache<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
         cache = StampedCache(1) {}
+        largeCache = StampedCache(64) {}
     }
 }
 
@@ -47,5 +49,37 @@ open class StampedCacheBenchmark {
     fun getEntryWithEviction(input: StampedCacheInput) = input.cache.run {
         get("1") {}
         get("2") {}
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getEntries(input: StampedCacheInput) = input.largeCache.run {
+        get("1") { "" }
+        get("2") { "" }
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getManyEntries(input: StampedCacheInput) = input.largeCache.run {
+        get("0") { "" }
+        get("1") { "" }
+        get("2") { "" }
+        get("3") { "" }
+        get("4") { "" }
+        get("5") { "" }
+        get("6") { "" }
+        get("7") { "" }
+        get("8") { "" }
+        get("9") { "" }
+        get("2") { "" }
+        get("3") { "" }
+        get("9") { "" }
+        get("4") { "" }
+        get("5") { "" }
+        get("0") { "" }
+        get("8") { "" }
+        get("6") { "" }
+        get("1") { "" }
+        get("7") { "" }
     }
 }

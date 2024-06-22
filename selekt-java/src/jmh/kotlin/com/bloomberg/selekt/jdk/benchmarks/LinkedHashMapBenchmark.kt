@@ -74,6 +74,31 @@ open class LinkedHashMapBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
+    fun getManyEntriesAccessOrder(input: LinkedHashMapInput) = input.largeAccessOrderMap.run {
+        getOrPut("0") { "" }
+        getOrPut("1") { "" }
+        getOrPut("2") { "" }
+        getOrPut("3") { "" }
+        getOrPut("4") { "" }
+        getOrPut("5") { "" }
+        getOrPut("6") { "" }
+        getOrPut("7") { "" }
+        getOrPut("8") { "" }
+        getOrPut("9") { "" }
+        getOrPut("2") { "" }
+        getOrPut("3") { "" }
+        getOrPut("9") { "" }
+        getOrPut("4") { "" }
+        getOrPut("5") { "" }
+        getOrPut("0") { "" }
+        getOrPut("8") { "" }
+        getOrPut("6") { "" }
+        getOrPut("1") { "" }
+        getOrPut("7") { "" }
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
     fun getEntryWithRemoval(input: LinkedHashMapInput) = input.smallMap.run {
         getOrPut("1") { "" }
         getOrPut("2") { "" }

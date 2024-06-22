@@ -28,10 +28,12 @@ import org.openjdk.jmh.annotations.State
 @State(Scope.Thread)
 open class StampedMapInput {
     internal lateinit var map: FastStampedStringMap<Any>
+    internal lateinit var largeMap: FastStampedStringMap<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
         map = FastStampedStringMap(1) {}
+        largeMap = FastStampedStringMap(64) {}
     }
 }
 
@@ -54,5 +56,30 @@ open class FastStampedStringMapBenchmark {
     fun getThenRemoveEntry(input: StampedMapInput) = input.map.run {
         getEntryElsePut("1") { "" }
         removeEntry("1")
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    fun getManyEntries(input: StampedMapInput) = input.largeMap.run {
+        getEntryElsePut("0") { "" }
+        getEntryElsePut("1") { "" }
+        getEntryElsePut("2") { "" }
+        getEntryElsePut("3") { "" }
+        getEntryElsePut("4") { "" }
+        getEntryElsePut("5") { "" }
+        getEntryElsePut("6") { "" }
+        getEntryElsePut("7") { "" }
+        getEntryElsePut("8") { "" }
+        getEntryElsePut("9") { "" }
+        getEntryElsePut("2") { "" }
+        getEntryElsePut("3") { "" }
+        getEntryElsePut("9") { "" }
+        getEntryElsePut("4") { "" }
+        getEntryElsePut("5") { "" }
+        getEntryElsePut("0") { "" }
+        getEntryElsePut("8") { "" }
+        getEntryElsePut("6") { "" }
+        getEntryElsePut("1") { "" }
+        getEntryElsePut("7") { "" }
     }
 }
