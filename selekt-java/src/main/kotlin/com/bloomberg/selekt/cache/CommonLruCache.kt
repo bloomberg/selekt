@@ -46,21 +46,18 @@ class CommonLruCache<T : Any>(
     }
 
     inline fun get(key: String, supplier: () -> T): T {
-        cache?.let {
-            return it.get(key) {
-                supplier().also { value ->
-                    if (it.shouldTransform()) {
-                        // Adding another entry to the cache will necessitate the removal of the
-                        // least recently used entry first to honour our maximum size constraint.
-                        // For the implementation of the store currently assigned, this is an O(N)
-                        // operation. We transform to an O(1) implementation.
-                        transform()
-                        linkedCache!!.store.put(key, value)
-                    }
+        return cache?.get(key) {
+            supplier().also { value ->
+                if (cache!!.shouldTransform()) {
+                    // Adding another entry to the cache will necessitate the removal of the
+                    // least recently used entry first to honour our maximum size constraint.
+                    // For the implementation of the store currently assigned, this is an O(N)
+                    // operation. We transform to an O(1) implementation.
+                    transform()
+                    linkedCache!!.store.put(key, value)
                 }
             }
-        }
-        return linkedCache!!.get(key, supplier)
+        } ?: linkedCache!!.get(key, supplier)
     }
 
     fun containsKey(key: String): Boolean {
