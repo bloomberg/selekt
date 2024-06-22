@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.cache.benchmarks
 
-import com.bloomberg.selekt.cache.LinkedLruCache
+import com.bloomberg.selekt.cache.StampedCache
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -26,35 +26,26 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
-open class LinkedCacheInput {
-    internal lateinit var cache: LinkedLruCache<Any>
-    internal lateinit var largeCache: LinkedLruCache<Any>
+open class StampedCacheInput {
+    internal lateinit var cache: StampedCache<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        cache = LinkedLruCache(1) {}
-        largeCache = LinkedLruCache(64) {}
+        cache = StampedCache(1) {}
     }
 }
 
-open class LinkedLruCacheBenchmark {
+open class StampedCacheBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: LinkedCacheInput) = input.cache.run {
+    fun getEntry(input: StampedCacheInput) = input.cache.run {
         get("1") {}
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithEviction(input: LinkedCacheInput) = input.cache.run {
+    fun getEntryWithEviction(input: StampedCacheInput) = input.cache.run {
         get("1") {}
         get("2") {}
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    fun getEntries(input: LinkedCacheInput) = input.largeCache.run {
-        get("1") { "" }
-        get("2") { "" }
     }
 }

@@ -18,32 +18,36 @@ package com.bloomberg.selekt.cache
 
 class CommonLruCache<T : Any>(
     @PublishedApi
+    @JvmField
     internal val maxSize: Int,
     disposal: (T) -> Unit
 ) {
     @PublishedApi
-    internal var cache: Any = StampedCache(maxSize, disposal)
+    @JvmField
+    internal var cache: StampedCache<T>? = StampedCache(maxSize, disposal)
+    @PublishedApi
+    @JvmField
+    internal var linkedCache: LinkedLruCache<T>? = null
 
     fun evict(key: String) {
-        when (val cache = cache) {
-            is StampedCache<*> -> cache.evict(key)
-            is LinkedLruCache<*> -> cache.evict(key)
-            else -> error("Unrecognized cache class: {}")
+        cache?.let {
+            it.evict(key)
+            return
         }
+        linkedCache!!.evict(key)
     }
 
     fun evictAll() {
-        when (val cache = cache) {
-            is StampedCache<*> -> cache.evictAll()
-            is LinkedLruCache<*> -> cache.evictAll()
-            else -> error("Unrecognized cache class: {}")
+        cache?.let {
+            it.evictAll()
+            return
         }
+        linkedCache!!.evictAll()
     }
 
-    @Suppress("UNCHECKED_CAST")
-    inline fun get(key: String, supplier: () -> T): T = when (cache) {
-        is StampedCache<*> -> (cache as StampedCache<T>).let {
-            it.get(key) {
+    inline fun get(key: String, supplier: () -> T): T {
+        cache?.let {
+            return it.get(key) {
                 supplier().also { value ->
                     if (it.shouldTransform()) {
                         // Adding another entry to the cache will necessitate the removal of the
@@ -51,19 +55,19 @@ class CommonLruCache<T : Any>(
                         // For the implementation of the store currently assigned, this is an O(N)
                         // operation. We transform to an O(1) implementation.
                         transform()
-                        (this@CommonLruCache.cache as LinkedLruCache<T>).store.put(key, value)
+                        linkedCache!!.store.put(key, value)
                     }
                 }
             }
         }
-        is LinkedLruCache<*> -> (cache as LinkedLruCache<T>).get(key, supplier)
-        else -> error("Unrecognized cache class: {}")
+        return linkedCache!!.get(key, supplier)
     }
 
-    fun containsKey(key: String) = when (val cache = cache) {
-        is StampedCache<*> -> cache.containsKey(key)
-        is LinkedLruCache<*> -> cache.containsKey(key)
-        else -> error("Unrecognized cache class: {}")
+    fun containsKey(key: String): Boolean {
+        cache?.let {
+            return it.containsKey(key)
+        }
+        return linkedCache!!.containsKey(key)
     }
 
     @PublishedApi
@@ -71,8 +75,8 @@ class CommonLruCache<T : Any>(
 
     @PublishedApi
     internal fun transform() {
-        (cache as StampedCache<*>).asLruCache().also {
-            cache = it
+        linkedCache = cache!!.asLruCache().also {
+            cache = null
         }
     }
 }

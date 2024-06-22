@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.cache
 
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.anyOrNull
@@ -28,6 +29,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.fail
@@ -44,6 +46,7 @@ internal class CommonLruCacheTest {
         val cache = CommonLruCache(1, disposal)
         cache.get("1") { first }
         assertSame(first, cache.get("1") { fail() })
+        assertNotNull(cache.cache)
     }
 
     @Test
@@ -53,6 +56,7 @@ internal class CommonLruCacheTest {
         cache.get("2") { second }
         assertSame(first, cache.get("1") { fail() })
         assertSame(second, cache.get("2") { fail() })
+        assertNotNull(cache.cache)
     }
 
     @Test
@@ -62,6 +66,7 @@ internal class CommonLruCacheTest {
         cache.get("2") { second }
         assertFalse(cache.containsKey("1"))
         assertSame(second, cache.get("2") { fail() })
+        assertNull(cache.cache)
     }
 
     @Test
@@ -83,8 +88,8 @@ internal class CommonLruCacheTest {
         cache.get("2") { second }
         cache.evictAll()
         inOrder(disposal) {
-            verify(disposal, times(1)).invoke(same(first))
             verify(disposal, times(1)).invoke(same(second))
+            verify(disposal, times(1)).invoke(same(first))
         }
     }
 
