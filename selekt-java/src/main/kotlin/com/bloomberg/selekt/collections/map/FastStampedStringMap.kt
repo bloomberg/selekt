@@ -20,7 +20,8 @@ import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
 class FastStampedStringMap<T>(
-    capacity: Int
+    capacity: Int,
+    private val disposal: (T) -> Unit
 ) : FastStringMap<T>(capacity) {
     private var currentStamp = Int.MIN_VALUE
     private var spare: StampedEntry<T>? = null
@@ -51,9 +52,16 @@ class FastStampedStringMap<T>(
         return StampedEntry(index, hashCode, key, value, nextStamp(), store[index])
     }
 
+    fun removeKey(key: String) {
+        disposal(super.removeEntry(key).value!!)
+    }
+
     override fun clear() {
-        super.clear()
+        entries().forEach {
+            disposal(it.value!!)
+        }
         spare = null
+        super.clear()
     }
 
     @PublishedApi
@@ -74,33 +82,29 @@ class FastStampedStringMap<T>(
         accessOrder = true,
         disposal = disposal
     ).apply {
-        entries().sortedBy {
+        this@FastStampedStringMap.entries().sortedBy {
             (it as StampedEntry<T>).stamp
         }.forEach {
             addAssociation(it.index, it.hashCode, it.key, it.value!!)
         }
     }
 
-    private fun entries(): Iterable<Entry<T>> = store.flatMap {
-        sequence {
-            var current = it
-            while (current != null) {
-                yield(current)
-                current = current.after
-            }
-        }
-    }.asIterable()
-
     private fun resetAllStamps() {
-        entries().sortedBy {
-            (it as StampedEntry<T>).stamp
-        }.run {
+        @Suppress("UNCHECKED_CAST")
+        (entries() as Iterable<StampedEntry<T>>).sortedBy(StampedEntry<T>::stamp).run {
             currentStamp = Int.MIN_VALUE + maxOf(0, size - 1)
             forEachIndexed { index, it ->
-                (it as StampedEntry<T>).stamp = Int.MIN_VALUE + index
+                it.stamp = Int.MIN_VALUE + index
             }
         }
     }
+
+    @Suppress("UNCHECKED_CAST")
+    @PublishedApi
+    internal fun removeLastEntry(): StampedEntry<T> = (entries() as Iterable<StampedEntry<T>>)
+        .minBy(StampedEntry<T>::stamp).let {
+            (removeEntry(it.key) as StampedEntry<T>).apply { disposal(value!!) }
+        }
 
     @PublishedApi
     internal class StampedEntry<T>(

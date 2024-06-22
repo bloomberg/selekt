@@ -34,19 +34,19 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 internal class FastLinkedStringMapTest {
+    private val first = Any()
+    private val second = Any()
+    private val supplier = mock<() -> Any>()
+    private val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+
     @Test
     fun get() {
-        val first = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(1, 1, false, disposal)
         assertSame(first, map.getElsePut("1") { first })
     }
 
     @Test
     fun getTwo() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(2, 64, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -56,9 +56,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun getAfterEvict() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(1, 1, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -68,9 +65,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun remove() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(2, 64, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -83,9 +77,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun clear() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(2, 64, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -98,7 +89,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun removeWhenEmpty() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(1, 1, false, disposal)
         assertThrows<NoSuchElementException> {
             map.removeKey("1")
@@ -108,9 +98,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun removeLastEntryAccessed() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(2, 2, true, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -123,9 +110,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun removeLastEntryInserted() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(2, 2, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -138,9 +122,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun evictLeastRecentlyUsed() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
         val map = FastLinkedStringMap(1, 1, false, disposal)
         map.getElsePut("1") { first }
         map.getElsePut("2") { second }
@@ -151,8 +132,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun getWhenAbsent() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val map = FastLinkedStringMap(1, 1, false, disposal)
         val item = map.getElsePut("1", supplier)
@@ -162,8 +141,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun containsFalse() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val map = FastLinkedStringMap(1, 1, false, disposal)
         map.getElsePut("1", supplier)
@@ -172,8 +149,6 @@ internal class FastLinkedStringMapTest {
 
     @Test
     fun containsTrue() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val map = FastLinkedStringMap(1, 1, false, disposal)
         map.getElsePut("1", supplier)

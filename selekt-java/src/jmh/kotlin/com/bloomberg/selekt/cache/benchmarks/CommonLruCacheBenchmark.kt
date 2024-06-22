@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.bloomberg.selekt.collections.map.benchmarks
+package com.bloomberg.selekt.cache.benchmarks
 
-import com.bloomberg.selekt.collections.map.FastStampedStringMap
+import com.bloomberg.selekt.cache.CommonLruCache
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Level
@@ -26,33 +26,26 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
-open class StampedMapInput {
-    internal lateinit var map: FastStampedStringMap<Any>
+open class CommonCacheInput {
+    internal lateinit var cache: CommonLruCache<Any>
 
     @Setup(Level.Iteration)
     fun setUp() {
-        map = FastStampedStringMap(1) {}
+        cache = CommonLruCache(1) {}
     }
 }
 
-open class FastStampedStringMapBenchmark {
+open class CommonLruCacheBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntry(input: StampedMapInput) = input.map.run {
-        getEntryElsePut("1") { "" }
+    fun getEntry(input: CommonCacheInput) = input.cache.run {
+        get("1") {}
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    fun getEntryWithCollision(input: StampedMapInput) = input.map.run {
-        getEntryElsePut("1") { "" }
-        getEntryElsePut("2") { "" }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    fun getThenRemoveEntry(input: StampedMapInput) = input.map.run {
-        getEntryElsePut("1") { "" }
-        removeEntry("1")
+    fun getEntryWithEviction(input: CommonCacheInput) = input.cache.run {
+        get("1") {}
+        get("2") {}
     }
 }

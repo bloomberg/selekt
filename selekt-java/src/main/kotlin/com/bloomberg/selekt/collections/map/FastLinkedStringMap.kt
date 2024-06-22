@@ -48,10 +48,17 @@ class FastLinkedStringMap<T>(
             }
             return it.value!!
         }
-        if (size >= maxSize) {
-            spare = removeLastEntry()
-        }
         return addAssociation(index, hashCode, key, supplier()).value!!
+    }
+
+    @PublishedApi
+    internal fun put(
+        key: String,
+        value: T
+    ): T {
+        val hashCode = hash(key)
+        val index = hashIndex(hashCode)
+        return addAssociation(index, hashCode, key, value).value!!
     }
 
     fun removeKey(key: String) {
@@ -110,8 +117,13 @@ class FastLinkedStringMap<T>(
         hashCode: Int,
         key: String,
         value: T
-    ): Entry<T> = (super.addAssociation(index, hashCode, key, value) as LinkedEntry<T>).also {
-        putFirst(it)
+    ): Entry<T> {
+        if (size >= maxSize) {
+            spare = removeLastEntry()
+        }
+        return (super.addAssociation(index, hashCode, key, value) as LinkedEntry<T>).also {
+            putFirst(it)
+        }
     }
 
     override fun createEntry(

@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.cache.LruCache
+import com.bloomberg.selekt.cache.CommonLruCache
 import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
@@ -31,7 +31,7 @@ internal class SQLConnection(
     key: Key?
 ) : CloseableSQLExecutor {
     private val pointer = sqlite.open(path, flags)
-    private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
+    private val preparedStatements = CommonLruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
         it.close()
         pooledPreparedStatement = it
     }

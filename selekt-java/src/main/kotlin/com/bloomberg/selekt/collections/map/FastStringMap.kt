@@ -95,6 +95,16 @@ open class FastStringMap<T>(capacity: Int) {
         value: T
     ): Entry<T> = Entry(index, hashCode, key, value, store[index])
 
+    internal fun entries(): Iterable<Entry<T>> = store.flatMap {
+        sequence {
+            var current = it
+            while (current != null) {
+                yield(current)
+                current = current.after
+            }
+        }
+    }
+
     open fun clear() {
         store.fill(null)
         size = 0

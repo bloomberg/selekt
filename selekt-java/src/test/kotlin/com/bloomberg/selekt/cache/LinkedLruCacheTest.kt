@@ -32,22 +32,23 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-internal class LruCacheTest {
+internal class LinkedLruCacheTest {
+    private val first = Any()
+    private val second = Any()
+    private val supplier = mock<() -> Any>()
+    private val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+
     @Test
     fun get() {
         val first = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         cache.get("1") { first }
         assertSame(first, cache.get("1") { fail() })
     }
 
     @Test
     fun getTwo() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(2, disposal)
+        val cache = LinkedLruCache(2, disposal)
         cache.get("1") { first }
         cache.get("2") { second }
         assertSame(first, cache.get("1") { fail() })
@@ -56,10 +57,7 @@ internal class LruCacheTest {
 
     @Test
     fun getAfterEvict() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         cache.get("1") { first }
         cache.get("2") { second }
         assertFalse(cache.containsKey("1"))
@@ -68,10 +66,7 @@ internal class LruCacheTest {
 
     @Test
     fun evict() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(2, disposal)
+        val cache = LinkedLruCache(2, disposal)
         cache.get("1") { first }
         cache.get("2") { second }
         cache.evict("1")
@@ -83,10 +78,7 @@ internal class LruCacheTest {
 
     @Test
     fun evictAll() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(2, disposal)
+        val cache = LinkedLruCache(2, disposal)
         cache.get("1") { first }
         cache.get("2") { second }
         cache.evictAll()
@@ -98,8 +90,7 @@ internal class LruCacheTest {
 
     @Test
     fun evictWhenEmpty() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         assertThrows<NoSuchElementException> {
             cache.evict("1")
         }
@@ -108,23 +99,21 @@ internal class LruCacheTest {
 
     @Test
     fun evictLeastRecentlyUsed() {
-        val first = Any()
-        val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(2, disposal)
+        val third = Any()
         cache.get("1") { first }
         cache.get("2") { second }
+        cache.get("1") { fail() }
+        cache.get("3") { third }
         inOrder(disposal) {
-            verify(disposal, times(1)).invoke(same(first))
+            verify(disposal, times(1)).invoke(same(second))
         }
     }
 
     @Test
     fun getWhenAbsent() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         val item = cache.get("1", supplier)
         verify(supplier, times(1)).invoke()
         assertSame(item, cache.get("1", supplier))
@@ -132,20 +121,16 @@ internal class LruCacheTest {
 
     @Test
     fun containsFalse() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         cache.get("1", supplier)
         assertFalse(cache.containsKey("2"))
     }
 
     @Test
     fun containsTrue() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
-        val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
-        val cache = LruCache(1, disposal)
+        val cache = LinkedLruCache(1, disposal)
         cache.get("1", supplier)
         assertTrue(cache.containsKey("1"))
     }
