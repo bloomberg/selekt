@@ -349,12 +349,12 @@ internal class SingleObjectPoolTest {
     @Test
     fun evictionFailsIfCancelled() {
         val executor = object : ScheduledExecutorService by this@SingleObjectPoolTest.executor {
-            override fun scheduleAtFixedRate(
+            override fun scheduleWithFixedDelay(
                 command: Runnable,
                 initialDelay: Long,
-                period: Long,
+                delay: Long,
                 unit: TimeUnit
-            ) = this@SingleObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).apply {
+            ) = this@SingleObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, delay, unit).apply {
                 cancel(false)
             }
         }
@@ -382,10 +382,8 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun borrowAsClosingDoesNotScheduleEviction() {
-        @Suppress("JoinDeclarationAndAssignment")
-        lateinit var pool: SingleObjectPool<String, PooledObject>
         val executor = mock<ScheduledExecutorService>()
-        pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
+        val pool = SingleObjectPool(object : IObjectFactory<PooledObject> {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
