@@ -181,7 +181,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         if (future?.isCancelled == false || configuration.evictionIntervalMillis < 0L || isClosed.get()) {
             return
         }
-        future = executor.scheduleAtFixedRate(
+        future = executor.scheduleWithFixedDelay(
             ::evict,
             configuration.evictionDelayMillis,
             configuration.evictionIntervalMillis,
