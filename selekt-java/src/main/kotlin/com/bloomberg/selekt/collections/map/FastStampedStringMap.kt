@@ -21,19 +21,19 @@ import javax.annotation.concurrent.NotThreadSafe
 @NotThreadSafe
 class FastStampedStringMap<T>(
     capacity: Int,
-    private val disposal: (T) -> Unit
+    private val disposal: (T & Any) -> Unit
 ) : FastStringMap<T>(capacity) {
     private var currentStamp = Int.MIN_VALUE
-    private var spare: StampedEntry<T>? = null
+    private var spare: StampedEntry<T & Any>? = null
 
     inline fun getElsePut(
         key: String,
-        supplier: () -> T
-    ): T {
+        supplier: () -> T & Any
+    ): T & Any {
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         entryMatching(index, hashCode, key)?.let {
-            (it as StampedEntry<T>).stamp = nextStamp()
+            (it as StampedEntry<T & Any>).stamp = nextStamp()
             return it.value!!
         }
         return addAssociation(index, hashCode, key, supplier()).value!!
@@ -43,8 +43,8 @@ class FastStampedStringMap<T>(
         index: Int,
         hashCode: Int,
         key: String,
-        value: T
-    ): Entry<T> {
+        value: T & Any
+    ): Entry<T & Any> {
         spare?.let {
             spare = null
             return it.update(index, hashCode, key, value, nextStamp(), store[index])
@@ -75,15 +75,15 @@ class FastStampedStringMap<T>(
 
     internal fun asLinkedMap(
         maxSize: Int = size,
-        disposal: (T) -> Unit
-    ) = FastLinkedStringMap(
+        disposal: (T & Any) -> Unit
+    ) = FastLinkedStringMap<T & Any>(
         maxSize = maxSize,
         capacity = maxSize,
         accessOrder = true,
         disposal = disposal
     ).apply {
         this@FastStampedStringMap.entries().sortedBy {
-            (it as StampedEntry<T>).stamp
+            (it as StampedEntry<T & Any>).stamp
         }.forEach {
             addAssociation(it.index, it.hashCode, it.key, it.value!!)
         }
@@ -111,18 +111,18 @@ class FastStampedStringMap<T>(
         index: Int,
         hashCode: Int,
         key: String,
-        value: T,
+        value: T & Any,
         var stamp: Int,
-        after: Entry<T>?
-    ) : Entry<T>(index, hashCode, key, value, after) {
+        after: Entry<T & Any>?
+    ) : Entry<T & Any>(index, hashCode, key, value, after) {
         @Suppress("NOTHING_TO_INLINE")
         inline fun update(
             index: Int,
             hashCode: Int,
             key: String,
-            value: T,
+            value: T & Any,
             stamp: Int,
-            after: Entry<T>?
+            after: Entry<T & Any>?
         ) = apply {
             this.index = index
             this.hashCode = hashCode

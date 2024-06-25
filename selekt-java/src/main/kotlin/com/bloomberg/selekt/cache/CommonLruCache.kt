@@ -16,18 +16,18 @@
 
 package com.bloomberg.selekt.cache
 
-class CommonLruCache<T : Any>(
+class CommonLruCache<T>(
     @PublishedApi
     @JvmField
     internal val maxSize: Int,
-    disposal: (T) -> Unit
+    disposal: (T & Any) -> Unit
 ) {
     @PublishedApi
     @JvmField
-    internal var cache: StampedCache<T>? = StampedCache(maxSize, disposal)
+    internal var cache: StampedCache<T & Any>? = StampedCache(maxSize, disposal)
     @PublishedApi
     @JvmField
-    internal var linkedCache: LinkedLruCache<T>? = null
+    internal var linkedCache: LinkedLruCache<T & Any>? = null
 
     fun evict(key: String) {
         cache?.let {
@@ -45,7 +45,7 @@ class CommonLruCache<T : Any>(
         linkedCache!!.evictAll()
     }
 
-    inline fun get(key: String, supplier: () -> T): T {
+    inline fun get(key: String, supplier: () -> T & Any): T & Any {
         return cache?.get(key) {
             supplier().also { value ->
                 if (cache!!.shouldTransform()) {
@@ -68,7 +68,7 @@ class CommonLruCache<T : Any>(
     }
 
     @PublishedApi
-    internal fun StampedCache<T>.shouldTransform() = (store.size >= maxSize)
+    internal fun StampedCache<T & Any>.shouldTransform() = (store.size >= maxSize)
 
     @PublishedApi
     internal fun transform() {

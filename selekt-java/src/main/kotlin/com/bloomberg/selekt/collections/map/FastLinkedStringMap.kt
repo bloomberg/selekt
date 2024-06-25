@@ -27,24 +27,24 @@ class FastLinkedStringMap<T>(
     @PublishedApi
     @JvmField
     internal val accessOrder: Boolean = false,
-    private val disposal: (T) -> Unit
+    private val disposal: (T & Any) -> Unit
 ) : FastStringMap<T>(capacity) {
-    private var head: LinkedEntry<T>? = null
-    private var tail: LinkedEntry<T>? = null
+    private var head: LinkedEntry<T & Any>? = null
+    private var tail: LinkedEntry<T & Any>? = null
 
     @PublishedApi
     @JvmField
-    internal var spare: LinkedEntry<T>? = null
+    internal var spare: LinkedEntry<T & Any>? = null
 
     inline fun getElsePut(
         key: String,
-        supplier: () -> T
-    ): T {
+        supplier: () -> T & Any
+    ): T & Any {
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         entryMatching(index, hashCode, key)?.let {
             if (accessOrder) {
-                putFirst(it as LinkedEntry<T>)
+                putFirst(it as LinkedEntry<T & Any>)
             }
             return it.value!!
         }
@@ -54,15 +54,15 @@ class FastLinkedStringMap<T>(
     @PublishedApi
     internal fun put(
         key: String,
-        value: T
-    ): T {
+        value: T & Any
+    ): T & Any {
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         return addAssociation(index, hashCode, key, value).value!!
     }
 
     fun removeKey(key: String) {
-        disposal((super.removeEntry(key) as LinkedEntry<T>).unlink().value!!)
+        disposal((super.removeEntry(key) as LinkedEntry<T & Any>).unlink().value!!)
     }
 
     override fun clear() {
@@ -78,7 +78,7 @@ class FastLinkedStringMap<T>(
         }
     }
 
-    private fun LinkedEntry<T>.unlink(): Entry<T> = apply {
+    private fun LinkedEntry<T & Any>.unlink(): Entry<T & Any> = apply {
         previous?.let { it.next = next }
         next?.let { it.previous = previous }
         if (this === head) {
@@ -93,7 +93,7 @@ class FastLinkedStringMap<T>(
 
     @PublishedApi
     @JvmSynthetic
-    internal fun putFirst(node: LinkedEntry<T>): Unit = node.run {
+    internal fun putFirst(node: LinkedEntry<T & Any>): Unit = node.run {
         if (this === head) {
             return
         }
@@ -116,12 +116,12 @@ class FastLinkedStringMap<T>(
         index: Int,
         hashCode: Int,
         key: String,
-        value: T
-    ): Entry<T> {
+        value: T & Any
+    ): Entry<T & Any> {
         if (size >= maxSize) {
             spare = removeLastEntry()
         }
-        return (super.addAssociation(index, hashCode, key, value) as LinkedEntry<T>).also {
+        return (super.addAssociation(index, hashCode, key, value) as LinkedEntry<T & Any>).also {
             putFirst(it)
         }
     }
@@ -130,8 +130,8 @@ class FastLinkedStringMap<T>(
         index: Int,
         hashCode: Int,
         key: String,
-        value: T
-    ): Entry<T> {
+        value: T & Any
+    ): Entry<T & Any> {
         spare?.let {
             spare = null
             return it.update(index, hashCode, key, value, store[index])
@@ -141,7 +141,7 @@ class FastLinkedStringMap<T>(
 
     @PublishedApi
     @JvmSynthetic
-    internal fun removeLastEntry(): LinkedEntry<T> = tail!!.apply {
+    internal fun removeLastEntry(): LinkedEntry<T & Any> = tail!!.apply {
         previous?.let { it.next = null } ?: run { head = null }
         tail = previous
         previous = null
@@ -156,11 +156,11 @@ class FastLinkedStringMap<T>(
         index: Int,
         hashCode: Int,
         key: String,
-        value: T,
-        after: Entry<T>?
-    ) : Entry<T>(index, hashCode, key, value, after) {
+        value: T & Any,
+        after: Entry<T & Any>?
+    ) : Entry<T & Any>(index, hashCode, key, value, after) {
         @JvmField
-        var previous: LinkedEntry<T>? = null
+        var previous: LinkedEntry<T & Any>? = null
 
         @JvmField
         var next: LinkedEntry<T>? = null
@@ -170,8 +170,8 @@ class FastLinkedStringMap<T>(
             index: Int,
             hashCode: Int,
             key: String,
-            value: T,
-            after: Entry<T>?
+            value: T & Any,
+            after: Entry<T & Any>?
         ) = apply {
             this.index = index
             this.hashCode = hashCode
