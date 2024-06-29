@@ -20,18 +20,18 @@ import com.bloomberg.selekt.collections.map.FastLinkedStringMap
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-class LinkedLruCache<T>(
+class LinkedLruCache<T : Any>(
     @PublishedApi
     @JvmField
     internal val maxSize: Int,
     @PublishedApi
     @JvmField
-    internal val store: FastLinkedStringMap<T & Any>
+    internal val store: FastLinkedStringMap<T>
 ) {
     constructor(
         maxSize: Int,
-        disposal: (T & Any) -> Unit
-    ) : this(maxSize, FastLinkedStringMap<T & Any>(
+        disposal: (T) -> Unit
+    ) : this(maxSize, FastLinkedStringMap<T>(
         maxSize = maxSize,
         disposal = disposal,
         accessOrder = true
@@ -45,7 +45,7 @@ class LinkedLruCache<T>(
         store.clear()
     }
 
-    inline fun get(key: String, supplier: () -> T & Any): T & Any = store.getElsePut(key, supplier)
+    inline fun get(key: String, supplier: () -> T): T = store.getElsePut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)
 }

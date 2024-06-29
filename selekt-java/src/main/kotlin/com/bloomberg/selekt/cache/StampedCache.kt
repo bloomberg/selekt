@@ -20,7 +20,7 @@ import com.bloomberg.selekt.collections.map.FastStampedStringMap
 import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
-class StampedCache<T>(
+class StampedCache<T : Any>(
     capacity: Int,
     @PublishedApi
     @JvmField
@@ -38,11 +38,11 @@ class StampedCache<T>(
         store.clear()
     }
 
-    inline fun get(key: String, supplier: () -> T & Any): T = store.getElsePut(key, supplier)
+    inline fun get(key: String, supplier: () -> T): T = store.getElsePut(key, supplier)
 
     fun containsKey(key: String) = store.containsKey(key)
 
-    internal fun asLruCache() = LinkedLruCache<T & Any>(
+    internal fun asLruCache() = LinkedLruCache(
         maxSize = store.size,
         store = store.asLinkedMap(store.size, disposal)
     )

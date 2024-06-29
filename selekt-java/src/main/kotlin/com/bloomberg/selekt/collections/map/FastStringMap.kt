@@ -22,13 +22,13 @@ import javax.annotation.concurrent.NotThreadSafe
  * @param capacity a power of two.
  */
 @NotThreadSafe
-open class FastStringMap<T>(capacity: Int) {
+open class FastStringMap<T : Any>(capacity: Int) {
     @JvmField
     var size: Int = 0
 
     @JvmField
     @PublishedApi
-    internal val store = arrayOfNulls<Entry<T & Any>>(capacity)
+    internal val store = arrayOfNulls<Entry<T>>(capacity)
     private val hashLimit = capacity - 1
 
     fun isEmpty() = 0 == size
@@ -48,8 +48,8 @@ open class FastStringMap<T>(capacity: Int) {
 
     inline fun getEntryElsePut(
         key: String,
-        supplier: () -> T & Any
-    ): Entry<T & Any> {
+        supplier: () -> T
+    ): Entry<T> {
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         var entry = store[index]
@@ -62,11 +62,11 @@ open class FastStringMap<T>(capacity: Int) {
         return addAssociation(index, hashCode, key, supplier())
     }
 
-    fun removeEntry(key: String): Entry<T & Any> {
+    fun removeEntry(key: String): Entry<T> {
         val hashCode = hash(key)
         val index = hashIndex(hashCode)
         var entry = store[index]
-        var previous: Entry<T & Any>? = null
+        var previous: Entry<T>? = null
         while (entry != null) {
             if (entry.hashCode == hashCode && entry.key == key) {
                 return removeAssociation(entry, previous)
@@ -82,8 +82,8 @@ open class FastStringMap<T>(capacity: Int) {
         index: Int,
         hashCode: Int,
         key: String,
-        value: T & Any
-    ): Entry<T & Any> = createEntry(index, hashCode, key, value).also {
+        value: T
+    ): Entry<T> = createEntry(index, hashCode, key, value).also {
         store[index] = it
         size += 1
     }
@@ -92,10 +92,10 @@ open class FastStringMap<T>(capacity: Int) {
         index: Int,
         hashCode: Int,
         key: String,
-        value: T & Any
-    ): Entry<T & Any> = Entry(index, hashCode, key, value, store[index])
+        value: T
+    ): Entry<T> = Entry(index, hashCode, key, value, store[index])
 
-    internal fun entries(): Iterable<Entry<T & Any>> = store.flatMap {
+    internal fun entries(): Iterable<Entry<T>> = store.flatMap {
         sequence {
             var current = it
             while (current != null) {
@@ -112,7 +112,7 @@ open class FastStringMap<T>(capacity: Int) {
 
     @Suppress("NOTHING_TO_INLINE")
     @PublishedApi
-    internal inline fun entryMatching(index: Int, hashCode: Int, key: String): Entry<T & Any>? {
+    internal inline fun entryMatching(index: Int, hashCode: Int, key: String): Entry<T>? {
         var entry = store[index]
         while (entry != null) {
             if (entry.hashCode == hashCode && entry.key == key) {
@@ -124,9 +124,9 @@ open class FastStringMap<T>(capacity: Int) {
     }
 
     private fun removeAssociation(
-        entry: Entry<T & Any>,
-        previousEntry: Entry<T & Any>?
-    ): Entry<T & Any> {
+        entry: Entry<T>,
+        previousEntry: Entry<T>?
+    ): Entry<T> {
         if (previousEntry == null) {
             store[entry.index] = entry.after
         } else {
@@ -152,7 +152,7 @@ open class FastStringMap<T>(capacity: Int) {
         @JvmField
         var value: T?,
         @JvmField
-        var after: Entry<T & Any>?
+        var after: Entry<T>?
     ) {
         internal fun reset(): T? = value.also { _ ->
             key = ""
