@@ -32,8 +32,6 @@ jobs:
       run: |
         ./gradlew clean \
           :OpenSSL:assembleArm64-v8a \
-          :OpenSSL:assembleArmeabi-v7a \
-          :OpenSSL:assembleX86 \
           :OpenSSL:assembleX86_64
         ./gradlew :SQLite3:amalgamate
         ./gradlew assembleRelease

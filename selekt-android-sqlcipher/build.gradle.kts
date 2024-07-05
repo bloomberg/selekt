@@ -34,7 +34,7 @@ repositories {
 }
 
 val developmentABIs = listOf("arm64-v8a")
-val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+val allABIs = listOf("arm64-v8a", "x86_64")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()

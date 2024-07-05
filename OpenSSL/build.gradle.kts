@@ -83,7 +83,7 @@ fun openSslWorkingDir(target: String): Provider<Directory> = archive.run {
     layout.buildDirectory.dir("generated/$target/${get().asFile.name.substringBefore(".tar.gz")}")
 }
 
-arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
+arrayOf("arm64-v8a", "x86_64").forEach {
     val titleCaseName = it.replaceFirstChar { c -> c.uppercaseChar() }
     tasks.register<Copy>("unpackOpenSsl$titleCaseName") {
         from(tarTree(archive))
@@ -113,7 +113,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
 }
 
 tasks.register("assembleAndroid") {
-    arrayOf("Armeabi-v7a", "Arm64-v8a", "X86", "X86_64").forEach {
+    arrayOf("Arm64-v8a", "X86_64").forEach {
         dependsOn("assemble$it")
     }
 }
