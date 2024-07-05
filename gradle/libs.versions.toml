@@ -7,9 +7,9 @@ lint = "31.4.0"
 room = "2.6.1"
 
 [libraries]
+android-tools-gradle = { group = "com.android.tools.build", name = "gradle", version = "8.5.0" }
 android-tools-lint = { group = "com.android.tools.lint", name = "lint", version.ref = "lint" }
 android-tools-lint-api = { group = "com.android.tools.lint", name = "lint-api", version.ref = "lint" }
-android-tools-gradle = { group = "com.android.tools.build", name = "gradle", version = "8.4.1" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.6.1" }
 androidx-benchmark-junit4 = { group = "androidx.benchmark", name = "benchmark-junit4", version.ref = "benchmark" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.1.4" }
