@@ -34,9 +34,17 @@ case $(uname -a) in
 esac
 
 case ${TARGET_ABI} in
+    armeabi-v7a)
+        ARCH='android-arm -march=armv7-a'
+        OFFSET=32
+        ;;
     arm64-v8a)
         ARCH='android-arm64'
         OFFSET=64
+        ;;
+    x86)
+        ARCH='android-x86'
+        OFFSET=32
         ;;
     x86_64)
         ARCH='android64-x86_64'
