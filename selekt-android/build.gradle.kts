@@ -22,7 +22,7 @@ plugins {
     id("kotlin-android")
     alias(libs.plugins.dokka)
     alias(libs.plugins.cash.licensee)
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
     `maven-publish`
     signing
     alias(libs.plugins.kover)
@@ -64,7 +64,7 @@ dependencies {
     compileOnly(libs.androidx.room.runtime)
     implementation(projects.selektJava)
     implementation(projects.selektSqlite3Classes)
-    kaptTest(libs.androidx.room.compiler)
+    kspTest(libs.androidx.room.compiler)
     testImplementation(libs.androidx.lifecycle.livedata.ktx)
     testImplementation(libs.androidx.room.runtime)
     testImplementation(libs.androidx.room.ktx)

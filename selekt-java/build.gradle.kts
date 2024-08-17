@@ -26,7 +26,7 @@ repositories {
 
 plugins {
     kotlin("jvm")
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
     id("com.android.lint")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
@@ -101,9 +101,9 @@ tasks.withType<ProcessResources>().configureEach {
 }
 
 tasks.withType<DokkaTask>().configureEach {
-    dependsOn("kaptKotlin") // FIXME Remove?
+    dependsOn("kspKotlin") // FIXME Remove?
 }
 
 tasks.withType<DokkaTaskPartial>().configureEach {
-    dependsOn("kaptKotlin") // FIXME Remove?
+    dependsOn("kspKotlin") // FIXME Remove?
 }
