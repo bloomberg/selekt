@@ -32,7 +32,6 @@ plugins {
     alias(libs.plugins.dokka)
     `maven-publish`
     signing
-    id("bb-jmh")
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -62,7 +61,6 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
-    jmhImplementation(libs.kotlinx.coroutines.core)
 }
 
 publishing {
