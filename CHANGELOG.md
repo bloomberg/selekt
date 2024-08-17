@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 0.22.2
+
+### Dependencies
+
+* Android Gradle Plugin 8.5.2.
+* Gradle 8.10.
+* Kotlin 1.9.24.
+* NDK 27.
+
 ## Version 0.22.1
 
 ### Dependencies
