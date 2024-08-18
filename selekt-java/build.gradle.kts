@@ -16,9 +16,6 @@
 
 @file:Suppress("UnstableApiUsage")
 
-import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-
 repositories {
     mavenCentral()
     google()
@@ -26,13 +23,12 @@ repositories {
 
 plugins {
     kotlin("jvm")
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
     id("com.android.lint")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
     `maven-publish`
     signing
-    id("bb-jmh")
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -62,7 +58,6 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
-    jmhImplementation(libs.kotlinx.coroutines.core)
 }
 
 publishing {
@@ -98,12 +93,4 @@ tasks.register<Copy>("copyJniLibs") {
 
 tasks.withType<ProcessResources>().configureEach {
     dependsOn("buildHostSQLite")
-}
-
-tasks.withType<DokkaTask>().configureEach {
-    dependsOn("kaptKotlin") // FIXME Remove?
-}
-
-tasks.withType<DokkaTaskPartial>().configureEach {
-    dependsOn("kaptKotlin") // FIXME Remove?
 }

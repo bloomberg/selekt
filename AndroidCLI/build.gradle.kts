@@ -28,7 +28,7 @@ repositories {
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = libs.android.tools.gradle.get().version!!
+    buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.cli"
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
