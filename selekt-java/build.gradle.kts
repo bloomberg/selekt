@@ -16,9 +16,6 @@
 
 @file:Suppress("UnstableApiUsage")
 
-import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-
 repositories {
     mavenCentral()
     google()
@@ -96,12 +93,4 @@ tasks.register<Copy>("copyJniLibs") {
 
 tasks.withType<ProcessResources>().configureEach {
     dependsOn("buildHostSQLite")
-}
-
-tasks.withType<DokkaTask>().configureEach {
-    dependsOn("kspKotlin") // FIXME Remove?
-}
-
-tasks.withType<DokkaTaskPartial>().configureEach {
-    dependsOn("kspKotlin") // FIXME Remove?
 }
