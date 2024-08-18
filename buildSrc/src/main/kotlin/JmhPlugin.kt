@@ -32,7 +32,7 @@ class JmhPlugin : Plugin<Project> {
                 add(name, project)
                 add(name, "org.openjdk.jmh:jmh-core:${Versions.JMH}")
             }
-            configurations.getByName("kaptJmh") {
+            configurations.getByName("kspJmh") {
                 add(name, "org.openjdk.jmh:jmh-generator-annprocess:${Versions.JMH}")
             }
         }

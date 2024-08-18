@@ -29,7 +29,7 @@ repositories {
 
 android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
-    buildToolsVersion(libs.android.tools.gradle.get().version!!)
+    buildToolsVersion("34.0.0")
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
         minSdkVersion(21)
@@ -49,6 +49,7 @@ android {
 
 dependencies {
     androidTestImplementation(projects.selektAndroid)
+    androidTestImplementation(projects.selektJava)
     androidTestImplementation(libs.androidx.benchmark.junit4)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.androidx.test.rules)

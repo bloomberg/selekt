@@ -77,7 +77,7 @@ jobs:
         ./gradlew :koverVerify -x integrationTest
     - name: 'Build others'
       run: |
-        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble jmhClasses
+        ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble dokkaHtml
     - name: 'Tear down'
       if: always()
       run: |
