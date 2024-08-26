@@ -43,6 +43,12 @@ android {
     ndkVersion = "27.0.12077973"
     defaultConfig {
         minSdk = 21
+        @Suppress("UnstableApiUsage")
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+        }
     }
     buildTypes {
         debug {
