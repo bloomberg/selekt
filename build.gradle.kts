@@ -228,24 +228,18 @@ allprojects {
     }
 }
 
-koverReport {
-    defaults {
-        filters {
-            excludes {
-                classes("*Test*")
-                packages(listOf(
-                    "*.benchmarks",
-                    "*_generated"
-                ))
-            }
-        }
-        verify {
-            rule("Minimal coverage") {
-                bound {
-                    minValue = 96
-                    aggregation = AggregationType.COVERED_PERCENTAGE
-                }
-            }
+kover.reports {
+    filters.excludes {
+        classes("*Test*")
+        packages(listOf(
+            "*.benchmarks",
+            "*_generated"
+        ))
+    }
+    verify.rule("Minimal coverage") {
+        bound {
+            minValue = 96
+            aggregationForGroup = AggregationType.COVERED_PERCENTAGE
         }
     }
 }
