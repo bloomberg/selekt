@@ -22,7 +22,7 @@
     }
 
     dependencies {
-        implementation platform('com.bloomberg:selekt-bom:<version>'))
+        implementation platform('com.bloomberg:selekt-bom:<version>')
         implementation 'com.bloomberg:selekt-android'
         runtimeOnly 'com.bloomberg:selekt-android-sqlcipher'
     }
