@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.23.0
+
+### Fixes
+
+* Replace use of `ScheduledExecutorService.scheduleAtFixedRate` with `ScheduledExecutorService.scheduleWithFixedDelay` when evicting from the connection pools. `ScheduledExecutorService.scheduleAtFixedRate` is an API discouraged by Android Lint.
+* Support compiling 16 KB-aligned shared libraries with Android NDK version r27 and higher.
+
 ## Version 0.22.3
 
 ### Dependencies
