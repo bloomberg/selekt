@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.22.3
+
+### Dependencies
+
+* Kotlin 2.0.20.
+
 ## Version 0.22.2
 
 ### Dependencies
