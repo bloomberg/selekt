@@ -97,7 +97,6 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }?.let {
         factory.destroyObject(it)
-        attemptScheduleEviction()
     }
 
     @GuardedBy("mutex")
