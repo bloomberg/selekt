@@ -360,17 +360,16 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun interleavedBorrowSchedulesEvictionIfCancelled() {
-        @Suppress("JoinDeclarationAndAssignment")
         lateinit var pool: CommonObjectPool<String, PooledObject>
         val executor = object : ScheduledExecutorService by this@CommonObjectPoolTest.executor {
             var count = 0
 
-            override fun scheduleAtFixedRate(
+            override fun scheduleWithFixedDelay(
                 command: Runnable,
                 initialDelay: Long,
-                period: Long,
+                delay: Long,
                 unit: TimeUnit
-            ) = this@CommonObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).also {
+            ) = this@CommonObjectPoolTest.executor.scheduleWithFixedDelay(command, initialDelay, delay, unit).also {
                 if (count++ == 0) {
                     it.cancel(false)
                 }
@@ -459,12 +458,12 @@ internal class CommonObjectPoolTest {
     @Test
     fun evictionFailsIfCancelled() {
         val executor = object : ScheduledExecutorService by this@CommonObjectPoolTest.executor {
-            override fun scheduleAtFixedRate(
+            override fun scheduleWithFixedDelay(
                 command: Runnable,
                 initialDelay: Long,
-                period: Long,
+                delay: Long,
                 unit: TimeUnit
-            ) = this@CommonObjectPoolTest.executor.scheduleAtFixedRate(command, initialDelay, period, unit).apply {
+            ) = this@CommonObjectPoolTest.executor.scheduleWithFixedDelay(command, initialDelay, delay, unit).apply {
                 cancel(false)
             }
         }

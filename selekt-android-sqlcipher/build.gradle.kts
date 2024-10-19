@@ -38,11 +38,17 @@ val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = libs.android.tools.gradle.get().version!!
+    buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.android.sqlcipher"
-    ndkVersion = "26.3.11579264"
+    ndkVersion = "27.0.12077973"
     defaultConfig {
         minSdk = 21
+        @Suppress("UnstableApiUsage")
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+        }
     }
     buildTypes {
         debug {

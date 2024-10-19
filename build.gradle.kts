@@ -40,6 +40,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.ideaExt)
     alias(libs.plugins.qodana)
+    alias(libs.plugins.ksp) apply false
 }
 
 repositories {

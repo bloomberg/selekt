@@ -118,7 +118,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         if (evictionIntervalMillis < 0L || isClosed) {
             return
         }
-        future = executor.scheduleAtFixedRate(
+        future = executor.scheduleWithFixedDelay(
             ::evict,
             evictionDelayMillis,
             evictionIntervalMillis,
