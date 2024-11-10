@@ -40,6 +40,7 @@ tasks.register<Download>("downloadOpenSslPgp") {
     val url = openSslPgpUrl()
     src(url)
     dest(archivePgp)
+    onlyIfModified(true)
     overwrite(false)
     inputs.property("url", url)
     outputs.files(archivePgp)
