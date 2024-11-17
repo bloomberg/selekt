@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.23.1
+
+### Dependencies
+
+* Android Gradle Plugin 8.6.1.
+* Gradle 8.10.2.
+
 ## Version 0.23.0
 
 ### Fixes
