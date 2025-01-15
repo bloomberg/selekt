@@ -73,17 +73,12 @@ dependencies {
     testRuntimeOnly(libs.robolectric.android.all)
 }
 
-koverReport {
-    defaults {
-        mergeWith("debug")
-    }
-    androidReports("debug") {
-        filters {
-            excludes {
-                classes(
-                    "*.BuildConfig"
-                )
-            }
+kover.reports {
+    variant("debug") {
+        filters.excludes {
+            classes(
+                "*.BuildConfig"
+            )
         }
     }
 }
