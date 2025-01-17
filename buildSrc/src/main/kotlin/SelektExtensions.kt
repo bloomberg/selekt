@@ -62,8 +62,8 @@ fun Project.disableKotlinCompilerAssertions() {
         kotlinOptions {
             freeCompilerArgs = listOf(
                 "-Xno-call-assertions",
-                "-Xno-receiver-assertions",
-                "-Xno-param-assertions"
+                "-Xno-param-assertions",
+                "-Xno-receiver-assertions"
             )
         }
     }
