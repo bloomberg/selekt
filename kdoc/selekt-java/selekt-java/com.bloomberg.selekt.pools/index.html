@@ -383,15 +383,15 @@
 <tbody>
 <tr>
 <td><a href="-common-object-pool/">CommonObjectPool</a></td>
-<td>[jvm]<br>@ThreadSafe<br>class <a href="-common-object-pool/">CommonObjectPool</a>&lt;<a href="-common-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="-common-object-pool/">T</a> : <a href="-i-pooled-object/">IPooledObject</a>&lt;<a href="-common-object-pool/">K</a>&gt;&gt;(factory: <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-common-object-pool/">T</a>&gt;, executor: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, configuration: <a href="-pool-configuration/">PoolConfiguration</a>, otherPool: <a href="-single-object-pool/">SingleObjectPool</a>&lt;<a href="-common-object-pool/">K</a>, <a href="-common-object-pool/">T</a>&gt;) : <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-common-object-pool/">K</a>, <a href="-common-object-pool/">T</a>&gt;</td>
+<td>[jvm]<br>@ThreadSafe<br>class <a href="-common-object-pool/">CommonObjectPool</a>&lt;<a href="-common-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-any/index.html">Any</a>, <a href="-common-object-pool/">T</a> : <a href="-i-pooled-object/">IPooledObject</a>&lt;<a href="-common-object-pool/">K</a>&gt;&gt;(factory: <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-common-object-pool/">T</a>&gt;, executor: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, configuration: <a href="-pool-configuration/">PoolConfiguration</a>, otherPool: <a href="-single-object-pool/">SingleObjectPool</a>&lt;<a href="-common-object-pool/">K</a>, <a href="-common-object-pool/">T</a>&gt;) : <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-common-object-pool/">K</a>, <a href="-common-object-pool/">T</a>&gt;</td>
 </tr>
 <tr>
 <td><a href="-i-object-factory/">IObjectFactory</a></td>
-<td>[jvm]<br>interface <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-i-object-factory/">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></td>
+<td>[jvm]<br>interface <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-i-object-factory/">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-any/index.html">Any</a>&gt; : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></td>
 </tr>
 <tr>
 <td><a href="-i-object-pool/">IObjectPool</a></td>
-<td>[jvm]<br>interface <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-i-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="-i-object-pool/">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></td>
+<td>[jvm]<br>interface <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-i-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-any/index.html">Any</a>, <a href="-i-object-pool/">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-any/index.html">Any</a>&gt; : <a href="https://docs.oracle.com/javase/8/docs/api/java/io/Closeable.html">Closeable</a></td>
 </tr>
 <tr>
 <td><a href="-i-pooled-object/">IPooledObject</a></td>
@@ -399,15 +399,15 @@
 </tr>
 <tr>
 <td><a href="-pool-configuration/">PoolConfiguration</a></td>
-<td>[jvm]<br>data class <a href="-pool-configuration/">PoolConfiguration</a>(val evictionDelayMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>, val evictionIntervalMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>, val maxTotal: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>)</td>
+<td>[jvm]<br>data class <a href="-pool-configuration/">PoolConfiguration</a>(val evictionDelayMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a>, val evictionIntervalMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a>, val maxTotal: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-int/index.html">Int</a>)</td>
 </tr>
 <tr>
 <td><a href="-priority/">Priority</a></td>
-<td>[jvm]<br>enum <a href="-priority/">Priority</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="-priority/">Priority</a>&gt;</td>
+<td>[jvm]<br>enum <a href="-priority/">Priority</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-enum/index.html">Enum</a>&lt;<a href="-priority/">Priority</a>&gt;</td>
 </tr>
 <tr>
 <td><a href="-single-object-pool/">SingleObjectPool</a></td>
-<td>[jvm]<br>@ThreadSafe<br>class <a href="-single-object-pool/">SingleObjectPool</a>&lt;<a href="-single-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="-single-object-pool/">T</a> : <a href="-i-pooled-object/">IPooledObject</a>&lt;<a href="-single-object-pool/">K</a>&gt;&gt;(factory: <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-single-object-pool/">T</a>&gt;, executor: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, evictionDelayMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>, evictionIntervalMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-long/index.html">Long</a>) : <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-single-object-pool/">K</a>, <a href="-single-object-pool/">T</a>&gt;</td>
+<td>[jvm]<br>@ThreadSafe<br>class <a href="-single-object-pool/">SingleObjectPool</a>&lt;<a href="-single-object-pool/">K</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-any/index.html">Any</a>, <a href="-single-object-pool/">T</a> : <a href="-i-pooled-object/">IPooledObject</a>&lt;<a href="-single-object-pool/">K</a>&gt;&gt;(factory: <a href="-i-object-factory/">IObjectFactory</a>&lt;<a href="-single-object-pool/">T</a>&gt;, executor: <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ScheduledExecutorService.html">ScheduledExecutorService</a>, evictionDelayMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a>, evictionIntervalMillis: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a>) : <a href="-i-object-pool/">IObjectPool</a>&lt;<a href="-single-object-pool/">K</a>, <a href="-single-object-pool/">T</a>&gt;</td>
 </tr>
 </tbody>
 </table>
