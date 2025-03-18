@@ -5,7 +5,7 @@
 [![KDoc](https://img.shields.io/static/v1?label=docs&message=KDoc&color=1AA2D4)](https://bloomberg.github.io/selekt/kdoc/api/selekt-android/index.html)
 
 [![OpenSSF
-Scorecard](https://api.securityscorecards.dev/projects/github.com/bloomberg/selekt/badge)](https://api.securityscorecards.dev/projects/github.com/bloomberg/selekt)
+Scorecard](https://api.securityscorecards.dev/projects/github.com/bloomberg/selekt/badge)](https://securityscorecards.dev/viewer/?uri=github.com/bloomberg/selekt)
 
 Selekt is a Kotlin and familiar Android SQLite database library that by default wraps the community edition of [SQLCipher](https://www.zetetic.net/sqlcipher/open-source/), an SQLite extension that provides 256-bit AES encryption of database files. Selekt realises the maximum concurrency offered by SQLite3: When enabled for WAL-journal mode, "readers do not block writers and a writer does not block readers. Reading and writing can proceed concurrently."
 
