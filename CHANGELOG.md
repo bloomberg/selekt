@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.23.3
+
+### Dependencies
+
+* Gradle 8.13.
+
 ## Version 0.23.2
 
 ### Dependencies
