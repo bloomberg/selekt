@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.24.0
+
+### Fixes
+
+* Publish to the subgroup com.bloomberg.selekt on Maven Central.
+
 ## Version 0.23.3
 
 ### Dependencies
