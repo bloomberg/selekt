@@ -45,7 +45,7 @@ fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
 })
 
 val Project.selektGroupId: String
-    get() = "com.bloomberg"
+    get() = "com.bloomberg.selekt"
 
 val Project.selektVersionName: String
     get() = if (isRelease()) {
