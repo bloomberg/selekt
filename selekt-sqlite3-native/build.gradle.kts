@@ -29,7 +29,7 @@ sourceSets.main {
 }
 
 tasks.withType<ProcessResources>().configureEach {
-    dependsOn("buildNativeHost")
+    dependsOn("buildNativeHost", "copyJniLibs")
 }
 
 tasks.register<Task>("buildNativeHost") {
