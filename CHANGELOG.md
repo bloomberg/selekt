@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.25.0
+
+### Features
+
+* Selekt for Linux.
+
+### Dependencies
+
+* Gradle 8.14.
+
 ## Version 0.24.0
 
 ### Fixes
