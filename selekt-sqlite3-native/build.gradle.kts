@@ -28,16 +28,17 @@ sourceSets.main {
     resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
 }
 
+tasks.withType<ProcessResources>().configureEach {
+    dependsOn("buildNativeHost")
+}
+
 tasks.register<Task>("buildNativeHost") {
     dependsOn(":SQLite3:buildHost")
     finalizedBy("copyJniLibs")
 }
 
 tasks.register<Copy>("copyJniLibs") {
-    from(
-        fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")),
-        fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
-    )
+    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
     mustRunAfter("buildNativeHost")
 }
@@ -55,7 +56,7 @@ fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 publishing {
     publications.register<MavenPublication>("main") {
         from(components["java"])
-        artifactId = "selekt-native-${platformIdentifier()}"
+        artifactId = "selekt-sqlite3-${platformIdentifier()}"
         pom {
             commonInitialisation(project)
             description.set("Selekt native library.")
