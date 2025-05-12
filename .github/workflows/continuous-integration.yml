@@ -5,6 +5,28 @@ on: [pull_request, push]
 permissions: read-all
 
 jobs:
+  sqlcipher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Install dependencies'
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y cmake build-essential
+          fi
+      - name: 'Checkout Selekt'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: recursive
+      - name: 'Install system packages'
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: 'Build SQLCipher'
+        run: |
+          ./gradlew :selekt-native:buildNativeHost
   ci-pipeline:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest
