@@ -44,8 +44,7 @@ jobs:
         echo 'org.gradle.caching=false' >> gradle.properties
         echo 'org.gradle.configuration-cache=false' >> gradle.properties
 
-    - name: 'Publish snapshot to OSSRH'
-      if: github.event_name == 'push'
+    - name: 'Publish to OSSRH'
       env:
         CC: zig cc -target x86_64-linux-musl
         CXX: zig c++ -target x86_64-linux-musl
@@ -55,9 +54,15 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_USER_TOKEN_PASSWORD }}
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USER_TOKEN_USERNAME }}
       run: |
-        ./gradlew \
-          :selekt-sqlite3-native:publishLinuxAmd64PublicationToSonatypeRepository \
-          :selekt-sqlite3-native:closeSonatypeStagingRepository
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          ./gradlew \
+            :selekt-sqlite3-native:publishLinuxAmd64PublicationToSonatypeRepository \
+            -Psnapshot=true
+        elif [[ "${{ github.event_name }}" == "release" ]]; then
+          ./gradlew \
+            :selekt-sqlite3-native:publishLinuxAmd64PublicationToSonatypeRepository \
+            :selekt-sqlite3-native:closeAndReleaseSonatypeStagingRepository
+        fi
 
   publish:
     name: 'Publish'
