@@ -164,6 +164,7 @@ jobs:
           ./gradlew \
             publishMainPublicationToSonatypeRepository \
             closeSonatypeStagingRepository
+
       - name: 'Publish release to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
