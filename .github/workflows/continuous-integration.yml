@@ -5,8 +5,8 @@ on: [pull_request, push]
 permissions: read-all
 
 jobs:
-  build-native:
-    name: 'Build Native'
+  build-native-jars:
+    name: 'Build Native JARs'
     strategy:
       matrix:
         os: [ ubuntu-latest ]

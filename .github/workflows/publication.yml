@@ -8,8 +8,8 @@ on:
     types: [published]
 
 jobs:
-  build-native:
-    name: 'Build Native'
+  build-native-jars:
+    name: 'Build Native JARs'
     strategy:
       matrix:
         os: [ ubuntu-latest ]
@@ -60,7 +60,7 @@ jobs:
   publish-native:
     name: Publish to OSSRH
     runs-on: ubuntu-latest
-    needs: build-native
+    needs: build-native-jars
     timeout-minutes: 120
 
     steps:
