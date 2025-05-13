@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
     - name: 'Install system packages'
@@ -61,6 +61,7 @@ jobs:
     name: Publish to OSSRH
     runs-on: ubuntu-latest
     needs: build-native
+    timeout-minutes: 120
 
     steps:
       - name: 'Download native JARs'
