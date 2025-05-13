@@ -28,35 +28,6 @@ sourceSets.main {
     resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
 }
 
-tasks.withType<ProcessResources>().configureEach {
-    dependsOn("build${nativeHost()}", "copyJniLibs")
-}
-
-fun nativeHost() = osName().replaceFirstChar {
-    if (it.isLowerCase()) {
-        it.titlecase(Locale.US)
-    } else {
-        it.toString()
-    }
-} + System.getProperty("os.arch").replaceFirstChar {
-    if (it.isLowerCase()) {
-        it.titlecase(Locale.US)
-    } else {
-        it.toString()
-    }
-}
-
-tasks.register<Task>("build${nativeHost()}") {
-    dependsOn(":SQLite3:buildHost")
-    finalizedBy("copyJniLibs")
-}
-
-tasks.register<Copy>("copyJniLibs") {
-    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
-    into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    mustRunAfter("build${nativeHost()}")
-}
-
 fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     when {
         startsWith("mac") -> "darwin"
@@ -67,12 +38,34 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 
 fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
+tasks.named<Jar>("jar") {
+    archiveClassifier.set(platformIdentifier())
+}
+
+tasks.withType<ProcessResources>().configureEach {
+    dependsOn("buildNativeHost", "copyJniLibs")
+}
+
+tasks.register<Task>("buildNativeHost") {
+    dependsOn(":SQLite3:buildHost")
+    finalizedBy("copyJniLibs")
+}
+
+tasks.register<Copy>("copyJniLibs") {
+    from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
+    into(layout.buildDirectory.dir("intermediates/libs/jni"))
+    mustRunAfter("buildNativeHost")
+}
+
 publishing {
-    publications.register<MavenPublication>(
-        nativeHost().replaceFirstChar(Char::lowercase)
-    ) {
-        from(components["java"])
-        artifactId = "selekt-sqlite3-${platformIdentifier()}"
+    publications.register<MavenPublication>("native") {
+        listOf(
+            "linux-amd64"
+        ).forEach {
+            artifact(file("build/libs/selekt-native-$it.jar")) {
+                classifier = it
+            }
+        }
         pom {
             commonInitialisation(project)
             description.set("Selekt native library.")
