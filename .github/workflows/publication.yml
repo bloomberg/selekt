@@ -51,7 +51,7 @@ jobs:
       run: |
         ./gradlew :selekt-sqlite3-native:jar
 
-    - name: 'Upload native artifact'
+    - name: 'Upload native JAR'
       uses: actions/upload-artifact@v3
       with:
         name: selekt-native-${{ runner.os }}
@@ -71,7 +71,8 @@ jobs:
 
       - name: 'Move native JARs into build/libs flat'
         run: |
-          find selekt-sqlite3-native/build/artifacts -name '*.jar' -exec mv {} build/libs \;
+          mkdir -p selekt-sqlite3-native/build/libs
+          find selekt-sqlite3-native/build/artifacts -name '*.jar' -exec mv {} selekt-sqlite3-native/build/libs \;
           rm -r selekt-sqlite3-native/build/artifacts
 
       - name: 'Publish to OSSRH'
