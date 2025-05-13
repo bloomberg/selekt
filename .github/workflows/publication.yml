@@ -52,7 +52,7 @@ jobs:
           ./gradlew :selekt-sqlite3-native:jar
 
       - name: 'Upload native JAR'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: selekt-native-${{ runner.os }}
           path: selekt-sqlite3-native/build/libs/*.jar
@@ -82,7 +82,7 @@ jobs:
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
 
       - name: 'Download native JARs'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: selekt-sqlite3-native/build/artifacts
 
