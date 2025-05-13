@@ -62,7 +62,7 @@ publishing {
         listOf(
             "linux-amd64"
         ).forEach {
-            artifact(file("build/libs/selekt-native-$it.jar")) {
+            artifact(file("build/libs/${project.name}-$version-$it.jar")) {
                 classifier = it
             }
         }
