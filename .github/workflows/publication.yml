@@ -91,6 +91,7 @@ jobs:
           mkdir -p selekt-sqlite3-native/build/libs
           find selekt-sqlite3-native/build/artifacts -name '*.jar' -exec mv {} selekt-sqlite3-native/build/libs \;
           rm -r selekt-sqlite3-native/build/artifacts
+          ls -la selekt-sqlite3-native/build/libs
 
       - name: 'Publish to OSSRH'
         env:
@@ -103,12 +104,12 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" ]]; then
             ./gradlew \
               :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              :selekt-sqlite3-native:closeSonatypeStagingRepository
+              closeSonatypeStagingRepository
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             ./gradlew \
               -Prelease \
               :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              :selekt-sqlite3-native:closeAndReleaseSonatypeStagingRepository
+              closeAndReleaseSonatypeStagingRepository
           fi
 
   publish:
