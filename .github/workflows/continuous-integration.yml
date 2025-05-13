@@ -5,6 +5,44 @@ on: [pull_request, push]
 permissions: read-all
 
 jobs:
+  native:
+    name: 'Native'
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - name: 'Install system packages'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang curl gcc make sed tar tcl
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: recursive
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: 'Gradle'
+        run: |
+          echo 'org.gradle.caching=false' >> gradle.properties
+          echo 'org.gradle.configuration-cache=false' >> gradle.properties
+      - name: 'Build'
+        env:
+          CC: zig cc -target x86_64-linux-musl
+          CXX: zig c++ -target x86_64-linux-musl
+        run: |
+          ./gradlew :selekt-sqlite3-native:buildLinuxAmd64
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: selekt-sqlite3-linux-amd64
+          path: selekt-sqlite3-native/build/**/libselekt.so
   ci-pipeline:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest

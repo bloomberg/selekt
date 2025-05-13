@@ -29,10 +29,24 @@ sourceSets.main {
 }
 
 tasks.withType<ProcessResources>().configureEach {
-    dependsOn("buildNativeHost", "copyJniLibs")
+    dependsOn("build${nativeHost()}", "copyJniLibs")
 }
 
-tasks.register<Task>("buildNativeHost") {
+fun nativeHost() = osName().replaceFirstChar {
+    if (it.isLowerCase()) {
+        it.titlecase(Locale.US)
+    } else {
+        it.toString()
+    }
+} + System.getProperty("os.arch").replaceFirstChar {
+    if (it.isLowerCase()) {
+        it.titlecase(Locale.US)
+    } else {
+        it.toString()
+    }
+}
+
+tasks.register<Task>("build${nativeHost()}") {
     dependsOn(":SQLite3:buildHost")
     finalizedBy("copyJniLibs")
 }
@@ -40,7 +54,7 @@ tasks.register<Task>("buildNativeHost") {
 tasks.register<Copy>("copyJniLibs") {
     from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    mustRunAfter("buildNativeHost")
+    mustRunAfter("build${nativeHost()}")
 }
 
 fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
@@ -54,7 +68,9 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
 
 publishing {
-    publications.register<MavenPublication>("main") {
+    publications.register<MavenPublication>(
+        nativeHost().replaceFirstChar(Char::lowercase)
+    ) {
         from(components["java"])
         artifactId = "selekt-sqlite3-${platformIdentifier()}"
         pom {
