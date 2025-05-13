@@ -28,6 +28,20 @@ sourceSets.main {
     resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
 }
 
+fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
+    when {
+        startsWith("mac") -> "darwin"
+        startsWith("windows") -> "windows"
+        else -> replace("\\s+", "_")
+    }
+}
+
+fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+
+tasks.named<Jar>("jar") {
+    archiveClassifier.set(platformIdentifier())
+}
+
 tasks.withType<ProcessResources>().configureEach {
     dependsOn("buildNativeHost", "copyJniLibs")
 }
@@ -43,20 +57,15 @@ tasks.register<Copy>("copyJniLibs") {
     mustRunAfter("buildNativeHost")
 }
 
-fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
-    when {
-        startsWith("mac") -> "darwin"
-        startsWith("windows") -> "windows"
-        else -> replace("\\s+", "_")
-    }
-}
-
-fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
-
 publishing {
-    publications.register<MavenPublication>("main") {
-        from(components["java"])
-        artifactId = "selekt-sqlite3-${platformIdentifier()}"
+    publications.register<MavenPublication>("native") {
+        listOf(
+            "linux-amd64"
+        ).forEach {
+            artifact(file("build/libs/selekt-native-$it.jar")) {
+                classifier = it
+            }
+        }
         pom {
             commonInitialisation(project)
             description.set("Selekt native library.")
