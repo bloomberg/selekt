@@ -32,6 +32,7 @@ dependencies {
                 selektSqlite3Classes
             )
         }.forEach(::api)
+        api("$group:selekt-sqlite3-linux-amd64:$version")
     }
 }
 
