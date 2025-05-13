@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
     - name: 'Install system packages'
