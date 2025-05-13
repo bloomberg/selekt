@@ -46,7 +46,7 @@ jobs:
         CC: zig cc -target x86_64-linux-musl
         CXX: zig c++ -target x86_64-linux-musl
       run: |
-        ./gradlew :selekt-sqlite3-native:buildLinuxAmd64
+        ./gradlew :selekt-sqlite3-native:jar
 
   ci-pipeline:
     name: 'Continuous Integration'
