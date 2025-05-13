@@ -12,52 +12,69 @@ jobs:
         os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
+
     steps:
-      - name: 'Install system packages'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang curl gcc make sed tar tcl
-      - uses: mlugg/setup-zig@v2
-        with:
-          version: 0.13.0
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-          submodules: recursive
-      - uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-      - name: 'Gradle'
-        run: |
-          echo 'org.gradle.caching=false' >> gradle.properties
-          echo 'org.gradle.configuration-cache=false' >> gradle.properties
-      - name: 'Build'
-        env:
-          CC: zig cc -target x86_64-linux-musl
-          CXX: zig c++ -target x86_64-linux-musl
-        run: |
-          ./gradlew :selekt-sqlite3-native:buildLinuxAmd64
+    - name: 'Install system packages'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends clang curl gcc make sed tar tcl
+
+    - name: 'Install Zig'
+      uses: mlugg/setup-zig@v2
+      with:
+        version: 0.13.0
+
+    - name: 'Checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
+        submodules: recursive
+
+    - name: 'Setup Java'
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 17
+
+    - name: 'Configure Gradle'
+      run: |
+        echo 'org.gradle.caching=false' >> gradle.properties
+        echo 'org.gradle.configuration-cache=false' >> gradle.properties
+
+    - name: 'Build'
+      env:
+        CC: zig cc -target x86_64-linux-musl
+        CXX: zig c++ -target x86_64-linux-musl
+      run: |
+        ./gradlew :selekt-sqlite3-native:buildLinuxAmd64
+
   ci-pipeline:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
     steps:
-    - name: 'Set environment'
+    - name: 'Setup environment'
       run: |
         if [[ ${GITHUB_REF} == 'refs/heads/main' ]]; then
           echo 'SCAN=--scan' >> ${GITHUB_ENV}
         fi
+
     - name: 'Install system packages'
       run: sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
-    - uses: actions/checkout@v3
+
+    - name: 'Checkout'
+      uses: actions/checkout@v3
       with:
         fetch-depth: 2
         submodules: recursive
-    - uses: actions/setup-java@v3
+
+    - name: 'Setup Java'
+      uses: actions/setup-java@v3
       with:
         distribution: temurin
         java-version: 17
+
     - name: 'Build cache'
       uses: actions/cache@v3
       with:
@@ -68,8 +85,10 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
+
     - name: 'ccache'
       uses: hendrikmuhs/ccache-action@v1.2
+
     - name: 'Gradle configuration'
       run: |
         echo 'org.gradle.caching=true' >> gradle.properties
@@ -82,19 +101,26 @@ jobs:
         echo '        termsOfServiceAgree = "yes"' >> settings.gradle.kts
         echo '    }' >> settings.gradle.kts
         echo '}' >> settings.gradle.kts
+
     - name: 'Licenses'
       run: ./gradlew licensee --no-configuration-cache
+
     - name: 'Analyse'
       run: ./gradlew detekt ktlintCheck lint -x lintRelease ${{ env.SCAN }}
-    - uses: actions/upload-artifact@v4
+
+    - name: 'Archive analysis reports'
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: 'Analyses'
         path: |
           **/build/reports/detekt
+
     - name: 'Unit tests'
       run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
-    - uses: actions/upload-artifact@v4
+
+    - name: 'Archive test reports'
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: 'Unit test and coverage reports'
@@ -102,15 +128,19 @@ jobs:
           build/reports/kover/html
           selekt-android/build/reports/tests/testDebugUnitTest
           selekt-java/build/reports/tests/test
+
     - name: 'Build Selekt'
       run: |
         ./gradlew assembleRelease ${{ env.SCAN }}
+
     - name: 'Verify coverage'
       run:
         ./gradlew :koverVerify -x integrationTest
+
     - name: 'Build others'
       run: |
         ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble dokkaHtml
+
     - name: 'Tear down'
       if: always()
       run: |

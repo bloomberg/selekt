@@ -9,32 +9,41 @@ on:
 
 jobs:
   native:
-    name: 'Publish Native'
+    name: 'Native Publication'
     strategy:
       matrix:
         os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
+
     steps:
     - name: 'Install system packages'
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends clang curl gcc make sed tar tcl
-    - uses: mlugg/setup-zig@v2
+
+    - name: 'Install Zig'
+      uses: mlugg/setup-zig@v2
       with:
         version: 0.13.0
-    - uses: actions/checkout@v3
+
+    - name: 'Checkout'
+      uses: actions/checkout@v3
       with:
         fetch-depth: 2
         submodules: recursive
-    - uses: actions/setup-java@v3
+
+    - name: 'Setup Java'
+      uses: actions/setup-java@v3
       with:
         distribution: temurin
         java-version: 17
-    - name: 'Gradle'
+
+    - name: 'Configure Gradle'
       run: |
         echo 'org.gradle.caching=false' >> gradle.properties
         echo 'org.gradle.configuration-cache=false' >> gradle.properties
+
     - name: 'Publish snapshot to OSSRH'
       if: github.event_name == 'push'
       env:
@@ -49,6 +58,7 @@ jobs:
         ./gradlew \
           :selekt-sqlite3-native:publishLinuxAmd64PublicationToSonatypeRepository \
           :selekt-sqlite3-native:closeSonatypeStagingRepository
+
   publish:
     name: 'Publish'
     runs-on: ubuntu-latest
