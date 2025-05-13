@@ -38,11 +38,6 @@ jobs:
           CXX: zig c++ -target x86_64-linux-musl
         run: |
           ./gradlew :selekt-sqlite3-native:buildLinuxAmd64
-      - name: Upload native library
-        uses: actions/upload-artifact@v4
-        with:
-          name: selekt-sqlite3-linux-amd64
-          path: selekt-sqlite3-native/build/**/libselekt.so
   ci-pipeline:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest
