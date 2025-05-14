@@ -100,6 +100,7 @@ tasks.register<Exec>("cmakeSQLite") {
     doFirst {
         Files.createDirectories(workingDir)
     }
+    inputs.file("zig-toolchain-x86_64-linux-musl.cmake")
     workingDir(".cxx-host")
     commandLine("cmake")
     args(
