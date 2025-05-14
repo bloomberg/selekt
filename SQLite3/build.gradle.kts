@@ -103,7 +103,8 @@ tasks.register<Exec>("cmakeSQLite") {
     workingDir(".cxx-host")
     commandLine("cmake")
     args(
-        "-DCMAKE_TOOLCHAIN_FILE=${layout.projectDirectory.dir("linux.toolchain").asFile.absolutePath}",
+        "-DCMAKE_TOOLCHAIN_FILE=${layout.projectDirectory.dir("zig-toolchain-x86_64-linux-musl.cmake")
+            .asFile.absolutePath}",
         "-DCMAKE_BUILD_TYPE=Release",
         //"-DUSE_CCACHE=1",
         "-DSLKT_TARGET_ABI=${platformIdentifier()}",
