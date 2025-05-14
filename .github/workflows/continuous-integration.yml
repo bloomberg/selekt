@@ -43,10 +43,18 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: zig cc -target x86_64-linux-musl
-          CXX: zig c++ -target x86_64-linux-musl
+          CC: zig cc
+          CXX: zig c++
+          CFLAGS: -target x86_64-linux-musl -O2 -s
+          CXXFLAGS: -target x86_64-linux-musl -O2 -s
         run: |
           ./gradlew :selekt-sqlite3-native:jar
+
+      - name: 'Upload native JAR'
+        uses: actions/upload-artifact@v4
+        with:
+          name: selekt-native-${{ runner.os }}
+          path: selekt-sqlite3-native/build/libs/*.jar
 
   ci-pipeline:
     name: 'Continuous Integration'

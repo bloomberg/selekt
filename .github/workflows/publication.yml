@@ -46,8 +46,10 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: zig cc -target x86_64-linux-musl
-          CXX: zig c++ -target x86_64-linux-musl
+          CC: zig cc
+          CXX: zig c++
+          CFLAGS: -target x86_64-linux-musl -O2 -s
+          CXXFLAGS: -target x86_64-linux-musl -O2 -s
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
             ./gradlew :selekt-sqlite3-native:jar
