@@ -109,6 +109,9 @@ tasks.register<Exec>("cmakeSQLite") {
         "-DSLKT_TARGET_ABI=${platformIdentifier()}",
         projectDir
     )
+    isIgnoreExitValue = false
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 tasks.register<Exec>("makeSQLite") {
