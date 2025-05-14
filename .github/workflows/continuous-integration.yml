@@ -42,11 +42,6 @@ jobs:
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
 
       - name: 'Build'
-        env:
-          CMAKE_C_COMPILER: zig cc -target x86_64-linux-musl
-          CMAKE_CXX_COMPILER: zig c++ -target x86_64-linux-musl
-          CFLAGS: -O2 -s
-          CXXFLAGS: -O2 -s
         run: |
           ./gradlew :selekt-sqlite3-native:jar
 

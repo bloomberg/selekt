@@ -76,3 +76,17 @@ if(NOT LIBCRYPTO)
 endif()
 message(STATUS "Linking to OpenSSL libcrypto: ${LIBCRYPTO}")
 target_link_libraries(selekt ${LIBCRYPTO})
+
+message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
+if(CMAKE_C_COMPILER MATCHES "zig")
+  message(STATUS "Applying Zig + musl compile and link flags")
+  target_compile_options(selekt PRIVATE
+    "--target=x86_64-linux-musl"
+    "-O2"
+    "-s"
+  )
+  target_link_options(selekt PRIVATE
+    "--target=x86_64-linux-musl"
+    "-s"
+  )
+endif()
