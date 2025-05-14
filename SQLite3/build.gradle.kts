@@ -105,7 +105,7 @@ tasks.register<Exec>("cmakeSQLite") {
     args(
         "-DCMAKE_TOOLCHAIN_FILE=${layout.projectDirectory.dir("linux.toolchain").asFile.absolutePath}",
         "-DCMAKE_BUILD_TYPE=Release",
-        "-DUSE_CCACHE=1",
+        //"-DUSE_CCACHE=1",
         "-DSLKT_TARGET_ABI=${platformIdentifier()}",
         projectDir
     )
