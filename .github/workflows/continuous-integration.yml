@@ -43,7 +43,7 @@ jobs:
 
       - name: 'Build'
         run: |
-          ./gradlew :selekt-sqlite3-native:jar
+          ./gradlew clean :selekt-sqlite3-native:jar --no-build-cache --no-configuration-cache --rerun-tasks
 
       - name: 'Upload native JAR'
         uses: actions/upload-artifact@v4
