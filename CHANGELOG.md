@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.25.1
+
+### Fixes
+
+* Add selekt-sqlite3-native to the BOM.
+* Portable Selekt native build for Linux.
+
 ## Version 0.25.0
 
 ### Features
