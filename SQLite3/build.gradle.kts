@@ -111,8 +111,8 @@ tasks.register<Exec>("cmakeSQLite") {
         projectDir
     )
     isIgnoreExitValue = false
-    standardOutput = System.out
-    errorOutput = System.err
+    logging.captureStandardOutput(LogLevel.INFO)
+    logging.captureStandardError(LogLevel.INFO)
 }
 
 tasks.register<Exec>("makeSQLite") {
