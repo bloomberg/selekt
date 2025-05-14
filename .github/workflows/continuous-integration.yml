@@ -43,10 +43,10 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: zig cc
-          CXX: zig c++
-          CFLAGS: -target x86_64-linux-musl -O2 -s
-          CXXFLAGS: -target x86_64-linux-musl -O2 -s
+          CMAKE_C_COMPILER: zig cc -target x86_64-linux-musl
+          CMAKE_CXX_COMPILER: zig c++ -target x86_64-linux-musl
+          CFLAGS: -O2 -s
+          CXXFLAGS: -O2 -s
         run: |
           ./gradlew :selekt-sqlite3-native:jar
 
