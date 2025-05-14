@@ -49,7 +49,12 @@ jobs:
           CC: zig cc -target x86_64-linux-musl
           CXX: zig c++ -target x86_64-linux-musl
         run: |
-          ./gradlew :selekt-sqlite3-native:jar
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            ./gradlew :selekt-sqlite3-native:jar
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            ./gradlew -Prelease \
+              :selekt-sqlite3-native:jar
+          fi
 
       - name: 'Upload native JAR'
         uses: actions/upload-artifact@v4
