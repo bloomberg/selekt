@@ -9,7 +9,8 @@ set(CMAKE_CXX_COMPILER "zig")
 set(CMAKE_CXX_COMPILER_ARG1 "c++")
 set(CMAKE_CXX_COMPILER_TARGET "x86_64-linux-musl")
 
-set(CMAKE_C_FLAGS "-O2 -s")
-set(CMAKE_CXX_FLAGS "-O2 -s")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -s")
 
-set(CMAKE_SHARED_LINKER_FLAGS "--target=x86_64-linux-musl -s")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --target=x86_64-linux-musl -s")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
