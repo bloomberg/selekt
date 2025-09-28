@@ -55,13 +55,13 @@ nexusPublishing {
     repositories {
         // See: https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/
         sonatype {
-            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            nexusUrl = uri("https://ossrh-staging-api.central.sonatype.com/service/local/")
+            snapshotRepositoryUrl = uri("https://central.sonatype.com/repository/maven-snapshots/")
         }
     }
     transitionCheckOptions {
-        maxRetries.set(180)
-        delayBetween.set(Duration.ofSeconds(10L))
+        maxRetries = 180
+        delayBetween = Duration.ofSeconds(10L)
     }
 }
 
