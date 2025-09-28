@@ -53,11 +53,15 @@ logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
     repositories {
-        sonatype()
+        // See: https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+        }
     }
     transitionCheckOptions {
-        maxRetries = 180
-        delayBetween = Duration.ofSeconds(10L)
+        maxRetries.set(180)
+        delayBetween.set(Duration.ofSeconds(10L))
     }
 }
 
