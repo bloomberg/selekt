@@ -62,61 +62,6 @@ jobs:
           name: selekt-native-${{ runner.os }}
           path: selekt-sqlite3-native/build/libs/*.jar
 
-  publish-native:
-    name: Publish to OSSRH
-    runs-on: ubuntu-latest
-    needs: build-native-jars
-    timeout-minutes: 120
-
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-          submodules: recursive
-
-      - name: 'Setup Java'
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: 'Configure Gradle'
-        run: |
-          echo 'org.gradle.caching=false' >> gradle.properties
-          echo 'org.gradle.configuration-cache=false' >> gradle.properties
-
-      - name: 'Download native JARs'
-        uses: actions/download-artifact@v4
-        with:
-          path: selekt-sqlite3-native/build/artifacts
-
-      - name: 'Move native JARs into build/libs flat'
-        run: |
-          mkdir -p selekt-sqlite3-native/build/libs
-          find selekt-sqlite3-native/build/artifacts -name '*.jar' -exec mv {} selekt-sqlite3-native/build/libs \;
-          rm -r selekt-sqlite3-native/build/artifacts
-          ls -la selekt-sqlite3-native/build/libs
-
-      - name: 'Publish to OSSRH'
-        env:
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
-          ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSPHRASE }}
-          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_USER_TOKEN_PASSWORD }}
-          ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USER_TOKEN_USERNAME }}
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            ./gradlew \
-              :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              closeSonatypeStagingRepository
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            ./gradlew \
-              -Prelease \
-              :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              closeAndReleaseSonatypeStagingRepository
-          fi
-
   publish:
     name: 'Publish'
     runs-on: ubuntu-latest
