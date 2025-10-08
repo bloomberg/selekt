@@ -100,14 +100,19 @@ tasks.register<Exec>("cmakeSQLite") {
     doFirst {
         Files.createDirectories(workingDir)
     }
-    workingDir(".cxx-host")
+    workingDir(workingDir)
     commandLine("cmake")
     args(
+        "-DCMAKE_TOOLCHAIN_FILE=${layout.projectDirectory.dir("zig-toolchain-x86_64-linux-musl.cmake")
+            .asFile.absolutePath}",
         "-DCMAKE_BUILD_TYPE=Release",
-        "-DUSE_CCACHE=1",
+        //"-DUSE_CCACHE=1",
         "-DSLKT_TARGET_ABI=${platformIdentifier()}",
         projectDir
     )
+    isIgnoreExitValue = false
+    logging.captureStandardOutput(LogLevel.INFO)
+    logging.captureStandardError(LogLevel.INFO)
 }
 
 tasks.register<Exec>("makeSQLite") {
