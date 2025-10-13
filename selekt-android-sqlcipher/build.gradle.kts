@@ -40,7 +40,7 @@ android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.android.sqlcipher"
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "27.3.13750724"
     defaultConfig {
         minSdk = 21
         @Suppress("UnstableApiUsage")
