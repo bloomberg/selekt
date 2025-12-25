@@ -141,7 +141,7 @@ internal class Mutex {
                 }
             }
         }
-        waiters.remove()
+        waiters.poll()
         return true
     }
 
