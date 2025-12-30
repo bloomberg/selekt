@@ -33,7 +33,7 @@ internal class ThreadLocalSession(
     internal fun get(): SQLSession = threadLocal.get()
 }
 
-private data class SQLSessionState(
+private class SQLSessionState(
     var depth: Int = 0,
     var successes: Int = 0,
     var transactionSql: String = "",
@@ -51,7 +51,7 @@ private data class SQLSessionState(
 internal class SQLSession(
     pool: SQLExecutorPool
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
-    private var state = SQLSessionState()
+    private val state = SQLSessionState()
 
     override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
 
@@ -99,14 +99,22 @@ internal class SQLSession(
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
         check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
-        val oldState = state.copy()
+        val oldDepth = state.depth
+        val oldSuccesses = state.successes
+        val oldTransactionSql = state.transactionSql
+        val oldTransactionListener = state.transactionListener
         val oldRetainCount = retainCount
         internalEnd(oldRetainCount)
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(oldState.transactionSql, oldState.transactionListener, oldRetainCount)
-        state = oldState
+        internalBegin(oldTransactionSql, oldTransactionListener, oldRetainCount)
+        state.apply {
+            depth = oldDepth
+            successes = oldSuccesses
+            transactionSql = oldTransactionSql
+            transactionListener = oldTransactionListener
+        }
         return true
     }
 
