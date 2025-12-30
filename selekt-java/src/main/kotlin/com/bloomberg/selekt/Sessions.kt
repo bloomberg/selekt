@@ -35,13 +35,13 @@ internal class ThreadLocalSession(
 
 private data class SQLSessionState(
     var depth: Int = 0,
-    var successes: Int = 0,
+    var isSuccessFlag: Boolean = true,
     var transactionSql: String = "",
     var transactionListener: SQLTransactionListener? = null
 ) {
     fun clear() {
         depth = 0
-        successes = 0
+        isSuccessFlag = true
         transactionSql = ""
         transactionListener = null
     }
@@ -77,7 +77,7 @@ internal class SQLSession(
 
     override fun endTransaction() = state.run {
         --depth
-        --successes
+        isSuccessFlag = !isSuccessFlag
         if (depth == 0) {
             internalEnd()
         } else {
@@ -90,15 +90,16 @@ internal class SQLSession(
 
     override fun setTransactionSuccessful() {
         checkInTransaction()
-        check(state.successes == 0) { "This thread's current transaction is already marked as successful." }
-        ++state.successes
+        check(state.isSuccessFlag) { "This thread's current transaction is already marked as successful." }
+        // Set the success flag so that when the transaction ends it is marked as successful.
+        state.isSuccessFlag = false
     }
 
     override fun yieldTransaction() = yieldTransaction(0L)
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
-        check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
+        check(state.isSuccessFlag) { "This thread's current transaction must not have been marked as successful yet." }
         val oldState = state.copy()
         val oldRetainCount = retainCount
         internalEnd(oldRetainCount)
@@ -166,7 +167,7 @@ internal class SQLSession(
 
     private fun internalEnd(permits: Int = 1) {
         try {
-            if (state.successes == 0) {
+            if (state.isSuccessFlag) {
                 commit()
             } else {
                 rollback()
