@@ -1,6 +1,18 @@
 Change Log
 ==========
 
+## Version 0.25.2
+
+### Fixes
+
+* Replace .remove with .poll in Mutex.
+
+### Dependencies
+
+* Gradle 8.14.3.
+* NDK 27d (27.3.13750724).
+* Nexus Publish Plugin 2.0.0.
+
 ## Version 0.25.1
 
 ### Fixes
