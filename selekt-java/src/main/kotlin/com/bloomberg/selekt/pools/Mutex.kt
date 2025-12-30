@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.pools
 
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import java.util.concurrent.locks.LockSupport
 
 /**
@@ -28,9 +28,30 @@ internal class Mutex {
     @Volatile
     private var isLocked = 0
 
+    @Suppress("unused")
+    @Volatile
+    private var head: Waiter? = null
+
     @Volatile
     private var isCancelled = 0
-    private val waiters = ConcurrentLinkedQueue<Thread>()
+
+    @Suppress("unused")
+    @Volatile
+    private var tail: Waiter? = null
+
+    private class Waiter(val thread: Thread) {
+        companion object {
+            val nextUpdater: AtomicReferenceFieldUpdater<Waiter, Waiter> = AtomicReferenceFieldUpdater.newUpdater(
+                Waiter::class.java,
+                Waiter::class.java,
+                "next"
+            )
+        }
+
+        @Suppress("unused")
+        @Volatile
+        var next: Waiter? = null
+    }
 
     fun lock() {
         when {
@@ -56,7 +77,7 @@ internal class Mutex {
 
     fun unlock() {
         isLockedUpdater[this] = 0
-        LockSupport.unpark(waiters.peek())
+        LockSupport.unpark(headUpdater[this]?.thread)
     }
 
     fun cancel() = isCancelledUpdater.compareAndSet(this, 0, 1).also {
@@ -68,7 +89,7 @@ internal class Mutex {
     /**
      * Best effort to unpark all waiting threads.
      */
-    fun attemptUnparkWaiters() = waiters.forEach {
+    fun attemptUnparkWaiters() = forEachWaiter {
         LockSupport.unpark(it)
     }
 
@@ -112,9 +133,7 @@ internal class Mutex {
         isCancellable: Boolean
     ): Boolean {
         val thread = Thread.currentThread()
-        if (!waiters.add(thread)) {
-            return false
-        }
+        addWaiter(thread)
         var remainingNanos = intervalNanos
         val deadlineNanos = System.nanoTime() + intervalNanos
         while (!(isThisHead() && internalTryLock())) {
@@ -141,20 +160,112 @@ internal class Mutex {
                 }
             }
         }
-        waiters.poll()
+        pollHead()
         return true
     }
 
     private fun removeThisWaiterNotifyingNext() {
         isThisHead().also {
-            check(waiters.remove(Thread.currentThread())) { "Failed to remove waiter." }
+            check(removeWaiter(Thread.currentThread())) { "Failed to remove waiter." }
             if (it) {
-                LockSupport.unpark(waiters.peek())
+                LockSupport.unpark(headUpdater[this]?.thread)
             }
         }
     }
 
-    private fun isThisHead() = waiters.peek() === Thread.currentThread()
+    private fun isThisHead() = headUpdater[this]?.thread === Thread.currentThread()
+
+    private fun addWaiter(thread: Thread) {
+        val waiter = Waiter(thread)
+        while (true) {
+            val currentTail = tailUpdater[this]
+            if (currentTail == null) {
+                if (headUpdater.compareAndSet(this, null, waiter)) {
+                    tailUpdater.compareAndSet(this, null, waiter)
+                    return
+                }
+            } else {
+                val next = Waiter.nextUpdater[currentTail]
+                if (next != null) {
+                    tailUpdater.compareAndSet(this, currentTail, next)
+                    continue
+                }
+                if (Waiter.nextUpdater.compareAndSet(currentTail, null, waiter)) {
+                    tailUpdater.compareAndSet(this, currentTail, waiter)
+                    return
+                }
+            }
+        }
+    }
+
+    private fun pollHead(): Waiter? {
+        while (true) {
+            val currentHead = headUpdater[this] ?: return null
+            val next = Waiter.nextUpdater[currentHead]
+            if (currentHead != headUpdater[this]) {
+                continue
+            }
+            if (headUpdater.compareAndSet(this, currentHead, next)) {
+                if (next == null) {
+                    tailUpdater.compareAndSet(this, currentHead, null)
+                }
+                Waiter.nextUpdater[currentHead] = null
+                return currentHead
+            }
+        }
+    }
+
+    private fun removeWaiter(thread: Thread): Boolean {
+        while (true) {
+            val currentHead = headUpdater[this] ?: return false
+            if (currentHead.thread === thread) {
+                return removeHead()
+            }
+            var previous = currentHead
+            var current = Waiter.nextUpdater[previous]
+            while (current != null) {
+                if (current.thread === thread) {
+                    return unlinkWaiter(previous, current)
+                }
+                previous = current
+                current = Waiter.nextUpdater[current]
+            }
+            return false
+        }
+    }
+
+    private fun removeHead(): Boolean {
+        val currentHead = headUpdater[this] ?: return false
+        val next = Waiter.nextUpdater[currentHead]
+        if (headUpdater.compareAndSet(this, currentHead, next)) {
+            if (next == null) {
+                tailUpdater.compareAndSet(this, currentHead, null)
+            }
+            Waiter.nextUpdater[currentHead] = null
+            return true
+        }
+        return false
+    }
+
+    private fun unlinkWaiter(prev: Waiter, current: Waiter): Boolean {
+        val next = Waiter.nextUpdater[current]
+        if (Waiter.nextUpdater.compareAndSet(prev, current, next)) {
+            if (next == null) {
+                tailUpdater.compareAndSet(this, current, prev)
+            }
+            Waiter.nextUpdater[current] = null
+            return true
+        }
+        return false
+    }
+
+    private inline fun forEachWaiter(block: (Thread) -> Unit) {
+        var current = headUpdater[this]
+        while (current != null) {
+            block(current.thread)
+            current = Waiter.nextUpdater[current]
+        }
+    }
 
     private companion object {
         // Reduce the risk of "lost unpark" due to class loading.
@@ -169,6 +280,18 @@ internal class Mutex {
         val isCancelledUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
             Mutex::class.java,
             "isCancelled"
+        )
+
+        val headUpdater: AtomicReferenceFieldUpdater<Mutex, Waiter> = AtomicReferenceFieldUpdater.newUpdater(
+            Mutex::class.java,
+            Waiter::class.java,
+            "head"
+        )
+
+        val tailUpdater: AtomicReferenceFieldUpdater<Mutex, Waiter> = AtomicReferenceFieldUpdater.newUpdater(
+            Mutex::class.java,
+            Waiter::class.java,
+            "tail"
         )
 
         fun cancellationError(): Nothing = error("Mutex received cancellation signal.")
