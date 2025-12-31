@@ -16,8 +16,12 @@
 
 package com.bloomberg.selekt.pools
 
+import com.bloomberg.selekt.commons.compareAndSetInt
+import com.bloomberg.selekt.commons.compareAndSetIntAcquire
+import com.bloomberg.selekt.commons.IntegerHandle
+import com.bloomberg.selekt.commons.getIntAcquire
+import com.bloomberg.selekt.commons.setIntRelease
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import java.util.concurrent.locks.LockSupport
 
 /**
@@ -25,11 +29,11 @@ import java.util.concurrent.locks.LockSupport
  */
 internal class Mutex {
     @Suppress("unused")
-    @Volatile
     private var isLocked = 0
 
-    @Volatile
+    @Suppress("unused")
     private var isCancelled = 0
+
     private val waiters = ConcurrentLinkedQueue<Thread>()
 
     fun lock() {
@@ -55,15 +59,15 @@ internal class Mutex {
     }
 
     fun unlock() {
-        isLockedUpdater[this] = 0
+        setIntRelease(isLockedHandle, this, 0)
         LockSupport.unpark(waiters.peek())
     }
 
-    fun cancel() = isCancelledUpdater.compareAndSet(this, 0, 1).also {
+    fun cancel() = compareAndSetInt(isCancelledHandle, this, 0, 1).also {
         attemptUnparkWaiters()
     }
 
-    fun isCancelled() = isCancelled != 0
+    fun isCancelled() = getIntAcquire(isCancelledHandle, this) != 0
 
     /**
      * Best effort to unpark all waiting threads.
@@ -99,7 +103,7 @@ internal class Mutex {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun internalTryLock() = isLockedUpdater.compareAndSet(this, 0, 1)
+    private inline fun internalTryLock() = compareAndSetIntAcquire(isLockedHandle, this, 0, 1)
 
     /**
      * @param intervalNanos the maximum time to wait for the lock in nanoseconds; negative indicates indefinitely.
@@ -161,15 +165,8 @@ internal class Mutex {
         @Suppress("unused")
         private val ensureLoaded: Class<*> = LockSupport::class.java
 
-        val isLockedUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java,
-            "isLocked"
-        )
-
-        val isCancelledUpdater: AtomicIntegerFieldUpdater<Mutex> = AtomicIntegerFieldUpdater.newUpdater(
-            Mutex::class.java,
-            "isCancelled"
-        )
+        private val isLockedHandle: Any = IntegerHandle<Mutex>("isLocked")
+        private val isCancelledHandle: Any = IntegerHandle<Mutex>("isCancelled")
 
         fun cancellationError(): Nothing = error("Mutex received cancellation signal.")
     }

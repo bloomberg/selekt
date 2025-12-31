@@ -16,26 +16,32 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.commons.IntegerHandle
+import com.bloomberg.selekt.commons.decrementAndGetRelease
+import com.bloomberg.selekt.commons.getAndIncrementAcquire
+import com.bloomberg.selekt.commons.getIntAcquire
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.ThreadSafe
 
 @ThreadSafe
 abstract class SharedCloseable : Closeable {
-    @Volatile private var retainCount = 1
+    @Suppress("unused")
+    private var retainCount = 1
 
     final override fun close() = release()
 
-    fun isOpen() = retainCount > 0
+    fun isOpen() = getIntAcquire(retainCountHandle, this) > 0
 
     protected abstract fun onReleased()
 
     private fun retain() {
-        check(retainCountUpdater.getAndIncrement(this) > 0) { "Attempting to retain an already released object: $this." }
+        check(getAndIncrementAcquire(retainCountHandle, this) > 0) {
+            "Attempting to retain an already released object: $this."
+        }
     }
 
     private fun release() {
-        if (retainCountUpdater.decrementAndGet(this) == 0) {
+        if (decrementAndGetRelease(retainCountHandle, this) == 0) {
             onReleased()
         }
     }
@@ -50,9 +56,6 @@ abstract class SharedCloseable : Closeable {
     }
 
     private companion object {
-        val retainCountUpdater: AtomicIntegerFieldUpdater<SharedCloseable> = AtomicIntegerFieldUpdater.newUpdater(
-            SharedCloseable::class.java,
-            "retainCount"
-        )
+        private val retainCountHandle: Any = IntegerHandle<SharedCloseable>("retainCount")
     }
 }
