@@ -32,7 +32,7 @@ android {
     buildToolsVersion("34.0.0")
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
-        minSdkVersion(21)
+        minSdkVersion(26)
         targetSdkVersion(34)
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(

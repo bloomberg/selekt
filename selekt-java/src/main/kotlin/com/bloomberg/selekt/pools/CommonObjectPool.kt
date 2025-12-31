@@ -16,14 +16,16 @@
 
 package com.bloomberg.selekt.pools
 
+import com.bloomberg.selekt.commons.BooleanHandle
 import com.bloomberg.selekt.commons.LinkedDeque
 import com.bloomberg.selekt.commons.forEachCatching
+import com.bloomberg.selekt.commons.getAndSetBoolean
+import com.bloomberg.selekt.commons.getBoolean
 import com.bloomberg.selekt.commons.withLockInterruptibly
 import com.bloomberg.selekt.commons.withTryLock
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
@@ -41,7 +43,9 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         require(configuration.maxTotal > 0) { "Pool configuration must allow at least one object." }
     }
 
-    private val isClosed = AtomicBoolean(false)
+    @Suppress("unused")
+    @Volatile
+    private var isClosed = 0
 
     private val lock = ReentrantLock(true)
     private val available = lock.newCondition()
@@ -59,7 +63,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private var tag = false
 
     override fun close() {
-        if (isClosed.getAndSet(true)) {
+        if (getAndSetBoolean(isClosedHandle, this, true)) {
             return
         }
         signalAll()
@@ -78,7 +82,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     @Throws(InterruptedException::class)
     private inline fun internalBorrowObject(preferred: () -> T?): T {
         lock.withLockInterruptibly {
-            while (!isClosed.get()) {
+            while (!getBoolean(isClosedHandle, this)) {
                 preferred()?.let {
                     return it
                 }
@@ -114,7 +118,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             idleObjects.putFirst(obj)
             available.signal()
         }
-        if (isClosed.get()) {
+        if (getBoolean(isClosedHandle, this)) {
             evict()
         }
     }
@@ -127,7 +131,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     internal fun evict(priority: Priority? = null) {
         @GuardedBy("lock")
         fun evictions() = run {
-            if (isClosed.get()) {
+            if (getBoolean(isClosedHandle, this@CommonObjectPool)) {
                 factory.close()
                 available.signalAll()
             }
@@ -142,7 +146,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
             }
             evictions(priority)
         }
-        if (isClosed.get() || priority.isHigh()) {
+        if (getBoolean(isClosedHandle, this) || priority.isHigh()) {
             lock.withTryLock(::evictions)
         } else {
             lock.withTryLock(0L, TimeUnit.MILLISECONDS, ::evictions)
@@ -178,7 +182,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("lock")
     private fun attemptScheduleEviction() {
-        if (future?.isCancelled == false || configuration.evictionIntervalMillis < 0L || isClosed.get()) {
+        if (future?.isCancelled == false || configuration.evictionIntervalMillis < 0L ||
+            getBoolean(isClosedHandle, this@CommonObjectPool)) {
             return
         }
         future = executor.scheduleWithFixedDelay(
@@ -198,7 +203,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private infix fun T.shouldBeRemovedAt(
         priority: Priority?
     ) = (this@shouldBeRemovedAt.tag != this@CommonObjectPool.tag).let {
-        it && (priority != null || !future!!.isCancelled) || isClosed.get() || priority.isHigh()
+        it && (priority != null || !future!!.isCancelled) || getBoolean(isClosedHandle, this@CommonObjectPool) ||
+            priority.isHigh()
     }
 
     private fun Iterable<T>.destroyEach() {
@@ -207,5 +213,9 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         }.firstOrNull()?.let {
             throw it
         }
+    }
+
+    private companion object {
+        private val isClosedHandle: Any = BooleanHandle<CommonObjectPool<*, *>>("isClosed")
     }
 }

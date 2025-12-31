@@ -16,8 +16,10 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.commons.IntegerHandle
+import com.bloomberg.selekt.commons.decrementAndGet
+import com.bloomberg.selekt.commons.getAndIncrement
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.ThreadSafe
 
 @ThreadSafe
@@ -31,11 +33,13 @@ abstract class SharedCloseable : Closeable {
     protected abstract fun onReleased()
 
     private fun retain() {
-        check(retainCountUpdater.getAndIncrement(this) > 0) { "Attempting to retain an already released object: $this." }
+        check(getAndIncrement(retainCountHandle, this) > 0) {
+            "Attempting to retain an already released object: $this."
+        }
     }
 
     private fun release() {
-        if (retainCountUpdater.decrementAndGet(this) == 0) {
+        if (decrementAndGet(retainCountHandle, this) == 0) {
             onReleased()
         }
     }
@@ -50,9 +54,6 @@ abstract class SharedCloseable : Closeable {
     }
 
     private companion object {
-        val retainCountUpdater: AtomicIntegerFieldUpdater<SharedCloseable> = AtomicIntegerFieldUpdater.newUpdater(
-            SharedCloseable::class.java,
-            "retainCount"
-        )
+        private val retainCountHandle: Any = IntegerHandle<SharedCloseable>("retainCount")
     }
 }

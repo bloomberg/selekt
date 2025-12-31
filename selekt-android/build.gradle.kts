@@ -40,7 +40,7 @@ android {
     buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.android"
     defaultConfig {
-        minSdk = 21
+        minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
