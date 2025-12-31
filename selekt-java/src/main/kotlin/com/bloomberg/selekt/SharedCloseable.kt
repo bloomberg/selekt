@@ -17,29 +17,31 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.IntegerHandle
-import com.bloomberg.selekt.commons.decrementAndGet
-import com.bloomberg.selekt.commons.getAndIncrement
+import com.bloomberg.selekt.commons.decrementAndGetRelease
+import com.bloomberg.selekt.commons.getAndIncrementAcquire
+import com.bloomberg.selekt.commons.getIntAcquire
 import java.io.Closeable
 import javax.annotation.concurrent.ThreadSafe
 
 @ThreadSafe
 abstract class SharedCloseable : Closeable {
-    @Volatile private var retainCount = 1
+    @Suppress("unused")
+    private var retainCount = 1
 
     final override fun close() = release()
 
-    fun isOpen() = retainCount > 0
+    fun isOpen() = getIntAcquire(retainCountHandle, this) > 0
 
     protected abstract fun onReleased()
 
     private fun retain() {
-        check(getAndIncrement(retainCountHandle, this) > 0) {
+        check(getAndIncrementAcquire(retainCountHandle, this) > 0) {
             "Attempting to retain an already released object: $this."
         }
     }
 
     private fun release() {
-        if (decrementAndGet(retainCountHandle, this) == 0) {
+        if (decrementAndGetRelease(retainCountHandle, this) == 0) {
             onReleased()
         }
     }

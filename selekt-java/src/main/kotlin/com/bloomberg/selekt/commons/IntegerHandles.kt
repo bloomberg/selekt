@@ -100,6 +100,59 @@ internal inline fun <reified T> getAndSetInt(
     (handle as AtomicIntegerFieldUpdater<T>).getAndSet(instance, value)
 }
 
+@Suppress("NewApi", "UNCHECKED_CAST")
+internal inline fun <reified T> getIntAcquire(
+    handle: Any,
+    instance: T
+): Int = if (isVarHandleAvailable) {
+    (handle as VarHandle).getAcquire(instance) as Int
+} else {
+    (handle as AtomicIntegerFieldUpdater<T>)[instance]
+}
+
+@Suppress("NewApi", "UNCHECKED_CAST")
+internal inline fun <reified T> getAndIncrementAcquire(
+    handle: Any,
+    instance: T
+): Int = if (isVarHandleAvailable) {
+    (handle as VarHandle).getAndAddAcquire(instance, 1) as Int
+} else {
+    (handle as AtomicIntegerFieldUpdater<T>).getAndIncrement(instance)
+}
+
+@Suppress("NewApi", "UNCHECKED_CAST")
+internal inline fun <reified T> decrementAndGetRelease(
+    handle: Any,
+    instance: T
+): Int = if (isVarHandleAvailable) {
+    (handle as VarHandle).getAndAddRelease(instance, -1) as Int - 1
+} else {
+    (handle as AtomicIntegerFieldUpdater<T>).decrementAndGet(instance)
+}
+
+@Suppress("NewApi", "UNCHECKED_CAST")
+internal inline fun <reified T> compareAndSetIntAcquire(
+    handle: Any,
+    instance: T,
+    expected: Int,
+    updated: Int
+): Boolean = if (isVarHandleAvailable) {
+    (handle as VarHandle).weakCompareAndSetAcquire(instance, expected, updated)
+} else {
+    (handle as AtomicIntegerFieldUpdater<T>).compareAndSet(instance, expected, updated)
+}
+
+@Suppress("NewApi", "UNCHECKED_CAST")
+internal inline fun <reified T> setIntRelease(
+    handle: Any,
+    instance: T,
+    value: Int
+) = if (isVarHandleAvailable) {
+    (handle as VarHandle).setRelease(instance, value)
+} else {
+    (handle as AtomicIntegerFieldUpdater<T>)[instance] = value
+}
+
 private val isVarHandleAvailable: Boolean = runCatching {
     @Suppress("NewApi")
     MethodHandles.privateLookupIn(IntegerVarHandleTest::class.java, MethodHandles.lookup())

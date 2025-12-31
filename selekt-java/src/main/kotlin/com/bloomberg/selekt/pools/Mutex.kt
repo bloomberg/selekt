@@ -17,9 +17,10 @@
 package com.bloomberg.selekt.pools
 
 import com.bloomberg.selekt.commons.compareAndSetInt
+import com.bloomberg.selekt.commons.compareAndSetIntAcquire
 import com.bloomberg.selekt.commons.IntegerHandle
-import com.bloomberg.selekt.commons.getInt
-import com.bloomberg.selekt.commons.setInt
+import com.bloomberg.selekt.commons.getIntAcquire
+import com.bloomberg.selekt.commons.setIntRelease
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.LockSupport
 
@@ -28,11 +29,9 @@ import java.util.concurrent.locks.LockSupport
  */
 internal class Mutex {
     @Suppress("unused")
-    @Volatile
     private var isLocked = 0
 
     @Suppress("unused")
-    @Volatile
     private var isCancelled = 0
 
     private val waiters = ConcurrentLinkedQueue<Thread>()
@@ -60,7 +59,7 @@ internal class Mutex {
     }
 
     fun unlock() {
-        setInt(isLockedHandle, this, 0)
+        setIntRelease(isLockedHandle, this, 0)
         LockSupport.unpark(waiters.peek())
     }
 
@@ -68,7 +67,7 @@ internal class Mutex {
         attemptUnparkWaiters()
     }
 
-    fun isCancelled() = getInt(isCancelledHandle, this) != 0
+    fun isCancelled() = getIntAcquire(isCancelledHandle, this) != 0
 
     /**
      * Best effort to unpark all waiting threads.
@@ -104,7 +103,7 @@ internal class Mutex {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun internalTryLock() = compareAndSetInt(isLockedHandle, this, 0, 1)
+    private inline fun internalTryLock() = compareAndSetIntAcquire(isLockedHandle, this, 0, 1)
 
     /**
      * @param intervalNanos the maximum time to wait for the lock in nanoseconds; negative indicates indefinitely.
