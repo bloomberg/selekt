@@ -23,12 +23,12 @@ repositories {
 
 plugins {
     kotlin("jvm")
-    alias(libs.plugins.ksp)
     id("com.android.lint")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
     `maven-publish`
     signing
+    alias(libs.plugins.jmh)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -58,6 +58,13 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
+    jmhImplementation(libs.kotlinx.coroutines.core)
+}
+
+jmh {
+    if (hasProperty("jmh.includes")) {
+        includes.add(property("jmh.includes").toString())
+    }
 }
 
 publishing {
