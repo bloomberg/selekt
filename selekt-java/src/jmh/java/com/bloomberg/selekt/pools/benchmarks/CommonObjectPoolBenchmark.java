@@ -32,6 +32,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,16 +42,8 @@ public class CommonObjectPoolBenchmark {
         private volatile String name;
         private boolean tag = false;
 
-        public Task(String name) {
+        public Task(@NotNull final String name) {
             this.name = name;
-        }
-
-        public void work() {
-            // No-op
-        }
-
-        public String getName() {
-            return name;
         }
 
         public void setName(String name) {
@@ -78,32 +71,26 @@ public class CommonObjectPoolBenchmark {
         }
 
         @Override
-        public void releaseMemory() {
-            // No-op
-        }
+        public void releaseMemory() {}
     }
 
     @State(Scope.Thread)
     public static class SingleObjectInput {
         IObjectPool<String, Task> pool;
         private final PoolConfiguration configuration = new PoolConfiguration(
-            20_000L, // evictionDelayMillis
-            20_000L, // evictionIntervalMillis
-            2        // maxTotal
+            20_000L,
+            20_000L,
+            2
         );
 
         @Setup(Level.Iteration)
         public void setUp() {
-            IObjectFactory<Task> factory = new IObjectFactory<Task>() {
+            IObjectFactory<Task> factory = new IObjectFactory<>() {
                 @Override
-                public void close() {
-                    // No-op
-                }
+                public void close() {}
 
                 @Override
-                public void destroyObject(@NotNull final Task obj) {
-                    // No-op
-                }
+                public void destroyObject(@NotNull final Task obj) {}
 
                 @Override
                 public @NotNull Task makeObject() {
@@ -139,23 +126,19 @@ public class CommonObjectPoolBenchmark {
     public static class MultipleObjectInput {
         IObjectPool<String, Task> pool;
         final PoolConfiguration configuration = new PoolConfiguration(
-            20_000L, // evictionDelayMillis
-            20_000L, // evictionIntervalMillis
-            4        // maxTotal
+            20_000L,
+            20_000L,
+            4
         );
 
         @Setup(Level.Invocation)
         public void setUp() {
             final IObjectFactory<Task> factory = new IObjectFactory<>() {
                 @Override
-                public void close() {
-                    // No-op
-                }
+                public void close() {}
 
                 @Override
-                public void destroyObject(final Task obj) {
-                    // No-op
-                }
+                public void destroyObject(@NotNull final Task obj) {}
 
                 @Override
                 public @NotNull Task makeObject() {
@@ -190,26 +173,26 @@ public class CommonObjectPoolBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public @NotNull Task borrowThenReturnSingleObject(@NotNull final SingleObjectInput input) {
-        Task obj = input.pool.borrowObject("");
+        final Task obj = input.pool.borrowObject("");
         input.pool.returnObject(obj);
         return obj;
     }
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void sequentialExactBorrowMultipleObjects(MultipleObjectInput input) throws InterruptedException {
-        Task initial = input.pool.borrowObject("first");
-        Task other = input.pool.borrowObject("other");
+    public void sequentialExactBorrowMultipleObjects(@NotNull final MultipleObjectInput input) throws InterruptedException {
+        final Task initial = input.pool.borrowObject("first");
+        final Task other = input.pool.borrowObject("other");
         initial.setName("first");
         input.pool.returnObject(initial);
         input.pool.returnObject(other);
 
         for (int i = 0; i < 200; i++) {
-            Task first = input.pool.borrowObject("first");
+            final Task first = input.pool.borrowObject("first");
             if (first != initial) {
                 Thread.sleep(5L);
             }
-            Task second = input.pool.borrowObject("other");
+            final Task second = input.pool.borrowObject("other");
             input.pool.returnObject(first);
             input.pool.returnObject(second);
         }
@@ -217,20 +200,18 @@ public class CommonObjectPoolBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void exactBorrowThenReturnMultipleObjects(MultipleObjectInput input)
-        throws java.util.concurrent.ExecutionException, InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(input.configuration.getMaxTotal());
+    public void exactBorrowThenReturnMultipleObjects(@NotNull final MultipleObjectInput input) throws ExecutionException,
+        InterruptedException {
+        final ExecutorService executor = Executors.newFixedThreadPool(input.configuration.getMaxTotal());
         try {
-            // Pre-populate the pool
             for (int i = 0; i < input.configuration.getMaxTotal(); i++) {
-                String key = String.valueOf(i);
-                Task obj = input.pool.borrowObject(key);
+                final String key = String.valueOf(i);
+                final Task obj = input.pool.borrowObject(key);
                 obj.setName(key);
                 input.pool.returnObject(obj);
             }
 
-            // Launch concurrent tasks
-            CompletableFuture<?>[] futures = new CompletableFuture[input.configuration.getMaxTotal()];
+            final CompletableFuture<?>[] futures = new CompletableFuture[input.configuration.getMaxTotal()];
             for (int i = 0; i < input.configuration.getMaxTotal(); i++) {
                 final String key = String.valueOf(i);
                 futures[i] = CompletableFuture.runAsync(() -> {
@@ -258,10 +239,10 @@ public class CommonObjectPoolBenchmark {
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void excessiveBorrowThenReturnMultipleObjects(MultipleObjectInput input) throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(input.configuration.getMaxTotal() * 2);
+    public void excessiveBorrowThenReturnMultipleObjects(@NotNull final MultipleObjectInput input) throws ExecutionException,
+        InterruptedException {
+        final ExecutorService executor = Executors.newFixedThreadPool(input.configuration.getMaxTotal() * 2);
         try {
-            // Pre-populate the pool
             for (int i = 0; i < input.configuration.getMaxTotal(); i++) {
                 String key = String.valueOf(i);
                 Task obj = input.pool.borrowObject(key);
@@ -269,7 +250,6 @@ public class CommonObjectPoolBenchmark {
                 input.pool.returnObject(obj);
             }
 
-            // Launch excessive number of concurrent tasks
             final CompletableFuture<?>[] futures = new CompletableFuture[input.configuration.getMaxTotal() * 2];
             for (int i = 0; i < input.configuration.getMaxTotal() * 2; i++) {
                 final String key = String.valueOf(i);

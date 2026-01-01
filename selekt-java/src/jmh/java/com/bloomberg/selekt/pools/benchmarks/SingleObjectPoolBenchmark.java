@@ -20,6 +20,7 @@ import com.bloomberg.selekt.pools.IObjectFactory;
 import com.bloomberg.selekt.pools.IObjectPool;
 import com.bloomberg.selekt.pools.PoolConfiguration;
 import com.bloomberg.selekt.pools.SingleObjectPool;
+import java.io.IOException;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,14 +45,10 @@ public class SingleObjectPoolBenchmark {
         public void setUp() {
             IObjectFactory<PooledObject> factory = new IObjectFactory<>() {
                 @Override
-                public void close() {
-                    // No-op
-                }
+                public void close() {}
 
                 @Override
-                public void destroyObject(@NotNull final PooledObject obj) {
-                    // No-op
-                }
+                public void destroyObject(@NotNull final PooledObject obj) {}
 
                 @Override
                 public @NotNull PooledObject makeObject() {
@@ -73,7 +70,7 @@ public class SingleObjectPoolBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void tearDown() throws Exception {
+        public void tearDown() throws IOException {
             pool.close();
         }
     }

@@ -51,7 +51,5 @@ public final class PooledObject implements IPooledObject<String> {
     }
 
     @Override
-    public void releaseMemory() {
-        // No-op
-    }
+    public void releaseMemory() {}
 }
