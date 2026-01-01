@@ -26,7 +26,7 @@ public final class BenchmarkExecutors {
     }
 
     static final ScheduledExecutorService sharedExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread thread = new Thread(r);
+        final Thread thread = new Thread(r);
         thread.setDaemon(true);
         thread.setPriority(Thread.MIN_PRIORITY);
         return thread;
