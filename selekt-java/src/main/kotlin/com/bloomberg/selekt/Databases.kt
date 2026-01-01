@@ -67,6 +67,14 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
+    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>): Int = transact {
+        SQLStatement.execute(session, sql, bindArgs)
+    }
+
+    fun batch(sql: String, bindArgs: Array<out Array<*>>): Int = transact {
+        SQLStatement.execute(session, sql, bindArgs)
+    }
+
     override fun beginExclusiveTransaction() = pledge { session.get().beginExclusiveTransaction() }
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {

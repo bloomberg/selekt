@@ -286,7 +286,24 @@ internal class SQLConnectionTest {
         whenever(sqlite.step(any())) doReturn SQL_ROW
         whenever(sqlite.changes(any())) doReturn 0
         SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray<Int>())))
+            assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", arrayOf(emptyArray<Int>())))
+        }
+    }
+
+    @Test
+    fun batchExecuteForChangedRowCountSequenceChecksDone() {
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(sqlite.step(any())) doReturn SQL_ROW
+        whenever(sqlite.changes(any())) doReturn 0
+        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray<Int>())))
         }
     }
 

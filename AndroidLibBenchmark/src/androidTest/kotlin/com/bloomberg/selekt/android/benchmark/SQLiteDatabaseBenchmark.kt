@@ -194,7 +194,7 @@ internal class SQLiteJournalModeDatabaseBenchmark(inputs: Inputs) {
 
     @OptIn(Experimental::class)
     @Test
-    fun batchInsertInt(): Unit = databaseHelper.writableDatabase.run {
+    fun batchSequenceInsertInt(): Unit = databaseHelper.writableDatabase.run {
         val args = Array(1) { 0 }
         benchmarkRule.measureRepeated {
             batch("INSERT OR REPLACE INTO 'Foo' VALUES (?)", sequence {
@@ -203,6 +203,17 @@ internal class SQLiteJournalModeDatabaseBenchmark(inputs: Inputs) {
                     yield(args)
                 }
             })
+        }
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun batchArrayInsertInt(): Unit = databaseHelper.writableDatabase.run {
+        val bindArgs = Array(100) {
+            arrayOf(it)
+        }
+        benchmarkRule.measureRepeated {
+            batch("INSERT OR REPLACE INTO 'Foo' VALUES (?)", bindArgs)
         }
     }
 

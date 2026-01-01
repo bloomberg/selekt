@@ -46,6 +46,9 @@ sourceSets {
         runtimeClasspath += sourceSets.main.get().output
         resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     }
+    named("jmh") {
+        resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
+    }
 }
 
 val integrationTestImplementation: Configuration by configurations.getting {
@@ -58,13 +61,17 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
-    jmhImplementation(libs.kotlinx.coroutines.core)
 }
 
 jmh {
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())
     }
+}
+
+tasks.named("jmh") {
+    dependsOn("buildHostSQLite")
+    shouldRunAfter("test", "integrationTest")
 }
 
 publishing {

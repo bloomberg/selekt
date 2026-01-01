@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.commons
 
+@JvmSynthetic
 internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     var i = 0
     while (i < size) {
@@ -23,10 +24,30 @@ internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     }
 }
 
+@JvmSynthetic
 internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
     var i = 0
     while (i < size) {
         block(this[i++], i)
+    }
+}
+
+@JvmSynthetic
+internal inline fun <T> Array<T>.forEachOptimized(block: (T) -> Unit) {
+    var i = 0
+    while (i < size) {
+        block(this[i++])
+    }
+}
+
+/**
+ * Iterates over the array elements until the specified index (exclusive).
+ */
+@JvmSynthetic
+internal inline fun <T> Array<T>.forEachUntil(index: Int, block: (T) -> Unit) {
+    var i = 0
+    while (i < index) {
+        block(this[i++])
     }
 }
 

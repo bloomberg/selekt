@@ -18,6 +18,8 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByPosition
+import com.bloomberg.selekt.commons.forEachOptimized
+import com.bloomberg.selekt.commons.forEachUntil
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -96,7 +98,31 @@ internal class SQLConnection(
         }
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>) = withPreparedStatement(sql) {
+    override fun executeBatchForChangedRowCount(
+        sql: String,
+        bindArgs: Array<out Array<*>>)
+    : Int = if (bindArgs.isEmpty()) {
+        0
+    } else {
+        withPreparedStatement(sql) {
+            val changes = sqlite.totalChanges(pointer)
+            val binder = SQLBinder(this, SQLBindStrategyResolver.resolveAll(bindArgs.first()))
+            bindArgs.forEachOptimized { args ->
+                reset()
+                args.forEachUntil(binder.size, binder::bind)
+                if (SQL_DONE != step()) {
+                    return@withPreparedStatement -1
+                }
+                binder.reset()
+            }
+            sqlite.totalChanges(pointer) - changes
+        }
+    }
+
+    override fun executeBatchForChangedRowCount(
+        sql: String,
+        bindArgs: Sequence<Array<*>>
+    ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
@@ -251,18 +277,7 @@ private fun SQLPreparedStatement.bindArguments(args: Array<*>) {
     }
 }
 
-private fun SQLPreparedStatement.bindArgument(position: Int, arg: Any?) {
-    when (arg) {
-        is String -> bind(position, arg)
-        is Int -> bind(position, arg)
-        is Long -> bind(position, arg)
-        null -> bindNull(position)
-        is Double -> bind(position, arg)
-        is Float -> bind(position, arg.toDouble())
-        is Short -> bind(position, arg.toInt())
-        is Byte -> bind(position, arg.toInt())
-        is ByteArray -> bind(position, arg)
-        is ZeroBlob -> bindZeroBlob(position, arg.size)
-        else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
-    }
-}
+private fun SQLPreparedStatement.bindArgument(
+    position: Int,
+    arg: Any?
+) = SQLBindStrategy.Universal.bind(this, position, arg)

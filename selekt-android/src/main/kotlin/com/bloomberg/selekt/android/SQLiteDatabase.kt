@@ -158,18 +158,52 @@ class SQLiteDatabase private constructor(
      * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
      * prototypical use case is for database modifications inside a tight loop to which this is optimised.
      *
+     * Each sub-array must have the same length, corresponding to the number of arguments in the SQL statement.
+     * Each sub-array must have the same types at corresponding indices.
+     *
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs arrays of arguments for binding to the statement; each sub-array must have the same types
+     *   at corresponding indices.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Array<out Array<*>>): Int = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
      * Each array in the sequence must have the same length, corresponding to the number of arguments in the SQL statement.
      * It is safe for the sequence to recycle the array with each yield.
      *
      * The transaction is not committed by this method until the sequence ends. For long sequences you may therefore wish
      * to yield the transaction periodically.
      *
-     * @param sql statement.
-     * @param bindArgs sequence of standard type arguments for binding to the statement.
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs sequence of standard type arguments for binding to the statement each sub-array must have the same
+     *   types at corresponding indices.
      * @return the number of rows affected.
      */
     @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array in the iterable must have the same length, corresponding to the number of arguments in the SQL statement.
+     * It is safe for the iterable to recycle the array with each step.
+     *
+     * The transaction is not committed by this method until the iterable is exhausted. For long sequences you may therefore
+     * wish to yield the transaction periodically.
+     *
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs sequence of standard type arguments for binding to the statement; each sub-array must have the same
+     *   types at corresponding indices.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Iterable<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.
