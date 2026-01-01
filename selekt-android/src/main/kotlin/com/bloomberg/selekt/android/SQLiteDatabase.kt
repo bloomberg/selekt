@@ -169,7 +169,7 @@ class SQLiteDatabase private constructor(
      * @return the number of rows affected.
      */
     @Experimental
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<*>>): Int = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.
@@ -209,7 +209,7 @@ class SQLiteDatabase private constructor(
 
     fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
 
-    fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
+    fun delete(table: String, whereClause: String?, whereArgs: Array<*>?) =
         database.delete(
             table,
             whereClause.orEmpty(),
@@ -220,7 +220,7 @@ class SQLiteDatabase private constructor(
 
     fun exec(@Language("RoomSql") sql: String) = database.exec(sql)
 
-    fun exec(@Language("RoomSql") sql: String, @Size(min = 1) bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
+    fun exec(@Language("RoomSql") sql: String, @Size(min = 1) bindArgs: Array<*>) = database.exec(sql, bindArgs)
 
     /**
      * The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the
@@ -256,7 +256,7 @@ class SQLiteDatabase private constructor(
         table: String,
         columns: Array<out String>?,
         selection: String?,
-        selectionArgs: Array<out Any?>?,
+        selectionArgs: Array<*>?,
         groupBy: String? = null,
         having: String? = null,
         limit: Int? = null,
@@ -273,7 +273,7 @@ class SQLiteDatabase private constructor(
         limit
     ).asAndroidCursor()
 
-    fun query(@Language("RoomSql") sql: String, selectionArgs: Array<out Any?>?) =
+    fun query(@Language("RoomSql") sql: String, selectionArgs: Array<*>?) =
         database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
 
     fun query(query: ISQLQuery) = database.query(query).asAndroidCursor()
@@ -389,7 +389,7 @@ class SQLiteDatabase private constructor(
         table: String,
         values: ContentValues,
         whereClause: String?,
-        whereArgs: Array<out Any?>?,
+        whereArgs: Array<*>?,
         conflictAlgorithm: ConflictAlgorithm
     ) = database.update(
         table,

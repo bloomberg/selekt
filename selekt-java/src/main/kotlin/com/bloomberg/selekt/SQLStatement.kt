@@ -103,7 +103,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
-            bindArgs: Array<out Any?>
+            bindArgs: Array<*>
         ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.execute(sql, bindArgs)
         }
@@ -111,7 +111,7 @@ internal class SQLStatement private constructor(
         fun execute(
             session: ThreadLocalSession,
             sql: String,
-            bindArgs: Sequence<Array<out Any?>>
+            bindArgs: Sequence<Array<*>>
         ): Int {
             require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) {
                 "Only batched updates are permitted."
@@ -125,7 +125,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
-            bindArgs: Array<out Any?>
+            bindArgs: Array<*>
         ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.executeForInt(sql, bindArgs)
         }
@@ -134,7 +134,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
-            bindArgs: Array<out Any?>
+            bindArgs: Array<*>
         ) = session.get().execute(statementType.isPredictedWrite, sql) {
             it.executeForString(sql, bindArgs)
         }
@@ -142,7 +142,7 @@ internal class SQLStatement private constructor(
         fun executeInsert(
             session: ThreadLocalSession,
             sql: String,
-            bindArgs: Array<out Any?>
+            bindArgs: Array<*>
         ) = session.get().execute(true, sql) {
             it.executeForLastInsertedRowId(sql, bindArgs)
         }
@@ -150,7 +150,7 @@ internal class SQLStatement private constructor(
         fun executeUpdateDelete(
             session: ThreadLocalSession,
             sql: String,
-            bindArgs: Array<out Any?>
+            bindArgs: Array<*>
         ) = session.get().execute(true, sql) {
             it.executeForChangedRowCount(sql, bindArgs)
         }
@@ -159,7 +159,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             statementType: SQLStatementType,
-            bindArgs: Array<out Any?>?
+            bindArgs: Array<*>?
         ): SQLStatement {
             return session.get().execute(statementType.isPredictedWrite, sql) {
                 it.prepare(sql)

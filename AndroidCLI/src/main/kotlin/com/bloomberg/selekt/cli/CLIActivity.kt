@@ -94,7 +94,7 @@ class CLIActivity : AppCompatActivity() {
         }
     }
 
-    private fun query(sql: String) = database.query(sql, emptyArray()).use {
+    private fun query(sql: String) = database.query(sql, emptyArray<Any?>()).use {
         if (it.columnCount < 1) {
             return
         }

@@ -76,7 +76,7 @@ private class SupportSQLiteDatabase(
     override fun delete(
         table: String,
         whereClause: String?,
-        whereArgs: Array<out Any?>?
+        whereArgs: Array<*>?
     ): Int = database.delete(
         table,
         whereClause,
@@ -91,7 +91,7 @@ private class SupportSQLiteDatabase(
 
     override fun execSQL(@Language("RoomSql") sql: String) = database.exec(sql)
 
-    override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
+    override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<*>) = database.exec(sql, bindArgs)
 
     override val attachedDbs: List<Pair<String, String>>
         get() = database.query("PRAGMA database_list", null).use {
@@ -151,7 +151,7 @@ private class SupportSQLiteDatabase(
 
     override fun query(query: String) = database.query(query, null)
 
-    override fun query(query: String, bindArgs: Array<out Any?>) = database.query(query, bindArgs)
+    override fun query(query: String, bindArgs: Array<*>) = database.query(query, bindArgs)
 
     override fun query(query: SupportSQLiteQuery) = database.query(query.asSelektSQLQuery())
 
@@ -173,7 +173,7 @@ private class SupportSQLiteDatabase(
         conflictAlgorithm: Int,
         values: ContentValues,
         whereClause: String?,
-        whereArgs: Array<out Any?>?
+        whereArgs: Array<*>?
     ) = database.update(table, values, whereClause, whereArgs, conflictAlgorithm.toConflictAlgorithm())
 
     override fun yieldIfContendedSafely() = yieldIfContendedSafely(0L)

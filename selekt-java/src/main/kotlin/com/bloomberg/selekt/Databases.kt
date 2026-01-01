@@ -63,7 +63,7 @@ class SQLDatabase(
     val isCurrentThreadSessionActive: Boolean
         get() = session.get().hasObject
 
-    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
+    fun batch(sql: String, bindArgs: Sequence<Array<*>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
@@ -79,7 +79,7 @@ class SQLDatabase(
         session.get().beginImmediateTransactionWithListener(listener)
     }
 
-    override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(
+    override fun compileStatement(sql: String, bindArgs: Array<*>?) = compileStatement(
         sql,
         sql.resolvedSqlStatementType(),
         bindArgs
@@ -88,7 +88,7 @@ class SQLDatabase(
     private fun compileStatement(
         sql: String,
         sqlStatementType: SQLStatementType,
-        bindArgs: Array<out Any?>?
+        bindArgs: Array<*>?
     ): ISQLStatement = pledge {
         SQLStatement.compile(session, sql, sqlStatementType, bindArgs)
     }
@@ -96,7 +96,7 @@ class SQLDatabase(
     override fun delete(
         table: String,
         whereClause: String,
-        whereArgs: Array<out Any?>
+        whereArgs: Array<*>
     ) = pledge {
         SQLStatement.executeUpdateDelete(
             session,
@@ -164,7 +164,7 @@ class SQLDatabase(
         table: String,
         columns: Array<out String>,
         selection: String,
-        selectionArgs: Array<out Any?>,
+        selectionArgs: Array<*>,
         groupBy: String?,
         having: String?,
         orderBy: String?,
@@ -183,7 +183,7 @@ class SQLDatabase(
 
     override fun query(
         sql: String,
-        selectionArgs: Array<out Any?>
+        selectionArgs: Array<*>
     ): ICursor = query(SQLQuery.create(session, sql, sql.resolvedSqlStatementType(), selectionArgs))
 
     override fun query(query: ISQLQuery): ICursor = query(
@@ -253,7 +253,7 @@ class SQLDatabase(
         table: String,
         values: IContentValues,
         whereClause: String,
-        whereArgs: Array<out Any?>,
+        whereArgs: Array<*>,
         conflictAlgorithm: IConflictAlgorithm
     ) = pledge {
         require(!values.isEmpty) { "Empty values." }
@@ -383,15 +383,15 @@ class SQLDatabase(
 }
 
 interface IDatabase : IReadableDatabase, ISQLTransactor {
-    fun compileStatement(sql: String, bindArgs: Array<out Any?>? = null): ISQLStatement
+    fun compileStatement(sql: String, bindArgs: Array<*>? = null): ISQLStatement
 
     fun delete(
         table: String,
         whereClause: String,
-        whereArgs: Array<out Any?>
+        whereArgs: Array<*>
     ): Int
 
-    fun exec(sql: String, bindArgs: Array<out Any?>? = null)
+    fun exec(sql: String, bindArgs: Array<*>? = null)
 
     fun insert(
         table: String,
@@ -403,7 +403,7 @@ interface IDatabase : IReadableDatabase, ISQLTransactor {
         table: String,
         values: IContentValues,
         whereClause: String,
-        whereArgs: Array<out Any?>,
+        whereArgs: Array<*>,
         conflictAlgorithm: IConflictAlgorithm
     ): Int
 
@@ -426,7 +426,7 @@ interface IReadableDatabase : Closeable {
         table: String,
         columns: Array<out String>,
         selection: String,
-        selectionArgs: Array<out Any?>,
+        selectionArgs: Array<*>,
         groupBy: String?,
         having: String?,
         orderBy: String?,
@@ -435,7 +435,7 @@ interface IReadableDatabase : Closeable {
 
     fun query(
         sql: String,
-        selectionArgs: Array<out Any?>
+        selectionArgs: Array<*>
     ): ICursor
 
     fun query(query: ISQLQuery): ICursor

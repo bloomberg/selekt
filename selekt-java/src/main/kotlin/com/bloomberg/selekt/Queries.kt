@@ -45,7 +45,7 @@ internal class SQLQuery internal constructor(
             session: ThreadLocalSession,
             @Language("RoomSql") sql: String,
             statementType: SQLStatementType,
-            args: Array<out Any?>
+            args: Array<*>
         ) = SQLQuery(session, sql, statementType, Array<Any?>::class.java.cast(args.copyOf()))
     }
 
@@ -105,14 +105,14 @@ internal class SQLQuery internal constructor(
 
 class SimpleSQLQuery(
     @Language("RoomSql") override val sql: String,
-    private val bindArgs: Array<out Any?> = EMPTY_ARRAY
+    private val bindArgs: Array<*> = EMPTY_ARRAY
 ) : ISQLQuery {
     override val argCount = bindArgs.size
 
     override fun bindTo(statement: ISQLProgram) = bind(statement, bindArgs)
 
     private companion object {
-        fun bind(statement: ISQLProgram, bindArgs: Array<out Any?>) {
+        fun bind(statement: ISQLProgram, bindArgs: Array<*>) {
             bindArgs.forEachByPosition { arg, i -> bind(statement, i, arg) }
         }
 
