@@ -33,6 +33,14 @@ internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
 }
 
 @JvmSynthetic
+internal inline fun <T> Array<T>.forEachByPositionUntil(index: Int, block: (T, Int) -> Unit) {
+    var i = 0
+    while (i < index) {
+        block(this[i++], i)
+    }
+}
+
+@JvmSynthetic
 internal inline fun <T> Array<T>.forEachOptimized(block: (T) -> Unit) {
     var i = 0
     while (i < size) {

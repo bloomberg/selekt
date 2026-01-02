@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByPosition
+import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forEachOptimized
 import com.bloomberg.selekt.commons.forEachUntil
 import com.bloomberg.selekt.commons.forUntil
@@ -109,7 +110,7 @@ internal class SQLConnection(
             val binder = SQLBinder(this, SQLBindStrategyResolver.resolveAll(bindArgs.first()))
             bindArgs.forEachOptimized { args ->
                 reset()
-                args.forEachUntil(binder.size, binder::bind)
+                args.forEachUntil(parameterCount, binder::bind)
                 if (SQL_DONE != step()) {
                     return@withPreparedStatement -1
                 }
@@ -126,7 +127,9 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
-            bindArguments(it)
+            it.forEachByPositionUntil(parameterCount) { arg, i ->
+                SQLBindStrategy.Universal.bind(this, i, arg)
+            }
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
