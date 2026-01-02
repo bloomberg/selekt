@@ -32,13 +32,13 @@ internal sealed interface SQLBindStrategy {
             when (value) {
                 is String -> bind(position, value)
                 is Int -> bind(position, value)
-                is Long -> bind(position, value)
                 null -> bindNull(position)
+                is Long -> bind(position, value)
                 is Double -> bind(position, value)
+                is ByteArray -> bind(position, value)
                 is Float -> bind(position, value.toDouble())
                 is Short -> bind(position, value.toInt())
                 is Byte -> bind(position, value.toInt())
-                is ByteArray -> bind(position, value)
                 is ZeroBlob -> bindZeroBlob(position, value.size)
                 else -> throw IllegalArgumentException("Cannot bind arg of class ${value.javaClass} at position $position.")
             }
