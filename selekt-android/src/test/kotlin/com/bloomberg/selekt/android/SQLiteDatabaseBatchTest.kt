@@ -63,6 +63,12 @@ internal class SQLiteDatabaseBatchTest {
     }
 
     @Test
+    fun batchIterableInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?)", listOf(arrayOf(42), arrayOf(43))))
+    }
+
+    @Test
     fun batchSequenceInsertWithCommonArray(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
         val args = Array(1) { 0 }
