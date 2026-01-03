@@ -180,8 +180,7 @@ class SQLiteDatabase private constructor(
      * to yield the transaction periodically.
      *
      * @param sql statement with ? placeholders for bind parameters.
-     * @param bindArgs sequence of standard type arguments for binding to the statement each sub-array must have the same
-     *   types at corresponding indices.
+     * @param bindArgs sequence of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
     @Experimental
@@ -198,8 +197,7 @@ class SQLiteDatabase private constructor(
      * wish to yield the transaction periodically.
      *
      * @param sql statement with ? placeholders for bind parameters.
-     * @param bindArgs sequence of standard type arguments for binding to the statement; each sub-array must have the same
-     *   types at corresponding indices.
+     * @param bindArgs sequence of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
     @Experimental

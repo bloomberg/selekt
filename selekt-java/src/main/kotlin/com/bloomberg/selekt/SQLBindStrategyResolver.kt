@@ -17,21 +17,21 @@
 package com.bloomberg.selekt
 
 internal object SQLBindStrategyResolver {
-    fun resolveAll(values: Array<*>): Array<SQLBindStrategy> = Array(values.size) {
+    fun resolveAll(values: Array<out Any?>): Array<SQLBindStrategy> = Array(values.size) {
         resolve(values[it])
     }
 
     private fun resolve(value: Any?): SQLBindStrategy = when (value) {
         is String -> SQLBindStrategy.StringValue
         is Int -> SQLBindStrategy.IntValue
-        is Long -> SQLBindStrategy.LongValue
         null -> SQLBindStrategy.NullValue
+        is Long -> SQLBindStrategy.LongValue
         is Double -> SQLBindStrategy.DoubleValue
+        is ByteArray -> SQLBindStrategy.BlobValue
         is Float -> SQLBindStrategy.FloatValue
         is Short -> SQLBindStrategy.ShortValue
         is Byte -> SQLBindStrategy.ByteValue
-        is ByteArray -> SQLBindStrategy.BlobValue
         is ZeroBlob -> SQLBindStrategy.ZeroBlobValue
-        else -> throw IllegalArgumentException("Cannot bind arg of class ${value.javaClass}.")
+        else -> throw IllegalArgumentException("Cannot bind arg of ${value.javaClass}.")
     }
 }

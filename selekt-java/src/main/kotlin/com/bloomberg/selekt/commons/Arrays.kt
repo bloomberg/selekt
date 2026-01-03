@@ -32,6 +32,9 @@ internal inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
     }
 }
 
+/**
+ * Iterates over the array elements until the specified index (exclusive).
+ */
 @JvmSynthetic
 internal inline fun <T> Array<T>.forEachByPositionUntil(index: Int, block: (T, Int) -> Unit) {
     var i = 0

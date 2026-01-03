@@ -24,6 +24,10 @@ plugins {
     signing
 }
 
+repositories {
+    mavenCentral()
+}
+
 sourceSets.main {
     resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
 }

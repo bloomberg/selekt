@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
-import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forEachOptimized
 import com.bloomberg.selekt.commons.forEachUntil
@@ -76,7 +75,7 @@ internal class SQLConnection(
         }
     }
 
-    override fun execute(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun execute(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         step()
     }
 
@@ -91,7 +90,7 @@ internal class SQLConnection(
         SQLBlob(it, sqlite, isReadOnly)
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForChangedRowCount(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         if (SQL_DONE == step()) {
             sqlite.changes(pointer)
         } else {
@@ -122,7 +121,7 @@ internal class SQLConnection(
 
     override fun executeBatchForChangedRowCount(
         sql: String,
-        bindArgs: Sequence<Array<*>>
+        bindArgs: Sequence<Array<out Any?>>
     ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
@@ -139,7 +138,7 @@ internal class SQLConnection(
 
     override fun executeForCursorWindow(
         sql: String,
-        bindArgs: Array<*>,
+        bindArgs: Array<out Any?>,
         window: ICursorWindow
     ) = withPreparedStatement(sql, bindArgs) {
         window.run {
@@ -160,7 +159,7 @@ internal class SQLConnection(
         }
     }
 
-    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         if (SQL_DONE == step() && sqlite.changes(pointer) > 0) {
             sqlite.lastInsertRowId(pointer)
         } else {
@@ -168,17 +167,17 @@ internal class SQLConnection(
         }
     }
 
-    override fun executeForInt(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForInt(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnInt(0)
     }
 
-    override fun executeForLong(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForLong(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnLong(0)
     }
 
-    override fun executeForString(sql: String, bindArgs: Array<*>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForString(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnString(0)
     }
@@ -211,7 +210,7 @@ internal class SQLConnection(
 
     private inline fun <R> withPreparedStatement(
         sql: String,
-        bindArgs: Array<*>,
+        bindArgs: Array<out Any?>,
         block: SQLPreparedStatement.() -> R
     ) = withPreparedStatement(sql) {
         bindArguments(bindArgs)
@@ -271,11 +270,11 @@ private fun SQLite.prepare(db: Long, sql: String) = LongArray(1).apply {
     check(it != NULL)
 }
 
-private fun SQLPreparedStatement.bindArguments(args: Array<*>) {
+private fun SQLPreparedStatement.bindArguments(args: Array<out Any?>) {
     require(parameterCount == args.size) {
         "Expected $parameterCount bind arguments but ${args.size} were provided."
     }
-    args.forEachByPosition { arg, i ->
+    args.forEachByPositionUntil(parameterCount) { arg, i ->
         bindArgument(i, arg)
     }
 }

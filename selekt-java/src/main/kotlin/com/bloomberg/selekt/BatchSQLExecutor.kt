@@ -23,10 +23,10 @@ internal interface BatchSQLExecutor {
      *   the same length and the same types at corresponding indices (e.g., String, Int, ByteArray, null).
      * @return the number of rows affected.
      */
-    fun executeBatchForChangedRowCount(sql: String, bindArgs: Array<out Array<*>>): Int
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Array<out Array<out Any?>>): Int
 
-    fun executeBatchForChangedRowCount(sql: String, bindArgs: Sequence<Array<*>>): Int
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>): Int
 
-    fun executeBatchForChangedRowCount(sql: String, bindArgs: Iterable<Array<*>>): Int =
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Iterable<Array<out Any?>>): Int =
         executeBatchForChangedRowCount(sql, bindArgs.asSequence())
 }
