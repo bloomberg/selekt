@@ -44,6 +44,25 @@ internal inline fun <T> Array<T>.forEachByPositionUntil(index: Int, block: (T, I
 }
 
 @JvmSynthetic
+internal inline fun <T> Array<T>.forEachOptimized(block: (T) -> Unit) {
+    var i = 0
+    while (i < size) {
+        block(this[i++])
+    }
+}
+
+/**
+ * Iterates over the array elements until the specified index (exclusive).
+ */
+@JvmSynthetic
+internal inline fun <T> Array<T>.forEachUntil(index: Int, block: (T) -> Unit) {
+    var i = 0
+    while (i < index) {
+        block(this[i++])
+    }
+}
+
+@JvmSynthetic
 internal fun <T, A : Appendable> Array<out T>.joinTo(buffer: A, separator: Char) = buffer.apply {
     forEachByIndex { index, value ->
         if (index > 0) {

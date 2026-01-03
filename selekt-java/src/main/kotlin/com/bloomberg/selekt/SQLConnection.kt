@@ -18,6 +18,8 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByPositionUntil
+import com.bloomberg.selekt.commons.forEachOptimized
+import com.bloomberg.selekt.commons.forEachUntil
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -96,11 +98,37 @@ internal class SQLConnection(
         }
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>) = withPreparedStatement(sql) {
+    override fun executeBatchForChangedRowCount(
+        sql: String,
+        bindArgs: Array<out Array<*>>)
+    : Int = if (bindArgs.isEmpty()) {
+        0
+    } else {
+        withPreparedStatement(sql) {
+            val changes = sqlite.totalChanges(pointer)
+            val binder = SQLBinder(this, SQLBindStrategyResolver.resolveAll(bindArgs.first()))
+            bindArgs.forEachOptimized { args ->
+                reset()
+                args.forEachUntil(parameterCount, binder::bind)
+                if (SQL_DONE != step()) {
+                    return@withPreparedStatement -1
+                }
+                binder.reset()
+            }
+            sqlite.totalChanges(pointer) - changes
+        }
+    }
+
+    override fun executeBatchForChangedRowCount(
+        sql: String,
+        bindArgs: Sequence<Array<out Any?>>
+    ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
-            bindArguments(it)
+            it.forEachByPositionUntil(parameterCount) { arg, i ->
+                SQLBindStrategy.Universal.bind(this, i, arg)
+            }
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
