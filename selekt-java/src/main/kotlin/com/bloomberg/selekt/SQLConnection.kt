@@ -100,9 +100,7 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
-            it.forEachByPositionUntil(parameterCount) { arg, i ->
-                SQLBindStrategy.Universal.bind(this, i, arg)
-            }
+            bindArguments(it)
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
