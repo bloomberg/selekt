@@ -83,4 +83,15 @@ internal class ArraysTest {
             assertEquals(42, value)
         }
     }
+
+    @Test
+    fun forEachByPositionUntil() {
+        var count = 0
+        arrayOf(42, 43).forEachByPositionUntil(1) { value, i ->
+            ++count
+            assertEquals(1, i)
+            assertEquals(42, value)
+        }
+        assertEquals(1, count)
+    }
 }
