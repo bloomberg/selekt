@@ -31,7 +31,7 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun checkpoint(name: String? = null, mode: SQLCheckpointMode = SQLCheckpointMode.PASSIVE)
 
-    fun execute(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
+    fun execute(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Int
 
     fun executeForBlob(
         name: String,
@@ -42,22 +42,22 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun executeForChangedRowCount(
         sql: String,
-        bindArgs: Array<*> = EMPTY_ARRAY
+        bindArgs: Array<out Any?> = EMPTY_ARRAY
     ): Int
 
     fun executeForCursorWindow(
         sql: String,
-        bindArgs: Array<*>,
+        bindArgs: Array<out Any?>,
         window: ICursorWindow
     )
 
-    fun executeForLastInsertedRowId(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
+    fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Long
 
-    fun executeForInt(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Int
+    fun executeForInt(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Int
 
-    fun executeForLong(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): Long
+    fun executeForLong(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Long
 
-    fun executeForString(sql: String, bindArgs: Array<*> = EMPTY_ARRAY): String?
+    fun executeForString(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): String?
 
     fun executeWithRetry(sql: String): Int
 
