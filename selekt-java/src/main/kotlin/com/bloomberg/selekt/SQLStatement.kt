@@ -65,7 +65,7 @@ internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEng
             else -> SQLStatementType.OTHER
         }
         'R' -> when (this[2].uppercaseChar()) {
-            'L' -> SQLStatementType.ABORT // TODO what about to savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
+            'L' -> SQLStatementType.ABORT // TODO What about savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
             'P' -> SQLStatementType.UPDATE // REPLACE
             else -> SQLStatementType.OTHER
         }
