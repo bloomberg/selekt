@@ -17,7 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
-import com.bloomberg.selekt.commons.forEachByPosition
+import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -100,7 +100,9 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
-            bindArguments(it)
+            it.forEachByPositionUntil(parameterCount) { arg, i ->
+                SQLBindStrategy.Universal.bind(this, i, arg)
+            }
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
@@ -246,23 +248,12 @@ private fun SQLPreparedStatement.bindArguments(args: Array<*>) {
     require(parameterCount == args.size) {
         "Expected $parameterCount bind arguments but ${args.size} were provided."
     }
-    args.forEachByPosition { arg, i ->
+    args.forEachByPositionUntil(parameterCount) { arg, i ->
         bindArgument(i, arg)
     }
 }
 
-private fun SQLPreparedStatement.bindArgument(position: Int, arg: Any?) {
-    when (arg) {
-        is String -> bind(position, arg)
-        is Int -> bind(position, arg)
-        is Long -> bind(position, arg)
-        null -> bindNull(position)
-        is Double -> bind(position, arg)
-        is Float -> bind(position, arg.toDouble())
-        is Short -> bind(position, arg.toInt())
-        is Byte -> bind(position, arg.toInt())
-        is ByteArray -> bind(position, arg)
-        is ZeroBlob -> bindZeroBlob(position, arg.size)
-        else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
-    }
-}
+private fun SQLPreparedStatement.bindArgument(
+    position: Int,
+    arg: Any?
+) = SQLBindStrategy.Universal.bind(this, position, arg)

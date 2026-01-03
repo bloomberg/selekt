@@ -164,8 +164,9 @@ class SQLiteDatabase private constructor(
      * The transaction is not committed by this method until the sequence ends. For long sequences you may therefore wish
      * to yield the transaction periodically.
      *
-     * @param sql statement.
-     * @param bindArgs sequence of standard type arguments for binding to the statement.
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs sequence of standard type arguments for binding to the statement each sub-array must have the same
+     *   types at corresponding indices.
      * @return the number of rows affected.
      */
     @Experimental
