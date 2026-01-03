@@ -17,5 +17,8 @@
 package com.bloomberg.selekt
 
 internal interface BatchSQLExecutor {
-    fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>): Int
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>): Int
+
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Iterable<Array<out Any?>>): Int =
+        executeBatchForChangedRowCount(sql, bindArgs.asSequence())
 }

@@ -117,9 +117,15 @@ internal class SQLStatement private constructor(
                 "Only batched updates are permitted."
             }
             return session.get().execute(true, sql) {
-                it.executeForChangedRowCount(sql, bindArgs)
+                it.executeBatchForChangedRowCount(sql, bindArgs)
             }
         }
+
+        fun execute(
+            session: ThreadLocalSession,
+            sql: String,
+            bindArgs: Iterable<Array<out Any?>>
+        ) = execute(session, sql, bindArgs.asSequence())
 
         fun executeForInt(
             session: ThreadLocalSession,
