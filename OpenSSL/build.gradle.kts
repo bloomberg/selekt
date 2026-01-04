@@ -149,6 +149,13 @@ tasks.register<Exec>("configureHost") {
         .withPropertyName("configure")
     outputs.cacheIf { false } // TODO Restore me.
     commandLine("./config")
+    args(
+        "-fPIC",
+        "no-shared",
+        "no-idea", "no-camellia", "no-seed", "no-bf", "no-cast", "no-rc2", "no-rc4", "no-rc5",
+        "no-md2", "no-md4", "no-mdc2", "no-whirlpool", "no-rmd160",
+        "no-ssl3", "no-ecdh", "no-sock", "no-engine"
+    )
 }
 
 tasks.register<Exec>("makeHost") {
