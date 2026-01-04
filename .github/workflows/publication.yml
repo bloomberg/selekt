@@ -127,6 +127,7 @@ jobs:
           ls -la selekt-sqlite3-native/build/libs/
 
       - name: 'Publish to OSSRH'
+        if: github.event_name == 'release' && github.event.action == 'published'
         env:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
@@ -134,18 +135,11 @@ jobs:
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.OSSRH_USER_TOKEN_PASSWORD }}
           ORG_GRADLE_PROJECT_sonatypeUsername: ${{ secrets.OSSRH_USER_TOKEN_USERNAME }}
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            ./gradlew \
-              :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              closeSonatypeStagingRepository \
-              -x jar
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            ./gradlew \
-              -Prelease \
-              :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
-              closeAndReleaseSonatypeStagingRepository \
-              -x jar
-          fi
+          ./gradlew \
+            -Prelease \
+            :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
+            closeAndReleaseSonatypeStagingRepository \
+            -x jar
 
   publish:
     name: 'Publish'
