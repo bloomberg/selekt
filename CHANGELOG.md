@@ -1,12 +1,19 @@
 Change Log
 ==========
 
+## Version 0.26.0
+
+### Fixes
+
+* Publish Linux and MacOS native builds.
+
 ## Version 0.25.3
 
 ### Fixes
 
 * Consistent use of variant `out Any?` instead of the `*` wildcard for Arrays.
 * Offer Java-friendly Iterable and Stream alternatives for batch method.
+* Add the dependency on selekt-android-sqlcipher to Android benchmark.
 
 ### Dependencies
 
