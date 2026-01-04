@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+## Version 0.25.3
+
+### Fixes
+
+* Consistent use of variant `out Any?` instead of the `*` wildcard for Arrays.
+* Offer Java-friendly Iterable and Stream alternatives for batch method.
+
+### Dependencies
+
+* Licensee plugin 1.14.1.
+
 ## Version 0.25.2
 
 ### Fixes
