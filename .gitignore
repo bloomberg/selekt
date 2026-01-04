@@ -16,6 +16,5 @@ local.properties
 **/.cxx-host
 
 **/CMakeCache.txt
-**/*.cmake
 **/CMakeFiles
 **/MakeFile
