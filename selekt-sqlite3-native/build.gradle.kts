@@ -64,6 +64,7 @@ tasks.register<Copy>("copyJniLibs") {
 publishing {
     publications.register<MavenPublication>("native") {
         listOf(
+            "darwin-aarch64",
             "linux-amd64"
         ).forEach {
             artifact(file("build/libs/${project.name}-$version-$it.jar")) {

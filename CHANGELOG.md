@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.26.1
+
+### Fixes
+
+* Add darwin-aarch64 to the list of published native JARs.
+
 ## Version 0.26.0
 
 ### Fixes
