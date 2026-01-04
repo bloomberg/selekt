@@ -37,6 +37,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
+import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.jvm.Throws
 
@@ -170,6 +171,40 @@ class SQLiteDatabase private constructor(
      */
     @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array in the iterable must have the same length, corresponding to the number of arguments in the SQL statement.
+     * It is safe for the iterable to recycle the array with each step.
+     *
+     * The transaction is not committed by this method until the iterable is exhausted. For long iterations you may
+     * therefore wish to yield the transaction periodically.
+     *
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs iterable of standard type arguments for binding to the statement.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Iterable<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+
+    /**
+     * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
+     * prototypical use case is for database modifications inside a tight loop to which this is optimised.
+     *
+     * Each array from the stream must have the same length, corresponding to the number of arguments in the SQL statement.
+     * It is safe for the stream to recycle the array with each step.
+     *
+     * The transaction is not committed by this method until the stream is exhausted. For long transactions you may
+     * therefore wish to yield periodically.
+     *
+     * @param sql statement with ? placeholders for bind parameters.
+     * @param bindArgs stream of standard type arguments for binding to the statement.
+     * @return the number of rows affected.
+     */
+    @Experimental
+    fun batch(@Language("RoomSql") sql: String, bindArgs: Stream<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.

@@ -96,7 +96,10 @@ internal class SQLConnection(
         }
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>) = withPreparedStatement(sql) {
+    override fun executeBatchForChangedRowCount(
+        sql: String,
+        bindArgs: Sequence<Array<out Any?>>
+    ) = withPreparedStatement(sql) {
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()

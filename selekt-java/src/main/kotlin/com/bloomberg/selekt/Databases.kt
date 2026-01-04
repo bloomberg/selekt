@@ -23,6 +23,7 @@ import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
 import java.lang.StringBuilder
+import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
@@ -64,6 +65,14 @@ class SQLDatabase(
         get() = session.get().hasObject
 
     fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
+        SQLStatement.execute(session, sql, bindArgs)
+    }
+
+    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>): Int = transact {
+        SQLStatement.execute(session, sql, bindArgs)
+    }
+
+    fun batch(sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
