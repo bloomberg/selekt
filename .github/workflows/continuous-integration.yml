@@ -9,20 +9,25 @@ jobs:
     name: 'Build Native JARs'
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        include:
+          - os: ubuntu-latest
+            platform: linux-amd64
+            container: alpine:3.23.2
+          - os: macos-15
+            platform: darwin-aarch64
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
 
     steps:
       - name: 'Install system packages'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang curl gcc make sed tar tcl
-
-      - name: 'Install Zig'
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.13.0
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            apk update
+            apk add git gcc g++ musl-dev make curl tar tcl-dev sed bash openjdk17-jdk gnupg file perl linux-headers cmake
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            brew install make tcl-tk
+          fi
 
       - name: 'Checkout'
         uses: actions/checkout@v3
@@ -30,11 +35,29 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
+      - name: 'Configure Git'
+        if: runner.os == 'Linux'
+        run: |
+          git config --global --add safe.directory /__w/selekt/selekt
+
+      - name: 'Verify Java installation'
+        if: runner.os == 'Linux'
+        run: |
+          echo "JVM directories:"
+          ls -la /usr/lib/jvm/ || echo "No /usr/lib/jvm directory"
+          echo "JAVA_HOME: $JAVA_HOME"
+          echo "Java version:"
+          java -version
+
       - name: 'Setup Java'
+        if: runner.os == 'macOS'
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 17
+
+      - name: 'Setup Android SDK'
+        uses: android-actions/setup-android@v3
 
       - name: 'Configure Gradle'
         run: |
@@ -43,10 +66,19 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: zig cc -target x86_64-linux-musl
-          CXX: zig c++ -target x86_64-linux-musl
+          CC: ${{ runner.os == 'Linux' && 'gcc' || 'clang' }}
+          CXX: ${{ runner.os == 'Linux' && 'g++' || 'clang++' }}
+          LDFLAGS: ${{ runner.os == 'Linux' && '-static -s' || '-s' }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
+          JAVA_HOME: ${{ runner.os == 'Linux' && '/usr/lib/jvm/java-17-openjdk' || '' }}
         run: |
           ./gradlew :selekt-sqlite3-native:jar
+
+      - name: 'Upload native JAR'
+        uses: actions/upload-artifact@v4
+        with:
+          name: selekt-native-${{ matrix.platform }}
+          path: selekt-sqlite3-native/build/libs/*.jar
 
   ci-pipeline:
     name: 'Continuous Integration'
