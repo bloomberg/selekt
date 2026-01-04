@@ -41,7 +41,7 @@ robolectric-android-all = { group = "org.robolectric", name = "android-all", ver
 
 [plugins]
 androidx-benchmark = { id = "androidx.benchmark", version.ref = "benchmark" }
-cash-licensee = { id = "app.cash.licensee", version = "1.6.0" }
+cash-licensee = { id = "app.cash.licensee", version = "1.14.1" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.22.0" }
 dokka = { id = "org.jetbrains.dokka", version = "1.9.20" }
 ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version = "1.1.7" }
