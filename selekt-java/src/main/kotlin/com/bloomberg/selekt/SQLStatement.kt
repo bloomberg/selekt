@@ -18,7 +18,9 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.isNotEnglishLetter
 import com.bloomberg.selekt.commons.trimStartByIndex
+import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.streams.asSequence
 
 internal enum class SQLStatementType(
     @JvmField
@@ -117,9 +119,21 @@ internal class SQLStatement private constructor(
                 "Only batched updates are permitted."
             }
             return session.get().execute(true, sql) {
-                it.executeForChangedRowCount(sql, bindArgs)
+                it.executeBatchForChangedRowCount(sql, bindArgs)
             }
         }
+
+        fun execute(
+            session: ThreadLocalSession,
+            sql: String,
+            bindArgs: Iterable<Array<out Any?>>
+        ) = execute(session, sql, bindArgs.asSequence())
+
+        fun execute(
+            session: ThreadLocalSession,
+            sql: String,
+            bindArgs: Stream<Array<out Any?>>
+        ) = execute(session, sql, bindArgs.asSequence())
 
         fun executeForInt(
             session: ThreadLocalSession,

@@ -16,6 +16,15 @@
 
 package com.bloomberg.selekt
 
+import java.util.stream.Stream
+import kotlin.streams.asSequence
+
 internal interface BatchSQLExecutor {
-    fun executeForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>): Int
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Sequence<Array<out Any?>>): Int
+
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Iterable<Array<out Any?>>): Int =
+        executeBatchForChangedRowCount(sql, bindArgs.asSequence())
+
+    fun executeBatchForChangedRowCount(sql: String, bindArgs: Stream<Array<out Any?>>): Int =
+        executeBatchForChangedRowCount(sql, bindArgs.asSequence())
 }
