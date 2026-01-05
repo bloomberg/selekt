@@ -12,7 +12,7 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux-amd64
-            container: alpine:3.23.2
+            container: quay.io/pypa/manylinux_2_28_x86_64
           - os: macos-15
             platform: darwin-aarch64
     runs-on: ${{ matrix.os }}
@@ -23,10 +23,23 @@ jobs:
       - name: 'Install system packages'
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            apk update
-            apk add git gcc g++ musl-dev make curl tar tcl-dev sed bash openjdk17-jdk gnupg file perl linux-headers cmake
+            dnf update -y
+            dnf install -y git gcc gcc-c++ glibc-devel make curl tar tcl-devel sed bash java-17-openjdk-devel gnupg file perl kernel-headers cmake gcc-toolset-13
+            source /opt/rh/gcc-toolset-13/enable
+            export CC=gcc
+            export CXX=g++
+            cd /tmp
+            curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.5.tar.gz -o mimalloc.tar.gz
+            tar xzf mimalloc.tar.gz
+            cd mimalloc-3.1.5
+            mkdir -p out/release
+            cd out/release
+            cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
+            make -j$(nproc) mimalloc-static
+            cp libmimalloc.a /usr/local/lib/
+            cp ../../include/mimalloc.h /usr/local/include/
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            brew install make tcl-tk
+            brew install make tcl-tk mimalloc
           fi
 
       - name: 'Checkout'
@@ -68,10 +81,15 @@ jobs:
         env:
           CC: ${{ runner.os == 'Linux' && 'gcc' || 'clang' }}
           CXX: ${{ runner.os == 'Linux' && 'g++' || 'clang++' }}
-          LDFLAGS: ${{ runner.os == 'Linux' && '-static -s' || '-s' }}
+          LDFLAGS: '-s'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
           JAVA_HOME: ${{ runner.os == 'Linux' && '/usr/lib/jvm/java-17-openjdk' || '' }}
         run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            source /opt/rh/gcc-toolset-13/enable
+            export CC=gcc
+            export CXX=g++
+          fi
           ./gradlew :selekt-sqlite3-native:jar
 
       - name: 'Upload native JAR'
