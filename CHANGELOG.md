@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.26.2
+
+### Fixes
+
+* Statically link mimalloc for builds targeting the JVM.
+
 ## Version 0.26.1
 
 ### Fixes
