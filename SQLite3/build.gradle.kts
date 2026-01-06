@@ -60,17 +60,12 @@ val cFlags = arrayOf(
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")
-    if (osName() == "windows") {
-        commandLine("cmd", "/c", "echo")
-        args("Windows build uses nmake with Makefile.msc")
-    } else {
-        commandLine("./configure")
-        environment("CFLAGS", cFlags.joinToString(" "))
-        args(
-            "--enable-tempstore=yes",
-            "--with-crypto-lib=none"
-        )
-    }
+    commandLine("./configure")
+    environment("CFLAGS", cFlags.joinToString(" "))
+    args(
+        "--enable-tempstore=yes",
+        "--with-crypto-lib=none"
+    )
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
@@ -81,14 +76,8 @@ tasks.register("amalgamate") {
 tasks.register<Exec>("amalgamateSQLite") {
     dependsOn("configureSqlCipher")
     workingDir = File("$projectDir/src/main/external/sqlcipher")
-    if (osName() == "windows") {
-        environment("CFLAGS", cFlags.joinToString(" "))
-        commandLine("nmake", "/f", "Makefile.msc")
-        args("sqlite3.c")
-    } else {
-        commandLine("make")
-        args("sqlite3.c")
-    }
+    commandLine("make")
+    args("sqlite3.c")
 }
 
 tasks.register<Copy>("copySQLiteHeader") {
