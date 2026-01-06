@@ -74,8 +74,9 @@ tasks.register<Verify>("verifyOpenSslChecksum") {
 
 tasks.register<Exec>("verifyOpenSslSignature") {
     inputs.files(archivePgp, archive)
+    val keyringFile = file("$projectDir/openssl.gpg")
     commandLine(
-        "gpg", "--no-default-keyring", "--keyring", "$projectDir/openssl.gpg", "--verify",
+        "gpg", "--no-default-keyring", "--keyring", keyringFile.absolutePath, "--verify",
         archivePgp.get().asFile, archive.get().asFile
     )
 }
