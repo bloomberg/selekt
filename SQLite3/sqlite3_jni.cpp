@@ -22,7 +22,7 @@
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
 
-static void updateHolder(JNIEnv* env, jarray array, int offset, void* p) {
+static inline void updateHolder(JNIEnv* env, jarray array, int offset, void* p) {
     auto pp = reinterpret_cast<size_t*>(env->GetPrimitiveArrayCritical(array, nullptr));
     if (pp == nullptr) {
         throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
