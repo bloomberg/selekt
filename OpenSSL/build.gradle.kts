@@ -153,9 +153,11 @@ tasks.register<Exec>("configureHost") {
         "-fPIC",
         "-fstack-protector-all",
         "no-idea", "no-camellia", "no-seed", "no-bf", "no-blake2", "no-cast", "no-rc2", "no-rc4", "no-rc5",
-        "no-md2", "no-rmd160", "no-md4", "no-ecdh", "no-sock", "no-ssl", "no-ssl3",
+        "no-md2", "no-rmd160", "no-md4", "no-ecdh", "no-sock",
+        "no-ssl", "no-ssl3", "no-ssl3-method",
+        "no-tls", "no-tls1", "no-tls1-method", "no-tls1_1", "no-tls1_1-method", "no-tls1_2", "no-tls1_2-method", "no-tls1_3",
         "no-chacha", "no-des", "no-dh", "no-dsa", "no-ec", "no-ecdsa", "no-ec2m", "no-ocb",
-        "no-tls", "no-dtls", "no-nextprotoneg", "no-poly1305", "no-rfc3779", "no-whirlpool",
+        "no-dtls", "no-nextprotoneg", "no-poly1305", "no-rfc3779", "no-whirlpool",
         "no-scrypt", "no-srp", "no-mdc2", "no-engine", "no-ts", "no-sse2", "no-sm2", "no-sm3",
         "no-sm4", "no-ocsp", "no-cmac", "no-srtp", "no-shared", "no-comp", "no-ct", "no-cms",
         "no-capieng", "no-deprecated", "no-autoerrinit", "no-stdio", "no-ui-console", "no-filenames"
