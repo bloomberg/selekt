@@ -88,6 +88,24 @@ internal class SQLiteDatabaseBatchTest {
     }
 
     @Test
+    fun batchSequenceMultivalueInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar INT)", emptyArray())
+        val args = Array(2) { 0 }
+        assertEquals(2, batch("INSERT INTO 'Foo' VALUES (?),(?)", sequence {
+            args[0] = 42
+            args[1] = 43
+            yield(args)
+        }))
+        query("SELECT * FROM 'Foo'", null).use {
+            assertEquals(2, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
+            assertTrue(it.moveToNext())
+            assertEquals(43, it.getInt(0))
+        }
+    }
+
+    @Test
     fun batchSequenceInsertBooleanTrueThrows(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT)", emptyArray())
         assertFailsWith<IllegalArgumentException> {
