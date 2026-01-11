@@ -143,8 +143,8 @@ tasks.register<Exec>("configureHost") {
     dependsOn("unpackOpenSslHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
-    workingDir(openSslWorkingDir)
     val openSslWorkingDir = openSslWorkingDir.get().asFile
+    workingDir(openSslWorkingDir)
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
     outputs.cacheIf { false } // TODO Restore me.
