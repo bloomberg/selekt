@@ -16,6 +16,8 @@
 
 @file:Suppress("UnstableApiUsage")
 
+import me.champeau.jmh.JMHTask
+
 repositories {
     mavenCentral()
     google()
@@ -44,6 +46,9 @@ sourceSets {
     create("integrationTest") {
         compileClasspath += sourceSets.main.get().output
         runtimeClasspath += sourceSets.main.get().output
+        resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
+    }
+    named("jmh") {
         resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     }
 }
@@ -86,6 +91,11 @@ tasks.register<Test>("integrationTest") {
     outputs.cacheIf { false }
     dependsOn("buildHostSQLite")
     shouldRunAfter("test")
+}
+
+tasks.named<JMHTask>("jmh") {
+    dependsOn("buildHostSQLite")
+    shouldRunAfter("integrationTest")
 }
 
 tasks.register<Task>("buildHostSQLite") {
