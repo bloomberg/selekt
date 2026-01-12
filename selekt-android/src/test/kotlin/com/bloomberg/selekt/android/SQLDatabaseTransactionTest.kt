@@ -451,4 +451,78 @@ internal class SQLDatabaseTransactionTest {
         verify(listener, times(101)).onCommit()
         verify(listener, never()).onRollback()
     }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackToSavepointPreservesTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "initial")
+            }, ConflictAlgorithm.REPLACE)
+            exec("SAVEPOINT test_savepoint")
+            insert("Foo", ContentValues().apply {
+                put("id", 2)
+                put("value", "after_savepoint")
+            }, ConflictAlgorithm.REPLACE)
+            query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(2, cursor.getInt(0))
+            }
+            exec("ROLLBACK TO test_savepoint")
+            assertTrue(inTransaction)
+            query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+            query("SELECT id, value FROM Foo WHERE id = 1", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+                assertEquals("initial", cursor.getString(1))
+            }
+            insert("Foo", ContentValues().apply {
+                put("id", 3)
+                put("value", "after_rollback")
+            }, ConflictAlgorithm.REPLACE)
+            exec("RELEASE test_savepoint")
+        }
+        assertFalse(it.inTransaction)
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackToSavepoint(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (value INT)")
+        it.exec("BEGIN")
+        it.insert("Foo", ContentValues().apply { put("value", 1) }, ConflictAlgorithm.REPLACE)
+        assertTrue(it.inTransaction)
+        it.exec("ROLLBACK")
+        assertFalse(it.inTransaction)
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        it.transact {
+            insert("Foo", ContentValues().apply { put("value", 2) }, ConflictAlgorithm.REPLACE)
+            exec("SAVEPOINT sp1")
+            insert("Foo", ContentValues().apply { put("value", 3) }, ConflictAlgorithm.REPLACE)
+            assertTrue(inTransaction)
+            exec("ROLLBACK TO sp1")
+            assertTrue(inTransaction)
+            exec("RELEASE sp1")
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+    }
 }
