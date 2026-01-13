@@ -49,7 +49,7 @@ internal enum class SQLStatementType(
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 
 @JvmSynthetic
-@Suppress("Detekt.CognitiveComplexMethod")
+@Suppress("Detekt.CognitiveComplexMethod", "Detekt.ComplexCondition", "Detekt.MagicNumber", "Detekt.NestedBlockDepth")
 internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEnglishLetter).run {
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER
@@ -67,7 +67,12 @@ internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEng
             else -> SQLStatementType.OTHER
         }
         'R' -> when (this[2].uppercaseChar()) {
-            'L' -> SQLStatementType.ABORT // TODO What about savepoint, "ROLLBACK TO ..."? In that case, map to OTHER.
+            'L' -> if (length > 10 && 'T' == this[9].uppercaseChar() ||
+                length >= 7 && 'E' == this[1].uppercaseChar()) {
+                SQLStatementType.OTHER // ROLLBACK TO or RELEASE
+            } else {
+                SQLStatementType.ABORT
+            }
             'P' -> SQLStatementType.UPDATE // REPLACE
             else -> SQLStatementType.OTHER
         }

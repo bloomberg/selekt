@@ -186,6 +186,61 @@ internal class SQLStatementKtTest {
     }
 
     @Test
+    fun rollbackToSavepointSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO savepoint1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointLowercaseSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "rollback to savepoint1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointMixedCaseSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "RoLLbAcK tO savepoint1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointMinimalSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO sp".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointLongNameSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO very_long_savepoint_name_123".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointKeywordSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO SAVEPOINT sp1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackWithoutToSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK    ".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackTruncatedSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK X".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun releaseSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "RELEASE".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun releaseSavepointSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "RELEASE sp1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun releaseSavepointKeywordSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "RELEASE SAVEPOINT sp1".resolvedSqlStatementType())
+    }
+
+    @Test
     fun savePointSqlStatement() {
         assertEquals(SQLStatementType.OTHER, "SAVEPOINT".resolvedSqlStatementType())
     }
