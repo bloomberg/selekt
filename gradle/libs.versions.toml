@@ -1,4 +1,4 @@
-# https://docs.gradle.org/current/userguide/platforms.html#sub:conventional-dependencies-toml
+# https://docs.gradle.org/current/userguide/version_catalogs.html
 
 [versions]
 benchmark = "1.3.0"
