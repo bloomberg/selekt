@@ -64,6 +64,7 @@ dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektSqlite3Classes)
     jmhImplementation(libs.kotlinx.coroutines.core)
+    jmhImplementation(libs.xerial.sqlite.jdbc)
 }
 
 jmh {
