@@ -7,36 +7,36 @@ lint = "31.5.2"
 room = "2.6.1"
 
 [libraries]
-android-tools-gradle = { group = "com.android.tools.build", name = "gradle", version = "8.7.3" }
-android-tools-lint = { group = "com.android.tools.lint", name = "lint", version.ref = "lint" }
-android-tools-lint-api = { group = "com.android.tools.lint", name = "lint-api", version.ref = "lint" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.0" }
-androidx-benchmark-junit4 = { group = "androidx.benchmark", name = "benchmark-junit4", version.ref = "benchmark" }
-androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.1.4" }
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.13.1" }
-androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version = "2.8.4" }
-androidx-paging = { group = "androidx.paging", name = "paging-runtime", version = "3.3.2" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-androidx-test-ext = { group = "androidx.test.ext", name = "junit", version = "1.2.1" }
-androidx-test-rules = { group = "androidx.test", name = "rules", version = "1.6.1" }
-androidx-test-runner = { group = "androidx.test", name = "runner", version = "1.6.2" }
-findbugs-jsr305 = { group = "com.google.code.findbugs", name = "jsr305", version = "3.0.2" }
-jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "jmh" }
-jmh-generator-annprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "jmh" }
-junit-junit = { group = "junit", name = "junit", version = "4.13.2" }
-junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version = "5.10.2" }
-kotlin-bom = { group = "org.jetbrains.kotlin", name = "kotlin-bom", version = "2.0.20" }
-kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
-kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test" }
-kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit" }
-kotlinx-coroutines-bom = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-bom", version = "1.8.1" }
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core" }
-mockito-core = { group = "org.mockito", name = "mockito-core", version = "5.11.0" }
-mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version = "5.3.1" }
-robolectric-android-all = { group = "org.robolectric", name = "android-all", version = "12.1-robolectric-8229987" }
-xerial-sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version = "3.51.1.0" }
+android-tools-gradle = { module = "com.android.tools.build:gradle", version = "8.7.3" }
+android-tools-lint = { module = "com.android.tools.lint:lint", version.ref = "lint" }
+android-tools-lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }
+androidx-benchmark-junit4 = { module = "androidx.benchmark:benchmark-junit4", version.ref = "benchmark" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version = "2.1.4" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
+androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version = "2.8.4" }
+androidx-paging = { module = "androidx.paging:paging-runtime", version = "3.3.2" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-test-ext = { module = "androidx.test.ext:junit", version = "1.2.1" }
+androidx-test-rules = { module = "androidx.test:rules", version = "1.6.1" }
+androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }
+findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
+junit-junit = { module = "junit:junit", version = "4.13.2" }
+junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version = "5.10.2" }
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version = "2.0.20" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit" }
+kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version = "1.8.1" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core" }
+mockito-core = { module = "org.mockito:mockito-core", version = "5.11.0" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version = "5.3.1" }
+robolectric-android-all = { module = "org.robolectric:android-all", version = "12.1-robolectric-8229987" }
+xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version = "3.51.1.0" }
 
 [bundles]
 
