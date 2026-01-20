@@ -18,9 +18,8 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
-import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.net.URI
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
 
 val <T> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
 
@@ -58,9 +57,9 @@ val Project.sqlcipherVersionName: String
     get() = "${checkNotNull(properties["sqlcipher.versionName"])}-$selektVersionName"
 
 fun Project.disableKotlinCompilerAssertions() {
-    tasks.withType<KotlinCompile>().configureEach {
-        kotlinOptions {
-            freeCompilerArgs = listOf(
+    extensions.configure<KotlinJvmExtension>("kotlin") {
+        compilerOptions {
+            freeCompilerArgs.addAll(
                 "-Xno-call-assertions",
                 "-Xno-receiver-assertions",
                 "-Xno-param-assertions"

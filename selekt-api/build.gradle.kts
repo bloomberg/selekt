@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 repositories {
     mavenCentral()
     google()
@@ -37,9 +35,9 @@ java {
     withSourcesJar()
 }
 
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + listOf(
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll(
             "-Xinline-classes",
             "-opt-in=kotlin.RequiresOptIn"
         )
