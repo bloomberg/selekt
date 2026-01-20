@@ -17,6 +17,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import me.champeau.jmh.JMHTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 repositories {
     mavenCentral()
@@ -80,6 +81,12 @@ publishing {
             commonInitialisation(project)
             description.set("Selekt core library.")
         }
+    }
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
     }
 }
 

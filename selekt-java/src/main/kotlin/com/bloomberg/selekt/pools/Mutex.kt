@@ -156,7 +156,7 @@ internal class Mutex {
 
     private fun isThisHead() = waiters.peek() === Thread.currentThread()
 
-    private companion object {
+    internal companion object {
         // Reduce the risk of "lost unpark" due to class loading.
         @Suppress("unused")
         private val ensureLoaded: Class<*> = LockSupport::class.java

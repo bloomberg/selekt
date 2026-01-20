@@ -26,6 +26,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.gradle.ext.copyright
 import org.jetbrains.gradle.ext.settings
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
@@ -146,10 +147,10 @@ subprojects {
         )
     }
     tasks.withType<KotlinCompile>().configureEach {
-        kotlinOptions {
+        compilerOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
-            jvmTarget = "17"
+            jvmTarget = JvmTarget.JVM_17
         }
     }
     tasks.withType<Test>().configureEach {

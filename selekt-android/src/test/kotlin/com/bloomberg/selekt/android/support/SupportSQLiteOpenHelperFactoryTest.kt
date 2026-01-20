@@ -69,7 +69,7 @@ interface UserDao {
     fun findByName(first: String, last: String): User
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(vararg users: User)
+    fun insertAll(users: Array<User>)
 }
 
 @ExtendWith(SelektTestExtension::class)
@@ -94,16 +94,17 @@ internal class SupportSQLiteOpenHelperFactoryTest {
 
     @Test
     fun insert() {
-        val user = User(42, "Michael", "Bloomberg")
+        val users = arrayOf(User(42, "Michael", "Bloomberg"))
         database.userDao().run {
-            insertAll(user)
-            assertEquals(user, findByName("Michael", "Bloomberg"))
+            insertAll(users)
+            assertEquals(1, users.size)
+            assertEquals(users.first(), findByName("Michael", "Bloomberg"))
         }
     }
 
     @Test
     fun encryption() {
-        database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
+        database.userDao().insertAll(arrayOf(User(42, "Michael", "Bloomberg")))
         SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, null).use {
             assertFailsWith<SQLiteDatabaseCorruptException> {
                 it.journalMode
@@ -113,7 +114,7 @@ internal class SupportSQLiteOpenHelperFactoryTest {
 
     @Test
     fun journalMode() {
-        database.userDao().insertAll(User(42, "Michael", "Bloomberg"))
+        database.userDao().insertAll(arrayOf(User(42, "Michael", "Bloomberg")))
         SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.WAL.databaseConfiguration, ByteArray(32) { 0x42 }).use {
             assertEquals(SQLiteJournalMode.WAL, it.journalMode)
         }
