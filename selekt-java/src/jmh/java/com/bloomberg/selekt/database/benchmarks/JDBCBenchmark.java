@@ -234,10 +234,10 @@ public class JDBCBenchmark {
     public void xerialSelect() throws SQLException {
         for (int i = 0; i < batchSize; i++) {
             xerialSelectStatement.setString(1, batchNames[i]);
-            try (ResultSet rs = xerialSelectStatement.executeQuery()) {
-                if (rs.next()) {
-                    rs.getLong("id");
-                    rs.getInt("value");
+            try (ResultSet results = xerialSelectStatement.executeQuery()) {
+                if (results.next()) {
+                    results.getLong("id");
+                    results.getInt("value");
                 }
             }
         }
