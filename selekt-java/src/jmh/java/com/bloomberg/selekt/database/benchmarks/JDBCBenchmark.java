@@ -81,19 +81,15 @@ public class JDBCBenchmark {
     }
 
     @TearDown(Level.Iteration)
-    public void tearDown() throws SQLException {
-        try {
-            if (selektInsertStatement != null) {
-                selektInsertStatement.close();
-            }
-            if (selektSelectStatement != null) {
-                selektSelectStatement.close();
-            }
-            if (selektDatabase != null) {
-                selektDatabase.close();
-            }
-        } catch (final Exception e) {
-            // Ignore.
+    public void tearDown() throws SQLException, IOException {
+        if (selektInsertStatement != null) {
+            selektInsertStatement.close();
+        }
+        if (selektSelectStatement != null) {
+            selektSelectStatement.close();
+        }
+        if (selektDatabase != null) {
+            selektDatabase.close();
         }
 
         if (xerialInsertStatement != null) {

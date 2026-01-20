@@ -20,7 +20,7 @@ import java.sql.SQLException
 
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
 open class SQLite(
-    private val sqlite: ExternalSQLite
+    private val sqlite: IExternalSQLite
 ) {
     fun bindBlob(statement: Long, index: Int, blob: ByteArray) = checkBindSQLCode(
         statement,

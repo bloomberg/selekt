@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.commons
 
-fun <T : Any?> emptyIterable() = object : Iterable<T> {
+fun <T> emptyIterable() = object : Iterable<T> {
     private val iterator = emptyIterator<T>()
 
     override fun iterator() = iterator
@@ -28,7 +28,7 @@ private class EmptyIterator<L, R> : Iterator<Pair<L, R>> {
     override fun next() = throw NoSuchElementException()
 }
 
-private fun <T : Any?> emptyIterator() = object : Iterator<T> {
+private fun <T> emptyIterator() = object : Iterator<T> {
     override fun hasNext() = false
 
     override fun next() = throw NoSuchElementException()
@@ -46,7 +46,7 @@ inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwa
     return throwables
 }
 
-operator fun <L : Any?, R : Any?> Iterable<L>.times(other: Iterable<R>) = object : Iterable<Pair<L, R>> {
+operator fun <L, R> Iterable<L>.times(other: Iterable<R>) = object : Iterable<Pair<L, R>> {
     override fun iterator(): Iterator<Pair<L, R>> = if (!(this@times.any() && other.any())) {
         EmptyIterator()
     } else {
@@ -69,8 +69,8 @@ operator fun <L : Any?, R : Any?> Iterable<L>.times(other: Iterable<R>) = object
     }
 }
 
-operator fun <L : Any?, R : Any?> Array<L>.times(other: Array<R>) = asIterable() * other.asIterable()
+operator fun <L, R> Array<L>.times(other: Array<R>) = asIterable() * other.asIterable()
 
-operator fun <L : Any?, R : Any?> Array<L>.times(other: Iterable<R>) = asIterable() * other
+operator fun <L, R> Array<L>.times(other: Iterable<R>) = asIterable() * other
 
-operator fun <L : Any?, R : Any?> Iterable<L>.times(other: Array<R>) = this * other.asIterable()
+operator fun <L, R> Iterable<L>.times(other: Array<R>) = this * other.asIterable()

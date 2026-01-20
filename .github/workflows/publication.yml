@@ -46,11 +46,19 @@ jobs:
           cp libmimalloc.a /usr/local/lib/
           cp ../../include/mimalloc.h /usr/local/include/
 
-      - name: 'Setup Java'
+      - name: 'Setup Java 17'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
+
+      - name: 'Set JAVA_HOME'
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          fi
 
       - name: 'Setup Android SDK'
         uses: android-actions/setup-android@v3
@@ -70,11 +78,13 @@ jobs:
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
       - name: 'Build'
         env:
           CC: ${{ runner.os == 'Linux' && 'gcc' || 'clang' }}
           CXX: ${{ runner.os == 'Linux' && 'g++' || 'clang++' }}
+          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
           LDFLAGS: '-s'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
         run: |
@@ -108,11 +118,19 @@ jobs:
           fetch-depth: 2
           submodules: false
 
-      - name: 'Setup Java'
+      - name: 'Setup Java 17'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
+
+      - name: 'Set JAVA_HOME'
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          fi
 
       - name: 'Configure Gradle'
         run: |
@@ -136,6 +154,7 @@ jobs:
       - name: 'Publish to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
+          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSPHRASE }}
@@ -165,21 +184,40 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
-      - name: 'Setup Java'
+      - name: 'Setup Java 17'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
+      - name: 'Setup Java 25'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: 'Set JAVA_HOME'
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          fi
+
       - name: 'Configure Gradle'
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test
+        env:
+          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test -x integrationTest ${{ env.SCAN }}
 
-      - name: 'Build Selekt'
+      - name: 'Build Selekt Android'
+        env:
+          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
         run: |
           ./gradlew clean \
             :OpenSSL:assembleArm64-v8a \
@@ -192,6 +230,7 @@ jobs:
       - name: 'Publish release to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
+          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSPHRASE }}

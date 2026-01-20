@@ -17,4 +17,4 @@
 package com.bloomberg.selekt.commons
 
 @JvmSynthetic
-internal fun ByteArray.zero() = fill(0)
+fun ByteArray.zero() = fill(0)

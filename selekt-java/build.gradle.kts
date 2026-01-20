@@ -17,7 +17,6 @@
 @file:Suppress("UnstableApiUsage")
 
 import me.champeau.jmh.JMHTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
@@ -44,7 +43,7 @@ java {
 }
 
 sourceSets {
-    create("integrationTest") {
+    val integrationTest by creating {
         compileClasspath += sourceSets.main.get().output
         runtimeClasspath += sourceSets.main.get().output
         resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
@@ -63,7 +62,18 @@ val integrationTestRuntimeOnly: Configuration by configurations.getting {
 
 dependencies {
     implementation(projects.selektApi)
-    implementation(projects.selektSqlite3Classes)
+    implementation(projects.selektCommons)
+    implementation(projects.selektSqlite3Api)
+    integrationTestImplementation(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+        }
+    }
+    jmhImplementation(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+        }
+    }
     jmhImplementation(libs.kotlinx.coroutines.core)
     jmhImplementation(libs.xerial.sqlite.jdbc)
 }
@@ -74,6 +84,16 @@ jmh {
     }
 }
 
+koverReport {
+    defaults {
+        filters {
+            excludes {
+                classes("com.bloomberg.selekt.jvm.*")
+            }
+        }
+    }
+}
+
 publishing {
     publications.register<MavenPublication>("main") {
         from(components.getByName("java"))
@@ -81,12 +101,6 @@ publishing {
             commonInitialisation(project)
             description.set("Selekt core library.")
         }
-    }
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions {
-        freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
     }
 }
 

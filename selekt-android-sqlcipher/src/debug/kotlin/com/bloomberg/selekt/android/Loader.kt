@@ -16,14 +16,14 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.ExternalSQLite
+import com.bloomberg.selekt.IExternalSQLite
 import com.bloomberg.selekt.SQLite
 import com.bloomberg.selekt.commons.loadLibrary
 import com.bloomberg.selekt.externalSQLiteSingleton
 
 private const val CAN_USE_LOAD_PROPERTY_KEY = "com.bloomberg.selekt.can_use_load"
 
-fun loadSQLite(): ExternalSQLite = externalSQLiteSingleton {
+fun loadSQLite(): IExternalSQLite = externalSQLiteSingleton {
     "selekt".let {
         try {
             System.loadLibrary(it)

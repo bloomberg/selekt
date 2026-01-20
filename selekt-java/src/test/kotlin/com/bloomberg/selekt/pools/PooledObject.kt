@@ -16,9 +16,11 @@
 
 package com.bloomberg.selekt.pools
 
+import java.util.UUID
+
 internal class PooledObject(
     override val isPrimary: Boolean = false,
-    @Volatile var key: String = Thread.currentThread().id.toString()
+    @Volatile var key: String = UUID.randomUUID().toString()
 ) : IPooledObject<String> {
     override fun matches(key: String) = key == this.key
 

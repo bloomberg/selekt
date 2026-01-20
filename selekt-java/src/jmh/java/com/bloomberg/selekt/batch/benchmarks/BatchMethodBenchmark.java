@@ -17,10 +17,10 @@
 package com.bloomberg.selekt.batch.benchmarks;
 
 import com.bloomberg.selekt.CommonThreadLocalRandom;
-import com.bloomberg.selekt.commons.DatabaseKt;
 import com.bloomberg.selekt.SQLDatabase;
 import com.bloomberg.selekt.SQLiteJournalMode;
 import com.bloomberg.selekt.SQLiteTransactionMode;
+import com.bloomberg.selekt.commons.DatabaseKt;
 import com.bloomberg.selekt.jvm.SQLite;
 import kotlin.sequences.Sequence;
 import kotlin.sequences.SequencesKt;
@@ -122,13 +122,8 @@ public class BatchMethodBenchmark {
         } else {
             fullChunksSequence = SequencesKt.emptySequence();
         }
-        if (remainder > 0) {
-            multiValuedInsertSqlRemainder = buildMultiValuedInsertSql(remainder);
-            remainderChunk = flattenArgs(fullChunkCount * MAX_ROWS_PER_MULTI_INSERT, remainder);
-        } else {
-            multiValuedInsertSqlRemainder = null;
-            remainderChunk = null;
-        }
+        multiValuedInsertSqlRemainder = buildMultiValuedInsertSql(remainder);
+        remainderChunk = flattenArgs(fullChunkCount * MAX_ROWS_PER_MULTI_INSERT, remainder);
     }
 
     private Object[] createRowData(final int index) {

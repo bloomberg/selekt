@@ -18,8 +18,8 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteException
-import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.annotations.Experimental
+import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
@@ -69,7 +69,7 @@ internal class SQLiteDatabaseWALTest {
 
     @Test
     fun deleteDatabase() {
-        SQLiteDatabase.deleteDatabase(file)
+        deleteDatabase(file)
         assertFalse(file.exists())
     }
 
