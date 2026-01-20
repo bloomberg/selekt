@@ -208,7 +208,7 @@ subprojects {
                 remoteUrl = URL(
                     "https://github.com/bloomberg/selekt/tree/master/${this@configureEach.project.name}/src/main/kotlin"
                 )
-                localDirectory = file("src/main/kotlin")
+                localDirectory.set(file("src/main/kotlin"))
             }
             includeNonPublic.set(false)
             jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
