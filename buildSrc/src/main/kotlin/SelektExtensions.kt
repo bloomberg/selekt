@@ -21,11 +21,11 @@ import org.gradle.api.publish.maven.MavenPom
 import java.net.URI
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
 
-val <T> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
+val <T : Any> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
 
-fun <T> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = getByName("debug", configure)
+fun <T : Any> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = getByName("debug", configure)
 
-fun <T> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = getByName("release", configure)
+fun <T : Any> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = getByName("release", configure)
 
 fun Project.gitCommit(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "HEAD")
