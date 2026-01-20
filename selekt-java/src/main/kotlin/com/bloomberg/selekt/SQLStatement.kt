@@ -50,7 +50,7 @@ private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 
 @JvmSynthetic
 @Suppress("Detekt.CognitiveComplexMethod", "Detekt.ComplexCondition", "Detekt.MagicNumber", "Detekt.NestedBlockDepth")
-internal fun String.resolvedSqlStatementType() = trimStartByIndex(Char::isNotEnglishLetter).run {
+internal fun String.resolvedSqlStatementType(): SQLStatementType = trimStartByIndex(Char::isNotEnglishLetter).run {
     if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         return SQLStatementType.OTHER
     }

@@ -39,7 +39,7 @@ internal class ArraysTest {
     @Test
     fun mixedJoinToWithComma() {
         StringBuilder().let {
-            arrayOf('a', "b").joinTo(it, ',')
+            arrayOf<Any>('a', "b").joinTo(it, ',')
             assertEquals("a,b", it.toString())
         }
     }
