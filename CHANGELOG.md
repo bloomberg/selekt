@@ -1,6 +1,21 @@
 Change Log
 ==========
 
+## Version 0.26.3
+
+### Fixes
+
+* Inline `updateHolder` in sqlite3_jni.
+* Further reduce what we build for SSL (unused).
+* Provide rollback to savepoint support.
+* Fix stray :OpenSSL build directory.
+
+### Dependencies
+
+* Gradle 9.3.0.
+* Kotlin 2.3.0.
+* KSP 2.3.4.
+
 ## Version 0.26.2
 
 ### Fixes
