@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+import java.net.URI
 import java.net.URL
 
 enum class Versions(
     val version: String,
     private val url: URL
 ) {
-    ANDROID_SDK("34", URL("https://developer.android.com/sdk")),
-    JMH("1.36", URL("https://openjdk.java.net/projects/code-tools/jmh/"));
+    ANDROID_SDK("34", URI.create("https://developer.android.com/sdk").toURL()),
+    JMH("1.36", URI.create("https://openjdk.java.net/projects/code-tools/jmh/").toURL());
 
     override fun toString() = version
 
@@ -34,7 +35,7 @@ enum class Versions(
             values().map { it.name.replace('_', '-') }.run {
                 slice(1 until size).forEachIndexed { index, version ->
                     check(this[index] < version) {
-                        "Versions are not listed lexicographically near '${values()[index + 1].name}'."
+                        "Versions are not listed lexicographically near '${entries[index + 1].name}'."
                     }
                 }
             }
