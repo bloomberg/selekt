@@ -23,7 +23,7 @@
 #include <SelektConfig.h>
 
 static inline void updateHolder(JNIEnv* env, jarray array, int offset, void* p) {
-    auto pp = reinterpret_cast<size_t*>(env->GetPrimitiveArrayCritical(array, nullptr));
+    auto pp = static_cast<size_t*>(env->GetPrimitiveArrayCritical(array, nullptr));
     if (pp == nullptr) {
         throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
         return;
