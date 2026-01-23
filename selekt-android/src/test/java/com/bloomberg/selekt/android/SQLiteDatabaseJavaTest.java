@@ -35,7 +35,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public final class SQLiteDatabaseJavaTest {
+final class SQLiteDatabaseJavaTest {
     private final Context targetContext = mock(Context.class);
     private SQLiteDatabase database = null;
 
@@ -47,16 +47,16 @@ public final class SQLiteDatabaseJavaTest {
         0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42
     };
 
-    public SQLiteDatabaseJavaTest() throws IOException {}
+    SQLiteDatabaseJavaTest() throws IOException {}
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         file.deleteOnExit();
         when(targetContext.getDatabasePath(anyString())).thenReturn(file);
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         final SQLiteDatabase database = this.database;
         if (database != null) {
             try {
@@ -71,7 +71,7 @@ public final class SQLiteDatabaseJavaTest {
     }
 
     @Test
-    public void creation() {
+    void creation() {
         database = SQLiteDatabase.openOrCreateDatabase(
             targetContext.getDatabasePath("sample"),
             SQLiteJournalMode.WAL.databaseConfiguration,

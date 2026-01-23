@@ -36,7 +36,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public final class SQLiteOpenHelperJavaTest {
+final class SQLiteOpenHelperJavaTest {
     private final File file = File.createTempFile("test-java-open-helper", ".db");
     private final byte[] key = new byte[] {
         0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
@@ -48,16 +48,16 @@ public final class SQLiteOpenHelperJavaTest {
     private final Context targetContext = mock(Context.class);
     private SQLiteOpenHelper databaseHelper = null;
 
-    public SQLiteOpenHelperJavaTest() throws IOException {}
+    SQLiteOpenHelperJavaTest() throws IOException {}
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         file.deleteOnExit();
         when(targetContext.getDatabasePath(anyString())).thenReturn(file);
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         final SQLiteOpenHelper helper = databaseHelper;
         if (helper != null) {
             final SQLiteDatabase database = helper.getWritableDatabase();
@@ -73,7 +73,7 @@ public final class SQLiteOpenHelperJavaTest {
     }
 
     @Test
-    public void creation() {
+    void creation() {
         final ISQLiteOpenHelper.Callback callback = mock(ISQLiteOpenHelper.Callback.class);
         databaseHelper = new SQLiteOpenHelper(
             targetContext,
@@ -90,7 +90,7 @@ public final class SQLiteOpenHelperJavaTest {
     }
 
     @Test
-    public void createWithLoggingEnabled() {
+    void createWithLoggingEnabled() {
         final ISQLiteOpenHelper.Callback callback = mock(ISQLiteOpenHelper.Callback.class);
         databaseHelper = new SQLiteOpenHelper(
             targetContext,
