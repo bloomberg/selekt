@@ -92,7 +92,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     AutoJByteArray value(env, jvalue, length);
-    return sqlite3_bind_blob(statement, index, value, value.length(), SQLITE_TRANSIENT);
+    return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -581,7 +581,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_key(
     jint length
 ) {
     AutoJByteArray key(env, jkey, length);
-    return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key, key.length());
+    return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -692,7 +692,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     if (key.length() == 0) {
         return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), nullptr, key.length());
     }
-    return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key, key.length());
+    return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
 }
 
 extern "C" JNIEXPORT jint JNICALL
