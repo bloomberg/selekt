@@ -16,8 +16,11 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
-#include <string>
+#include <cstdint>
 #include <cstring>
+#include <iomanip>
+#include <sstream>
+#include <string>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
@@ -56,20 +59,14 @@ static jint rawKey(
         return SQLITE_ERROR;
     }
     AutoJByteArray key(env, jkey, keyLength);
-    std::string prefix = "PRAGMA key=\"x'";
-    std::string suffix = "'\"";
-    size_t const length = prefix.length() + (2 * keyLength) + suffix.length();
-    char sql[length + 1];
-    sql[length] = 0;
-    std::strcpy(sql, prefix.c_str());
-    int i;
-    char * const hex = sql + prefix.length();
-    for (i = 0; i < keyLength; ++i) {
-        std::snprintf(hex + (2 * i), 3, "%02x", key[i]);
+    std::ostringstream oss;
+    oss << "PRAGMA key=\"x'";
+    for (int i = 0; i < keyLength; ++i) {
+        oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(static_cast<std::uint8_t>(key[i]));
     }
-    std::strcpy(sql + length - suffix.length(), suffix.c_str());
-    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
-    std::fill(sql, sql + length + 1, 0);
+    oss << "'\"";
+    std::string sql = oss.str();
+    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql.c_str(), nullptr, nullptr, nullptr);
     return result;
 }
 
