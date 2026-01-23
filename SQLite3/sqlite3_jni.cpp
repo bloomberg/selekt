@@ -16,9 +16,8 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
-#include <cstdint>
+#include <cstddef>
 #include <cstring>
-#include <iomanip>
 #include <sstream>
 #include <string>
 #include <bloomberg/AutoJByteArray.h>
@@ -61,8 +60,11 @@ static jint rawKey(
     AutoJByteArray key(env, jkey, keyLength);
     std::ostringstream oss;
     oss << "PRAGMA key=\"x'";
+    const char hex_chars[] = "0123456789abcdef";
     for (int i = 0; i < keyLength; ++i) {
-        oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(static_cast<std::uint8_t>(key[i]));
+        auto byte = static_cast<std::byte>(key[i]);
+        oss << hex_chars[std::to_integer<unsigned char>(byte >> 4)]
+            << hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
     }
     oss << "'\"";
     std::string sql = oss.str();
