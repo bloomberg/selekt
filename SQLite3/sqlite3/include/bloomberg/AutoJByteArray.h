@@ -37,8 +37,12 @@ public:
         mEnv->ReleaseByteArrayElements(mJArray, mpBytes, JNI_ABORT);
     }
 
-    operator const jbyte*() const {
+    const jbyte* data() const {
         return mpBytes;
+    }
+
+    const jbyte& operator[](jsize index) const {
+        return mpBytes[index];
     }
 
     jsize length() const {
