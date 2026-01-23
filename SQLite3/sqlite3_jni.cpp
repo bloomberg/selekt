@@ -16,9 +16,8 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
-#include <cstddef>
 #include <cstring>
-#include <sstream>
+#include <format>
 #include <string>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
@@ -58,16 +57,12 @@ static jint rawKey(
         return SQLITE_ERROR;
     }
     AutoJByteArray key(env, jkey, keyLength);
-    std::ostringstream oss;
-    oss << "PRAGMA key=\"x'";
-    const char hex_chars[] = "0123456789abcdef";
+    std::string hex_string;
+    hex_string.reserve(keyLength * 2);
     for (int i = 0; i < keyLength; ++i) {
-        auto byte = static_cast<std::byte>(key[i]);
-        oss << hex_chars[std::to_integer<unsigned char>(byte >> 4)]
-            << hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
+        hex_string += std::format("{:02x}", static_cast<unsigned char>(key[i]));
     }
-    oss << "'\"";
-    std::string sql = oss.str();
+    std::string sql = std::format("PRAGMA key=\"x'{}'\"", hex_string);
     auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql.c_str(), nullptr, nullptr, nullptr);
     return result;
 }
@@ -813,12 +808,24 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
     sqlite3_trace_v2(
         reinterpret_cast<sqlite3*>(jdb),
         static_cast<unsigned int>(flag),
-        [](unsigned trace, void* context, void* p, void* x){
+        [](unsigned trace, [[maybe_unused]] void* context, void* stmt_or_db, void* data) {
             switch (trace) {
-                case SQLITE_TRACE_ROW: LOG_D("ROW: %p", p);
-                case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, reinterpret_cast<sqlite3_int64>(x));
-                case SQLITE_TRACE_STMT: LOG_D("STMT: %p %s", p, static_cast<const char*>(x));
-                case SQLITE_TRACE_CLOSE: LOG_D("CLOSE: %p", p);
+                case SQLITE_TRACE_ROW:
+                    LOG_D("ROW: %p", stmt_or_db);
+                    [[fallthrough]];
+                case SQLITE_TRACE_PROFILE: {
+                    auto elapsed_ns = reinterpret_cast<sqlite3_int64>(data);
+                    LOG_D("PROFILE: %p %lldns", stmt_or_db, elapsed_ns);
+                    [[fallthrough]];
+                }
+                case SQLITE_TRACE_STMT: {
+                    auto sql_text = static_cast<const char*>(data);
+                    LOG_D("STMT: %p %s", stmt_or_db, sql_text);
+                    [[fallthrough]];
+                }
+                case SQLITE_TRACE_CLOSE:
+                    LOG_D("CLOSE: %p", stmt_or_db);
+                    break;
                 default: break;
             }
             return 0;
