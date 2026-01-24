@@ -24,21 +24,35 @@ jobs:
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
             dnf update -y
-            dnf install -y git gcc gcc-c++ glibc-devel make curl tar sed bash gnupg file perl kernel-headers cmake diffutils tcl
+            dnf install -y gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-binutils
+            dnf install -y git glibc-devel make curl tar sed bash gnupg file perl kernel-headers cmake diffutils tcl
+            echo "source /opt/rh/gcc-toolset-13/enable" >> ~/.bashrc
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            brew install make tcl-tk mimalloc
+            brew install make tcl-tk mimalloc llvm
+            echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
           fi
 
       - name: 'Build mimalloc'
         if: runner.os == 'Linux'
         run: |
+          source /opt/rh/gcc-toolset-13/enable
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+          export CMAKE_C_COMPILER=$CC
+          export CMAKE_CXX_COMPILER=$CXX
+          echo "Building mimalloc with:"
+          echo "CC: $CC"
+          echo "CXX: $CXX"
+          gcc --version
           cd /tmp
           curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
           tar xzf mimalloc.tar.gz
           cd mimalloc-3.1.6
           mkdir -p out/release
           cd out/release
-          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
+          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF \
+            -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_FLAGS="-O3 -flto -DNDEBUG -ffunction-sections \
+            -fdata-sections" -DCMAKE_CXX_FLAGS="-O3 -flto -DNDEBUG -ffunction-sections -fdata-sections"
           make -j$(nproc) mimalloc-static
           cp libmimalloc.a /usr/local/lib/
           cp ../../include/mimalloc.h /usr/local/include/
@@ -70,14 +84,30 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: ${{ runner.os == 'Linux' && 'gcc' || 'clang' }}
-          CXX: ${{ runner.os == 'Linux' && 'g++' || 'clang++' }}
-          LDFLAGS: '-s'
+          LDFLAGS: '-s -Wl,--gc-sections'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
+          CFLAGS: '-O3 -flto -DNDEBUG -ffunction-sections -fdata-sections'
+          CXXFLAGS: '-O3 -flto -DNDEBUG -ffunction-sections -fdata-sections'
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            export CC=gcc
-            export CXX=g++
+            source /opt/rh/gcc-toolset-13/enable
+            export CC=$(which gcc)
+            export CXX=$(which g++)
+            export CMAKE_C_COMPILER=$CC
+            export CMAKE_CXX_COMPILER=$CXX
+            echo "CC: $CC"
+            echo "CXX: $CXX"
+            gcc --version
+            g++ --version
+            which gcc
+            which g++
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            export CC=/opt/homebrew/opt/llvm/bin/clang
+            export CXX=/opt/homebrew/opt/llvm/bin/clang++
+            export CMAKE_C_COMPILER=$CC
+            export CMAKE_CXX_COMPILER=$CXX
+            echo "CC: $CC"
+            echo "CXX: $CXX"
           fi
           ./gradlew :selekt-sqlite3-native:jar
 
@@ -102,7 +132,14 @@ jobs:
       - name: 'Install system packages'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-13 g++-13 clang-15 make sed tcl
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
 
       - name: 'Checkout'
         uses: actions/checkout@v3
