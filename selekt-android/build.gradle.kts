@@ -1,6 +1,3 @@
-import com.android.build.gradle.internal.lint.AndroidLintAnalysisTask
-import com.android.build.gradle.internal.lint.LintModelWriterTask
-
 /*
  * Copyright 2020 Bloomberg Finance L.P.
  *
@@ -17,10 +14,13 @@ import com.android.build.gradle.internal.lint.LintModelWriterTask
  * limitations under the License.
  */
 
+import com.android.build.gradle.internal.lint.AndroidLintAnalysisTask
+import com.android.build.gradle.internal.lint.LintModelWriterTask
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+
 plugins {
     id("com.android.library")
-    id("kotlin-android")
-    alias(libs.plugins.dokka)
     alias(libs.plugins.cash.licensee)
     alias(libs.plugins.ksp)
     `maven-publish`
@@ -43,13 +43,16 @@ android {
         minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    buildFeatures {
+        resValues = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
-            buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
+            resValue("string", "git_commit_sha1", gitCommit().get())
         }
     }
-    sourceSets["test"].assets.srcDir(layout.buildDirectory.dir("intermediates/libs"))
+    sourceSets["test"].assets.srcDir(layout.buildDirectory.dir("intermediates/libs").get().asFile)
     publishing {
         singleVariant("release") {
             withJavadocJar()
@@ -73,16 +76,20 @@ dependencies {
     testRuntimeOnly(libs.robolectric.android.all)
 }
 
-koverReport {
-    defaults {
-        mergeWith("debug")
-    }
-    androidReports("debug") {
-        filters {
-            excludes {
-                classes(
-                    "*.BuildConfig"
-                )
+kover {
+    reports {
+        verify {
+            rule("Minimal coverage") {
+                bound {
+                    minValue = 100
+                    coverageUnits = CoverageUnit.BRANCH
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+                bound {
+                    minValue = 100
+                    coverageUnits = CoverageUnit.LINE
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
             }
         }
     }
