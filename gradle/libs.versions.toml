@@ -7,7 +7,7 @@ lint = "31.5.2"
 room = "2.6.1"
 
 [libraries]
-android-tools-gradle = { module = "com.android.tools.build:gradle", version = "8.7.3" }
+android-tools-gradle = { module = "com.android.tools.build:gradle", version = "8.13.2" }
 android-tools-lint = { module = "com.android.tools.lint:lint", version.ref = "lint" }
 android-tools-lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version = "1.7.0" }

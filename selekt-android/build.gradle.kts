@@ -94,7 +94,7 @@ tasks.register<Copy>("copyJniLibs") {
         fileTree(project(":Selektric").layout.buildDirectory.dir("intermediates/libs"))
     )
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    mustRunAfter("buildNativeHost")
+    mustRunAfter("buildNativeHost", ":SQLite3:buildHost", ":Selektric:buildHost")
 }
 
 tasks.register<Task>("buildNativeHost") {
