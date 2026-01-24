@@ -16,7 +16,6 @@
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -43,13 +42,13 @@ android {
     arrayOf("main").forEach {
         sourceSets[it].java.srcDir("src/$it/kotlin")
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
         }
     }
     buildFeatures {
+        resValues = true
         viewBinding = true
     }
     lint {

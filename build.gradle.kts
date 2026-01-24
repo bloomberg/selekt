@@ -18,12 +18,14 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
-import java.net.URL
 import java.time.Duration
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.gradle.DokkaExtension
+import org.jetbrains.dokka.gradle.DokkaPlugin
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.gradle.ext.copyright
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -201,20 +203,18 @@ subprojects {
             }
         }
     }
-    tasks.withType<DokkaTask>().configureEach {
-        moduleName.set("Selekt")
-        dokkaSourceSets.named("main") {
-            sourceLink {
-                remoteUrl = URL(
-                    "https://github.com/bloomberg/selekt/tree/master/${this@configureEach.project.name}/src/main/kotlin"
-                )
-                localDirectory.set(file("src/main/kotlin"))
+    plugins.withType<DokkaPlugin> {
+        configure<DokkaExtension> {
+            moduleName.set("Selekt")
+            dokkaSourceSets.named("main") {
+                sourceLink {
+                    remoteUrl("https://github.com/bloomberg/selekt/tree/master/${project.name}/src/main/kotlin")
+                    localDirectory.set(file("src/main/kotlin"))
+                    remoteLineSuffix.set("#L")
+                }
+                documentedVisibilities(VisibilityModifier.Public)
+                jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
             }
-            includeNonPublic.set(false)
-            jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
-            noAndroidSdkLink.set(false)
-            noJdkLink.set(false)
-            noStdlibLink.set(false)
         }
     }
 }
@@ -233,8 +233,8 @@ allprojects {
     }
 }
 
-koverReport {
-    defaults {
+kover {
+    reports {
         filters {
             excludes {
                 classes("*Test*")
@@ -247,8 +247,14 @@ koverReport {
         verify {
             rule("Minimal coverage") {
                 bound {
-                    minValue = 96
-                    aggregation = AggregationType.COVERED_PERCENTAGE
+                    minValue = 100
+                    coverageUnits = CoverageUnit.BRANCH
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                }
+                bound {
+                    minValue = 100
+                    coverageUnits = CoverageUnit.LINE
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                 }
             }
         }
