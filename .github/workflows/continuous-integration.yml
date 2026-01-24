@@ -33,9 +33,9 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cd /tmp
-          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.5.tar.gz -o mimalloc.tar.gz
+          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
           tar xzf mimalloc.tar.gz
-          cd mimalloc-3.1.5
+          cd mimalloc-3.1.6
           mkdir -p out/release
           cd out/release
           cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
