@@ -82,7 +82,7 @@ jobs:
           ./gradlew :selekt-sqlite3-native:jar
 
       - name: 'Upload native JAR'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: selekt-native-${{ matrix.platform }}
           path: selekt-sqlite3-native/build/libs/*.jar
@@ -150,7 +150,7 @@ jobs:
         run: ./gradlew detekt ktlintCheck lint -x lintRelease ${{ env.SCAN }}
 
       - name: 'Archive analysis reports'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: 'Analyses'
@@ -161,7 +161,7 @@ jobs:
         run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: 'Unit test and coverage reports'
