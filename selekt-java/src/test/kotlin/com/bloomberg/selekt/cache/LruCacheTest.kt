@@ -35,7 +35,7 @@ internal class LruCacheTest {
     @Test
     fun get() {
         val first = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(1, disposal)
         cache["1", { first }]
         assertSame(first, cache["1", { fail() }])
@@ -45,7 +45,7 @@ internal class LruCacheTest {
     fun getTwo() {
         val first = Any()
         val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(2, disposal)
         cache["1", { first }]
         cache["2", { second }]
@@ -57,7 +57,7 @@ internal class LruCacheTest {
     fun getAfterEvict() {
         val first = Any()
         val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(1, disposal)
         cache["1", { first }]
         cache["2", { second }]
@@ -69,7 +69,7 @@ internal class LruCacheTest {
     fun evict() {
         val first = Any()
         val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(2, disposal)
         cache["1", { first }]
         cache["2", { second }]
@@ -84,7 +84,7 @@ internal class LruCacheTest {
     fun evictAll() {
         val first = Any()
         val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(2, disposal)
         cache["1", { first }]
         cache["2", { second }]
@@ -97,7 +97,7 @@ internal class LruCacheTest {
 
     @Test
     fun evictWhenEmpty() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(1, disposal)
         cache.evict("1")
         verify(disposal, never()).invoke(anyOrNull())
@@ -107,7 +107,7 @@ internal class LruCacheTest {
     fun evictLeastRecentlyUsed() {
         val first = Any()
         val second = Any()
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val cache = LruCache(1, disposal)
         cache["1", { first }]
         cache["2", { second }]
@@ -118,7 +118,7 @@ internal class LruCacheTest {
 
     @Test
     fun getWhenAbsent() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val cache = LruCache(1, disposal)
@@ -129,7 +129,7 @@ internal class LruCacheTest {
 
     @Test
     fun containsFalse() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val cache = LruCache(1, disposal)
@@ -139,7 +139,7 @@ internal class LruCacheTest {
 
     @Test
     fun containsTrue() {
-        val disposal: (Any) -> Unit = mock { onGeneric { invoke(it) } doReturn Unit }
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
         val supplier = mock<() -> Any>()
         whenever(supplier.invoke()) doReturn Any()
         val cache = LruCache(1, disposal)
