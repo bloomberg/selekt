@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-repositories {
-    mavenCentral()
-    google()
-}
-
 plugins {
     kotlin("jvm")
     `maven-publish`
     signing
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+}
+
+repositories {
+    mavenCentral()
+    google()
 }
 
 java {

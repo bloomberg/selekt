@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-repositories {
-    mavenCentral()
-    google()
-}
-
 plugins {
     kotlin("jvm")
     id("com.android.lint")
@@ -28,6 +23,11 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kover)
     alias(libs.plugins.ktlint)
+}
+
+repositories {
+    mavenCentral()
+    google()
 }
 
 java {

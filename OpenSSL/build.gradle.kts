@@ -18,13 +18,13 @@ import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
 import java.util.Locale
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
     base
     alias(libs.plugins.undercouch.download)
+}
+
+repositories {
+    mavenCentral()
 }
 
 fun Project.openSslVersion() = property("openssl.version").toString()
