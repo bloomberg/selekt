@@ -19,11 +19,6 @@
 import me.champeau.jmh.JMHTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-repositories {
-    mavenCentral()
-    google()
-}
-
 plugins {
     kotlin("jvm")
     id("com.android.lint")
@@ -34,6 +29,11 @@ plugins {
     alias(libs.plugins.jmh)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+}
+
+repositories {
+    mavenCentral()
+    google()
 }
 
 disableKotlinCompilerAssertions()

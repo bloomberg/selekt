@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-repositories {
-    mavenCentral()
-}
-
 plugins {
     kotlin("jvm")
     `maven-publish`
     signing
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+}
+
+repositories {
+    mavenCentral()
 }
 
 disableKotlinCompilerAssertions()
