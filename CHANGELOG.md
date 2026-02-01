@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 0.26.4
+
+### Dependencies
+
+* Android Gradle Plugin 8.13.2
+* Gradle 9.3.1
+* OpenSSL 3.5.5
+* SQLCipher 4.13.0
+
 ## Version 0.26.3
 
 ### Fixes
