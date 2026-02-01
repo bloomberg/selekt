@@ -95,14 +95,36 @@ internal class SQLiteDatabaseWALTest {
     }
 
     @Test
-    fun setPageSize(): Unit = database.run {
-        setPageSizeExponent(16)
-        vacuum()
-        assertEquals(4_096L, pageSize)
+    fun setPageSize() {
+        // Page size must be set on a new encrypted database before any tables are created.
+        // Once a database is initialised, changing page_size via VACUUM causes corruption
+        // with SQLCipher 4.5.6+ when auto_vacuum is enabled.
+        val testFile = createTempFile("test-pagesize", ".db").toFile().apply { deleteOnExit() }
+        try {
+            SQLiteDatabase.openOrCreateDatabase(
+                testFile,
+                SQLiteJournalMode.DELETE.databaseConfiguration,
+                ByteArray(32) { 0x42 }
+            ).use {
+                it.setPageSizeExponent(15) // Must set page_size BEFORE creating any tables
+                assertEquals(32_768L, it.pageSize)
+                it.exec("CREATE TABLE test (id INT)")
+                assertEquals(32_768L, it.pageSize)
+            }
+        } finally {
+            deleteDatabase(testFile)
+        }
     }
 
     @Test
-    fun setPageSizeThrows(): Unit = database.run {
+    fun setPageSizeLowThrows(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            setPageSizeExponent(256)
+        }
+    }
+
+    @Test
+    fun setPageSizeHighThrows(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
             setPageSizeExponent(17)
         }
