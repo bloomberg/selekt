@@ -26,7 +26,13 @@ configure_file(
 
 add_library(selekt SHARED generated/cpp/sqlite3.c)
 
+set_property(TARGET selekt PROPERTY C_STANDARD 99)
+set_property(TARGET selekt PROPERTY C_STANDARD_REQUIRED ON)
+
+target_compile_options(selekt PRIVATE -include stdint.h)
+
 target_compile_definitions(selekt PUBLIC
+  _GNU_SOURCE
   HAVE_USLEEP=1
   SQLCIPHER_CRYPTO_OPENSSL
   SQLITE_ALLOW_URI_AUTHORITY
@@ -47,6 +53,8 @@ target_compile_definitions(selekt PUBLIC
   SQLITE_ENABLE_RTREE
   SQLITE_ENABLE_STAT4
   SQLITE_ENABLE_UNLOCK_NOTIFY
+  SQLITE_EXTRA_INIT=sqlcipher_extra_init
+  SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
   SQLITE_HAS_CODEC=1
   SQLITE_LIKE_DOESNT_MATCH_BLOBS
   SQLITE_OMIT_AUTOINIT

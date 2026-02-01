@@ -43,6 +43,8 @@ val cFlags = arrayOf(
     "-DSQLITE_ENABLE_RTREE",
     "-DSQLITE_ENABLE_STAT4",
     "-DSQLITE_ENABLE_UNLOCK_NOTIFY",
+    "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
+    "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
     "-DSQLITE_HAS_CODEC=1",
     "-DSQLITE_LIKE_DOESNT_MATCH_BLOBS",
     "-DSQLITE_OMIT_AUTOINIT",
@@ -62,10 +64,7 @@ tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")
     commandLine("./configure")
     environment("CFLAGS", cFlags.joinToString(" "))
-    args(
-        "--enable-tempstore=yes",
-        "--with-crypto-lib=none"
-    )
+    args("--with-tempstore=yes")
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
