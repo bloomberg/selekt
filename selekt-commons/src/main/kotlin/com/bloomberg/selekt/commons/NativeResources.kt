@@ -67,7 +67,7 @@ fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: Stri
     }) { "Failed to find resource with name: $name in directory: $parentDirectory" }
 
     @Suppress("NewApi") // Not used by Android.
-    val file = createTempFile("lib$name", "lib").toFile()
+    val file = createTempFile("lib$name").toFile()
     try {
         url.openStream().use { inputStream ->
             FileOutputStream(file).use {

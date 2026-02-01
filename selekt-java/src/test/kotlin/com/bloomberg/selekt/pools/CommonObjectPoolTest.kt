@@ -31,6 +31,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import java.io.IOException
 import java.util.Collections
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -192,7 +193,7 @@ internal class CommonObjectPoolTest {
         val obj = borrowObject()
         lateinit var key: String
         thread {
-            key = Thread.currentThread().id.toString()
+            key = UUID.randomUUID().toString()
             val other = borrowObject()
             thread {
                 borrowObject().also { returnObject(it) }
@@ -614,7 +615,7 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
         val obj = borrowObject(key).also { returnObject(it) }
         Array(2 * configuration.maxTotal) {
             thread {
-                val localKey = key + Thread.currentThread().id
+                val localKey = key + UUID.randomUUID()
                 repeat(1_000) {
                     assertSame(obj, borrowObject(localKey).also {
                         Thread.sleep(1L)

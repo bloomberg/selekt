@@ -18,7 +18,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     timeout-minutes: 60
-
     steps:
       - name: 'Install system packages'
         run: |
@@ -43,11 +42,20 @@ jobs:
           cp libmimalloc.a /usr/local/lib/
           cp ../../include/mimalloc.h /usr/local/include/
 
-      - name: 'Setup Java'
+      - name: 'Setup Java 17'
+        id: setup-java-17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
+
+      - name: 'Set JAVA_HOME'
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          fi
 
       - name: 'Setup Android SDK'
         uses: android-actions/setup-android@v3
@@ -67,6 +75,7 @@ jobs:
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
       - name: 'Build'
         env:
@@ -91,7 +100,6 @@ jobs:
     name: 'Continuous Integration'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
     steps:
       - name: 'Setup environment'
         run: |
@@ -110,11 +118,26 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
-      - name: 'Setup Java'
+      - name: 'Setup Java 17'
+        id: setup-java-17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
+
+      - name: 'Setup Java 25'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: 'Set JAVA_HOME'
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          fi
 
       - name: 'Build cache'
         uses: actions/cache@v3
@@ -130,9 +153,10 @@ jobs:
       - name: 'ccache'
         uses: hendrikmuhs/ccache-action@v1.2
 
-      - name: 'Gradle configuration'
+      - name: 'Configure Gradle'
         run: |
           echo 'org.gradle.caching=true' >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
           echo 'plugins {' >> settings.gradle.kts
           echo '    id("com.gradle.enterprise").version("3.6.3")' >> settings.gradle.kts
           echo '}' >> settings.gradle.kts
@@ -158,7 +182,7 @@ jobs:
             **/build/reports/detekt
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
         uses: actions/upload-artifact@v6
@@ -169,10 +193,16 @@ jobs:
             build/reports/kover/html
             selekt-android/build/reports/tests/testDebugUnitTest
             selekt-java/build/reports/tests/test
+            selekt-sqlite3-classes/build/reports/tests/testJava17
+            selekt-sqlite3-classes/build/reports/tests/testJava25
 
-      - name: 'Build Selekt'
+      - name: 'Build Selekt Android'
         run: |
           ./gradlew assembleRelease ${{ env.SCAN }}
+
+      - name: 'Build Selekt JVM'
+        run: |
+          ./gradlew :selekt-jvm:jar ${{ env.SCAN }}
 
       - name: 'Verify coverage'
         run:

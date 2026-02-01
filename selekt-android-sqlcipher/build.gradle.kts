@@ -38,7 +38,6 @@ val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.android.sqlcipher"
     ndkVersion = "27.3.13750724"
     defaultConfig {
@@ -78,8 +77,14 @@ android {
 }
 
 dependencies {
+    implementation(projects.selektCommons)
     implementation(projects.selektJava)
-    implementation(projects.selektSqlite3Classes)
+    implementation(projects.selektSqlite3Api)
+    implementation(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+        }
+    }
 }
 
 allABIs.forEach { abi ->

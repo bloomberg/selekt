@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.ExternalSQLite
+import com.bloomberg.selekt.IExternalSQLite
 import com.bloomberg.selekt.externalSQLiteSingleton
 
-fun loadSQLite(): ExternalSQLite = externalSQLiteSingleton()
+fun loadSQLite(): IExternalSQLite = externalSQLiteSingleton()

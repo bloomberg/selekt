@@ -104,7 +104,7 @@ internal class SQLQuery internal constructor(
 }
 
 class SimpleSQLQuery(
-    @Language("RoomSql") override val sql: String,
+    @field:Language("RoomSql") override val sql: String,
     private val bindArgs: Array<out Any?> = EMPTY_ARRAY
 ) : ISQLQuery {
     override val argCount = bindArgs.size

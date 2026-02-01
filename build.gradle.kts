@@ -69,7 +69,9 @@ nexusPublishing {
 dependencies {
     kover(projects.selektAndroid)
     kover(projects.selektApi)
+    kover(projects.selektCommons)
     kover(projects.selektJava)
+    kover(projects.selektJvm)
     kover(projects.selektSqlite3Classes)
 }
 
@@ -138,19 +140,10 @@ subprojects {
             }
         }
     }
-    tasks.withType<Test>().configureEach {
-        systemProperty("com.bloomberg.selekt.can_use_load", true)
-        systemProperty(
-            "com.bloomberg.selekt.library_path",
-            layout.buildDirectory.dir("intermediates/assets/debugUnitTest/mergeDebugUnitTestAssets").get()
-                .asFile.toString()
-        )
-    }
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
             allWarningsAsErrors = true
             freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn")
-            jvmTarget = JvmTarget.JVM_17
         }
     }
     tasks.withType<Test>().configureEach {
@@ -186,6 +179,7 @@ subprojects {
         exclude("**/res/**")
         exclude("**/tmp/**")
         reports.html.outputLocation.fileValue(File("$rootDir/build/reports/detekt/${project.name}-detekt.html"))
+        jvmTarget = JvmTarget.JVM_17.target
     }
     plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
@@ -211,7 +205,6 @@ subprojects {
                 localDirectory.set(file("src/main/kotlin"))
             }
             includeNonPublic.set(false)
-            jdkVersion.set(JavaVersion.VERSION_17.majorVersion.toInt())
             noAndroidSdkLink.set(false)
             noJdkLink.set(false)
             noStdlibLink.set(false)
@@ -237,7 +230,7 @@ koverReport {
     defaults {
         filters {
             excludes {
-                classes("*Test*")
+                classes("*Test*", "com.bloomberg.selekt.jvm.*")
                 packages(listOf(
                     "*.benchmarks",
                     "*_generated"

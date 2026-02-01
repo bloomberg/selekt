@@ -16,11 +16,12 @@
 
 package com.bloomberg.selekt.jvm
 
+import com.bloomberg.selekt.SQLite
 import com.bloomberg.selekt.commons.loadEmbeddedLibrary
 import com.bloomberg.selekt.externalSQLiteSingleton
 
 private val sqlite = externalSQLiteSingleton {
-    loadEmbeddedLibrary(com.bloomberg.selekt.SQLite::class.java.classLoader, "jni", "selekt")
+    loadEmbeddedLibrary(SQLite::class.java.classLoader, "jni", "selekt")
 }
 
 internal object SQLite : com.bloomberg.selekt.SQLite(sqlite)

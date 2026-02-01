@@ -37,7 +37,6 @@ repositories {
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
-    buildToolsVersion = "34.0.0"
     namespace = "com.bloomberg.selekt.android"
     defaultConfig {
         minSdk = 21
@@ -62,8 +61,9 @@ dependencies {
     api(projects.selektApi)
     compileOnly(projects.selektAndroidSqlcipher)
     compileOnly(libs.androidx.room.runtime)
+    implementation(projects.selektCommons)
     implementation(projects.selektJava)
-    implementation(projects.selektSqlite3Classes)
+    implementation(projects.selektSqlite3Api)
     kspTest(libs.androidx.room.compiler)
     testImplementation(libs.androidx.lifecycle.livedata.ktx)
     testImplementation(libs.androidx.room.runtime)
@@ -100,6 +100,15 @@ tasks.register<Copy>("copyJniLibs") {
 tasks.register<Task>("buildNativeHost") {
     dependsOn(":SQLite3:buildHost", ":Selektric:buildHost")
     finalizedBy("copyJniLibs")
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("com.bloomberg.selekt.can_use_load", true)
+    systemProperty(
+        "com.bloomberg.selekt.library_path",
+        layout.buildDirectory.dir("intermediates/assets/debugUnitTest/mergeDebugUnitTestAssets").get()
+            .asFile.toString()
+    )
 }
 
 arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {

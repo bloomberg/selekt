@@ -17,9 +17,11 @@
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     base
+    java
 }
 
 val cFlags = arrayOf(
@@ -100,6 +102,12 @@ tasks.register<Exec>("cmakeSQLite") {
         Files.createDirectories(workingDir)
     }
     workingDir(".cxx-host")
+    // Set JAVA_HOME for CMake to find JNI headers (using Java 17 toolchain)
+    val javaToolchainService = project.extensions.getByType(JavaToolchainService::class.java)
+    val javaLauncher = javaToolchainService.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }.get()
+    environment("JAVA_HOME", javaLauncher.metadata.installationPath.asFile.absolutePath)
     commandLine("cmake")
     args(
         "-DCMAKE_BUILD_TYPE=Release",

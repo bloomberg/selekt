@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.27.0
+
+### Features
+
+* Use Foreign Function and Memory APIs with Java 25.
+
+### Dependencies
+
+* Android Gradle Plugin 8.12.1
+
 ## Version 0.26.4
 
 ### Dependencies
