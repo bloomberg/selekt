@@ -74,6 +74,7 @@ fun MavenPom.commonInitialisation(project: Project) {
         name.set("Selekt")
         url.set("https://github.com/bloomberg/selekt/actions")
     }
+    description.set(project.description.also { require(it?.isNotBlank() ?: false)})
     developers {
         developer {
             id.set("kennethshackleton")
