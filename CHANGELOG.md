@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.27.2
+
+### Fixes
+
+* Explicitly set the POM description of each subproject.
+
 ## Version 0.27.1
 
 ### Fixes
