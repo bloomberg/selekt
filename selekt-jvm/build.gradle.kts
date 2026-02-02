@@ -64,6 +64,15 @@ dependencies {
     }
 }
 
+publishing {
+    publications.register<MavenPublication>("main") {
+        from(components.getByName("java"))
+        pom {
+            commonInitialisation(project)
+        }
+    }
+}
+
 licensee {
     allow("Apache-2.0")
 }

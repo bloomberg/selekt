@@ -84,7 +84,6 @@ jobs:
         env:
           CC: ${{ runner.os == 'Linux' && 'gcc' || 'clang' }}
           CXX: ${{ runner.os == 'Linux' && 'g++' || 'clang++' }}
-          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
           LDFLAGS: '-s'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
         run: |
@@ -211,13 +210,9 @@ jobs:
           echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
       - name: 'Unit tests'
-        env:
-          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
         run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test -x integrationTest ${{ env.SCAN }}
 
       - name: 'Build Selekt Android'
-        env:
-          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
         run: |
           ./gradlew clean \
             :OpenSSL:assembleArm64-v8a \
@@ -227,10 +222,13 @@ jobs:
           ./gradlew :SQLite3:amalgamate
           ./gradlew assembleRelease
 
+      - name: 'Build Selekt JVM'
+        run: |
+          ./gradlew :selekt-jvm:jar ${{ env.SCAN }}
+
       - name: 'Publish release to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
-          JAVA_HOME: ${{ steps.setup-java-17.outputs.java-home }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.GPG_KEY }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.GPG_KEY_ID }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.GPG_KEY_PASSPHRASE }}
