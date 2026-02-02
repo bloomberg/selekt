@@ -61,7 +61,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: 'Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
           submodules: recursive
@@ -113,7 +113,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
 
       - name: 'Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
           submodules: recursive
