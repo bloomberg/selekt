@@ -88,13 +88,13 @@ jobs:
             export CC=gcc
             export CXX=g++
           fi
-          ./gradlew :selekt-sqlite3-native:jar
+          ./gradlew :selekt-sqlite3-sqlcipher:jar
 
       - name: 'Upload native JAR'
         uses: actions/upload-artifact@v6
         with:
-          name: selekt-native-${{ matrix.platform }}
-          path: selekt-sqlite3-native/build/libs/*.jar
+          name: selekt-sqlite3-sqlcipher-${{ matrix.platform }}
+          path: selekt-sqlite3-sqlcipher/build/libs/*.jar
 
   ci-pipeline:
     name: 'Continuous Integration'

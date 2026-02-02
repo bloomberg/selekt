@@ -16,7 +16,7 @@
 
 import java.util.Locale
 
-description = "Selekt native library."
+description = "Selekt SQLCipher library."
 
 plugins {
     `java-library`
@@ -73,6 +73,12 @@ publishing {
         }
         pom {
             commonInitialisation(project)
+            licenses {
+                license {
+                    name.set("Zetetic LLC")
+                    url.set("https://www.zetetic.net/sqlcipher/license")
+                }
+            }
         }
     }
 }
