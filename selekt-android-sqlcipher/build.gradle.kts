@@ -16,6 +16,8 @@
 
 import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
+description = "SQLCipher for Selekt's Android Library."
+
 version = sqlcipherVersionName
 logger.quiet("SQLCipher version: {}", sqlcipherVersionName)
 
@@ -101,7 +103,6 @@ components.matching { "release" == it.name }.configureEach {
             from(this@configureEach)
             pom {
                 commonInitialisation(project)
-                description.set("SQLCipher for Selekt's Android Library.")
                 licenses {
                     license {
                         name.set("Zetetic LLC")

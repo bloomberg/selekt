@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+description = "Selekt BOM."
+
 plugins {
     `java-platform`
     `maven-publish`
@@ -41,7 +43,6 @@ publishing {
         from(components.getByName("javaPlatform"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt BOM.")
         }
     }
 }

@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.27.1
+
+### Fixes
+
+* Consistently set the description property on each subproject.
+
 ## Version 0.27.0
 
 ### Features

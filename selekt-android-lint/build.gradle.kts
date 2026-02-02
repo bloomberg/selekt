@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+description = "Selekt Android Lint library."
+
 plugins {
     kotlin("jvm")
     `maven-publish`
@@ -49,7 +51,6 @@ publishing {
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt Android Lint library.")
         }
     }
 }

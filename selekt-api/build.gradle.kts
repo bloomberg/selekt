@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+description = "Selekt shared API library."
+
 plugins {
     kotlin("jvm")
     id("com.android.lint")
@@ -49,7 +51,6 @@ publishing {
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt shared API library.")
         }
     }
 }

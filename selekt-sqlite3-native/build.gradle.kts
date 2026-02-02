@@ -73,7 +73,6 @@ publishing {
         }
         pom {
             commonInitialisation(project)
-            description.set("Selekt native library.")
         }
     }
 }

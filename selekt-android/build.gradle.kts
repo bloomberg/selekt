@@ -17,6 +17,8 @@ import com.android.build.gradle.internal.lint.LintModelWriterTask
  * limitations under the License.
  */
 
+description = "Selekt Android SQLite library."
+
 plugins {
     id("com.android.library")
     id("kotlin-android")
@@ -145,7 +147,6 @@ components.matching { "release" == it.name }.configureEach {
             from(this@configureEach)
             pom {
                 commonInitialisation(project)
-                description.set("Selekt Android SQLite library.")
             }
         }
     }
