@@ -222,6 +222,10 @@ jobs:
           ./gradlew :SQLite3:amalgamate
           ./gradlew assembleRelease
 
+      - name: 'Build Selekt JVM'
+        run: |
+          ./gradlew :selekt-jvm:jar ${{ env.SCAN }}
+
       - name: 'Publish release to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
