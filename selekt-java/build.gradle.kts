@@ -18,6 +18,8 @@
 
 import me.champeau.jmh.JMHTask
 
+description = "Selekt core library."
+
 plugins {
     kotlin("jvm")
     id("com.android.lint")
@@ -99,7 +101,6 @@ publishing {
         from(components.getByName("java"))
         pom {
             commonInitialisation(project)
-            description.set("Selekt core library.")
         }
     }
 }
