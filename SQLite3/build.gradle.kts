@@ -24,6 +24,10 @@ plugins {
     java
 }
 
+repositories {
+    mavenCentral()
+}
+
 val cFlags = arrayOf(
     "-DHAVE_USLEEP=1",
     "-DSQLCIPHER_CRYPTO_OPENSSL",

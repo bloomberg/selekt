@@ -177,7 +177,7 @@ tasks.named<Test>("test") {
 tasks.register<Copy>("copyJniLibs") {
     from(fileTree(project(":SQLite3").layout.buildDirectory.dir("intermediates/libs")))
     into(layout.buildDirectory.dir("intermediates/libs/jni"))
-    dependsOn(":selekt-sqlite3-native:buildNativeHost")
+    dependsOn(":selekt-sqlite3-sqlcipher:buildNativeHost")
 }
 
 tasks.withType<ProcessResources>().configureEach {
@@ -185,7 +185,7 @@ tasks.withType<ProcessResources>().configureEach {
 }
 
 tasks.named<JMHTask>("jmh") {
-    dependsOn("copyJniLibs", ":selekt-sqlite3-native:buildNativeHost")
+    dependsOn("copyJniLibs", ":selekt-sqlite3-sqlcipher:buildNativeHost")
 }
 
 listOf(

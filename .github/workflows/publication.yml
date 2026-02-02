@@ -92,17 +92,17 @@ jobs:
             export CXX=g++
           fi
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            ./gradlew :selekt-sqlite3-native:jar
+            ./gradlew :selekt-sqlite3-sqlcipher:jar
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             ./gradlew -Prelease \
-              :selekt-sqlite3-native:jar
+              :selekt-sqlite3-sqlcipher:jar
           fi
 
       - name: 'Upload native JAR'
         uses: actions/upload-artifact@v6
         with:
-          name: selekt-native-${{ matrix.platform }}
-          path: selekt-sqlite3-native/build/libs/*.jar
+          name: selekt-sqlcipher-${{ matrix.platform }}
+          path: selekt-sqlite3-sqlcipher/build/libs/*.jar
 
   publish-native:
     name: Publish to OSSRH
@@ -139,16 +139,16 @@ jobs:
       - name: 'Download all native JARs'
         uses: actions/download-artifact@v4
         with:
-          pattern: selekt-native-*
-          path: selekt-sqlite3-native/build/artifacts
+          pattern: selekt-sqlcipher-*
+          path: selekt-sqlite3-sqlcipher/build/artifacts
           merge-multiple: false
 
       - name: 'Prepare JARs for publication'
         run: |
-          mkdir -p selekt-sqlite3-native/build/libs
-          find selekt-sqlite3-native/build/artifacts -name '*.jar' -exec mv {} selekt-sqlite3-native/build/libs/ \;
+          mkdir -p selekt-sqlite3-sqlcipher/build/libs
+          find selekt-sqlite3-sqlcipher/build/artifacts -name '*.jar' -exec mv {} selekt-sqlite3-sqlcipher/build/libs/ \;
           echo "JARs ready for publication:"
-          ls -la selekt-sqlite3-native/build/libs/
+          ls -la selekt-sqlite3-sqlcipher/build/libs/
 
       - name: 'Publish to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
@@ -162,7 +162,7 @@ jobs:
         run: |
           ./gradlew \
             -Prelease \
-            :selekt-sqlite3-native:publishNativePublicationToSonatypeRepository \
+            :selekt-sqlite3-sqlcipher:publishNativePublicationToSonatypeRepository \
             closeAndReleaseSonatypeStagingRepository \
             -x jar
 
