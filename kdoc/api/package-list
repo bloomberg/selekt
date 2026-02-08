@@ -7,8 +7,12 @@ com.bloomberg.selekt.android.support
 module:selekt-api
 com.bloomberg.selekt
 com.bloomberg.selekt.annotations
+module:selekt-commons
+com.bloomberg.selekt.commons
 module:selekt-java
 com.bloomberg.selekt
 com.bloomberg.selekt.cache
 com.bloomberg.selekt.commons
 com.bloomberg.selekt.pools
+module:selekt-sqlite3-api
+com.bloomberg.selekt
