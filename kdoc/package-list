@@ -136,6 +136,91 @@ $dokka.location:com.bloomberg.selekt.commons/LinkedQueue/poll/#/PointingToDeclar
 $dokka.location:com.bloomberg.selekt.commons/ManagedStringBuilder///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/-managed-string-builder/index.md
 $dokka.location:com.bloomberg.selekt.commons/ManagedStringBuilder/ManagedStringBuilder/#kotlin.Int#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/-managed-string-builder/-managed-string-builder.md
 $dokka.location:com.bloomberg.selekt.commons/ManagedStringBuilder/use/#kotlin.Function1[java.lang.StringBuilder,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.commons/-managed-string-builder/use.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver////PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource.Companion///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/-companion/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/SelektDataSource/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/-selekt-data-source.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/busyTimeout/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/busy-timeout.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/close/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/close.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/databasePath/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/database-path.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/encryptionEnabled/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/encryption-enabled.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/encryptionKey/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/encryption-key.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/foreignKeys/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/foreign-keys.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/getConnection/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/get-connection.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/getConnection/#kotlin.String?#kotlin.String?/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/get-connection.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/getLogWriter/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/get-log-writer.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/getLoginTimeout/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/get-login-timeout.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/getParentLogger/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/get-parent-logger.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/isClosed/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/is-closed.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/isWrapperFor/#java.lang.Class[*]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/is-wrapper-for.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/journalMode/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/journal-mode.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/maxPoolSize/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/max-pool-size.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/setEncryption/#kotlin.Boolean#kotlin.String?/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/set-encryption.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/setLogWriter/#java.io.PrintWriter?/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/set-log-writer.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/setLoginTimeout/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/set-login-timeout.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDataSource/unwrap/#java.lang.Class[TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-data-source/unwrap.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver.Companion///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-companion/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver.Companion/DRIVER_NAME/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-companion/-d-r-i-v-e-r_-n-a-m-e.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver.Companion/DRIVER_VERSION/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-companion/-d-r-i-v-e-r_-v-e-r-s-i-o-n.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver.Companion/MAJOR_VERSION/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-companion/-m-a-j-o-r_-v-e-r-s-i-o-n.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver.Companion/MINOR_VERSION/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-companion/-m-i-n-o-r_-v-e-r-s-i-o-n.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/SelektDriver/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/-selekt-driver.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/acceptsURL/#kotlin.String?/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/accepts-u-r-l.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/connect/#kotlin.String#java.util.Properties/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/connect.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/getMajorVersion/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/get-major-version.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/getMinorVersion/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/get-minor-version.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/getParentLogger/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/get-parent-logger.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/getPropertyInfo/#kotlin.String#java.util.Properties/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/get-property-info.md
+$dokka.location:com.bloomberg.selekt.jdbc.driver/SelektDriver/jdbcCompliant/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.driver/-selekt-driver/jdbc-compliant.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement////PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement.Companion///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/-companion/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement///PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/index.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/addBatch/#kotlin.String/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/add-batch.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/cancel/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/cancel.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/clearBatch/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/clear-batch.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/clearWarnings/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/clear-warnings.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/close/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/close.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/closeOnCompletion/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/close-on-completion.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/escapeProcessing/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/escape-processing.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/execute/#kotlin.String#kotlin.Array[kotlin.String]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/execute/#kotlin.String#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/execute/#kotlin.String#kotlin.IntArray/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/execute/#kotlin.String/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeBatch/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-batch.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeQuery/#kotlin.String/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-query.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeUpdate/#kotlin.String#kotlin.Array[kotlin.String]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-update.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeUpdate/#kotlin.String#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-update.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeUpdate/#kotlin.String#kotlin.IntArray/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-update.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/executeUpdate/#kotlin.String/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/execute-update.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getConnection/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-connection.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getFetchDirection/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-fetch-direction.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getFetchSize/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-fetch-size.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getGeneratedKeys/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-generated-keys.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getMaxFieldSize/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-max-field-size.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getMaxRows/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-max-rows.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getMoreResults/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-more-results.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getMoreResults/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-more-results.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getQueryTimeout/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-query-timeout.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getResultSet/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-result-set.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getResultSetConcurrency/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-result-set-concurrency.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getResultSetHoldability/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-result-set-holdability.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getResultSetType/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-result-set-type.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getUpdateCount/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-update-count.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/getWarnings/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/get-warnings.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/isCloseOnCompletion/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/is-close-on-completion.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/isClosed/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/is-closed.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/isPoolable/#/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/is-poolable.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/isWrapperFor/#java.lang.Class[*]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/is-wrapper-for.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setCursorName/#kotlin.String?/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-cursor-name.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setEscapeProcessing/#kotlin.Boolean/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-escape-processing.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setFetchDirection/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-fetch-direction.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setFetchSize/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-fetch-size.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setMaxFieldSize/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-max-field-size.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setMaxRows/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-max-rows.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setPoolable/#kotlin.Boolean/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-poolable.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/setQueryTimeout/#kotlin.Int/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/set-query-timeout.md
+$dokka.location:com.bloomberg.selekt.jdbc.statement/JdbcStatement/unwrap/#java.lang.Class[TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/selekt-jdbc/selekt-jdbc/com.bloomberg.selekt.jdbc.statement/-jdbc-statement/unwrap.md
 $dokka.location:com.bloomberg.selekt.pools////PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/index.md
 $dokka.location:com.bloomberg.selekt.pools/CommonObjectPool///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-common-object-pool/index.md
 $dokka.location:com.bloomberg.selekt.pools/CommonObjectPool/CommonObjectPool/#com.bloomberg.selekt.pools.IObjectFactory[TypeParam(bounds=[com.bloomberg.selekt.pools.IPooledObject[TypeParam(bounds=[kotlin.Any])]])]#java.util.concurrent.ScheduledExecutorService#com.bloomberg.selekt.pools.PoolConfiguration#com.bloomberg.selekt.pools.SingleObjectPool[TypeParam(bounds=[kotlin.Any]),TypeParam(bounds=[com.bloomberg.selekt.pools.IPooledObject[TypeParam(bounds=[kotlin.Any])]])]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt.pools/-common-object-pool/-common-object-pool.md
@@ -360,6 +445,7 @@ $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindInt/#kotlin.Long#kotlin
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindInt64/#kotlin.Long#kotlin.Int#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-int64.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindNull/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-null.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindParameterCount/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-parameter-count.md
+$dokka.location:com.bloomberg.selekt/IExternalSQLite/bindParameterIndex/#kotlin.Long#kotlin.String/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-parameter-index.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindText/#kotlin.Long#kotlin.Int#kotlin.String/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-text.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/bindZeroBlob/#kotlin.Long#kotlin.Int#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/bind-zero-blob.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/blobBytes/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/blob-bytes.md
@@ -433,11 +519,17 @@ $dokka.location:com.bloomberg.selekt/IReadableDatabase/query/#kotlin.Boolean#kot
 $dokka.location:com.bloomberg.selekt/IReadableDatabase/query/#kotlin.String#kotlin.Array[kotlin.Any?]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-readable-database/query.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/index.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindBlob/#kotlin.Int#kotlin.ByteArray/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-blob.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindBlob/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-blob.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindDouble/#kotlin.Int#kotlin.Double/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-double.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindDouble/#kotlin.String#kotlin.Double/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-double.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.Int#kotlin.Int/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-int.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindInt/#kotlin.String#kotlin.Int/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-int.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindLong/#kotlin.Int#kotlin.Long/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-long.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindLong/#kotlin.String#kotlin.Long/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-long.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindNull/#kotlin.Int/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-null.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindNull/#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-null.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/bindString/#kotlin.Int#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-string.md
+$dokka.location:com.bloomberg.selekt/ISQLProgram/bindString/#kotlin.String#kotlin.String/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/bind-string.md
 $dokka.location:com.bloomberg.selekt/ISQLProgram/clearBindings/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-program/clear-bindings.md
 $dokka.location:com.bloomberg.selekt/ISQLQuery///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-query/index.md
 $dokka.location:com.bloomberg.selekt/ISQLQuery/argCount/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-query/arg-count.md
@@ -465,7 +557,9 @@ $dokka.location:com.bloomberg.selekt/SQLDataType///PointingToDeclaration/selekt
 $dokka.location:com.bloomberg.selekt/SQLDatabase///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/index.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/SQLDatabase/#kotlin.String#com.bloomberg.selekt.SQLite#com.bloomberg.selekt.DatabaseConfiguration#kotlin.ByteArray?#com.bloomberg.selekt.IRandom/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/-s-q-l-database.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#java.util.stream.Stream[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
+$dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#kotlin.Array[kotlin.Array[kotlin.Any?]]#kotlin.Int#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#kotlin.collections.Iterable[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
+$dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#kotlin.collections.List[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/batch/#kotlin.String#kotlin.sequences.Sequence[kotlin.Array[kotlin.Any?]]/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/batch.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/beginExclusiveTransaction/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/begin-exclusive-transaction.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/beginExclusiveTransactionWithListener/#com.bloomberg.selekt.SQLTransactionListener/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/begin-exclusive-transaction-with-listener.md
@@ -519,6 +613,7 @@ $dokka.location:com.bloomberg.selekt/SQLite/bindInt/#kotlin.Long#kotlin.Int#kotl
 $dokka.location:com.bloomberg.selekt/SQLite/bindInt64/#kotlin.Long#kotlin.Int#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-int64.md
 $dokka.location:com.bloomberg.selekt/SQLite/bindNull/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-null.md
 $dokka.location:com.bloomberg.selekt/SQLite/bindParameterCount/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-parameter-count.md
+$dokka.location:com.bloomberg.selekt/SQLite/bindParameterIndex/#kotlin.Long#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-parameter-index.md
 $dokka.location:com.bloomberg.selekt/SQLite/bindText/#kotlin.Long#kotlin.Int#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-text.md
 $dokka.location:com.bloomberg.selekt/SQLite/bindZeroBlob/#kotlin.Long#kotlin.Int#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/bind-zero-blob.md
 $dokka.location:com.bloomberg.selekt/SQLite/blobBytes/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/blob-bytes.md
@@ -659,5 +754,8 @@ com.bloomberg.selekt
 com.bloomberg.selekt.cache
 com.bloomberg.selekt.commons
 com.bloomberg.selekt.pools
+module:selekt-jdbc
+com.bloomberg.selekt.jdbc.driver
+com.bloomberg.selekt.jdbc.statement
 module:selekt-sqlite3-api
 com.bloomberg.selekt

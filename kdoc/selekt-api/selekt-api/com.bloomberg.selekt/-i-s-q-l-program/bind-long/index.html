@@ -452,6 +452,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throws" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throws
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -491,6 +513,45 @@ abstract fun <a href="./">bindLong</a>(index: <a href="https://kotlinlang.org/ap
 <tr>
 <td>value</td>
 <td>The value to bind.</td>
+</tr>
+</tbody>
+</table>
+<p>[jvm]\
+abstract fun <a href="./">bindLong</a>(name: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html">String</a>, value: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-long/index.html">Long</a>)</p>
+<p>Bind a long value to this statement by parameter name. The value remains bound until <a href="../clear-bindings/">clearBindings</a> is called.</p>
+<p>Named parameters in SQLite can use the following syntax: :name, @name, or $name.</p>
+<h4 id="parameters_1">Parameters</h4>
+<p>jvm</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>The name of the parameter to bind (including the prefix character like :, @, or $).</td>
+</tr>
+<tr>
+<td>value</td>
+<td>The value to bind.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="throws">Throws</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.oracle.com/javase/8/docs/api/java/lang/IllegalArgumentException.html">IllegalArgumentException</a></td>
+<td>if the parameter name is not found.</td>
 </tr>
 </tbody>
 </table>
