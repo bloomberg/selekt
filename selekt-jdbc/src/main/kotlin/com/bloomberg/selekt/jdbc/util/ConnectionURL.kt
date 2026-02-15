@@ -16,11 +16,12 @@
 
 package com.bloomberg.selekt.jdbc.util
 
+import java.net.URLDecoder
 import java.sql.SQLException
 import java.util.Properties
 
 /**
- * Supported format: jdbc:selekt:path/to/database.sqlite[?property=value&...]
+ * Supported format: jdbc:sqlite:path/to/database.sqlite[?property=value&...]
  *
  * Supported properties:
  * - key: Encryption key (hex string or file path)
@@ -36,21 +37,22 @@ internal class ConnectionURL private constructor(
 ) {
     companion object {
         private const val JDBC_PREFIX = "jdbc:"
-        private const val SELEKT_SUBPROTOCOL = "selekt:"
+        private const val SELEKT_SUBPROTOCOL = "sqlite:"
         private const val FULL_PREFIX = "$JDBC_PREFIX$SELEKT_SUBPROTOCOL"
 
         @JvmStatic
         fun parse(url: String): ConnectionURL {
             if (!url.startsWith(FULL_PREFIX)) {
                 throw SQLException(
-                    "Invalid JDBC URL format. Expected format: jdbc:selekt:path/to/database.sqlite[?properties...]"
+                    "Invalid JDBC URL format. Expected format: jdbc:sqlite:path/to/database.sqlite[?properties...]"
                 )
             }
-            return try {
-                val (databasePath, properties) = parsePathAndProperties(url.substring(FULL_PREFIX.length))
-                ConnectionURL(databasePath, properties)
-            } catch (e: Exception) {
-                throw SQLException("Failed to parse JDBC URL: $url", e)
+            return runCatching {
+                parsePathAndProperties(url.substring(FULL_PREFIX.length)).run {
+                    ConnectionURL(first, second)
+                }
+            }.getOrElse {
+                throw SQLException("Failed to parse JDBC URL: $url", it)
             }
         }
 
@@ -87,13 +89,14 @@ internal class ConnectionURL private constructor(
 
         private fun parseQueryString(queryString: String, properties: Properties) {
             queryString.split('&').forEach { param ->
-                val equalIndex = param.indexOf('=')
-                if (equalIndex != -1) {
-                    val key = param.substring(0, equalIndex).trim()
-                    val value = param.substring(equalIndex + 1).trim()
+                val index = param.indexOf('=')
+                if (index != -1) {
+                    val key = param.substring(0, index).trim()
                     if (key.isNotEmpty()) {
-                        val decodedValue = java.net.URLDecoder.decode(value, "UTF-8")
-                        properties.setProperty(key, decodedValue)
+                        properties.setProperty(
+                            key,
+                            URLDecoder.decode(param.substring(index + 1).trim(), Charsets.UTF_8)
+                        )
                     }
                 }
             }
@@ -104,19 +107,17 @@ internal class ConnectionURL private constructor(
 
     fun getProperty(key: String, defaultValue: String): String = properties.getProperty(key, defaultValue)
 
-    fun getBooleanProperty(key: String, defaultValue: Boolean = false): Boolean {
-        val value = properties.getProperty(key) ?: return defaultValue
-        return value.equals("true", ignoreCase = true) || value == "1"
+    fun getBooleanProperty(
+        key: String,
+        defaultValue: Boolean = false)
+    : Boolean = (properties.getProperty(key) ?: return defaultValue).let {
+        it.equals("true", ignoreCase = true) || it == "1"
     }
 
-    fun getIntProperty(key: String, defaultValue: Int = 0): Int {
-        val value = properties.getProperty(key) ?: return defaultValue
-        return try {
-            value.toInt()
-        } catch (e: NumberFormatException) {
-            defaultValue
-        }
-    }
+    fun getIntProperty(
+        key: String,
+        defaultValue: Int = 0
+    ): Int = (properties.getProperty(key) ?: return defaultValue).toInt()
 
     override fun toString(): String = "$FULL_PREFIX$databasePath" +
         "${if (properties.isNotEmpty()) { "?" } else { "" } }${propertiesToQueryString()}"

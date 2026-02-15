@@ -67,7 +67,7 @@ internal class JdbcPreparedStatementTest {
     fun setUp() {
         database = mock<SQLDatabase>()
         cursor = mock<ICursor>()
-        val connectionURL = ConnectionURL.parse("jdbc:selekt:/tmp/test.db")
+        val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
         connection = JdbcConnection(database, connectionURL, properties)
         val sql = "SELECT * FROM users WHERE id = ? AND name = ?"

@@ -59,7 +59,7 @@ internal class JdbcDatabaseMetaDataTest {
         mockDatabase = mock {
             whenever(it.query(any<String>(), any<Array<Any?>>())).doReturn(mockCursor)
         }
-        val connectionURL = ConnectionURL.parse("jdbc:selekt:/tmp/test.db")
+        val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         mockConnection = JdbcConnection(mockDatabase, connectionURL, Properties())
         metaData = JdbcDatabaseMetaData(mockConnection, mockDatabase, connectionURL)
     }
@@ -78,7 +78,7 @@ internal class JdbcDatabaseMetaDataTest {
 
     @Test
     fun driverInfo(): Unit = metaData.run {
-        assertEquals("Selekt JDBC Driver", driverName)
+        assertEquals("Selekt SQLite JDBC", driverName)
         assertEquals("4.3", driverVersion)
         assertEquals(4, driverMajorVersion)
         assertEquals(3, driverMinorVersion)
@@ -238,7 +238,7 @@ internal class JdbcDatabaseMetaDataTest {
         assertFalse(nullsAreSortedAtEnd())
         assertFalse(allProceduresAreCallable())
         assertTrue(allTablesAreSelectable())
-        assertEquals("jdbc:selekt:/tmp/test.db", url)
+        assertEquals("jdbc:sqlite:/tmp/test.db", url)
         assertEquals("", userName)
     }
 

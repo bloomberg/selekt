@@ -46,7 +46,7 @@ internal class JdbcDatabaseMetaData(
 
     override fun getDatabaseMinorVersion(): Int = 51
 
-    override fun getDriverName(): String = "Selekt JDBC Driver"
+    override fun getDriverName(): String = "Selekt SQLite JDBC"
 
     override fun getDriverVersion(): String = "4.3"
 

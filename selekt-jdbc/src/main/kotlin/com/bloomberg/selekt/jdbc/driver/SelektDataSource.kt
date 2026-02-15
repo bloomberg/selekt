@@ -68,7 +68,7 @@ class SelektDataSource : DataSource {
     var databasePath: String = ""
         set(value) {
             field = value
-            url = "jdbc:selekt:$value"
+            url = "jdbc:sqlite:$value"
         }
 
     @Volatile
@@ -205,7 +205,7 @@ class SelektDataSource : DataSource {
     }
 
     private fun buildUrlFromProperties(): String {
-        val baseUrl = "jdbc:selekt:$databasePath"
+        val baseUrl = "jdbc:sqlite:$databasePath"
         return mutableListOf<String>().apply {
             if (encryptionEnabled) {
                 add("encrypt=true")

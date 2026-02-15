@@ -100,6 +100,8 @@ interface IExternalSQLite {
 
     fun columnValue(statement: Long, index: Int): Long
 
+    fun commitHook(db: Long, enabled: Boolean, listener: SQLCommitListener?): SQLCode
+
     fun databaseHandle(statement: Long): Long
 
     fun databaseReadOnly(db: Long, name: String): Int

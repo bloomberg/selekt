@@ -36,7 +36,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Supports the URL format: jdbc:selekt:path/to/database.sqlite[?properties]
+ * Supports the URL format: jdbc:sqlite:path/to/database.sqlite[?properties]
  *
  * Supported connection properties:
  * - key: Encryption key (hex string or file path)

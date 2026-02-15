@@ -445,6 +445,86 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnValue(
     return reinterpret_cast<jlong>(sqlite3_column_value(reinterpret_cast<sqlite3_stmt*>(statement), index));
 }
 
+struct CommitListenerContext {
+    JavaVM* vm;
+    jobject listener;
+    jmethodID onCommitMethod;
+    jmethodID onRollbackMethod;
+};
+
+static void freeCommitListenerContext(void* ctx) {
+    if (ctx != nullptr) {
+        auto context = static_cast<CommitListenerContext*>(ctx);
+        JNIEnv* env = nullptr;
+        if (context->vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK) {
+            env->DeleteGlobalRef(context->listener);
+        }
+        delete context;
+    }
+}
+
+static int commitHookCallback(void* ctx) {
+    auto context = static_cast<CommitListenerContext*>(ctx);
+    JNIEnv* env = nullptr;
+#ifdef __ANDROID__
+    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+#else
+    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
+#endif
+        return 1;
+    }
+    jint result = env->CallIntMethod(context->listener, context->onCommitMethod);
+    return result;
+}
+
+static void rollbackHookCallback(void* ctx) {
+    auto context = static_cast<CommitListenerContext*>(ctx);
+    JNIEnv* env = nullptr;
+#ifdef __ANDROID__
+    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+#else
+    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
+#endif
+        return;
+    }
+    env->CallVoidMethod(context->listener, context->onRollbackMethod);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_commitHook(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb,
+    jboolean enabled,
+    jobject listener
+) {
+    auto db = reinterpret_cast<sqlite3*>(jdb);
+    if (!enabled) {
+        void* oldContext = sqlite3_commit_hook(db, nullptr, nullptr);
+        sqlite3_rollback_hook(db, nullptr, nullptr);
+        freeCommitListenerContext(oldContext);
+        return SQLITE_OK;
+    }
+    if (listener == nullptr) {
+        return SQLITE_ERROR;
+    }
+    jclass listenerClass = env->GetObjectClass(listener);
+    jmethodID onCommitMethod = env->GetMethodID(listenerClass, "onCommit", "()I");
+    jmethodID onRollbackMethod = env->GetMethodID(listenerClass, "onRollback", "()V");
+    if (onCommitMethod == nullptr || onRollbackMethod == nullptr) {
+        return SQLITE_ERROR;
+    }
+    auto context = new CommitListenerContext;
+    env->GetJavaVM(&context->vm);
+    context->listener = env->NewGlobalRef(listener);
+    context->onCommitMethod = onCommitMethod;
+    context->onRollbackMethod = onRollbackMethod;
+    void* oldContext = sqlite3_commit_hook(db, commitHookCallback, context);
+    sqlite3_rollback_hook(db, rollbackHookCallback, context);
+    freeCommitListenerContext(oldContext);
+    return SQLITE_OK;
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_databaseHandle(
     JNIEnv* env,

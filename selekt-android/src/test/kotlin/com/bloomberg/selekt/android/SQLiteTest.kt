@@ -35,6 +35,7 @@ import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.NULL
 import com.bloomberg.selekt.Pointer
+import com.bloomberg.selekt.SQLCommitListener
 import com.bloomberg.selekt.SQLOpenOperation
 import com.bloomberg.selekt.SQL_ABORT
 import com.bloomberg.selekt.SQL_AUTH
@@ -70,6 +71,12 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 internal inline fun Pointer.useConnection(block: (Pointer) -> Unit) = try {
     block(this)
@@ -1356,6 +1363,140 @@ internal class SQLiteTest {
     @Test
     fun keywordCount(): Unit = SQLite.run {
         assertEquals(147, keywordCount())
+    }
+
+    @Test
+    fun commitHookFiresOnCommitTransaction(): Unit = SQLite.run {
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "CREATE TABLE 'Foo' (bar INT)")
+            exec(db, "BEGIN IMMEDIATE")
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            exec(db, "COMMIT")
+            verify(listener, times(2)).onCommit()
+            verify(listener, never()).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
+    }
+
+    @Test
+    fun commitHookFiresOnCommit(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            verify(listener, times(1)).onCommit()
+            verify(listener, never()).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
+    }
+
+    @Test
+    fun rollbackHookFiresOnRollback(): Unit = SQLite.run {
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "CREATE TABLE 'Foo' (bar INT)")
+            exec(db, "BEGIN IMMEDIATE")
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            exec(db, "ROLLBACK")
+            verify(listener, times(1)).onCommit()
+            verify(listener, times(1)).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
+    }
+
+    @Test
+    fun commitHookCanAbortCommit(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        val listener = mock<SQLCommitListener> {
+            whenever(it.onCommit()) doReturn 1
+        }
+        try {
+            commitHook(db, true, listener)
+            exec(db, "BEGIN IMMEDIATE")
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            assertFailsWith<SQLiteException> {
+                exec(db, "COMMIT")
+            }
+        } finally {
+            commitHook(db, false, null)
+        }
+        prepareStatement(db, "SELECT COUNT(*) FROM 'Foo'").usePreparedStatement {
+            assertEquals(SQL_ROW, step(it))
+            assertEquals(0, columnInt(it, 0))
+        }
+    }
+
+    @Test
+    fun hooksDoNotFireWhenNoListenerSet(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        exec(db, "BEGIN IMMEDIATE")
+        exec(db, "INSERT INTO 'Foo' VALUES (42)")
+        assertDoesNotThrow {
+            exec(db, "COMMIT")
+        }
+    }
+
+    @Test
+    fun unregisteringHooksStopsCallbacks(): Unit = SQLite.run {
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "CREATE TABLE 'Foo' (bar INT)")
+            exec(db, "BEGIN IMMEDIATE")
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            exec(db, "COMMIT")
+            verify(listener, times(2)).onCommit()
+            verify(listener, never()).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
+        commitHook(db, false, null)
+        exec(db, "BEGIN IMMEDIATE")
+        exec(db, "INSERT INTO 'Foo' VALUES (43)")
+        exec(db, "COMMIT")
+        verify(listener, times(2)).onCommit()
+        verify(listener, never()).onRollback()
+    }
+
+    @Test
+    fun multipleCommitsFireMultipleHooks() = SQLite.run {
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "CREATE TABLE 'Foo' (bar INT)")
+            repeat(3) { i ->
+                exec(db, "BEGIN IMMEDIATE")
+                exec(db, "INSERT INTO 'Foo' VALUES ($i)")
+                exec(db, "COMMIT")
+            }
+            verify(listener, times(4)).onCommit()
+            verify(listener, never()).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
+    }
+
+    @Test
+    fun createTableBeforeHookRegistrationDoesNotTriggerHook(): Unit = SQLite.run {
+        exec(db, "CREATE TABLE 'Foo' (bar INT)")
+        val listener = mock<SQLCommitListener>()
+        try {
+            commitHook(db, true, listener)
+            exec(db, "BEGIN IMMEDIATE")
+            exec(db, "INSERT INTO 'Foo' VALUES (42)")
+            exec(db, "COMMIT")
+            verify(listener, times(1)).onCommit()
+            verify(listener, never()).onRollback()
+        } finally {
+            commitHook(db, false, null)
+        }
     }
 
     private fun openConnection(flags: SQLOpenOperation = SQL_OPEN_READWRITE or SQL_OPEN_CREATE): Pointer {

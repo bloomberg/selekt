@@ -36,6 +36,7 @@ internal class SQLConnection(
         pooledPreparedStatement = it
     }
     private var pooledPreparedStatement: SQLPreparedStatement? = null
+    private var commitListener: SQLTransactionListener? = null
 
     override val isAutoCommit: Boolean
         get() = sqlite.getAutocommit(pointer) != 0
@@ -46,6 +47,17 @@ internal class SQLConnection(
 
     // Guarded by and exclusively used by the pool.
     override var tag = false
+
+    private val nativeCommitListener = object : SQLCommitListener {
+        override fun onCommit(): Int {
+            commitListener?.onCommit()
+            return 0
+        }
+
+        override fun onRollback() {
+            commitListener?.onRollback()
+        }
+    }
 
     init {
         runCatching {
@@ -67,6 +79,7 @@ internal class SQLConnection(
     override fun close() {
         try {
             optimiseQuietly()
+            sqlite.commitHook(pointer, false, null)
             sqlite.closeV2(pointer)
         } finally {
             preparedStatements.evictAll()
@@ -202,6 +215,13 @@ internal class SQLConnection(
     override fun releaseMemory() {
         preparedStatements.evictAll()
         sqlite.databaseReleaseMemory(pointer)
+    }
+
+    internal fun setTransactionListener(listener: SQLTransactionListener?) {
+        (listener != null).let { enabled ->
+            sqlite.commitHook(pointer, enabled, if (enabled) { nativeCommitListener } else { null })
+        }
+        commitListener = listener
     }
 
     private inline fun <R> withPreparedStatement(

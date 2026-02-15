@@ -50,7 +50,7 @@ internal class JdbcConnectionTest {
     @BeforeEach
     fun setUp() {
         mockDatabase = mock()
-        connectionURL = ConnectionURL.parse("jdbc:selekt:/tmp/test.db")
+        connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         properties = Properties()
         connection = JdbcConnection(mockDatabase, connectionURL, properties)
     }
