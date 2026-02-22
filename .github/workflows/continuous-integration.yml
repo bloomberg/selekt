@@ -193,6 +193,7 @@ jobs:
             build/reports/kover/html
             selekt-android/build/reports/tests/testDebugUnitTest
             selekt-java/build/reports/tests/test
+            selekt-jdbc/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/testJava17
             selekt-sqlite3-classes/build/reports/tests/testJava25
 
