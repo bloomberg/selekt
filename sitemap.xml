@@ -1481,6 +1481,10 @@
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/commit-hook/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/database-handle/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
@@ -2605,6 +2609,10 @@
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/commit-hook/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/database-handle/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
@@ -2778,6 +2786,18 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-code/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/on-commit/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/on-rollback/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
     <url>

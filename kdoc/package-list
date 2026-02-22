@@ -467,6 +467,7 @@ $dokka.location:com.bloomberg.selekt/IExternalSQLite/columnName/#kotlin.Long#kot
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/columnText/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/column-text.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/columnType/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/column-type.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/columnValue/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/column-value.md
+$dokka.location:com.bloomberg.selekt/IExternalSQLite/commitHook/#kotlin.Long#kotlin.Boolean#com.bloomberg.selekt.SQLCommitListener?/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/commit-hook.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/databaseHandle/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/database-handle.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/databaseReadOnly/#kotlin.Long#kotlin.String/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/database-read-only.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/databaseReleaseMemory/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/database-release-memory.md
@@ -553,6 +554,9 @@ $dokka.location:com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#/PointingT
 $dokka.location:com.bloomberg.selekt/ISQLTransactor/yieldTransaction/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-s-q-l-transactor/yield-transaction.md
 $dokka.location:com.bloomberg.selekt/Pointer///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-pointer/index.md
 $dokka.location:com.bloomberg.selekt/SQLCode///PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-code/index.md
+$dokka.location:com.bloomberg.selekt/SQLCommitListener///PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/index.md
+$dokka.location:com.bloomberg.selekt/SQLCommitListener/onCommit/#/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/on-commit.md
+$dokka.location:com.bloomberg.selekt/SQLCommitListener/onRollback/#/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-commit-listener/on-rollback.md
 $dokka.location:com.bloomberg.selekt/SQLDataType///PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-s-q-l-data-type/index.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/index.md
 $dokka.location:com.bloomberg.selekt/SQLDatabase/SQLDatabase/#kotlin.String#com.bloomberg.selekt.SQLite#com.bloomberg.selekt.DatabaseConfiguration#kotlin.ByteArray?#com.bloomberg.selekt.IRandom/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/-s-q-l-database.md
@@ -635,6 +639,7 @@ $dokka.location:com.bloomberg.selekt/SQLite/columnName/#kotlin.Long#kotlin.Int/P
 $dokka.location:com.bloomberg.selekt/SQLite/columnText/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/column-text.md
 $dokka.location:com.bloomberg.selekt/SQLite/columnType/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/column-type.md
 $dokka.location:com.bloomberg.selekt/SQLite/columnValue/#kotlin.Long#kotlin.Int/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/column-value.md
+$dokka.location:com.bloomberg.selekt/SQLite/commitHook/#kotlin.Long#kotlin.Boolean#com.bloomberg.selekt.SQLCommitListener?/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/commit-hook.md
 $dokka.location:com.bloomberg.selekt/SQLite/databaseHandle/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/database-handle.md
 $dokka.location:com.bloomberg.selekt/SQLite/databaseReadOnly/#kotlin.Long#kotlin.String/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/database-read-only.md
 $dokka.location:com.bloomberg.selekt/SQLite/databaseReleaseMemory/#kotlin.Long/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-lite/database-release-memory.md
