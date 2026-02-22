@@ -34,7 +34,18 @@ data class DatabaseConfiguration(
      * Time between idle connection eviction runs in milliseconds, -1L for never.
      */
     val timeBetweenEvictionRunsMillis: Long,
-    val trace: SQLiteTraceEventMode? = null
+    val trace: SQLiteTraceEventMode? = null,
+    /**
+     * Whether to use native SQLite commit/rollback hooks for transaction listeners.
+     *
+     * When true, transaction listeners are called via SQLite's native commit_hook and rollback_hook,
+     * which requires JNI thread attachment overhead but catches all transactions including those
+     * initiated via raw SQL.
+     *
+     * When false (default), transaction listeners are called explicitly from SQLSession methods,
+     * which only works for transactions managed via the SQLSession.
+     */
+    val useNativeTransactionListeners: Boolean = false
 ) {
     init {
         require(maxConnectionPoolSize > 0)

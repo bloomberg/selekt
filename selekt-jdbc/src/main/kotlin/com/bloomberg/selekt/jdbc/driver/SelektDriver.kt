@@ -183,7 +183,8 @@ class SelektDriver : Driver {
         val baseConfig = journalMode.databaseConfiguration
         return baseConfig.copy(
             maxConnectionPoolSize = poolSize,
-            busyTimeoutMillis = busyTimeout
+            busyTimeoutMillis = busyTimeout,
+            useNativeTransactionListeners = true
         )
     }
 

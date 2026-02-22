@@ -188,9 +188,8 @@ internal class SelektDataSourceTest {
 
     @Test
     fun getConnectionWithUsernamePassword(): Unit = dataSource.run {
-        assertFailsWith<SQLException> {
-            getConnection("user", "pass")
-        }
+        databasePath = File(tempDir, "user-pass.db").absolutePath
+        getConnection("user", "pass").close()
     }
 
     @Test
@@ -236,26 +235,20 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionAttempt(): Unit = dataSource.run {
         databasePath = File(tempDir, "test.db").absolutePath
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithUsernamePasswordAttempt(): Unit = dataSource.run {
         databasePath = File(tempDir, "test2.db").absolutePath
-        assertFailsWith<SQLException> {
-            getConnection("user", "password")
-        }
+        getConnection("user", "password").close()
     }
 
     @Test
     fun getConnectionWithEncryption(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted.db").absolutePath
         setEncryption(true, "0x0123456789ABCDEF")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
@@ -264,45 +257,35 @@ internal class SelektDataSourceTest {
         setEncryption(true, File(tempDir, "keyfile.bin").apply {
             writeBytes(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
         }.absolutePath)
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithStringKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted3.db").absolutePath
         setEncryption(true, "my-secret-key")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithEncryptionDisabled(): Unit = dataSource.run {
         databasePath = File(tempDir, "plain.db").absolutePath
         setEncryption(false, "ignored-key")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithCustomPoolSize(): Unit = dataSource.run {
         databasePath = File(tempDir, "pooled.db").absolutePath
         maxPoolSize = 20
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithCustomBusyTimeout(): Unit = dataSource.run {
         databasePath = File(tempDir, "timeout.db").absolutePath
         busyTimeout = 5000
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
@@ -317,9 +300,7 @@ internal class SelektDataSourceTest {
         ).forEach {
             databasePath = File(tempDir, "journal-$it.db").absolutePath
             journalMode = it
-            assertFailsWith<SQLException> {
-                getConnection()
-            }
+            getConnection().close()
         }
     }
 
@@ -327,9 +308,7 @@ internal class SelektDataSourceTest {
     fun getConnectionWithForeignKeysDisabled(): Unit = dataSource.run {
         databasePath = File(tempDir, "nofk.db").absolutePath
         foreignKeys = false
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
@@ -340,9 +319,7 @@ internal class SelektDataSourceTest {
         journalMode = "DELETE"
         foreignKeys = false
         setEncryption(true, "test-key-123")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
@@ -390,36 +367,28 @@ internal class SelektDataSourceTest {
     fun getConnectionWithHexKeyUppercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-upper.db").absolutePath
         setEncryption(true, "0X123456")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithHexKeyLowercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-lower.db").absolutePath
         setEncryption(true, "0x123456")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithNullEncryptionKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "null-key.db").absolutePath
         setEncryption(true, null)
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test
     fun getConnectionWithNonExistentKeyFile(): Unit = dataSource.run {
         databasePath = File(tempDir, "nonexistent-key.db").absolutePath
         setEncryption(true, "/nonexistent/path/to/keyfile.bin")
-        assertFailsWith<SQLException> {
-            getConnection()
-        }
+        getConnection().close()
     }
 
     @Test

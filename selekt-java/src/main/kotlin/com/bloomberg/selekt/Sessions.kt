@@ -23,10 +23,11 @@ import javax.annotation.concurrent.NotThreadSafe
 internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
 
 internal class ThreadLocalSession(
-    private val pool: SQLExecutorPool
+    private val pool: SQLExecutorPool,
+    private val useNativeListeners: Boolean = false
 ) {
     private val threadLocal = object : ThreadLocal<SQLSession>() {
-        override fun initialValue() = SQLSession(pool)
+        override fun initialValue() = SQLSession(pool, useNativeListeners)
     }
 
     @JvmSynthetic
@@ -59,7 +60,8 @@ private fun <T> MutableList<T>.removeLast() = removeAt(lastIndex)
 
 @NotThreadSafe
 internal class SQLSession(
-    pool: SQLExecutorPool
+    pool: SQLExecutorPool,
+    private val useNativeListeners: Boolean = false
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
     private val state = SQLSessionState()
 
@@ -241,6 +243,9 @@ internal class SQLSession(
             executeWithRetry(sql)
             listener?.let {
                 state.transactionListener = it
+                if (useNativeListeners) {
+                    setTransactionListener(it)
+                }
                 it.onBegin()
             }
         }.exceptionOrNull()?.let {
@@ -260,6 +265,11 @@ internal class SQLSession(
                 rollbackQuietly()
             }
         } finally {
+            if (useNativeListeners && state.transactionListener != null) {
+                execute(false) {
+                    it.setTransactionListener(null)
+                }
+            }
             state.clear()
             release(permits)
         }
@@ -268,7 +278,9 @@ internal class SQLSession(
     private fun commit() {
         execute(true) {
             runCatching {
-                state.transactionListener?.onCommit()
+                if (!useNativeListeners) {
+                    state.transactionListener?.onCommit()
+                }
                 it.executeWithRetry("END")
             }.exceptionOrNull()?.let {
                 rollbackQuietly()
@@ -280,7 +292,9 @@ internal class SQLSession(
     private fun rollback() {
         execute(false) {
             try {
-                state.transactionListener?.onRollback()
+                if (!useNativeListeners) {
+                    state.transactionListener?.onRollback()
+                }
             } finally {
                 it.execute("ROLLBACK")
             }

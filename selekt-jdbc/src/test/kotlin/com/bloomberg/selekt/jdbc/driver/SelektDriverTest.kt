@@ -85,9 +85,9 @@ internal class SelektDriverTest {
 
     @Test
     fun driverConnects() {
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", Properties())
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", Properties())
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
@@ -175,18 +175,18 @@ internal class SelektDriverTest {
             setProperty("journalMode", "DELETE")
             setProperty("foreignKeys", "false")
         }
-        assertFailsWith<SQLException> {
-            driver.connect(url, properties)
-        }
+        val connection = driver.connect(url, properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
     fun connectWithURLProperties() {
         val url = "jdbc:sqlite:/tmp/test.db?key=test-key&poolSize=5"
         val properties = Properties()
-        assertFailsWith<SQLException> {
-            driver.connect(url, properties)
-        }
+        val connection = driver.connect(url, properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
@@ -269,9 +269,9 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("key", "0x0123456789ABCDEF")
         }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
@@ -279,9 +279,9 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("key", "0X0123456789ABCDEF")
         }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
@@ -289,18 +289,18 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("key", "some-key")
         }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
     fun connectWithoutKey() {
         val url = "jdbc:sqlite:/tmp/test.db"
         val properties = Properties()
-        assertFailsWith<SQLException> {
-            driver.connect(url, properties)
-        }
+        val connection = driver.connect(url, properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
@@ -344,16 +344,16 @@ internal class SelektDriverTest {
             setProperty("poolSize", "20")
             setProperty("busyTimeout", "5000")
         }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 
     @Test
     fun connectWithNullJournalMode() {
         val properties = Properties()
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        assertNotNull(connection)
+        connections.add(connection)
     }
 }

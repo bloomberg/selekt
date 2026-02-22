@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-@file:Suppress("UnstableApiUsage")
-
 description = "Selekt JDBC library."
 
 plugins {
     kotlin("jvm")
-    `jvm-test-suite`
     id("com.android.lint")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
@@ -44,6 +41,14 @@ java {
     withSourcesJar()
 }
 
+sourceSets {
+    test {
+        resources {
+            srcDir(layout.buildDirectory.dir("intermediates/libs"))
+        }
+    }
+}
+
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektJava)
@@ -54,42 +59,9 @@ dependencies {
         }
     }
     implementation(libs.slf4j.api)
-}
-
-testing {
-    suites {
-        val integrationTest by registering(JvmTestSuite::class) {
-            sources {
-                resources {
-                    srcDir(layout.buildDirectory.dir("intermediates/libs"))
-                }
-            }
-            dependencies {
-                implementation(project())
-                implementation(platform(libs.exposed.bom))
-                implementation(platform(libs.kotlin.bom))
-                implementation(projects.selektApi)
-                implementation(projects.selektJava)
-                implementation(projects.selektSqlite3Api)
-                implementation(projects.selektSqlite3Classes) {
-                    capabilities {
-                        requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-                    }
-                }
-                implementation(libs.exposed.core)
-                implementation(libs.exposed.jdbc)
-                implementation(libs.kotlin.test)
-            }
-            targets {
-                all {
-                    testTask.configure {
-                        shouldRunAfter(tasks.test)
-                        dependsOn("buildHostSQLite")
-                    }
-                }
-            }
-        }
-    }
+    testImplementation(platform(libs.exposed.bom))
+    testImplementation(libs.exposed.core)
+    testImplementation(libs.exposed.jdbc)
 }
 
 tasks.register<Task>("buildHostSQLite") {

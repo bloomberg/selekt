@@ -80,6 +80,7 @@ internal open class JdbcPreparedStatement(
     override fun executeQuery(): ResultSet {
         checkClosed()
         return runCatching {
+            connection.ensureTransaction()
             JdbcResultSet(
                 database.query(sql, buildBindArgs()),
                 this,
@@ -95,6 +96,7 @@ internal open class JdbcPreparedStatement(
     override fun executeUpdate(): Int {
         checkClosed()
         return runCatching {
+            connection.ensureTransaction()
             database.compileStatement(sql, buildBindArgs()).executeUpdateDelete()
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
