@@ -217,7 +217,7 @@ internal class SQLConnection(
         sqlite.databaseReleaseMemory(pointer)
     }
 
-    internal fun setTransactionListener(listener: SQLTransactionListener?) {
+    override fun setTransactionListener(listener: SQLTransactionListener?) {
         (listener != null).let { enabled ->
             sqlite.commitHook(pointer, enabled, if (enabled) { nativeCommitListener } else { null })
         }
