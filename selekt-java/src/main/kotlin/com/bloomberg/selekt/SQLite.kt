@@ -149,6 +149,12 @@ open class SQLite(
 
     fun columnValue(statement: Long, index: Int) = sqlite.columnValue(statement, index)
 
+    fun commitHook(
+        db: Long,
+        enabled: Boolean,
+        listener: SQLCommitListener?
+    ) = checkConnectionSQLCode(db, sqlite.commitHook(db, enabled, listener))
+
     fun databaseHandle(statement: Long) = sqlite.databaseHandle(statement)
 
     fun databaseReadOnly(db: Long, name: String) = sqlite.databaseReadOnly(db, name)

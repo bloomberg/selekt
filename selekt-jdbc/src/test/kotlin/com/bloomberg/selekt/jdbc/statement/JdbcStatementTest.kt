@@ -53,7 +53,7 @@ internal class JdbcStatementTest {
         mockDatabase = mock<SQLDatabase>()
         mockCursor = mock<ICursor>()
 
-        val connectionURL = ConnectionURL.parse("jdbc:selekt:/tmp/test.db")
+        val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
         mockConnection = JdbcConnection(mockDatabase, connectionURL, properties)
 

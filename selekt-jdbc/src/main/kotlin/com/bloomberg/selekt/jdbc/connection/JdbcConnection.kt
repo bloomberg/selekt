@@ -384,30 +384,26 @@ internal class JdbcConnection(
         return Properties()
     }
 
-    override fun createArrayOf(typeName: String, elements: Array<out Any?>): java.sql.Array {
-        throw SQLFeatureNotSupportedException("SQLite does not support arrays")
-    }
+    override fun createArrayOf(
+        typeName: String,
+        elements: Array<out Any?>
+    ): java.sql.Array = throw SQLFeatureNotSupportedException("SQLite does not support arrays")
 
-    override fun createStruct(typeName: String, attributes: Array<out Any?>): Struct {
-        throw SQLFeatureNotSupportedException("SQLite does not support structs")
-    }
+    override fun createStruct(
+        typeName: String,
+        attributes: Array<out Any?>
+    ): Struct = throw SQLFeatureNotSupportedException("SQLite does not support structs")
 
     override fun createClob(): Clob {
         checkClosed()
         return JdbcClob()
     }
 
-    override fun createBlob(): Blob {
-        throw SQLFeatureNotSupportedException("Use byte arrays instead of BLOBs with SQLite")
-    }
+    override fun createBlob(): Blob = throw SQLFeatureNotSupportedException("Use byte arrays instead of BLOBs with SQLite")
 
-    override fun createNClob(): NClob {
-        throw SQLFeatureNotSupportedException("SQLite does not support NCLOBs")
-    }
+    override fun createNClob(): NClob = throw SQLFeatureNotSupportedException("SQLite does not support NCLOBs")
 
-    override fun createSQLXML(): SQLXML {
-        throw SQLFeatureNotSupportedException("SQLite does not support SQLXML")
-    }
+    override fun createSQLXML(): SQLXML = throw SQLFeatureNotSupportedException("SQLite does not support SQLXML")
 
     override fun isValid(timeout: Int): Boolean {
         if (isClosed) {
@@ -455,9 +451,8 @@ internal class JdbcConnection(
         throw SQLException("Cannot unwrap to ${iface.name}")
     }
 
-    override fun isWrapperFor(iface: Class<*>): Boolean {
-        return iface.isAssignableFrom(this::class.java) || iface.isAssignableFrom(SQLDatabase::class.java)
-    }
+    override fun isWrapperFor(iface: Class<*>): Boolean = iface.isAssignableFrom(this::class.java) ||
+        iface.isAssignableFrom(SQLDatabase::class.java)
 
     private fun checkClosed() {
         if (isClosed) {

@@ -25,14 +25,14 @@ import kotlin.test.assertTrue
 
 internal class ConnectionURLTest {
     @Test
-    fun basicURL(): Unit = ConnectionURL.parse("jdbc:selekt:/path/to/test.db").run {
+    fun basicURL(): Unit = ConnectionURL.parse("jdbc:sqlite:/path/to/test.db").run {
         assertEquals("/path/to/test.db", databasePath)
         assertTrue(properties.isEmpty)
     }
 
     @Test
     fun urlWithProperties(): Unit = ConnectionURL.parse(
-        "jdbc:selekt:/path/to/test.db?encrypt=true&key=abc123&poolSize=5"
+        "jdbc:sqlite:/path/to/test.db?encrypt=true&key=abc123&poolSize=5"
     ).run {
         assertEquals("/path/to/test.db", databasePath)
         assertEquals("true", getProperty("encrypt"))
@@ -41,14 +41,14 @@ internal class ConnectionURLTest {
     }
 
     @Test
-    fun booleanProperties(): Unit = ConnectionURL.parse("jdbc:selekt:/test.db?encrypt=true&foreignKeys=false").run {
+    fun booleanProperties(): Unit = ConnectionURL.parse("jdbc:sqlite:/test.db?encrypt=true&foreignKeys=false").run {
         assertTrue(getBooleanProperty("encrypt"))
         assertFalse(getBooleanProperty("foreignKeys"))
         assertFalse(getBooleanProperty("nonexistent"))
     }
 
     @Test
-    fun intProperties(): Unit = ConnectionURL.parse("jdbc:selekt:/test.db?poolSize=10&busyTimeout=5000").run {
+    fun intProperties(): Unit = ConnectionURL.parse("jdbc:sqlite:/test.db?poolSize=10&busyTimeout=5000").run {
         assertEquals(10, getIntProperty("poolSize"))
         assertEquals(5_000, getIntProperty("busyTimeout"))
         assertEquals(0, getIntProperty("nonexistent"))
@@ -68,15 +68,15 @@ internal class ConnectionURLTest {
     @Test
     fun emptyPath() {
         assertFailsWith<SQLException> {
-            ConnectionURL.parse("jdbc:selekt:")
+            ConnectionURL.parse("jdbc:sqlite:")
         }
     }
 
     @Test
     fun urlValidation() {
         listOf(
-            "jdbc:selekt:/test.db",
-            "jdbc:selekt:/path/to/test.db?prop=value"
+            "jdbc:sqlite:/test.db",
+            "jdbc:sqlite:/path/to/test.db?prop=value"
         ).forEach {
             assertTrue(ConnectionURL.isValidUrl(it))
         }
@@ -91,15 +91,15 @@ internal class ConnectionURLTest {
 
     @Test
     fun connectionToString(): Unit = ConnectionURL.parse(
-        "jdbc:selekt:/test.db?encrypt=true&poolSize=10"
+        "jdbc:sqlite:/test.db?encrypt=true&poolSize=10"
     ).toString().run {
-        assertTrue(startsWith("jdbc:selekt:/test.db"))
+        assertTrue(startsWith("jdbc:sqlite:/test.db"))
         assertTrue(contains("encrypt=true"))
         assertTrue(contains("poolSize=10"))
     }
 
     @Test
     fun urlEncoding() {
-        assertEquals("hello world", ConnectionURL.parse("jdbc:selekt:/test.db?key=hello%20world").getProperty("key"))
+        assertEquals("hello world", ConnectionURL.parse("jdbc:sqlite:/test.db?key=hello%20world").getProperty("key"))
     }
 }

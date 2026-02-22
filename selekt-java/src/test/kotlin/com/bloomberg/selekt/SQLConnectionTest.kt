@@ -32,10 +32,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
+import org.mockito.kotlin.argumentCaptor
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.mockito.kotlin.never
 
 private val databaseConfiguration = DatabaseConfiguration(
     evictionDelayMillis = 5_000L,
@@ -57,35 +59,35 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun exceptionInConstruction() {
-        whenever(sqlite.busyTimeout(any(), any())) doThrow IllegalStateException()
+    fun exceptionInConstruction(): Unit = sqlite.run {
+        whenever(busyTimeout(any(), any())) doThrow IllegalStateException()
         assertFailsWith<IllegalStateException> {
-            SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
+            SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
 
     @Test
-    fun constructionChecksNull() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun constructionChecksNull(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
         assertFailsWith<IllegalStateException> {
-            SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null)
+            SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
     }
 
     @Test
-    fun prepareChecksNull() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun prepareChecksNull(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).apply {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).apply {
             assertFailsWith<IllegalStateException> {
                 prepare("INSERT INTO Foo VALUES (?)")
             }
@@ -93,45 +95,45 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun isAutoCommit1() {
-        whenever(sqlite.getAutocommit(any())) doReturn 1
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun isAutoCommit1(): Unit = sqlite.run {
+        whenever(getAutocommit(any())) doReturn 1
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertTrue(it.isAutoCommit)
         }
     }
 
     @Test
-    fun isAutoCommit2() {
-        whenever(sqlite.getAutocommit(any())) doReturn 2
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun isAutoCommit2(): Unit = sqlite.run {
+        whenever(getAutocommit(any())) doReturn 2
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertTrue(it.isAutoCommit)
         }
     }
 
     @Test
-    fun isAutoCommitFalse() {
-        whenever(sqlite.getAutocommit(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun isAutoCommitFalse(): Unit = sqlite.run {
+        whenever(getAutocommit(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFalse(it.isAutoCommit)
         }
     }
 
     @Test
-    fun checkpointDefault() {
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun checkpointDefault(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.checkpoint()
-            verify(sqlite, times(1)).walCheckpointV2(eq(DB), isNull(), eq(SQLCheckpointMode.PASSIVE()))
+            verify(this@run, times(1)).walCheckpointV2(eq(DB), isNull(), eq(SQLCheckpointMode.PASSIVE()))
         }
     }
 
     @Test
-    fun prepareChecksArgumentCount() {
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer<Any> {
+    fun prepareChecksArgumentCount(): Unit = sqlite.run {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer<Any> {
             (it.arguments[2] as LongArray)[0] = 42L
             SQL_OK
         }
-        whenever(sqlite.bindParameterCount(any())) doReturn 1
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(bindParameterCount(any())) doReturn 1
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalArgumentException> {
                 it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
             }
@@ -139,9 +141,9 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun connectionRejectsUnrecognisedColumnType() {
-        whenever(sqlite.columnType(any(), any())) doReturn -1
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun connectionRejectsUnrecognisedColumnType(): Unit = sqlite.run {
+        whenever(columnType(any(), any())) doReturn -1
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalStateException> {
                 it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
             }
@@ -149,178 +151,238 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun executeForLastInsertedRowIdChecksDone() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun executeForLastInsertedRowIdChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
         }
     }
 
     @Test
-    fun executeForLastInsertedRowIdChecksChanges() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun executeForLastInsertedRowIdChecksChanges(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_DONE
-        whenever(sqlite.changes(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_DONE
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
         }
     }
 
     @Test
-    fun executeForChangedRowCountChecksDone() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun executeForChangedRowCountChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.changes(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)"))
         }
     }
 
     @Test
-    fun executeForInt() {
+    fun executeForInt(): Unit = sqlite.run {
         val value = 7
         val statement = 43L
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.columnInt(any(), any())) doReturn value
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(columnInt(any(), any())) doReturn value
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(value, it.executeForInt("SELECT * FROM Foo LIMIT 1"))
         }
-        verify(sqlite, times(1)).columnInt(eq(statement), eq(0))
+        verify(this, times(1)).columnInt(eq(statement), eq(0))
     }
 
     @Test
-    fun executeForLong() {
+    fun executeForLong(): Unit = sqlite.run {
         val value = 7L
         val statement = 43L
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.columnInt64(any(), any())) doReturn value
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(columnInt64(any(), any())) doReturn value
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(value, it.executeForLong("SELECT * FROM Foo LIMIT 1"))
         }
-        verify(sqlite, times(1)).columnInt64(eq(statement), eq(0))
+        verify(this, times(1)).columnInt64(eq(statement), eq(0))
     }
 
     @Test
-    fun executeForString() {
+    fun executeForString(): Unit = sqlite.run {
         val text = "hello"
         val statement = 43L
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.columnText(any(), any())) doReturn text
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(columnText(any(), any())) doReturn text
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(text, it.executeForString("SELECT * FROM Foo LIMIT 1"))
         }
-        verify(sqlite, times(1)).columnText(eq(statement), eq(0))
+        verify(this, times(1)).columnText(eq(statement), eq(0))
     }
 
     @Test
-    fun executeForBlobReadOnly() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun executeForBlobReadOnly(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer Answer {
+        whenever(blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer Answer {
             (it.arguments[6] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, SQL_OPEN_READONLY, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        SQLConnection("file::memory:", this, databaseConfiguration, SQL_OPEN_READONLY, CommonThreadLocalRandom, null).use {
             assertTrue(it.executeForBlob("main", "Foo", "bar", 42L).readOnly)
         }
     }
 
     @Test
-    fun batchExecuteForChangedRowCountSequenceChecksDone() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun batchExecuteForChangedRowCountSequenceChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.changes(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray())))
         }
     }
 
     @Test
-    fun batchExecuteForChangedRowCountIterableChecksDone() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun batchExecuteForChangedRowCountEmptyArrayChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.changes(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(0, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", emptyArray()))
+        }
+    }
+
+    @Test
+    fun batchExecuteForChangedRowCountWithRangeChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(bindParameterCount(any())) doReturn 1
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        val bindArgs = (1..4).map { i -> arrayOf<Any?>(i) }.toTypedArray()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (?)", bindArgs, 1, 3))
+        }
+    }
+
+    @Test
+    fun batchExecuteForChangedRowCountWithRangeSuccess(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(bindParameterCount(any())) doReturn 1
+        whenever(step(any())) doReturn SQL_DONE
+        whenever(totalChanges(any())) doReturn 10 doReturn 12
+        val bindArgs = (1..4).map { i -> arrayOf<Any?>(i) }.toTypedArray()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(2, it.executeBatchForChangedRowCount(
+                "INSERT INTO Foo VALUES (?)",
+                bindArgs,
+                1,
+                3
+            ))
+        }
+    }
+
+    @Test
+    fun batchExecuteForChangedRowCountIterableChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", listOf(emptyArray())))
         }
     }
 
     @Test
-    fun batchExecuteForChangedRowCountStreamChecksDone() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun batchExecuteForChangedRowCountStreamChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.changes(any())) doReturn 0
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(changes(any())) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(
                 -1,
                 it.executeBatchForChangedRowCount(
@@ -332,19 +394,19 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun connectionChecksWindowAllocation() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun connectionChecksWindowAllocation(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.columnCount(any())) doReturn 1
-        whenever(sqlite.columnType(any(), any())) doReturn -1
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnType(any(), any())) doReturn -1
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalStateException>("Failed to allocate a window row.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
             }
@@ -352,22 +414,22 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun connectionChecksSqlColumnType() {
-        whenever(sqlite.openV2(any(), any(), any())) doAnswer Answer {
+    fun connectionChecksSqlColumnType(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(sqlite.step(any())) doReturn SQL_ROW
-        whenever(sqlite.columnCount(any())) doReturn 1
-        whenever(sqlite.columnType(any(), any())) doReturn -1
-        val cursorWindow = mock<ICursorWindow>().apply {
-            whenever(allocateRow()) doReturn true
+        whenever(step(any())) doReturn SQL_ROW
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnType(any(), any())) doReturn -1
+        val cursorWindow = mock<ICursorWindow> {
+            whenever(it.allocateRow()) doReturn true
         }
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalStateException>("Unrecognised column type for column 0.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), cursorWindow)
             }
@@ -375,10 +437,96 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun releaseMemory() {
-        SQLConnection("file::memory:", sqlite, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+    fun releaseMemory(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.releaseMemory()
-            verify(sqlite, times(1)).databaseReleaseMemory(any())
+            verify(this@run, times(1)).databaseReleaseMemory(any())
+        }
+    }
+
+    @Test
+    fun setTransactionListenerRegistersHooks(): Unit = sqlite.run {
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            verify(this@run, times(1)).commitHook(eq(DB), eq(true), any())
+        }
+    }
+
+    @Test
+    fun setTransactionListenerToNullUnregistersHooks(): Unit = sqlite.run {
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            it.setTransactionListener(null)
+            verify(this@run, times(1)).commitHook(eq(DB), eq(true), any())
+            verify(this@run, times(1)).commitHook(eq(DB), eq(false), isNull())
+        }
+    }
+
+    @Test
+    fun setTransactionListenerReplacingListenerStillCallsHook(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(mock<SQLTransactionListener>())
+            it.setTransactionListener(mock<SQLTransactionListener>())
+            verify(this@run, times(2)).commitHook(eq(DB), eq(true), any())
+            verify(this@run, never()).commitHook(eq(DB), eq(false), any())
+        }
+    }
+
+    @Test
+    fun closeUnregistersHooksWhenListenerSet(): Unit = sqlite.run {
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+        }
+        verify(this, times(1)).commitHook(eq(DB), eq(false), isNull())
+    }
+
+    @Test
+    fun closeDoesNotUnregisterHooksWhenNoListenerSet(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {}
+        verify(this, never()).commitHook(any(), eq(false), any())
+    }
+
+    @Test
+    fun nativeCommitListenerDelegatesToCommitListener(): Unit = sqlite.run {
+        val commitListenerCaptor = argumentCaptor<SQLCommitListener>()
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            verify(this@run).commitHook(eq(DB), eq(true), commitListenerCaptor.capture())
+            val result = commitListenerCaptor.firstValue.onCommit()
+            verify(listener, times(1)).onCommit()
+            assertEquals(0, result)
+        }
+    }
+
+    @Test
+    fun nativeCommitListenerDelegatesToRollbackListener(): Unit = sqlite.run {
+        val commitListenerCaptor = argumentCaptor<SQLCommitListener>()
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            verify(this@run).commitHook(eq(DB), eq(true), commitListenerCaptor.capture())
+            commitListenerCaptor.firstValue.onRollback()
+            verify(listener, times(1)).onRollback()
+        }
+    }
+
+    @Test
+    fun nativeCommitListenerHandlesNullCommitListener(): Unit = sqlite.run {
+        val commitListenerCaptor = argumentCaptor<SQLCommitListener>()
+        val listener = mock<SQLTransactionListener>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            verify(this@run).commitHook(eq(DB), eq(true), commitListenerCaptor.capture())
+            it.setTransactionListener(null)
+            val result = commitListenerCaptor.firstValue.onCommit()
+            commitListenerCaptor.firstValue.onRollback()
+            assertEquals(0, result)
+            verify(listener, never()).onCommit()
+            verify(listener, never()).onRollback()
         }
     }
 

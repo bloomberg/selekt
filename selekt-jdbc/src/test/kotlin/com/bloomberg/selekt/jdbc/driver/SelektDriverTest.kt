@@ -60,9 +60,9 @@ internal class SelektDriverTest {
     fun acceptsValidURLs() {
         driver.run {
             listOf(
-                "jdbc:selekt:/path/to/test.db",
-                "jdbc:selekt:/path/to/test.db?prop=value",
-                "jdbc:selekt:./relative/path.db",
+                "jdbc:sqlite:/path/to/test.db",
+                "jdbc:sqlite:/path/to/test.db?prop=value",
+                "jdbc:sqlite:./relative/path.db",
             ).forEach {
                 assertTrue(acceptsURL(it))
             }
@@ -73,7 +73,7 @@ internal class SelektDriverTest {
     fun rejectsInvalidURLs() {
         driver.run {
             listOf(
-                "jdbc:sqlite:/path/to/test.db",
+                "jdbc:selekt:/path/to/test.db",
                 "jdbc:mysql://localhost:3306/test",
                 "invalid://url",
                 null
@@ -86,7 +86,7 @@ internal class SelektDriverTest {
     @Test
     fun driverConnects() {
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", Properties())
+            driver.connect("jdbc:sqlite:/tmp/test.db", Properties())
         }
     }
 
@@ -97,7 +97,7 @@ internal class SelektDriverTest {
 
     @Test
     fun getPropertyInfo() {
-        driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", Properties()).also {
+        driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties()).also {
             assertNotNull(it)
             assertTrue(it.isNotEmpty())
         }.map(DriverPropertyInfo::name).run {
@@ -134,7 +134,7 @@ internal class SelektDriverTest {
     }
 
     @Test
-    fun propertyInfoDetails(): Unit = driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", Properties()).run {
+    fun propertyInfoDetails(): Unit = driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties()).run {
         find { it.name == "key" }.let {
             assertNotNull(it)
             assertEquals("Encryption key (hex string or file path)", it.description)
@@ -167,7 +167,7 @@ internal class SelektDriverTest {
 
     @Test
     fun connectWithProperties() {
-        val url = "jdbc:selekt:/tmp/test.db"
+        val url = "jdbc:sqlite:/tmp/test.db"
         val properties = Properties().apply {
             setProperty("key", "test-key")
             setProperty("poolSize", "5")
@@ -182,7 +182,7 @@ internal class SelektDriverTest {
 
     @Test
     fun connectWithURLProperties() {
-        val url = "jdbc:selekt:/tmp/test.db?key=test-key&poolSize=5"
+        val url = "jdbc:sqlite:/tmp/test.db?key=test-key&poolSize=5"
         val properties = Properties()
         assertFailsWith<SQLException> {
             driver.connect(url, properties)
@@ -191,7 +191,7 @@ internal class SelektDriverTest {
 
     @Test
     fun propertyInfoWithExistingProperties(): Unit = driver.getPropertyInfo(
-        "jdbc:selekt:/tmp/test.db",
+        "jdbc:sqlite:/tmp/test.db",
         Properties().apply {
             setProperty("poolSize", "20")
             setProperty("key", "test-key")
@@ -212,7 +212,7 @@ internal class SelektDriverTest {
     }
 
     @Test
-    fun booleanPropertyChoices(): Unit = driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", Properties()).run {
+    fun booleanPropertyChoices(): Unit = driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties()).run {
         find { it.name == "foreignKeys" }.let {
             assertNotNull(it, "Property foreignKeys should exist")
             assertNotNull(it.choices, "Property foreignKeys should have choices")
@@ -224,7 +224,7 @@ internal class SelektDriverTest {
 
     @Test
     fun journalModeChoices() {
-        val propertyInfo = driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", Properties())
+        val propertyInfo = driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties())
         val journalModeProperty = propertyInfo.find { it.name == "journalMode" }
         assertNotNull(journalModeProperty)
         assertNotNull(journalModeProperty.choices)
@@ -238,12 +238,12 @@ internal class SelektDriverTest {
     @Test
     fun urlValidationValid() {
         listOf(
-            "jdbc:selekt:/absolute/path/test.db",
-            "jdbc:selekt:./relative/path/test.db",
-            "jdbc:selekt:../parent/test.db",
-            "jdbc:selekt:/path/with spaces/test.db",
-            "jdbc:selekt:/path/test.db?prop=value",
-            "jdbc:selekt:/path/test.db?prop1=value1&prop2=value2"
+            "jdbc:sqlite:/absolute/path/test.db",
+            "jdbc:sqlite:./relative/path/test.db",
+            "jdbc:sqlite:../parent/test.db",
+            "jdbc:sqlite:/path/with spaces/test.db",
+            "jdbc:sqlite:/path/test.db?prop=value",
+            "jdbc:sqlite:/path/test.db?prop1=value1&prop2=value2"
         ).forEach {
             assertTrue(driver.acceptsURL(it), "Should accept URL: $it")
         }
@@ -252,9 +252,9 @@ internal class SelektDriverTest {
     @Test
     fun urlValidationInvalid() {
         listOf(
-            "jdbc:sqlite:/path/test.db",
-            "jdbc:selekt:",
-            "jdbc:selekt",
+            "jdbc:selekt:/path/test.db",
+            "jdbc:sqlite:",
+            "jdbc:sqlite",
             "selekt:/path/test.db",
             "invalid://url",
             "",
@@ -270,7 +270,7 @@ internal class SelektDriverTest {
             setProperty("key", "0x0123456789ABCDEF")
         }
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", properties)
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }
     }
 
@@ -280,7 +280,7 @@ internal class SelektDriverTest {
             setProperty("key", "0X0123456789ABCDEF")
         }
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", properties)
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }
     }
 
@@ -290,13 +290,13 @@ internal class SelektDriverTest {
             setProperty("key", "some-key")
         }
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", properties)
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }
     }
 
     @Test
     fun connectWithoutKey() {
-        val url = "jdbc:selekt:/tmp/test.db"
+        val url = "jdbc:sqlite:/tmp/test.db"
         val properties = Properties()
         assertFailsWith<SQLException> {
             driver.connect(url, properties)
@@ -308,7 +308,7 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("busyTimeout", "5000")
         }
-        driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", properties).find {
+        driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", properties).find {
             it.name == "busyTimeout"
         }.let {
             assertNotNull(it)
@@ -329,7 +329,7 @@ internal class SelektDriverTest {
             val properties = Properties().apply {
                 setProperty("journalMode", it)
             }
-            driver.getPropertyInfo("jdbc:selekt:/tmp/test.db", properties).find { info ->
+            driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", properties).find { info ->
                 info.name == "journalMode"
             }.run {
                 assertNotNull(this)
@@ -345,7 +345,7 @@ internal class SelektDriverTest {
             setProperty("busyTimeout", "5000")
         }
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", properties)
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }
     }
 
@@ -353,7 +353,7 @@ internal class SelektDriverTest {
     fun connectWithNullJournalMode() {
         val properties = Properties()
         assertFailsWith<SQLException> {
-            driver.connect("jdbc:selekt:/tmp/test.db", properties)
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }
     }
 }

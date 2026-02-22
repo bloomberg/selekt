@@ -129,11 +129,9 @@ open class JdbcStatement internal constructor(
 
     override fun getWarnings(): SQLWarning? = null
 
-    override fun clearWarnings() {}
+    override fun clearWarnings() = Unit
 
-    override fun setCursorName(name: String?) {
-        throw SQLFeatureNotSupportedException("Named cursors not supported")
-    }
+    override fun setCursorName(name: String?) = throw SQLFeatureNotSupportedException("Named cursors not supported")
 
     override fun setEscapeProcessing(enable: Boolean) {
         escapeProcessing = enable
@@ -148,7 +146,7 @@ open class JdbcStatement internal constructor(
 
     override fun getQueryTimeout(): Int = queryTimeout
 
-    override fun cancel() {}
+    override fun cancel() = Unit
 
     override fun setFetchDirection(direction: Int) {
         if (direction != ResultSet.FETCH_FORWARD) {
