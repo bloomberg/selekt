@@ -202,10 +202,9 @@ class SelektDriver : Driver {
             it.toInt(HEX_RADIX).toByte()
         }.toByteArray()
 
-    private fun parseStringOrFileKey(keyProperty: String): ByteArray = runCatching {
-        val file = File(keyProperty)
-        if (file.exists() && file.isFile) {
-            file.readBytes()
+    private fun parseStringOrFileKey(keyProperty: String): ByteArray = File(keyProperty).runCatching {
+        if (exists() && isFile) {
+            readBytes()
         } else {
             keyProperty.toByteArray(Charsets.UTF_8)
         }
