@@ -137,7 +137,7 @@ jobs:
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
 
       - name: 'Download all native JARs'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: selekt-sqlcipher-*
           path: selekt-sqlite3-sqlcipher/build/artifacts
