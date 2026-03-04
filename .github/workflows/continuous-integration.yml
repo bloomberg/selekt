@@ -91,7 +91,7 @@ jobs:
           ./gradlew :selekt-sqlite3-sqlcipher:jar
 
       - name: 'Upload native JAR'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: selekt-sqlite3-sqlcipher-${{ matrix.platform }}
           path: selekt-sqlite3-sqlcipher/build/libs/*.jar
@@ -174,7 +174,7 @@ jobs:
         run: ./gradlew detekt lint -x lintRelease ${{ env.SCAN }}
 
       - name: 'Archive analysis reports'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7.0.0
         if: always()
         with:
           name: 'Analyses'
@@ -185,7 +185,7 @@ jobs:
         run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7.0.0
         if: always()
         with:
           name: 'Unit test and coverage reports'
