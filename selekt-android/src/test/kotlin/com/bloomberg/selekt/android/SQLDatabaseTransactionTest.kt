@@ -468,11 +468,13 @@ internal class SQLDatabaseTransactionTest {
                     put("id", 2)
                     put("value", "level_2")
                 }, ConflictAlgorithm.REPLACE)
-                transact {
-                    insert("Foo", ContentValues().apply {
-                        put("id", 2)
-                        put("value", "level_3_rollback")
-                    }, ConflictAlgorithm.ROLLBACK)
+                runCatching {
+                    transact {
+                        insert("Foo", ContentValues().apply {
+                            put("id", 2)
+                            put("value", "level_3_rollback")
+                        }, ConflictAlgorithm.ROLLBACK)
+                    }
                 }
             }
         }
