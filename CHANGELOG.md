@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.28.2
+
+### Fixes
+
+* Rollback quietly when ending a transaction in case SQLite3 rolled back on conflict.
+
 ## Version 0.28.1
 
 ### Fixes
