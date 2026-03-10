@@ -47,6 +47,7 @@ private object SharedSqlBuilder {
  *
  * @see <a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a>
  */
+@Suppress("Detekt.TooManyFunctions")
 @ThreadSafe
 class SQLDatabase(
     val path: String,
@@ -127,7 +128,7 @@ class SQLDatabase(
         )
     }
 
-    override fun endTransaction() = pledge { session.get().endTransaction() }
+    override fun endTransaction(): Unit = pledge { session.get().endTransaction() }
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
         compileStatement(
@@ -256,7 +257,7 @@ class SQLDatabase(
 
     fun <D, T> transact(
         database: D,
-        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        transactionMode: SQLiteTransactionMode,
         block: D.() -> T
     ): T = pledge {
         val session = session.get()
@@ -266,6 +267,23 @@ class SQLDatabase(
         }
         try {
             block(database).also { session.setTransactionSuccessful() }
+        } finally {
+            session.endTransaction()
+        }
+    }
+
+    fun <T> transact(
+        listener: SQLTransactionListener,
+        transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
+        block: SQLDatabase.() -> T
+    ): T = pledge {
+        val session = session.get()
+        when (transactionMode) {
+            SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
+            SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
+        }
+        try {
+            block(this).also { session.setTransactionSuccessful() }
         } finally {
             session.endTransaction()
         }
@@ -380,6 +398,18 @@ class SQLDatabase(
 
     override fun yieldTransaction(pauseMillis: Long) = pledge {
         session.get().yieldTransaction(pauseMillis)
+    }
+
+    fun setSavepoint(name: String? = null): String = pledge {
+        session.get().setSavepoint(name)
+    }
+
+    fun rollbackToSavepoint(name: String) = pledge {
+        session.get().rollbackToSavepoint(name)
+    }
+
+    fun releaseSavepoint(name: String) = pledge {
+        session.get().releaseSavepoint(name)
     }
 
     override fun onReleased() {

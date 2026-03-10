@@ -75,8 +75,8 @@ internal class SQLDatabaseTest {
 
     @Test
     fun nestedTransactions() = database.run {
-        transact { transact { transact { } }
-    }.also { verifyCommit() } }
+        transact { transact { transact { } } }
+    }.also { verifyCommit() }
 
     @Test
     fun badNestedTransactionThenGoodTransaction() {

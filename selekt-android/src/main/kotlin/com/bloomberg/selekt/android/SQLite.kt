@@ -21,7 +21,6 @@ import android.database.sqlite.SQLiteAbortException
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.database.sqlite.SQLiteCantOpenDatabaseException
-import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabaseCorruptException
 import android.database.sqlite.SQLiteDatabaseLockedException
 import android.database.sqlite.SQLiteDatatypeMismatchException
@@ -51,6 +50,7 @@ import com.bloomberg.selekt.SQL_NOT_FOUND
 import com.bloomberg.selekt.SQL_RANGE
 import com.bloomberg.selekt.SQL_READONLY
 import com.bloomberg.selekt.SQL_TOO_BIG
+import com.bloomberg.selekt.android.exceptions.SelektSQLiteConstraintException
 
 internal val sqlite = loadSQLite()
 
@@ -104,7 +104,7 @@ internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
             SQL_NOT_FOUND, SQL_AUTH, SQL_CANT_OPEN -> SQLiteCantOpenDatabaseException(exceptionMessage)
             SQL_MISMATCH -> SQLiteDatatypeMismatchException(exceptionMessage)
             SQL_ABORT -> SQLiteAbortException(exceptionMessage)
-            SQL_CONSTRAINT -> SQLiteConstraintException(exceptionMessage)
+            SQL_CONSTRAINT -> SelektSQLiteConstraintException(exceptionMessage, code)
             SQL_TOO_BIG -> SQLiteBlobTooBigException(exceptionMessage)
             SQL_FULL -> SQLiteFullException(exceptionMessage)
             SQL_RANGE -> SQLiteBindOrColumnIndexOutOfRangeException(exceptionMessage)
