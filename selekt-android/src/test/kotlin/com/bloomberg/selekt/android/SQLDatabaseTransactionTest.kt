@@ -454,6 +454,35 @@ internal class SQLDatabaseTransactionTest {
 
     @ParameterizedTest
     @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun deeplyNestedTransactionOnConflictRollback(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT PRIMARY KEY, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "level_1")
+            }, ConflictAlgorithm.REPLACE)
+            transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 2)
+                    put("value", "level_2")
+                }, ConflictAlgorithm.REPLACE)
+                transact {
+                    insert("Foo", ContentValues().apply {
+                        put("id", 2)
+                        put("value", "level_3_rollback")
+                    }, ConflictAlgorithm.ROLLBACK)
+                }
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertFalse(cursor.moveToFirst())
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
     fun rollbackToSavepointPreservesTransaction(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
