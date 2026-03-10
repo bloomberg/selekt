@@ -7,6 +7,10 @@ Change Log
 
 * Rollback quietly when ending a transaction in case SQLite3 rolled back on conflict.
 
+### Dependencies
+
+* Gradle 9.4.0
+
 ## Version 0.28.1
 
 ### Fixes
