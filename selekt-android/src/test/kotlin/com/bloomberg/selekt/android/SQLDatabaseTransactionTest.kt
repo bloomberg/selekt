@@ -458,17 +458,17 @@ internal class SQLDatabaseTransactionTest {
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
         it.exec("CREATE TABLE 'Foo' (id INT PRIMARY KEY, value TEXT)")
-        it.transact {
-            insert("Foo", ContentValues().apply {
-                put("id", 1)
-                put("value", "level_1")
-            }, ConflictAlgorithm.REPLACE)
-            transact {
+        runCatching {
+            it.transact {
                 insert("Foo", ContentValues().apply {
-                    put("id", 2)
-                    put("value", "level_2")
+                    put("id", 1)
+                    put("value", "level_1")
                 }, ConflictAlgorithm.REPLACE)
-                runCatching {
+                transact {
+                    insert("Foo", ContentValues().apply {
+                        put("id", 2)
+                        put("value", "level_2")
+                    }, ConflictAlgorithm.REPLACE)
                     transact {
                         insert("Foo", ContentValues().apply {
                             put("id", 2)
