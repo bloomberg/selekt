@@ -177,7 +177,8 @@ internal class SQLSession(
             if (state.successes == 0) {
                 commit()
             } else {
-                rollback()
+                // Can throw if SQLite3 rolled back the transaction on conflict.
+                rollbackQuietly()
             }
         } finally {
             state.clear()
