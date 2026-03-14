@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -97,7 +98,7 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return runCatching {
             connection.ensureTransaction()
-            database.compileStatement(sql, buildBindArgs()).executeUpdateDelete()
+            executeUpdate(database.compileStatement(sql, buildBindArgs()))
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -106,15 +107,30 @@ internal open class JdbcPreparedStatement(
     override fun execute(): Boolean {
         checkClosed()
         return runCatching {
-            if (sql.trim().uppercase().startsWith("SELECT")) {
+            connection.ensureTransaction()
+            val statement = database.compileStatement(sql, buildBindArgs())
+            if (statement.isReadOnly) {
                 executeQuery()
                 true
             } else {
-                executeUpdate()
+                executeUpdate(statement)
                 false
             }
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        }
+    }
+
+    private fun executeUpdate(statement: ISQLStatement): Int {
+        return if (statement.isReadOnly) {
+            lastGeneratedKey = -1L
+            statement.executeUpdateDelete()
+        } else if (isInsertSql(sql)) {
+            lastGeneratedKey = statement.executeInsert()
+            1
+        } else {
+            lastGeneratedKey = -1L
+            statement.executeUpdateDelete()
         }
     }
 
@@ -166,8 +182,8 @@ internal open class JdbcPreparedStatement(
             return IntArray(0)
         }
         try {
-            if (sql.trim().uppercase().startsWith("SELECT")) {
-                throw SQLException("SELECT statements are not allowed in batch execution")
+            if (database.compileStatement(sql).isReadOnly) {
+                throw SQLException("Read-only statements are not allowed in batch execution")
             }
             database.batch(sql, sequence {
                 var chunk: BatchChunk? = firstChunk

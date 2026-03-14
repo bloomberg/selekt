@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -105,6 +106,10 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun execute() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn readOnlyStatement
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         assertTrue(preparedStatement.apply {
             setInt(1, 42)
@@ -263,6 +268,7 @@ internal class JdbcPreparedStatementTest {
             setInt(2, 2)
             addBatch()
         }
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
             invocation.getArgument<Sequence<Array<Any?>>>(1).count()
         }
@@ -284,6 +290,7 @@ internal class JdbcPreparedStatementTest {
                 addBatch()
             }
         }
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
             invocation.getArgument<Sequence<Array<Any?>>>(1).count()
         }
@@ -304,6 +311,10 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun executeWithoutParameters() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn readOnlyStatement
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         assertTrue(JdbcPreparedStatement(connection, database, "SELECT COUNT(*) FROM users").execute())
     }
@@ -502,6 +513,7 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun addBatchWithoutParameters() {
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doReturn 2
         val results = JdbcPreparedStatement(
             connection,
@@ -553,6 +565,10 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun executeWithUnsetParameters() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn readOnlyStatement
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(
             connection,
@@ -789,15 +805,21 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun executeBatchWithSelectStatement(): Unit = JdbcPreparedStatement(
-        connection,
-        database,
-        "SELECT * FROM test WHERE id=?"
-    ).run {
-        setInt(1, 1)
-        addBatch()
-        assertFailsWith<SQLException> {
-            executeBatch()
+    fun executeBatchWithSelectStatement() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn readOnlyStatement
+        JdbcPreparedStatement(
+            connection,
+            database,
+            "SELECT * FROM test WHERE id=?"
+        ).run {
+            setInt(1, 1)
+            addBatch()
+            assertFailsWith<SQLException> {
+                executeBatch()
+            }
         }
     }
 
@@ -816,6 +838,7 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun largeBatch() {
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doReturn 50
         val results = JdbcPreparedStatement(
             connection,

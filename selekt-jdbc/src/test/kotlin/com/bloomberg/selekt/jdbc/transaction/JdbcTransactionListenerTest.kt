@@ -19,15 +19,19 @@ package com.bloomberg.selekt.jdbc.transaction
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
 import java.sql.DriverManager
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class JdbcTransactionListenerTest {
-    private fun getConnectionUrl(testName: String) = "jdbc:sqlite:file:$testName?mode=memory"
+    @TempDir
+    lateinit var tempDir: File
+
+    private fun getConnectionUrl(testName: String) =
+        "jdbc:sqlite:${File(tempDir, "$testName.db").absolutePath}"
 
     private class TrackingListener : SQLTransactionListener {
         val beginCount = AtomicInteger(0)

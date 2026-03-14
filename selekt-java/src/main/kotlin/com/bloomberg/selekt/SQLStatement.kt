@@ -105,7 +105,8 @@ internal class SQLStatement private constructor(
     private val sql: String,
     private val statementType: SQLStatementType,
     private val args: Array<Any?>,
-    private val asWrite: Boolean
+    private val asWrite: Boolean,
+    override val isReadOnly: Boolean
 ) : ISQLStatement {
     private val namedParameters: Map<String, Int> by lazy { parseNamedParameters(sql) }
 
@@ -216,7 +217,8 @@ internal class SQLStatement private constructor(
                     sql,
                     statementType,
                     bindArgs?.copyOfRange(0, parameterCount) as Array<Any?>? ?: arrayOfNulls<Any?>(parameterCount),
-                    !(isReadOnly && !statementType.isPredictedWrite)
+                    !(isReadOnly && !statementType.isPredictedWrite),
+                    isReadOnly
                 )
             }
         }

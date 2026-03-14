@@ -16,9 +16,11 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
+import com.bloomberg.selekt.jdbc.result.GeneratedKeysResultSet
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import java.sql.BatchUpdateException
 import java.sql.Connection
@@ -30,6 +32,10 @@ import java.sql.Statement
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
 import javax.annotation.concurrent.NotThreadSafe
+
+internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
+    startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
+}
 
 @NotThreadSafe
 @Suppress("TooGenericExceptionCaught")
@@ -49,6 +55,7 @@ open class JdbcStatement internal constructor(
     private var closed = false
     private var currentResultSet: ResultSet? = null
     private var updateCount = -1
+    protected var lastGeneratedKey = -1L
     private var fetchSize = 0
     private var maxRows = 0
     private var queryTimeout = 0
@@ -76,30 +83,47 @@ open class JdbcStatement internal constructor(
     override fun executeUpdate(sql: String): Int {
         checkClosed()
         return runCatching {
-            connection.ensureTransaction()
-            val statement = database.compileStatement(sql)
-            updateCount = statement.executeUpdateDelete()
-            currentResultSet = null
-            updateCount
+            executeUpdate(sql, database.compileStatement(sql))
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
     }
 
-    @Suppress("Detekt.ComplexCondition")
     override fun execute(sql: String): Boolean {
         checkClosed()
-        return sql.trim().uppercase().runCatching {
-            if (startsWith("SELECT") ||
-                startsWith("WITH") ||
-                startsWith("PRAGMA") ||
-                startsWith("EXPLAIN")) {
-                executeQuery(sql)
-                true
-            } else {
-                executeUpdate(sql)
-                false
+        val statement = runCatching {
+            connection.ensureTransaction()
+            database.compileStatement(sql)
+        }.getOrElse { e ->
+            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        }
+        return if (statement.isReadOnly) {
+            executeQuery(sql)
+            true
+        } else {
+            executeUpdate(sql, statement)
+            false
+        }
+    }
+
+    private fun executeUpdate(sql: String, statement: ISQLStatement): Int {
+        checkClosed()
+        return runCatching {
+            connection.ensureTransaction()
+            statement.run {
+                if (isReadOnly) {
+                    lastGeneratedKey = -1L
+                    updateCount = 0
+                } else if (isInsertSql(sql)) {
+                    lastGeneratedKey = executeInsert()
+                    updateCount = 1
+                } else {
+                    lastGeneratedKey = -1L
+                    updateCount = executeUpdateDelete()
+                }
             }
+            currentResultSet = null
+            updateCount
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -225,21 +249,23 @@ open class JdbcStatement internal constructor(
                 val updateCount = executeUpdate(sql)
                 results.add(updateCount)
             }.onFailure { e ->
-                throw BatchUpdateException(
-                    e.message ?: "Batch execution failed",
-                    (e as SQLException).sqlState,
-                    e.errorCode,
-                    results.toIntArray(),
-                    e
-                )
+                (e as? SQLException ?: SQLException(e.message, e)).run {
+                    throw BatchUpdateException(
+                        message ?: "Batch execution failed",
+                        sqlState,
+                        errorCode,
+                        results.toIntArray(),
+                        this
+                    )
+                }
             }
         }
         return results.toIntArray()
     }
 
     private fun validateBatchSql(sql: String) {
-        if (sql.trim().uppercase().startsWith("SELECT")) {
-            throw SQLException("SELECT statements are not allowed in batch execution")
+        if (database.compileStatement(sql).isReadOnly) {
+            throw SQLException("Read-only statements are not allowed in batch execution")
         }
     }
 
@@ -269,7 +295,10 @@ open class JdbcStatement internal constructor(
 
     override fun execute(sql: String, columnNames: Array<out String>): Boolean = execute(sql)
 
-    override fun getGeneratedKeys(): ResultSet = throw SQLFeatureNotSupportedException("Generated keys not supported")
+    override fun getGeneratedKeys(): ResultSet {
+        checkClosed()
+        return GeneratedKeysResultSet(lastGeneratedKey, this)
+    }
 
     override fun <T> unwrap(iface: Class<T>): T = if (iface.isAssignableFrom(this::class.java)) {
         @Suppress("UNCHECKED_CAST")

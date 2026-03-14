@@ -17,6 +17,13 @@
 package com.bloomberg.selekt
 
 interface ISQLStatement : ISQLProgram {
+    /**
+     * True if and only if the prepared statement makes no direct changes to the content of the database.
+     *
+     * @see <a href="https://www.sqlite.org/c3ref/stmt_readonly.html">sqlite3_stmt_readonly</a>
+     */
+    val isReadOnly: Boolean
+
     fun execute()
 
     fun executeInsert(): Long
