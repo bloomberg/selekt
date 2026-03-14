@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 0.29.0
+
+### Fixes
+
+* Rollback quietly when ending a transaction in case SQLite3 rolled back on conflict.
+
+### Features
+
+* Support savepoints.
+
+### Dependencies
+
+* Gradle 9.4.0
+
 ## Version 0.28.1
 
 ### Fixes
