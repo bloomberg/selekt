@@ -609,7 +609,7 @@
 </tr>
 <tr>
 <td><a href="end-transaction/">endTransaction</a></td>
-<td>[jvm]<br>open override fun <a href="end-transaction/">endTransaction</a>(): <!---  GfmCommand {"@class":"org.jetbrains.dokka.gfm.ResolveLinkGfmCommand","dri":{"packageName":"","classNames":"<Error class: unknown class>","callable":null,"target":{"@class":"org.jetbrains.dokka.links.PointingToDeclaration"},"extra":null}} --->&lt;Error class: unknown class&gt;<!--- ---></td>
+<td>[jvm]<br>open override fun <a href="end-transaction/">endTransaction</a>()</td>
 </tr>
 <tr>
 <td><a href="exec/">exec</a></td>
@@ -644,6 +644,18 @@
 <td>[jvm]<br>fun <a href="release-memory/">releaseMemory</a>(priority: <a href="../../com.bloomberg.selekt.pools/-priority/">Priority</a>)</td>
 </tr>
 <tr>
+<td><a href="release-savepoint/">releaseSavepoint</a></td>
+<td>[jvm]<br>fun <a href="release-savepoint/">releaseSavepoint</a>(name: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html">String</a>)</td>
+</tr>
+<tr>
+<td><a href="rollback-to-savepoint/">rollbackToSavepoint</a></td>
+<td>[jvm]<br>fun <a href="rollback-to-savepoint/">rollbackToSavepoint</a>(name: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html">String</a>)</td>
+</tr>
+<tr>
+<td><a href="set-savepoint/">setSavepoint</a></td>
+<td>[jvm]<br>fun <a href="set-savepoint/">setSavepoint</a>(name: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html">String</a>? = null): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html">String</a></td>
+</tr>
+<tr>
 <td><a href="set-transaction-successful/">setTransactionSuccessful</a></td>
 <td>[jvm]<br>open override fun <a href="set-transaction-successful/">setTransactionSuccessful</a>()</td>
 </tr>
@@ -653,7 +665,7 @@
 </tr>
 <tr>
 <td><a href="transact/">transact</a></td>
-<td>[jvm]<br>fun &lt;<a href="transact/">T</a>&gt; <a href="transact/">transact</a>(transactionMode: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="./">SQLDatabase</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a><br>fun &lt;<a href="transact/">D</a>, <a href="transact/">T</a>&gt; <a href="transact/">transact</a>(database: <a href="transact/">D</a>, transactionMode: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="transact/">D</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a></td>
+<td>[jvm]<br>fun &lt;<a href="transact/">T</a>&gt; <a href="transact/">transact</a>(transactionMode: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="./">SQLDatabase</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a><br>fun &lt;<a href="transact/">D</a>, <a href="transact/">T</a>&gt; <a href="transact/">transact</a>(database: <a href="transact/">D</a>, transactionMode: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a>, block: <a href="transact/">D</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a><br>fun &lt;<a href="transact/">T</a>&gt; <a href="transact/">transact</a>(listener: <a href="../-s-q-l-transaction-listener/">SQLTransactionListener</a>, transactionMode: <a href="../../../../selekt-api/selekt-api/com.bloomberg.selekt/-s-q-lite-transaction-mode/">SQLiteTransactionMode</a> = SQLiteTransactionMode.EXCLUSIVE, block: <a href="./">SQLDatabase</a>.() -&gt; <a href="transact/">T</a>): <a href="transact/">T</a></td>
 </tr>
 <tr>
 <td><a href="update/">update</a></td>

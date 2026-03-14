@@ -1309,6 +1309,18 @@
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/release-savepoint/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/rollback-to-savepoint/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/set-savepoint/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt/-s-q-l-database/set-transaction-successful/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
@@ -1778,6 +1790,18 @@
     </url>
     <url>
          <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.commons/-managed-string-builder/use/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.exceptions/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.exceptions/-selekt-s-q-l-exception/</loc>
+         <lastmod>2026-03-14</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/kdoc/selekt-java/selekt-java/com.bloomberg.selekt.exceptions/-selekt-s-q-l-exception/vendor-code/</loc>
          <lastmod>2026-03-14</lastmod>
     </url>
     <url>
