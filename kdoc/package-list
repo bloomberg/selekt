@@ -381,7 +381,7 @@ $dokka.location:com.bloomberg.selekt/ContentValues/size/#/PointingToDeclaration/
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration.Companion///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/-companion/index.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration.Companion/COMMON_BUSY_TIMEOUT_MILLIS/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/-companion/-c-o-m-m-o-n_-b-u-s-y_-t-i-m-e-o-u-t_-m-i-l-l-i-s.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration///PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/index.md
-$dokka.location:com.bloomberg.selekt/DatabaseConfiguration/DatabaseConfiguration/#kotlin.Long#kotlin.Int#kotlin.Long#kotlin.Int#kotlin.Int#kotlin.String#com.bloomberg.selekt.SQLiteSecureDelete#kotlin.Long#com.bloomberg.selekt.SQLiteTraceEventMode?/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/-database-configuration.md
+$dokka.location:com.bloomberg.selekt/DatabaseConfiguration/DatabaseConfiguration/#kotlin.Long#kotlin.Int#kotlin.Long#kotlin.Int#kotlin.Int#kotlin.String#com.bloomberg.selekt.SQLiteSecureDelete#kotlin.Long#com.bloomberg.selekt.SQLiteTraceEventMode?#kotlin.Boolean/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/-database-configuration.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/borrowWaitTimeoutMillis/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/borrow-wait-timeout-millis.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/busyTimeoutMillis/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/busy-timeout-millis.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/evictionDelayMillis/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/eviction-delay-millis.md
@@ -391,6 +391,7 @@ $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/name/#/PointingToDecl
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/secureDelete/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/secure-delete.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/timeBetweenEvictionRunsMillis/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/time-between-eviction-runs-millis.md
 $dokka.location:com.bloomberg.selekt/DatabaseConfiguration/trace/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/trace.md
+$dokka.location:com.bloomberg.selekt/DatabaseConfiguration/useNativeTransactionListeners/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-database-configuration/use-native-transaction-listeners.md
 $dokka.location:com.bloomberg.selekt/IConflictAlgorithm///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-conflict-algorithm/index.md
 $dokka.location:com.bloomberg.selekt/IConflictAlgorithm/sql/#/PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-conflict-algorithm/sql.md
 $dokka.location:com.bloomberg.selekt/IContentValues///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-content-values/index.md
