@@ -544,6 +544,7 @@ $dokka.location:com.bloomberg.selekt/ISQLStatement///PointingToDeclaration/sele
 $dokka.location:com.bloomberg.selekt/ISQLStatement/execute/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/execute.md
 $dokka.location:com.bloomberg.selekt/ISQLStatement/executeInsert/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/execute-insert.md
 $dokka.location:com.bloomberg.selekt/ISQLStatement/executeUpdateDelete/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/execute-update-delete.md
+$dokka.location:com.bloomberg.selekt/ISQLStatement/isReadOnly/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/is-read-only.md
 $dokka.location:com.bloomberg.selekt/ISQLStatement/simpleQueryForLong/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/simple-query-for-long.md
 $dokka.location:com.bloomberg.selekt/ISQLStatement/simpleQueryForString/#/PointingToDeclaration/selekt-api/selekt-api/com.bloomberg.selekt/-i-s-q-l-statement/simple-query-for-string.md
 $dokka.location:com.bloomberg.selekt/ISQLTransactor///PointingToDeclaration/selekt-java/selekt-java/com.bloomberg.selekt/-i-s-q-l-transactor/index.md
