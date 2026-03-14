@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.29.1
+
+### Fixes
+
+* Support JDBC generated keys.
+
 ## Version 0.29.0
 
 ### Fixes
