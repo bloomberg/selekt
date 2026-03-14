@@ -30,7 +30,6 @@ import java.lang.foreign.ValueLayout.JAVA_LONG
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
-import java.util.concurrent.atomic.AtomicBoolean
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -61,11 +60,14 @@ internal class ExternalSQLite(
     }
 
     internal object Singleton {
-        private val isInitialised = AtomicBoolean(false)
+        @Volatile
+        private var instance: IExternalSQLite? = null
 
-        operator fun invoke(configuration: SQLiteConfiguration, loader: () -> Unit): IExternalSQLite {
-            check(!isInitialised.getAndSet(true)) { "Singleton is already initialised." }
-            return ExternalSQLite(configuration, loader)
+        operator fun invoke(
+            configuration: SQLiteConfiguration,
+            loader: () -> Unit
+        ): IExternalSQLite = instance ?: synchronized(this) {
+            instance ?: ExternalSQLite(configuration, loader).also { instance = it }
         }
     }
 
@@ -682,7 +684,6 @@ internal class ExternalSQLite(
         private val sqliteTransient = MemorySegment.ofAddress(-1L)
 
         private val criticalOption = Linker.Option.critical(true)
-        private val nonCriticalOption = Linker.Option.critical(false)
 
         private val sqlite3_bind_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
@@ -741,13 +742,11 @@ internal class ExternalSQLite(
         )
         private val sqlite3_blob_open: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_open").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, JAVA_INT, ADDRESS),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, JAVA_INT, ADDRESS)
         )
         private val sqlite3_blob_read: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_read").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, JAVA_INT),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)
         )
         private val sqlite3_blob_reopen: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_reopen").orElseThrow(),
@@ -756,8 +755,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_blob_write: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_write").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, JAVA_INT),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, JAVA_INT)
         )
         private val sqlite3_busy_timeout: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_busy_timeout").orElseThrow(),
@@ -776,8 +774,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_close_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_close_v2").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_column_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_blob").orElseThrow(),
@@ -866,8 +863,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_exec: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_exec").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS)
         )
         private val sqlite3_expanded_sql: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_expanded_sql").orElseThrow(),
@@ -886,8 +882,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_finalize: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_finalize").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_get_autocommit: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_get_autocommit").orElseThrow(),
@@ -931,8 +926,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_open_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_open_v2").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS),
-            nonCriticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)
         )
         private val sqlite3_prepare_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_prepare_v2").orElseThrow(),
@@ -951,8 +945,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_reset: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_reset").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_rollback_hook: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_rollback_hook").orElseThrow(),
@@ -966,8 +959,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_step: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_step").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_stmt_busy: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_stmt_busy").orElseThrow(),

@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.loadLibrary
-import java.util.concurrent.atomic.AtomicBoolean
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -39,11 +38,14 @@ internal class ExternalSQLite(
     }
 
     internal object Singleton {
-        private val isInitialised = AtomicBoolean(false)
+        @Volatile
+        private var instance: IExternalSQLite? = null
 
-        operator fun invoke(configuration: SQLiteConfiguration, loader: () -> Unit): IExternalSQLite {
-            check(!isInitialised.getAndSet(true)) { "Singleton is already initialised." }
-            return ExternalSQLite(configuration, loader)
+        operator fun invoke(
+            configuration: SQLiteConfiguration,
+            loader: () -> Unit
+        ): IExternalSQLite = instance ?: synchronized(this) {
+            instance ?: ExternalSQLite(configuration, loader).also { instance = it }
         }
     }
 

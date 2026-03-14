@@ -277,7 +277,8 @@ class SelektDataSource : DataSource {
         val baseConfig = journalModeValue.databaseConfiguration
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,
-            busyTimeoutMillis = busyTimeoutValue
+            busyTimeoutMillis = busyTimeoutValue,
+            useNativeTransactionListeners = true
         )
     }
 

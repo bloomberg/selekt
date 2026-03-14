@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class ExternalSQLiteTest {
@@ -47,9 +47,7 @@ internal class ExternalSQLiteTest {
 
     @Test
     fun `externalSQLiteSingleton creates singleton`() {
-        assertFailsWith<IllegalStateException> {
-            externalSQLiteSingleton()
-        }
+        assertSame(sqlite, externalSQLiteSingleton())
     }
 
     @Test

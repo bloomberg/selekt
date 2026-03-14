@@ -57,7 +57,7 @@ class SQLDatabase(
     random: IRandom = CommonThreadLocalRandom
 ) : IDatabase, SharedCloseable() {
     private val connectionPool = openConnectionPool(path, sqlite, configuration, random, key)
-    private val session = ThreadLocalSession(connectionPool)
+    private val session = ThreadLocalSession(connectionPool, configuration.useNativeTransactionListeners)
 
     override val inTransaction: Boolean
         get() = session().inTransaction

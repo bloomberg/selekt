@@ -34,7 +34,7 @@ import javax.annotation.concurrent.NotThreadSafe
 @NotThreadSafe
 @Suppress("TooGenericExceptionCaught")
 open class JdbcStatement internal constructor(
-    private val connection: JdbcConnection,
+    internal val connection: JdbcConnection,
     private val database: SQLDatabase,
     private val resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
     private val resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
@@ -76,6 +76,7 @@ open class JdbcStatement internal constructor(
     override fun executeUpdate(sql: String): Int {
         checkClosed()
         return runCatching {
+            connection.ensureTransaction()
             val statement = database.compileStatement(sql)
             updateCount = statement.executeUpdateDelete()
             currentResultSet = null
