@@ -26,6 +26,7 @@ import java.sql.ResultSet
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
@@ -52,11 +53,9 @@ internal class JdbcStatementTest {
     fun setUp() {
         mockDatabase = mock<SQLDatabase>()
         mockCursor = mock<ICursor>()
-
         val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
         mockConnection = JdbcConnection(mockDatabase, connectionURL, properties)
-
         statement = JdbcStatement(mockConnection, mockDatabase)
     }
 
@@ -64,28 +63,31 @@ internal class JdbcStatementTest {
     fun executeQuery() {
         val sql = "SELECT * FROM users"
         whenever(mockDatabase.query(sql, emptyArray())) doReturn mockCursor
-
-        val resultSet = statement.executeQuery(sql)
-        assertNotNull(resultSet)
-        assertTrue(resultSet is JdbcResultSet)
-        assertEquals(resultSet, statement.resultSet)
+        statement.executeQuery(sql).run {
+            assertNotNull(this)
+            assertTrue(this is JdbcResultSet)
+            assertEquals(this, this@JdbcStatementTest.statement.resultSet)
+        }
     }
 
     @Test
     fun executeUpdate() {
         val sql = "INSERT INTO users (name) VALUES ('test')"
-        val mockStatement = mock<ISQLStatement>()
+        val mockStatement = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doReturn 1L
+        }
         whenever(mockDatabase.compileStatement(sql, null)) doReturn mockStatement
-        whenever(mockStatement.executeUpdateDelete()) doReturn 1
-
-        val updateCount = statement.executeUpdate(sql)
-        assertEquals(1, updateCount)
+        assertEquals(1, statement.executeUpdate(sql))
         assertEquals(1, statement.updateCount)
     }
 
     @Test
     fun executeWithQuery() {
         val sql = "SELECT COUNT(*) FROM users"
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(sql, null)) doReturn readOnlyStatement
         whenever(mockDatabase.query(sql, emptyArray())) doReturn mockCursor
         assertTrue(statement.execute(sql))
         assertNotNull(statement.resultSet)
@@ -99,8 +101,7 @@ internal class JdbcStatementTest {
             whenever(it.executeUpdateDelete()) doReturn 3
         }
         whenever(mockDatabase.compileStatement(sql, null)) doReturn mockStatement
-        val result = statement.execute(sql)
-        assertFalse(result)
+        assertFalse(statement.execute(sql))
         assertNull(statement.resultSet)
         assertEquals(3, statement.updateCount)
     }
@@ -112,7 +113,7 @@ internal class JdbcStatementTest {
             addBatch("INSERT INTO users (name) VALUES ('user2')")
         }
         val mockStatement = mock<ISQLStatement> {
-            whenever(it.executeUpdateDelete()) doReturn 1
+            whenever(it.executeInsert()) doReturn 1L
         }
         whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockStatement
         statement.executeBatch().run {
@@ -241,23 +242,56 @@ internal class JdbcStatementTest {
 
     @Test
     fun getGeneratedKeys() {
-        assertFailsWith<SQLException> {
-            statement.generatedKeys
+        statement.generatedKeys.run {
+            assertNotNull(this)
+            assertFalse(next(), "No insert performed, generated keys should have no valid row")
+        }
+    }
+
+    @Test
+    fun getGeneratedKeysAfterInsert() {
+        val mockStatement = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doReturn 42L
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockStatement
+        statement.executeUpdate("INSERT INTO users (name) VALUES ('test')")
+        statement.generatedKeys.run {
+            assertTrue(next())
+            assertEquals(42L, getLong(1))
+            assertFalse(next())
+        }
+    }
+
+    @Test
+    fun getGeneratedKeysResetAfterNonInsert() {
+        val mockStatement = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doReturn 42L
+            whenever(it.executeUpdateDelete()) doReturn 1
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockStatement
+        statement.executeUpdate("INSERT INTO users (name) VALUES ('test')")
+        statement.executeUpdate("DELETE FROM users WHERE id = 1")
+        statement.generatedKeys.run {
+            assertFalse(next(), "Generated keys should be empty after non-INSERT")
         }
     }
 
     @Test
     fun executeUpdateWithGeneratedKeys() {
-        assertFailsWith<SQLException> {
-            statement.executeUpdate("INSERT INTO users (name) VALUES ('test')", Statement.RETURN_GENERATED_KEYS)
+        val mockStatement = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doReturn 1L
         }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockStatement
+        assertEquals(1, statement.executeUpdate("INSERT INTO users (name) VALUES ('test')", Statement.RETURN_GENERATED_KEYS))
     }
 
     @Test
     fun executeWithGeneratedKeys() {
-        assertFailsWith<SQLException> {
-            statement.execute("INSERT INTO users (name) VALUES ('test')", Statement.RETURN_GENERATED_KEYS)
+        val mockStatement = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doReturn 1L
         }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockStatement
+        assertFalse(statement.execute("INSERT INTO users (name) VALUES ('test')", Statement.RETURN_GENERATED_KEYS))
     }
 
     @Test
@@ -315,10 +349,15 @@ internal class JdbcStatementTest {
             "DROP TABLE test" to false
         )
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
-        val mockSqlStatement = mock<ISQLStatement> {
-            whenever(it.executeUpdateDelete()) doReturn 1
+        val queryMap = queries.toMap()
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doAnswer { invocation ->
+            val sql = invocation.getArgument<String>(0)
+            mock<ISQLStatement> {
+                whenever(it.isReadOnly) doReturn (queryMap[sql] ?: false)
+                whenever(it.executeUpdateDelete()) doReturn 1
+                whenever(it.executeInsert()) doReturn 1L
+            }
         }
-        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn mockSqlStatement
         queries.forEach { (sql, isQuery) ->
             val result = statement.execute(sql)
             assertEquals(isQuery, result, "SQL: $sql should ${if (isQuery) {
@@ -331,6 +370,10 @@ internal class JdbcStatementTest {
 
     @Test
     fun pragmaQuery() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn readOnlyStatement
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
         assertTrue(statement.execute("PRAGMA table_info(users)"))
         assertNotNull(statement.resultSet)
@@ -338,6 +381,10 @@ internal class JdbcStatementTest {
 
     @Test
     fun explainQuery() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn readOnlyStatement
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
         assertTrue(statement.execute("EXPLAIN SELECT * FROM users"))
         assertNotNull(statement.resultSet)
@@ -346,7 +393,7 @@ internal class JdbcStatementTest {
     @Test
     fun executeUpdateOverloads() {
         val sqlStatement = mock<ISQLStatement> {
-            whenever(it.executeUpdateDelete()) doReturn 1
+            whenever(it.executeInsert()) doReturn 1L
         }
         whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn sqlStatement
         statement.run {
@@ -358,6 +405,10 @@ internal class JdbcStatementTest {
 
     @Test
     fun executeOverloads() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn readOnlyStatement
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
         statement.run {
             assertTrue(execute("SELECT * FROM users", Statement.NO_GENERATED_KEYS))
@@ -397,7 +448,7 @@ internal class JdbcStatementTest {
     @Test
     fun getResultSetAfterUpdate() {
         val sqlStatement = mock<ISQLStatement> {
-            whenever(it.executeUpdateDelete()) doReturn 1
+            whenever(it.executeInsert()) doReturn 1L
         }
         whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn sqlStatement
         statement.run {
@@ -462,17 +513,23 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun executeBatchWithSelectStatement(): Unit = statement.run {
-        addBatch("SELECT * FROM users")
-        assertFailsWith<SQLException> {
-            executeBatch()
+    fun executeBatchWithSelectStatement() {
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doReturn readOnlyStatement
+        statement.run {
+            addBatch("SELECT * FROM users")
+            assertFailsWith<SQLException> {
+                executeBatch()
+            }
         }
     }
 
     @Test
     fun executeBatchClearsOnFailure() {
         val sqlStatement = mock<ISQLStatement> {
-            whenever(it.executeUpdateDelete()) doReturn 1
+            whenever(it.executeInsert()) doReturn 1L
         }
         mockDatabase.apply {
             whenever(compileStatement("INSERT INTO users (name) VALUES ('test')", null)) doReturn sqlStatement

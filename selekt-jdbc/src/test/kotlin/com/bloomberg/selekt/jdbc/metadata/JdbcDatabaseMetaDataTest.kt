@@ -246,7 +246,7 @@ internal class JdbcDatabaseMetaDataTest {
     fun unsupportedFeatures(): Unit = metaData.run {
         assertFalse(supportsStoredProcedures())
         assertFalse(supportsMultipleResultSets())
-        assertFalse(supportsGetGeneratedKeys())
+        assertTrue(supportsGetGeneratedKeys())
         assertFalse(supportsResultSetHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT))
         assertTrue(supportsResultSetHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT))
         assertTrue(supportsSavepoints())

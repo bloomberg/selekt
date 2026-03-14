@@ -58,8 +58,8 @@ internal class ExposedSelektTest {
     lateinit var tempDir: File
 
     private fun connect(): Database {
-        val dbFile = File(tempDir, "test_${counter.incrementAndGet()}.db")
-        val url = "jdbc:sqlite:${dbFile.absolutePath}"
+        val databaseFile = File(tempDir, "test_${counter.incrementAndGet()}.db")
+        val url = "jdbc:sqlite:${databaseFile.absolutePath}"
         return Database.connect({ DriverManager.getConnection(url) })
     }
 

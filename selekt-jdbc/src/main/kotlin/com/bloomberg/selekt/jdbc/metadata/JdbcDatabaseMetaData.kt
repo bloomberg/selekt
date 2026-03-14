@@ -236,7 +236,7 @@ internal class JdbcDatabaseMetaData(
 
     override fun supportsTransactionIsolationLevel(level: Int): Boolean = Connection.TRANSACTION_SERIALIZABLE == level
 
-    override fun supportsGetGeneratedKeys(): Boolean = false
+    override fun supportsGetGeneratedKeys(): Boolean = true
 
     override fun supportsResultSetType(type: Int): Boolean = when (type) {
         ResultSet.TYPE_FORWARD_ONLY -> true
