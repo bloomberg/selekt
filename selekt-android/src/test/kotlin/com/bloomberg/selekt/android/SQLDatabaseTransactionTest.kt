@@ -17,12 +17,14 @@
 package com.bloomberg.selekt.android
 
 import android.database.SQLException
+import android.database.sqlite.SQLiteConstraintException
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -454,6 +456,31 @@ internal class SQLDatabaseTransactionTest {
 
     @ParameterizedTest
     @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionRestoresSavepoints(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            val savepoint = it.setSavepoint("test_sp")
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "before_yield")
+            }, ConflictAlgorithm.REPLACE)
+            it.yieldTransaction()
+            insert("Foo", ContentValues().apply {
+                put("id", 2)
+                put("value", "after_yield")
+            }, ConflictAlgorithm.REPLACE)
+            it.rollbackToSavepoint(savepoint)
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
     fun rollbackToSavepointPreservesTransaction(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
@@ -523,6 +550,338 @@ internal class SQLDatabaseTransactionTest {
         it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(1, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun nestedTransactionCreatesSavepoint(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "outer")
+            }, ConflictAlgorithm.REPLACE)
+            transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 2)
+                    put("value", "inner")
+                }, ConflictAlgorithm.REPLACE)
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun nestedTransactionFailurePreservesOuter(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT PRIMARY KEY, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "outer")
+            }, ConflictAlgorithm.REPLACE)
+            runCatching {
+                transact {
+                    insert("Foo", ContentValues().apply {
+                        put("id", 1)
+                        put("value", "inner_rollback")
+                    }, ConflictAlgorithm.FAIL)
+                }
+            }
+            query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+        }
+        it.query("SELECT id, value FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+            assertEquals("outer", cursor.getString(1))
+            assertFalse(cursor.moveToNext())
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun multipleNestedTransactionsCreateMultipleSavepoints(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "level_1")
+            }, ConflictAlgorithm.REPLACE)
+            transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 2)
+                    put("value", "level_2")
+                }, ConflictAlgorithm.REPLACE)
+                transact {
+                    insert("Foo", ContentValues().apply {
+                        put("id", 3)
+                        put("value", "level_3")
+                    }, ConflictAlgorithm.REPLACE)
+                }
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(3, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun deeplyNestedTransactionRollbackOnConflict(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT PRIMARY KEY, value TEXT)")
+        assertFailsWith<SQLiteConstraintException> {
+            it.transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 1)
+                    put("value", "level_1")
+                }, ConflictAlgorithm.REPLACE)
+                transact {
+                    insert("Foo", ContentValues().apply {
+                        put("id", 2)
+                        put("value", "level_2")
+                    }, ConflictAlgorithm.REPLACE)
+                    transact {
+                        insert("Foo", ContentValues().apply {
+                            put("id", 2)
+                            put("value", "level_3_rollback")
+                        }, ConflictAlgorithm.ROLLBACK)
+                    }
+                }
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun deeplyNestedTransactionAbortOnConflict(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT PRIMARY KEY, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "level_1")
+            }, ConflictAlgorithm.REPLACE)
+            transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 2)
+                    put("value", "level_2")
+                }, ConflictAlgorithm.REPLACE)
+                assertFailsWith<SQLiteConstraintException> {
+                    transact {
+                        insert("Foo", ContentValues().apply {
+                            put("id", 2)
+                            put("value", "level_3_rollback")
+                        }, ConflictAlgorithm.ABORT)
+                    }
+                }
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointExplicitly(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "before_savepoint")
+            }, ConflictAlgorithm.REPLACE)
+            val savepoint = it.setSavepoint("custom_sp")
+            insert("Foo", ContentValues().apply {
+                put("id", 2)
+                put("value", "after_savepoint")
+            }, ConflictAlgorithm.REPLACE)
+            it.rollbackToSavepoint(savepoint)
+            query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+            it.releaseSavepoint(savepoint)
+        }
+        it.query("SELECT id, value FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+            assertEquals("before_savepoint", cursor.getString(1))
+            assertFalse(cursor.moveToNext())
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointWithoutNameGeneratesUniqueName(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT)")
+        it.transact {
+            val sp1 = it.setSavepoint()
+            val sp2 = it.setSavepoint()
+            assertTrue(sp1 != sp2, "Generated savepoint names should be unique")
+            assertTrue(sp1.startsWith("sp_user_"))
+            assertTrue(sp2.startsWith("sp_user_"))
+            it.releaseSavepoint(sp1)
+            it.releaseSavepoint(sp2)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun explicitSavepointWithNestedTransactions(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (id INT, value TEXT)")
+        it.transact {
+            insert("Foo", ContentValues().apply {
+                put("id", 1)
+                put("value", "outer")
+            }, ConflictAlgorithm.REPLACE)
+            val savepoint = it.setSavepoint("explicit_sp")
+            insert("Foo", ContentValues().apply {
+                put("id", 2)
+                put("value", "after_explicit")
+            }, ConflictAlgorithm.REPLACE)
+            transact {
+                insert("Foo", ContentValues().apply {
+                    put("id", 3)
+                    put("value", "nested")
+                }, ConflictAlgorithm.REPLACE)
+            }
+            it.rollbackToSavepoint(savepoint)
+            query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+            it.releaseSavepoint(savepoint)
+        }
+        it.query("SELECT id FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+            assertFalse(cursor.moveToNext())
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointFailsOutsideTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertFailsWith<IllegalStateException> {
+            it.setSavepoint()
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackToSavepointFailsOutsideTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertFailsWith<IllegalStateException> {
+            it.rollbackToSavepoint("sp")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun releaseSavepointFailsOutsideTransaction(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        assertFailsWith<IllegalStateException> {
+            it.releaseSavepoint("sp")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackToNonExistentSavepointFails(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            val exception = assertFailsWith<IllegalStateException> {
+                it.rollbackToSavepoint("non_existent_sp")
+            }
+            assertEquals("Savepoint non_existent_sp not found", exception.message)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun releaseSavepointIsIdempotent(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            val savepoint = it.setSavepoint("test_sp")
+            it.releaseSavepoint(savepoint)
+            it.releaseSavepoint(savepoint)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionListenerOnBeginExceptionRollsBack(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        val listener = mock<SQLTransactionListener> {
+            on { onBegin() } doThrow RuntimeException("Begin failed")
+        }
+        assertFailsWith<RuntimeException> {
+            it.beginExclusiveTransactionWithListener(listener)
+        }
+        it.transact {
+            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun transactionListenerOnCommitExceptionRollsBack(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        val listener = mock<SQLTransactionListener> {
+            on { onCommit() } doThrow RuntimeException("Commit failed")
+        }
+        assertFailsWith<RuntimeException> {
+            it.transact(listener) {
+                insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+            }
+        }
+        it.query("SELECT COUNT(*) FROM Foo", emptyArray()).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
         }
     }
 }

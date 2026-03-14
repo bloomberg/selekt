@@ -21,6 +21,7 @@ import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SimpleSQLQuery
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class SQLiteDatabaseTest {
     @Test
@@ -31,6 +32,15 @@ class SQLiteDatabaseTest {
             query(SimpleSQLQuery("SELECT * FROM Foo")).use { cursor ->
                 assertEquals(1, cursor.count)
             }
+        }
+    }
+
+    @Test
+    fun setSavepointFailsOutsideTransaction(): Unit = createInMemoryDatabase().use { database ->
+        assertFailsWith<IllegalStateException> {
+            database.setSavepoint()
+        }.also {
+            assertEquals("This thread is not in a transaction.", it.message)
         }
     }
 }

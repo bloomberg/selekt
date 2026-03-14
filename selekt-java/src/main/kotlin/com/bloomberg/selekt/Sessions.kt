@@ -33,19 +33,29 @@ internal class ThreadLocalSession(
     internal fun get(): SQLSession = threadLocal.get()
 }
 
+private data class SavepointInfo(
+    val name: String,
+    var successful: Boolean = false,
+    val automatic: Boolean = true
+)
+
 private class SQLSessionState(
-    var depth: Int = 0,
-    var successes: Int = 0,
+    var inOuterTransaction: Boolean = false,
+    var outerSuccessful: Boolean = false,
+    var savepointStack: ArrayList<SavepointInfo> = ArrayList(),
     var transactionSql: String = "",
     var transactionListener: SQLTransactionListener? = null
 ) {
     fun clear() {
-        depth = 0
-        successes = 0
+        inOuterTransaction = false
+        outerSuccessful = false
+        savepointStack = ArrayList()
         transactionSql = ""
         transactionListener = null
     }
 }
+
+private fun <T> MutableList<T>.removeLast() = removeAt(lastIndex)
 
 @NotThreadSafe
 internal class SQLSession(
@@ -75,47 +85,110 @@ internal class SQLSession(
         it.executeForBlob(name, table, column, row)
     }
 
-    override fun endTransaction() = state.run {
-        --depth
-        --successes
-        if (depth == 0) {
+    override fun endTransaction(): Unit = state.run {
+        val autoSavepointIndex = savepointStack.indexOfLast { it.automatic }
+        if (autoSavepointIndex < 0) {
+            check(inOuterTransaction) { "Transaction not begun." }
             internalEnd()
-        } else {
-            check(depth > 0) { "Transaction not begun." }
+            return
+        }
+        savepointStack[autoSavepointIndex].let {
+            if (!it.successful) {
+                execute(true) { executor ->
+                    executor.runCatching {
+                        execute("ROLLBACK TO ${it.name}")
+                        execute("RELEASE ${it.name}")
+                    }
+                }
+            }
+            while (savepointStack.size > autoSavepointIndex) {
+                savepointStack.removeLast()
+            }
         }
     }
 
     override val inTransaction: Boolean
-        get() = state.depth > 0
+        get() = state.inOuterTransaction
 
     override fun setTransactionSuccessful() {
         checkInTransaction()
-        check(state.successes == 0) { "This thread's current transaction is already marked as successful." }
-        ++state.successes
+        val autoSavepointIndex = state.savepointStack.indexOfLast(SavepointInfo::automatic)
+        if (autoSavepointIndex >= 0) {
+            val info = state.savepointStack[autoSavepointIndex]
+            check(!info.successful) { "This savepoint is already marked as successful." }
+            info.successful = true
+        } else {
+            check(!state.outerSuccessful) { "This thread's current transaction is already marked as successful." }
+            state.outerSuccessful = true
+        }
     }
 
     override fun yieldTransaction() = yieldTransaction(0L)
 
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
-        check(state.successes == 0) { "This thread's current transaction must not have been marked as successful yet." }
-        val oldDepth = state.depth
-        val oldSuccesses = state.successes
+        check(!state.outerSuccessful) { "This thread's current transaction must not have been marked as successful yet." }
+        val oldSavepointStack = state.savepointStack
         val oldTransactionSql = state.transactionSql
         val oldTransactionListener = state.transactionListener
         val oldRetainCount = retainCount
+        state.outerSuccessful = true
         internalEnd(oldRetainCount)
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
         internalBegin(oldTransactionSql, oldTransactionListener, oldRetainCount)
         state.apply {
-            depth = oldDepth
-            successes = oldSuccesses
+            inOuterTransaction = true
+            outerSuccessful = false
+            savepointStack = oldSavepointStack
             transactionSql = oldTransactionSql
             transactionListener = oldTransactionListener
         }
+        if (oldSavepointStack.isNotEmpty()) {
+            execute(true) {
+                oldSavepointStack.forEach { savepointInfo ->
+                    it.execute("SAVEPOINT ${savepointInfo.name}")
+                }
+            }
+        }
         return true
+    }
+
+    fun setSavepoint(name: String? = null): String {
+        checkInTransaction()
+        val savepointName = name ?: "sp_user_${state.savepointStack.size}"
+        execute(true) {
+            it.execute("SAVEPOINT $savepointName")
+        }
+        state.savepointStack.add(SavepointInfo(savepointName, successful = false, automatic = false))
+        return savepointName
+    }
+
+    fun rollbackToSavepoint(name: String) {
+        checkInTransaction()
+        val index = state.savepointStack.indexOfLast { it.name == name }
+        check(index >= 0) { "Savepoint $name not found" }
+        execute(true) {
+            it.execute("ROLLBACK TO $name")
+        }
+        while (state.savepointStack.size > index + 1) {
+            state.savepointStack.removeLast()
+        }
+    }
+
+    fun releaseSavepoint(name: String) {
+        checkInTransaction()
+        val index = state.savepointStack.indexOfLast { it.name == name }
+        if (index < 0) {
+            return
+        }
+        execute(true) {
+            it.execute("RELEASE $name")
+        }
+        while (state.savepointStack.size > index) {
+            state.savepointStack.removeLast()
+        }
     }
 
     internal inline fun <R> execute(
@@ -146,10 +219,17 @@ internal class SQLSession(
     ) = begin(mode.sql, listener)
 
     private fun begin(sql: String, listener: SQLTransactionListener?) {
-        if (state.depth == 0) {
+        if (!state.inOuterTransaction) {
             internalBegin(sql, listener)
+            state.inOuterTransaction = true
+        } else {
+            SavepointInfo("sp_auto_${state.savepointStack.size}").let {
+                execute(true) { executor ->
+                    executor.execute("SAVEPOINT ${it.name}")
+                }
+                state.savepointStack.add(it)
+            }
         }
-        ++state.depth
     }
 
     private fun internalBegin(
@@ -174,10 +254,10 @@ internal class SQLSession(
 
     private fun internalEnd(permits: Int = 1) {
         try {
-            if (state.successes == 0) {
+            if (state.outerSuccessful) {
                 commit()
             } else {
-                rollback()
+                rollbackQuietly()
             }
         } finally {
             state.clear()

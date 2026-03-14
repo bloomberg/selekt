@@ -239,15 +239,19 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun savepointOperations(): Unit = connection.run {
-        autoCommit = false
-        val savepoint = setSavepoint()
-        assertNotNull(savepoint)
-        val namedSavepoint = setSavepoint("test_savepoint")
-        assertNotNull(namedSavepoint)
-        assertEquals("test_savepoint", namedSavepoint.savepointName)
-        rollback(savepoint)
-        releaseSavepoint(namedSavepoint)
+    fun savepointOperations() {
+        whenever(mockDatabase.setSavepoint(null)) doReturn "sp_auto_${System.currentTimeMillis()}"
+        whenever(mockDatabase.setSavepoint("test_savepoint")) doReturn "test_savepoint"
+        connection.run {
+            autoCommit = false
+            val savepoint = setSavepoint()
+            assertNotNull(savepoint)
+            val namedSavepoint = setSavepoint("test_savepoint")
+            assertNotNull(namedSavepoint)
+            assertEquals("test_savepoint", namedSavepoint.savepointName)
+            rollback(savepoint)
+            releaseSavepoint(namedSavepoint)
+        }
     }
 
     @Test
@@ -806,7 +810,7 @@ internal class JdbcConnectionTest {
     @Test
     fun rollbackSavepointErrorHandling() {
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow RuntimeException("Savepoint rollback failed")
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow RuntimeException("Savepoint rollback failed")
         }
         JdbcConnection(database, connectionURL, properties).run {
             autoCommit = false
@@ -822,7 +826,7 @@ internal class JdbcConnectionTest {
     @Test
     fun setSavepointErrorHandling() {
         val database = mock<SQLDatabase>()
-        whenever(database.exec("SAVEPOINT test_savepoint")) doThrow RuntimeException("Savepoint creation failed")
+        whenever(database.setSavepoint("test_savepoint")) doThrow RuntimeException("Savepoint creation failed")
         JdbcConnection(database, connectionURL, properties).run {
             autoCommit = false
             assertFailsWith<SQLException> {
@@ -840,7 +844,7 @@ internal class JdbcConnectionTest {
     @Test
     fun releaseSavepointErrorHandling() {
         val database = mock<SQLDatabase> {
-            whenever(it.exec("RELEASE SAVEPOINT test_sp")) doThrow RuntimeException("Release failed")
+            whenever(it.releaseSavepoint("test_sp")) doThrow RuntimeException("Release failed")
         }
         JdbcConnection(database, connectionURL, properties).run {
             val savepoint = mock<Savepoint> {
@@ -982,7 +986,7 @@ internal class JdbcConnectionTest {
     @Test
     fun setSavepointWithSQLException() {
         val database = mock<SQLDatabase> {
-            whenever(it.exec("SAVEPOINT test_savepoint")) doThrow SQLException("Savepoint SQL error")
+            whenever(it.setSavepoint("test_savepoint")) doThrow SQLException("Savepoint SQL error")
         }
         JdbcConnection(database, connectionURL, properties).run {
             autoCommit = false
@@ -999,7 +1003,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("RELEASE SAVEPOINT test_sp")) doThrow SQLException("Release SQL error")
+            whenever(it.releaseSavepoint("test_sp")) doThrow SQLException("Release SQL error")
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1052,7 +1056,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow SQLException("Rollback to savepoint failed")
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow SQLException("Rollback to savepoint failed")
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1068,7 +1072,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("RELEASE SAVEPOINT test_sp")) doThrow SQLException("Release failed", "HY000", 999)
+            whenever(it.releaseSavepoint("test_sp")) doThrow SQLException("Release failed", "HY000", 999)
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1084,7 +1088,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow RuntimeException("Rollback runtime error")
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow RuntimeException("Rollback runtime error")
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1110,7 +1114,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow SQLException(null, "HY000", 100)
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow SQLException(null, "HY000", 100)
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1127,7 +1131,7 @@ internal class JdbcConnectionTest {
         }
         val customException = object : RuntimeException(null as String?) {}
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow customException
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow customException
         }
         JdbcConnection(database, connectionURL, properties).run {
             val exception = assertFailsWith<SQLException> {
@@ -1143,7 +1147,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow SQLException("")
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow SQLException("")
         }
         JdbcConnection(database, connectionURL, properties).run {
             assertFailsWith<SQLException> {
@@ -1158,7 +1162,7 @@ internal class JdbcConnectionTest {
             whenever(it.savepointName) doReturn "test_sp"
         }
         val database = mock<SQLDatabase> {
-            whenever(it.exec("ROLLBACK TO SAVEPOINT test_sp")) doThrow RuntimeException("")
+            whenever(it.rollbackToSavepoint("test_sp")) doThrow RuntimeException("")
         }
         JdbcConnection(database, connectionURL, properties).run {
             assertFailsWith<SQLException> {

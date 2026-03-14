@@ -263,7 +263,7 @@ internal class JdbcConnection(
             return
         }
         runCatching {
-            database.exec("ROLLBACK TO SAVEPOINT ${savepoint.savepointName}")
+            database.rollbackToSavepoint(savepoint.savepointName)
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -276,9 +276,8 @@ internal class JdbcConnection(
         if (autoCommit) {
             throw SQLException("Cannot create savepoint while in auto-commit mode")
         }
-        val savepointName = name ?: "sp_${System.currentTimeMillis()}_${Thread.currentThread().threadId()}"
         return runCatching {
-            database.exec("SAVEPOINT $savepointName")
+            val savepointName = database.setSavepoint(name)
             object : Savepoint {
                 override fun getSavepointId(): Int = 0
 
@@ -292,7 +291,7 @@ internal class JdbcConnection(
     override fun releaseSavepoint(savepoint: Savepoint) {
         checkClosed()
         runCatching {
-            database.exec("RELEASE SAVEPOINT ${savepoint.savepointName}")
+            database.releaseSavepoint(savepoint.savepointName)
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }

@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.exceptions.SelektSQLException
 import java.sql.SQLException
 
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
@@ -263,7 +264,13 @@ open class SQLite(
         extendedCode: SQLCode,
         message: String,
         context: String? = null
-    ): Nothing = throw SQLException("Code: $code; Extended: $extendedCode; Message: $message; Context: $context")
+    ): Nothing = throw object : SQLException(
+        "Code: $code; Extended: $extendedCode; Message: $message; Context: $context",
+        null,
+        code
+    ), SelektSQLException {
+        override val vendorCode: Int = code
+    }
 
     fun throwSQLException(db: Long, context: String? = null): Nothing =
         throwSQLException(errorCode(db), extendedErrorCode(db), errorMessage(db), context)
