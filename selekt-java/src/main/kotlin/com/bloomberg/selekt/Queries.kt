@@ -90,7 +90,7 @@ internal class SQLQuery internal constructor(
     override fun fill(
         window: ICursorWindow
     ): SQLStatementInformation {
-        val information = session.get().execute(
+        val information = session().execute(
             statementType.isPredictedWrite,
             sql,
             statementType,
@@ -104,7 +104,7 @@ internal class SQLQuery internal constructor(
             }
         }
         return if (information !== EMPTY_SQL_STATEMENT_INFORMATION) {
-            session.get().execute(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
+            session().execute(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
                 it.executeForCursorWindow(sql, bindArgs, window)
             }
             information
