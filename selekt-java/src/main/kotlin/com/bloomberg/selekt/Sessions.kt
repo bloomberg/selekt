@@ -30,7 +30,7 @@ internal class ThreadLocalSession(
     }
 
     @JvmSynthetic
-    internal fun get(): SQLSession = threadLocal.get()
+    internal operator fun invoke(): SQLSession = threadLocal.get()
 }
 
 private data class SavepointInfo(

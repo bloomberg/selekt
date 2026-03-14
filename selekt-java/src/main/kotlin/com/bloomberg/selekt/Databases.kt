@@ -60,10 +60,10 @@ class SQLDatabase(
     private val session = ThreadLocalSession(connectionPool)
 
     override val inTransaction: Boolean
-        get() = session.get().inTransaction
+        get() = session().inTransaction
 
     val isCurrentThreadSessionActive: Boolean
-        get() = session.get().hasObject
+        get() = session().hasObject
 
     fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
@@ -90,16 +90,16 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
-    override fun beginExclusiveTransaction() = pledge { session.get().beginExclusiveTransaction() }
+    override fun beginExclusiveTransaction() = pledge { session().beginExclusiveTransaction() }
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {
-        session.get().beginExclusiveTransactionWithListener(listener)
+        session().beginExclusiveTransactionWithListener(listener)
     }
 
-    override fun beginImmediateTransaction() = pledge { session.get().beginImmediateTransaction() }
+    override fun beginImmediateTransaction() = pledge { session().beginImmediateTransaction() }
 
     override fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) = pledge {
-        session.get().beginImmediateTransactionWithListener(listener)
+        session().beginImmediateTransactionWithListener(listener)
     }
 
     override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(
@@ -128,7 +128,7 @@ class SQLDatabase(
         )
     }
 
-    override fun endTransaction(): Unit = pledge { session.get().endTransaction() }
+    override fun endTransaction(): Unit = pledge { session().endTransaction() }
 
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
         compileStatement(
@@ -139,7 +139,7 @@ class SQLDatabase(
     }
 
     fun <T> execute(readOnly: Boolean, block: SQLDatabase.() -> T) = pledge {
-        session.get().execute(readOnly) { block() }
+        session().execute(readOnly) { block() }
     }
 
     override fun insert(
@@ -237,7 +237,7 @@ class SQLDatabase(
         connectionPool.clear(priority)
     }
 
-    override fun setTransactionSuccessful() = pledge { session.get().setTransactionSuccessful() }
+    override fun setTransactionSuccessful() = pledge { session().setTransactionSuccessful() }
 
     fun sizeOfBlob(
         name: String,
@@ -260,7 +260,7 @@ class SQLDatabase(
         transactionMode: SQLiteTransactionMode,
         block: D.() -> T
     ): T = pledge {
-        val session = session.get()
+        val session = session()
         when (transactionMode) {
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
@@ -277,7 +277,7 @@ class SQLDatabase(
         transactionMode: SQLiteTransactionMode = SQLiteTransactionMode.EXCLUSIVE,
         block: SQLDatabase.() -> T
     ): T = pledge {
-        val session = session.get()
+        val session = session()
         when (transactionMode) {
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
@@ -393,23 +393,23 @@ class SQLDatabase(
     }
 
     override fun yieldTransaction() = pledge {
-        session.get().yieldTransaction()
+        session().yieldTransaction()
     }
 
     override fun yieldTransaction(pauseMillis: Long) = pledge {
-        session.get().yieldTransaction(pauseMillis)
+        session().yieldTransaction(pauseMillis)
     }
 
     fun setSavepoint(name: String? = null): String = pledge {
-        session.get().setSavepoint(name)
+        session().setSavepoint(name)
     }
 
     fun rollbackToSavepoint(name: String) = pledge {
-        session.get().rollbackToSavepoint(name)
+        session().rollbackToSavepoint(name)
     }
 
     fun releaseSavepoint(name: String) = pledge {
-        session.get().releaseSavepoint(name)
+        session().releaseSavepoint(name)
     }
 
     override fun onReleased() {
@@ -423,7 +423,7 @@ class SQLDatabase(
         row: Long,
         readOnly: Boolean
     ) = pledge {
-        session.get().blob(name, table, column, row, readOnly)
+        session().blob(name, table, column, row, readOnly)
     }
 
     private fun query(query: SQLQuery): ICursor = pledge {

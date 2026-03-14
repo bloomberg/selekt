@@ -116,7 +116,7 @@ internal class SQLStatement private constructor(
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.get().execute(statementType.isPredictedWrite, sql) {
+        ) = session().execute(statementType.isPredictedWrite, sql) {
             it.execute(sql, bindArgs)
         }
 
@@ -126,7 +126,7 @@ internal class SQLStatement private constructor(
             bindArgs: Sequence<Array<out Any?>>
         ): Int {
             require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) { ONLY_BATCH_UPDATES }
-            return session.get().execute(true, sql) {
+            return session().execute(true, sql) {
                 it.executeBatchForChangedRowCount(sql, bindArgs)
             }
         }
@@ -137,7 +137,7 @@ internal class SQLStatement private constructor(
             bindArgs: List<Array<out Any?>>
         ): Int {
             require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) { ONLY_BATCH_UPDATES }
-            return session.get().execute(true, sql) {
+            return session().execute(true, sql) {
                 it.executeBatchForChangedRowCount(sql, bindArgs)
             }
         }
@@ -150,7 +150,7 @@ internal class SQLStatement private constructor(
             toIndex: Int = bindArgs.size
         ): Int {
             require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) { ONLY_BATCH_UPDATES }
-            return session.get().execute(true, sql) {
+            return session().execute(true, sql) {
                 it.executeBatchForChangedRowCount(sql, bindArgs, fromIndex, toIndex)
             }
         }
@@ -172,7 +172,7 @@ internal class SQLStatement private constructor(
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.get().execute(statementType.isPredictedWrite, sql) {
+        ) = session().execute(statementType.isPredictedWrite, sql) {
             it.executeForInt(sql, bindArgs)
         }
 
@@ -181,7 +181,7 @@ internal class SQLStatement private constructor(
             sql: String,
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>
-        ) = session.get().execute(statementType.isPredictedWrite, sql) {
+        ) = session().execute(statementType.isPredictedWrite, sql) {
             it.executeForString(sql, bindArgs)
         }
 
@@ -189,7 +189,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             bindArgs: Array<out Any?>
-        ) = session.get().execute(true, sql) {
+        ) = session().execute(true, sql) {
             it.executeForLastInsertedRowId(sql, bindArgs)
         }
 
@@ -197,7 +197,7 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             bindArgs: Array<out Any?>
-        ) = session.get().execute(true, sql) {
+        ) = session().execute(true, sql) {
             it.executeForChangedRowCount(sql, bindArgs)
         }
 
@@ -207,7 +207,7 @@ internal class SQLStatement private constructor(
             statementType: SQLStatementType,
             bindArgs: Array<out Any?>?
         ): SQLStatement {
-            return session.get().execute(statementType.isPredictedWrite, sql) {
+            return session().execute(statementType.isPredictedWrite, sql) {
                 it.prepare(sql)
             }.run {
                 @Suppress("UNCHECKED_CAST")
@@ -279,22 +279,22 @@ internal class SQLStatement private constructor(
     }
 
     override fun execute() {
-        session.get().execute(asWrite, sql, statementType, Unit) { it.execute(sql, args) }
+        session().execute(asWrite, sql, statementType, Unit) { it.execute(sql, args) }
     }
 
-    override fun executeInsert(): Long = session.get().execute(asWrite, sql, statementType, -1L) {
+    override fun executeInsert(): Long = session().execute(asWrite, sql, statementType, -1L) {
         it.executeForLastInsertedRowId(sql, args)
     }
 
-    override fun executeUpdateDelete() = session.get().execute(asWrite, sql, statementType, 0) {
+    override fun executeUpdateDelete() = session().execute(asWrite, sql, statementType, 0) {
         it.executeForChangedRowCount(sql, args)
     }
 
-    override fun simpleQueryForLong() = session.get().execute(asWrite, sql, statementType, -1L) {
+    override fun simpleQueryForLong() = session().execute(asWrite, sql, statementType, -1L) {
         it.executeForLong(sql, args)
     }
 
-    override fun simpleQueryForString() = session.get().execute(asWrite, sql, statementType, null) {
+    override fun simpleQueryForString() = session().execute(asWrite, sql, statementType, null) {
         it.executeForString(sql, args)
     }
 
