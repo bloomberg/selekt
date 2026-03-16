@@ -121,16 +121,14 @@ internal open class JdbcPreparedStatement(
         }
     }
 
-    private fun executeUpdate(statement: ISQLStatement): Int {
-        return if (statement.isReadOnly) {
+    private fun executeUpdate(
+        statement: ISQLStatement
+    ): Int = if (!statement.isReadOnly && isInsertSql(sql)) {
+        lastGeneratedKey = statement.executeInsert()
+        1
+    } else {
+        statement.executeUpdateDelete().also { _ ->
             lastGeneratedKey = -1L
-            statement.executeUpdateDelete()
-        } else if (isInsertSql(sql)) {
-            lastGeneratedKey = statement.executeInsert()
-            1
-        } else {
-            lastGeneratedKey = -1L
-            statement.executeUpdateDelete()
         }
     }
 
@@ -160,7 +158,7 @@ internal open class JdbcPreparedStatement(
             }
             ++count
         }
-        totalBatchCount++
+        ++totalBatchCount
     }
 
     override fun clearBatch() {

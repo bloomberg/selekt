@@ -33,6 +33,8 @@ import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
 import javax.annotation.concurrent.NotThreadSafe
 
+private val emptyIntArray = IntArray(0)
+
 internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
@@ -231,7 +233,7 @@ open class JdbcStatement internal constructor(
     override fun executeBatch(): IntArray {
         checkClosed()
         return if (batchedSqlStatements.isEmpty()) {
-            IntArray(0)
+            emptyIntArray
         } else {
             try {
                 executeBatchStatements()
