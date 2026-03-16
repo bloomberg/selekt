@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.29.2
+
+### Fixes
+
+* Complete JdbcParameterMetaData's implementation.
+
+### Dependencies
+
+* Kotlin 2.3.10
+
 ## Version 0.29.1
 
 ### Fixes
