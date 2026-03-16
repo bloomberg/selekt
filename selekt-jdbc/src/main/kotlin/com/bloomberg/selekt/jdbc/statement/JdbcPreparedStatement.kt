@@ -158,7 +158,7 @@ internal open class JdbcPreparedStatement(
             }
             ++count
         }
-        totalBatchCount++
+        ++totalBatchCount
     }
 
     override fun clearBatch() {
