@@ -41,9 +41,9 @@ internal class JdbcParameterMetaDataTest {
 
     @Test
     fun isNullable(): Unit = JdbcParameterMetaData(3).run {
-        assertEquals(ParameterMetaData.parameterNullableUnknown, isNullable(1))
-        assertEquals(ParameterMetaData.parameterNullableUnknown, isNullable(2))
-        assertEquals(ParameterMetaData.parameterNullableUnknown, isNullable(3))
+        assertEquals(ParameterMetaData.parameterNullable, isNullable(1))
+        assertEquals(ParameterMetaData.parameterNullable, isNullable(2))
+        assertEquals(ParameterMetaData.parameterNullable, isNullable(3))
     }
 
     @Test
@@ -61,9 +61,9 @@ internal class JdbcParameterMetaDataTest {
 
     @Test
     fun isSigned(): Unit = JdbcParameterMetaData(3).run {
-        assertFalse(isSigned(1))
-        assertFalse(isSigned(2))
-        assertFalse(isSigned(3))
+        assertTrue(isSigned(1))
+        assertTrue(isSigned(2))
+        assertTrue(isSigned(3))
     }
 
     @Test
@@ -111,10 +111,66 @@ internal class JdbcParameterMetaDataTest {
     }
 
     @Test
-    fun getParameterType(): Unit = JdbcParameterMetaData(3).run {
+    fun getParameterTypeWithoutParameters(): Unit = JdbcParameterMetaData(3).run {
+        assertEquals(Types.NULL, getParameterType(1))
+        assertEquals(Types.NULL, getParameterType(2))
+        assertEquals(Types.NULL, getParameterType(3))
+    }
+
+    @Test
+    fun getParameterTypeNull(): Unit = JdbcParameterMetaData(1, arrayOf(null)).run {
+        assertEquals(Types.NULL, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeInteger(): Unit = JdbcParameterMetaData(1, arrayOf(42)).run {
+        assertEquals(Types.INTEGER, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeShort(): Unit = JdbcParameterMetaData(1, arrayOf(42.toShort())).run {
+        assertEquals(Types.INTEGER, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeBoolean(): Unit = JdbcParameterMetaData(1, arrayOf(true)).run {
+        assertEquals(Types.INTEGER, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeLong(): Unit = JdbcParameterMetaData(1, arrayOf(42L)).run {
+        assertEquals(Types.BIGINT, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeDouble(): Unit = JdbcParameterMetaData(1, arrayOf(3.14)).run {
+        assertEquals(Types.REAL, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeFloat(): Unit = JdbcParameterMetaData(1, arrayOf(3.14f)).run {
+        assertEquals(Types.REAL, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeString(): Unit = JdbcParameterMetaData(1, arrayOf("hello")).run {
         assertEquals(Types.VARCHAR, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeByteArray(): Unit = JdbcParameterMetaData(1, arrayOf(byteArrayOf(1, 2))).run {
+        assertEquals(Types.BLOB, getParameterType(1))
+    }
+
+    @Test
+    fun getParameterTypeMixed(): Unit = JdbcParameterMetaData(
+        4,
+        arrayOf(42, "text", 3.14, null)
+    ).run {
+        assertEquals(Types.INTEGER, getParameterType(1))
         assertEquals(Types.VARCHAR, getParameterType(2))
-        assertEquals(Types.VARCHAR, getParameterType(3))
+        assertEquals(Types.REAL, getParameterType(3))
+        assertEquals(Types.NULL, getParameterType(4))
     }
 
     @Test
@@ -128,10 +184,33 @@ internal class JdbcParameterMetaDataTest {
     }
 
     @Test
-    fun getParameterTypeName(): Unit = JdbcParameterMetaData(3).run {
+    fun getParameterTypeNameWithoutParameters(): Unit = JdbcParameterMetaData(1).run {
+        assertEquals("NULL", getParameterTypeName(1))
+    }
+
+    @Test
+    fun getParameterTypeNameInteger(): Unit = JdbcParameterMetaData(1, arrayOf(42)).run {
+        assertEquals("INTEGER", getParameterTypeName(1))
+    }
+
+    @Test
+    fun getParameterTypeNameBigint(): Unit = JdbcParameterMetaData(1, arrayOf(42L)).run {
+        assertEquals("BIGINT", getParameterTypeName(1))
+    }
+
+    @Test
+    fun getParameterTypeNameReal(): Unit = JdbcParameterMetaData(1, arrayOf(3.14)).run {
+        assertEquals("REAL", getParameterTypeName(1))
+    }
+
+    @Test
+    fun getParameterTypeNameVarchar(): Unit = JdbcParameterMetaData(1, arrayOf("text")).run {
         assertEquals("VARCHAR", getParameterTypeName(1))
-        assertEquals("VARCHAR", getParameterTypeName(2))
-        assertEquals("VARCHAR", getParameterTypeName(3))
+    }
+
+    @Test
+    fun getParameterTypeNameBlob(): Unit = JdbcParameterMetaData(1, arrayOf(byteArrayOf(1, 2))).run {
+        assertEquals("BLOB", getParameterTypeName(1))
     }
 
     @Test

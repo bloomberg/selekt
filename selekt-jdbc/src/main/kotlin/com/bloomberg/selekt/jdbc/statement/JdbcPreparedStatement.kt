@@ -481,5 +481,5 @@ internal open class JdbcPreparedStatement(
         throw SQLFeatureNotSupportedException("Metadata not available for prepared statements")
     }
 
-    override fun getParameterMetaData(): ParameterMetaData = JdbcParameterMetaData(parameterCount)
+    override fun getParameterMetaData(): ParameterMetaData = JdbcParameterMetaData(parameterCount, parameters)
 }
