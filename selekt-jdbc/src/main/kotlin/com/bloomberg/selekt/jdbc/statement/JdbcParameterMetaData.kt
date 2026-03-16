@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import java.sql.JDBCType
 import java.sql.ParameterMetaData
 import java.sql.SQLException
 import java.sql.Types
@@ -23,18 +24,19 @@ import javax.annotation.concurrent.NotThreadSafe
 
 @NotThreadSafe
 internal class JdbcParameterMetaData(
-    private val parameterCount: Int
+    private val parameterCount: Int,
+    private val parameters: Array<Any?>? = null
 ) : ParameterMetaData {
     override fun getParameterCount(): Int = parameterCount
 
     override fun isNullable(param: Int): Int {
         validateParameterIndex(param)
-        return ParameterMetaData.parameterNullableUnknown
+        return ParameterMetaData.parameterNullable
     }
 
     override fun isSigned(param: Int): Boolean {
         validateParameterIndex(param)
-        return false
+        return true
     }
 
     override fun getPrecision(param: Int): Int {
@@ -49,12 +51,21 @@ internal class JdbcParameterMetaData(
 
     override fun getParameterType(param: Int): Int {
         validateParameterIndex(param)
-        return Types.VARCHAR
+        return when (parameters?.get(param - 1)) {
+            is String -> Types.VARCHAR
+            is Int -> Types.INTEGER
+            null -> Types.NULL
+            is Double, is Float -> Types.REAL
+            is Long -> Types.BIGINT
+            is Short, is Boolean -> Types.INTEGER
+            is ByteArray -> Types.BLOB
+            else -> Types.VARCHAR
+        }
     }
 
     override fun getParameterTypeName(param: Int): String {
         validateParameterIndex(param)
-        return "VARCHAR"
+        return JDBCType.valueOf(getParameterType(param)).name
     }
 
     override fun getParameterClassName(param: Int): String {
