@@ -78,7 +78,6 @@ dependencies {
     jmhImplementation(projects.selektJdbc)
     jmhImplementation(projects.selektSqlite3Sqlcipher)
     jmhImplementation(libs.kotlinx.coroutines.core)
-    jmhImplementation(libs.xerial.sqlite.jdbc)
 }
 
 jmh {

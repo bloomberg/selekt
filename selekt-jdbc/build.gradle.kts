@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import me.champeau.jmh.JMHTask
+
 description = "Selekt JDBC library."
 
 plugins {
@@ -23,6 +25,7 @@ plugins {
     alias(libs.plugins.dokka)
     `maven-publish`
     signing
+    alias(libs.plugins.jmh)
     alias(libs.plugins.detekt)
 }
 
@@ -47,6 +50,9 @@ sourceSets {
             srcDir(layout.buildDirectory.dir("intermediates/libs"))
         }
     }
+    named("jmh") {
+        resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
+    }
 }
 
 dependencies {
@@ -62,6 +68,18 @@ dependencies {
     testImplementation(platform(libs.exposed.bom))
     testImplementation(libs.exposed.core)
     testImplementation(libs.exposed.jdbc)
+    jmhImplementation(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
+        }
+    }
+    jmhImplementation(libs.xerial.sqlite.jdbc)
+}
+
+jmh {
+    if (hasProperty("jmh.includes")) {
+        includes.add(property("jmh.includes").toString())
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {
@@ -75,6 +93,10 @@ tasks.register<Copy>("copyJniLibs") {
 }
 
 tasks.withType<ProcessResources>().configureEach {
+    dependsOn("buildHostSQLite")
+}
+
+tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
 }
 
