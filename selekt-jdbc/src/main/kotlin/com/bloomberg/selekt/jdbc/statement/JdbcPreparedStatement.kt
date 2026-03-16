@@ -404,11 +404,11 @@ internal open class JdbcPreparedStatement(
             val content = CharArray(length.toInt())
             var totalRead = 0
             while (totalRead < length) {
-                val read = reader.read(content, totalRead, (length - totalRead).toInt())
-                if (read == -1) {
-                    break
+                totalRead += reader.read(content, totalRead, (length - totalRead).toInt()).also {
+                    if (it == -1) {
+                        break
+                    }
                 }
-                totalRead += read
             }
             parameters[parameterIndex - 1] = String(content, 0, totalRead)
         }
