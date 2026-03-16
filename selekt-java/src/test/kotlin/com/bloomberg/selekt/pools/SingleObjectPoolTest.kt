@@ -65,6 +65,8 @@ internal class SingleObjectPoolTest {
 
             override fun destroyObject(obj: PooledObject) = Unit
 
+            override fun interrupt() = Unit
+
             override fun makeObject() = PooledObject()
 
             override fun makePrimaryObject() = makeObject()
@@ -135,6 +137,8 @@ internal class SingleObjectPoolTest {
 
         override fun destroyObject(obj: PooledObject) = Unit
 
+        override fun interrupt() = Unit
+
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
@@ -157,6 +161,8 @@ internal class SingleObjectPoolTest {
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
+
+        override fun interrupt() = Unit
 
         override fun makeObject() = makePrimaryObject()
 
@@ -202,6 +208,8 @@ internal class SingleObjectPoolTest {
         override fun close() = Unit
 
         override fun destroyObject(obj: IPooledObject<String>) = Unit
+
+        override fun interrupt() = Unit
 
         override fun makeObject() = makePrimaryObject()
 
@@ -388,6 +396,8 @@ internal class SingleObjectPoolTest {
 
             override fun destroyObject(obj: PooledObject) = Unit
 
+            override fun interrupt() = Unit
+
             override fun makeObject() = PooledObject().also {
                 pool.close()
             }
@@ -486,6 +496,8 @@ internal class SingleObjectPoolTest {
 
             override fun destroyObject(obj: PooledObject) = Unit
 
+            override fun interrupt() = Unit
+
             override fun makeObject() = obj
 
             override fun makePrimaryObject() = obj
@@ -511,6 +523,8 @@ internal class SingleObjectPoolTest {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = throw IOException("Oh no!")
+
+            override fun interrupt() = Unit
 
             override fun makeObject() = obj
 

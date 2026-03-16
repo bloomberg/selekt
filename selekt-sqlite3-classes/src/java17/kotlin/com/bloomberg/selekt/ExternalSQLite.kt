@@ -160,6 +160,10 @@ internal class ExternalSQLite(
 
     external override fun hardHeapLimit64(): Long
 
+    external override fun interrupt(db: Long)
+
+    external override fun isInterrupted(db: Long): Int
+
     external override fun key(db: Long, key: ByteArray, length: Int): SQLCode
 
     external override fun keyConventionally(db: Long, key: ByteArray, length: Int): SQLCode

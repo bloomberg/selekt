@@ -59,6 +59,9 @@ public class SingleObjectPoolBenchmark {
                 public @NotNull PooledObject makePrimaryObject() {
                     return makeObject();
                 }
+
+                @Override
+                public void interrupt() {}
             };
 
             pool = new SingleObjectPool<>(

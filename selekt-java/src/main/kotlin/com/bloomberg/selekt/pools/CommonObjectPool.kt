@@ -123,6 +123,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         executor.execute { evict(priority) }
     }
 
+    override fun interrupt(): Unit = factory.interrupt()
+
     @JvmSynthetic
     internal fun evict(priority: Priority? = null) {
         @GuardedBy("lock")

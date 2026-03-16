@@ -96,7 +96,7 @@ internal class SQLConnection(
         column: String,
         row: Long
     ) = longArrayOf(0L).also {
-        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) 0 else 1, it)
+        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) { 0 } else { 1 }, it)
     }.first().let {
         SQLBlob(it, sqlite, isReadOnly)
     }
@@ -205,6 +205,8 @@ internal class SQLConnection(
     override fun executeWithRetry(sql: String) = withPreparedStatement(sql) {
         step(configuration.busyTimeoutMillis.toLong())
     }
+
+    override fun interrupt() = sqlite.interrupt(pointer)
 
     override fun matches(key: String) = preparedStatements.containsKey(key)
 

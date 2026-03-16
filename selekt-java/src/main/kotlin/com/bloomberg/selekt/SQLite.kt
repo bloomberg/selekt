@@ -187,6 +187,10 @@ open class SQLite(
 
     fun hardHeapLimit64() = sqlite.hardHeapLimit64()
 
+    fun interrupt(db: Long) = sqlite.interrupt(db)
+
+    fun isInterrupted(db: Long) = sqlite.isInterrupted(db)
+
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
     fun keyConventionally(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))

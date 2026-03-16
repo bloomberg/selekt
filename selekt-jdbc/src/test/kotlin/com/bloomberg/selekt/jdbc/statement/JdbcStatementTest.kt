@@ -42,6 +42,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 internal class JdbcStatementTest {
     private lateinit var mockDatabase: SQLDatabase
@@ -162,13 +164,6 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun escapeProcessing(): Unit = statement.run {
-        assertTrue(escapeProcessing)
-        setEscapeProcessing(false)
-        assertFalse(escapeProcessing)
-    }
-
-    @Test
     fun queryTimeout(): Unit = statement.run {
         assertEquals(0, queryTimeout)
         queryTimeout = 30
@@ -230,8 +225,9 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun cancellation() {
+    fun cancellationDelegatesToDatabaseInterrupt() {
         statement.cancel()
+        verify(mockDatabase, times(1)).interrupt()
     }
 
     @Test

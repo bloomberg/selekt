@@ -61,6 +61,8 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun executeWithRetry(sql: String): Int
 
+    fun interrupt()
+
     fun prepare(sql: String): SQLStatementInformation
 
     fun setTransactionListener(listener: SQLTransactionListener?)

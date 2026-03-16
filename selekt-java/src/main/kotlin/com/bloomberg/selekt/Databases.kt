@@ -169,6 +169,10 @@ class SQLDatabase(
         }
     }
 
+    fun interrupt() {
+        connectionPool.interrupt()
+    }
+
     fun pragma(key: String) = pledge {
         checkNotNull(SQLStatement.executeForString(
             session,

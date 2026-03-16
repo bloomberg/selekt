@@ -31,6 +31,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -101,6 +102,9 @@ public class CommonObjectPoolBenchmark {
                 public @NotNull Task makePrimaryObject() {
                     return makeObject();
                 }
+
+                @Override
+                public void interrupt() {}
             };
 
             pool = new CommonObjectPool<>(
@@ -117,7 +121,7 @@ public class CommonObjectPoolBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void tearDown() throws java.io.IOException {
+        public void tearDown() throws IOException {
             pool.close();
         }
     }
@@ -149,6 +153,9 @@ public class CommonObjectPoolBenchmark {
                 public @NotNull Task makePrimaryObject() {
                     return makeObject();
                 }
+
+                @Override
+                public void interrupt() {}
             };
 
             pool = new CommonObjectPool<>(
@@ -165,7 +172,7 @@ public class CommonObjectPoolBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void tearDown() throws java.io.IOException {
+        public void tearDown() throws IOException {
             pool.close();
         }
     }

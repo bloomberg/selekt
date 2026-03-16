@@ -66,9 +66,6 @@ open class JdbcStatement internal constructor(
     private var closeOnCompletion = false
     private val batchedSqlStatements = mutableListOf<String>()
 
-    var escapeProcessing: Boolean = true
-        private set
-
     override fun executeQuery(sql: String): ResultSet {
         checkClosed()
         try {
@@ -160,9 +157,7 @@ open class JdbcStatement internal constructor(
 
     override fun setCursorName(name: String?) = throw SQLFeatureNotSupportedException("Named cursors not supported")
 
-    override fun setEscapeProcessing(enable: Boolean) {
-        escapeProcessing = enable
-    }
+    override fun setEscapeProcessing(enable: Boolean) = Unit
 
     override fun setQueryTimeout(seconds: Int) {
         if (seconds < 0) {
@@ -173,7 +168,7 @@ open class JdbcStatement internal constructor(
 
     override fun getQueryTimeout(): Int = queryTimeout
 
-    override fun cancel() = Unit
+    override fun cancel() = connection.interrupt()
 
     override fun setFetchDirection(direction: Int) {
         if (direction != ResultSet.FETCH_FORWARD) {

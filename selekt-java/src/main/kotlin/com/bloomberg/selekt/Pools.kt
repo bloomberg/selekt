@@ -21,6 +21,7 @@ import com.bloomberg.selekt.pools.IObjectFactory
 import com.bloomberg.selekt.pools.PoolConfiguration
 import com.bloomberg.selekt.pools.createObjectPool
 import java.io.Closeable
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.annotation.concurrent.ThreadSafe
@@ -72,20 +73,28 @@ internal class SQLConnectionFactory(
     private val key: Key?
 ) : IObjectFactory<CloseableSQLExecutor> {
     private val busyLock = Any()
+    private val connections = ConcurrentHashMap.newKeySet<CloseableSQLExecutor>()
 
     override fun close() {
         key?.zero()
     }
 
     override fun destroyObject(obj: CloseableSQLExecutor) = synchronized(busyLock) {
+        connections.remove(obj)
         obj.close()
     }
 
     override fun makeObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key)
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key).also {
+            connections.add(it)
+        }
     }
 
     override fun makePrimaryObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key)
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
+            connections.add(it)
+        }
     }
+
+    override fun interrupt(): Unit = connections.forEach(SQLExecutor::interrupt)
 }

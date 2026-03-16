@@ -530,6 +530,14 @@ internal class SQLConnectionTest {
         }
     }
 
+    @Test
+    fun interruptDelegatesToSqlite(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.interrupt()
+            verify(this@run, times(1)).interrupt(DB)
+        }
+    }
+
     private companion object {
         const val DB = 1L
     }

@@ -453,6 +453,8 @@ internal class JdbcConnection(
     override fun isWrapperFor(iface: Class<*>): Boolean = iface.isAssignableFrom(this::class.java) ||
         iface.isAssignableFrom(SQLDatabase::class.java)
 
+    internal fun interrupt(): Unit = database.interrupt()
+
     private fun checkClosed() {
         if (isClosed) {
             throw SQLException("Connection is closed")
