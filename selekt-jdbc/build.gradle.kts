@@ -64,16 +64,16 @@ dependencies {
             requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
         }
     }
-    implementation(libs.slf4j.api)
-    testImplementation(platform(libs.exposed.bom))
-    testImplementation(libs.exposed.core)
-    testImplementation(libs.exposed.jdbc)
     jmhImplementation(projects.selektSqlite3Classes) {
         capabilities {
             requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
         }
     }
     jmhImplementation(libs.xerial.sqlite.jdbc)
+    implementation(libs.slf4j.api)
+    testImplementation(platform(libs.exposed.bom))
+    testImplementation(libs.exposed.core)
+    testImplementation(libs.exposed.jdbc)
 }
 
 jmh {
