@@ -42,7 +42,7 @@ android {
     namespace = "com.bloomberg.selekt.android.sqlcipher"
     ndkVersion = "27.3.13750724"
     defaultConfig {
-        minSdk = 24
+        minSdk = 33
         @Suppress("UnstableApiUsage")
         externalNativeBuild {
             cmake {

@@ -40,7 +40,7 @@ android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
     namespace = "com.bloomberg.selekt.android"
     defaultConfig {
-        minSdk = 24
+        minSdk = 33
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

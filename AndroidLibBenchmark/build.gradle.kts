@@ -30,7 +30,7 @@ android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
-        minSdkVersion(24)
+        minSdkVersion(33)
         targetSdkVersion(34)
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(

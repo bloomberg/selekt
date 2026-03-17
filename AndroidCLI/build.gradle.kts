@@ -30,7 +30,7 @@ android {
     namespace = "com.bloomberg.selekt.cli"
     defaultConfig {
         applicationId = "com.bloomberg.selekt.cli"
-        minSdk = 24
+        minSdk = 33
         targetSdk = 34
         versionCode = 1
         versionName = "0.1"
