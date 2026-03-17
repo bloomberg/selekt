@@ -42,13 +42,6 @@ internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal construc
         }
     }
 
-    fun interrupt() {
-        try {
-            primaryPool.interrupt()
-        } finally {
-            secondaryPool.interrupt()
-        }
-    }
 
     fun returnObject(obj: T) = if (obj.isPrimary) {
         primaryPool.returnObject(obj)

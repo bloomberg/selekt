@@ -169,8 +169,8 @@ class SQLDatabase(
         }
     }
 
-    fun interrupt() {
-        connectionPool.interrupt()
+    fun interruptSession(threadId: Long) {
+        session.interrupt(threadId)
     }
 
     fun pragma(key: String) = pledge {

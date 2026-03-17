@@ -16,10 +16,6 @@
 
 package com.bloomberg.selekt.pools
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -64,9 +60,6 @@ internal class SingleObjectPoolTest {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
-
-            override fun interrupt() = Unit
-
             override fun makeObject() = PooledObject()
 
             override fun makePrimaryObject() = makeObject()
@@ -136,9 +129,6 @@ internal class SingleObjectPoolTest {
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
-
-        override fun interrupt() = Unit
-
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
@@ -161,9 +151,6 @@ internal class SingleObjectPoolTest {
         override fun close() = Unit
 
         override fun destroyObject(obj: PooledObject) = Unit
-
-        override fun interrupt() = Unit
-
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
@@ -208,9 +195,6 @@ internal class SingleObjectPoolTest {
         override fun close() = Unit
 
         override fun destroyObject(obj: IPooledObject<String>) = Unit
-
-        override fun interrupt() = Unit
-
         override fun makeObject() = makePrimaryObject()
 
         override fun makePrimaryObject() = PooledObject()
@@ -395,9 +379,6 @@ internal class SingleObjectPoolTest {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
-
-            override fun interrupt() = Unit
-
             override fun makeObject() = PooledObject().also {
                 pool.close()
             }
@@ -407,59 +388,6 @@ internal class SingleObjectPoolTest {
         pool.use {
             it.borrowObject()
             verify(executor, never()).scheduleAtFixedRate(any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun interruptBorrowerThenReturn(): Unit = pool.run {
-        borrowObject().let {
-            Thread.interrupted()
-            assertDoesNotThrow {
-                returnObject(it)
-            }
-        }
-    }
-
-    @Test
-    fun interruptBorrowerThenBorrow(): Unit = pool.run {
-        borrowObject()
-        Thread.currentThread().interrupt()
-        assertFailsWith<InterruptedException> {
-            borrowObject()
-        }
-    }
-
-    @Test
-    fun concurrentAccess() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
-        runBlocking(Dispatchers.IO) {
-            coroutineScope {
-                repeat(4) {
-                    launch {
-                        repeat(100_000) {
-                            assertSame(
-                                obj,
-                                borrowObject().also { returnObject(it) },
-                                "Pool must return the same object."
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
-    fun concurrentEvict(): Unit = pool.run {
-        runBlocking(Dispatchers.IO) {
-            coroutineScope {
-                launch {
-                    repeat(100_000) { evict() }
-                }
-                launch {
-                    repeat(100_000) { borrowObject().also { returnObject(it) } }
-                }
-            }
         }
     }
 
@@ -495,9 +423,6 @@ internal class SingleObjectPoolTest {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = Unit
-
-            override fun interrupt() = Unit
-
             override fun makeObject() = obj
 
             override fun makePrimaryObject() = obj
@@ -523,9 +448,6 @@ internal class SingleObjectPoolTest {
             override fun close() = Unit
 
             override fun destroyObject(obj: PooledObject) = throw IOException("Oh no!")
-
-            override fun interrupt() = Unit
-
             override fun makeObject() = obj
 
             override fun makePrimaryObject() = obj

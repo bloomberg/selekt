@@ -99,7 +99,6 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
         factory.destroyObject(it)
     }
 
-    override fun interrupt(): Unit = factory.interrupt()
 
     @GuardedBy("mutex")
     private fun acquireObject(): T {

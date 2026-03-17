@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.TieredObjectPool
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.VarHandle
+import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.concurrent.NotThreadSafe
 
 internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
@@ -26,12 +29,28 @@ internal class ThreadLocalSession(
     private val pool: SQLExecutorPool,
     private val useNativeListeners: Boolean = false
 ) {
+    private val sessions = ConcurrentHashMap<Long, SQLSession>()
+
     private val threadLocal = object : ThreadLocal<SQLSession>() {
-        override fun initialValue() = SQLSession(pool, useNativeListeners)
+        override fun initialValue() = SQLSession(pool, useNativeListeners).also {
+            @Suppress("DEPRECATION")
+            sessions[Thread.currentThread().id] = it
+        }
+
+        override fun remove() {
+            super.remove()
+            @Suppress("DEPRECATION")
+            sessions.remove(Thread.currentThread().id)
+        }
     }
 
     @JvmSynthetic
     internal operator fun invoke(): SQLSession = threadLocal.get()
+
+    @JvmSynthetic
+    internal fun interrupt(threadId: Long) {
+        sessions[threadId]?.interrupt()
+    }
 }
 
 private data class SavepointInfo(
@@ -215,6 +234,8 @@ internal class SQLSession(
         signal
     }
 
+    internal fun interrupt() = perform(SQLExecutor::interrupt)
+
     private fun begin(
         mode: SQLiteTransactionMode,
         listener: SQLTransactionListener?
@@ -335,6 +356,17 @@ internal open class Session<K : Any, T : IPooledObject<K>>(
     private var obj: T? = null
     protected var retainCount = 0
 
+    private companion object {
+        @JvmStatic
+        private val OBJ: VarHandle = MethodHandles.lookup()
+            .findVarHandle(Session::class.java, "obj", IPooledObject::class.java)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    protected fun perform(action: (T) -> Unit) {
+        (OBJ.getOpaque(this) as? T)?.let(action)
+    }
+
     inline fun <R> execute(
         primary: Boolean,
         key: K,
@@ -375,14 +407,15 @@ internal open class Session<K : Any, T : IPooledObject<K>>(
         primary: Boolean,
         permits: Int,
         block: () -> T
-    ) = (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also { obj = it }).also {
+    ) = (obj ?: (if (primary) { pool.borrowPrimaryObject() } else { block() }).also { OBJ.setOpaque(this, it) }).also {
         retainCount += permits
     }
 
     private fun T.release(permits: Int) {
         retainCount -= permits
         if (retainCount == 0) {
-            pool.returnObject(this).also { obj = null }
+            OBJ.setOpaque(this@Session, null)
+            pool.returnObject(this)
         }
     }
 }

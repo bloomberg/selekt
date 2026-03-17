@@ -55,8 +55,6 @@ interface IObjectPool<K : Any, T : Any> : Closeable {
 
     fun clear(priority: Priority)
 
-    fun interrupt()
-
     fun returnObject(obj: T)
 }
 
@@ -69,8 +67,6 @@ interface IObjectFactory<T : Any> : Closeable {
 
     @Throws(Exception::class)
     fun makePrimaryObject(): T
-
-    fun interrupt()
 }
 
 interface IPooledObject<K> {

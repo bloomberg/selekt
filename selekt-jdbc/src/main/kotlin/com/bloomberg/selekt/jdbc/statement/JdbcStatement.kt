@@ -51,10 +51,15 @@ open class JdbcStatement internal constructor(
     companion object {
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(JdbcStatement::class.java, "closed", Boolean::class.javaPrimitiveType)
+        @JvmStatic
+        protected val EXECUTING_THREAD_ID: VarHandle = MethodHandles.lookup()
+            .findVarHandle(JdbcStatement::class.java, "executingThreadId", Long::class.javaPrimitiveType)
     }
 
     @Volatile
     private var closed = false
+    @Suppress("unused")
+    private var executingThreadId = -1L
     private var currentResultSet: ResultSet? = null
     private var updateCount = -1
     protected var lastGeneratedKey = -1L
@@ -68,6 +73,7 @@ open class JdbcStatement internal constructor(
 
     override fun executeQuery(sql: String): ResultSet {
         checkClosed()
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
         try {
             connection.ensureTransaction()
             val cursor = database.query(sql, emptyArray())
@@ -76,32 +82,42 @@ open class JdbcStatement internal constructor(
             return currentResultSet!!
         } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
     override fun executeUpdate(sql: String): Int {
         checkClosed()
-        return runCatching {
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
+        return try {
             executeUpdate(sql, database.compileStatement(sql))
-        }.getOrElse { e ->
+        } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
     override fun execute(sql: String): Boolean {
         checkClosed()
-        val statement = runCatching {
-            connection.ensureTransaction()
-            database.compileStatement(sql)
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
-        }
-        return if (statement.isReadOnly) {
-            executeQuery(sql)
-            true
-        } else {
-            executeUpdate(sql, statement)
-            false
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
+        try {
+            val statement = runCatching {
+                connection.ensureTransaction()
+                database.compileStatement(sql)
+            }.getOrElse { e ->
+                throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+            }
+            return if (statement.isReadOnly) {
+                executeQuery(sql)
+                true
+            } else {
+                executeUpdate(sql, statement)
+                false
+            }
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
@@ -168,7 +184,12 @@ open class JdbcStatement internal constructor(
 
     override fun getQueryTimeout(): Int = queryTimeout
 
-    override fun cancel() = connection.interrupt()
+    override fun cancel() {
+        val threadId = EXECUTING_THREAD_ID.getAcquire(this) as Long
+        if (threadId >= 0L) {
+            connection.interruptSession(threadId)
+        }
+    }
 
     override fun setFetchDirection(direction: Int) {
         if (direction != ResultSet.FETCH_FORWARD) {
@@ -230,9 +251,11 @@ open class JdbcStatement internal constructor(
         return if (batchedSqlStatements.isEmpty()) {
             emptyIntArray
         } else {
+            EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
             try {
                 executeBatchStatements()
             } finally {
+                EXECUTING_THREAD_ID.setRelease(this, -1L)
                 clearBatch()
             }
         }

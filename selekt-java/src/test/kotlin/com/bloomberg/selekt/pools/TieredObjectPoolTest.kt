@@ -18,14 +18,12 @@ package com.bloomberg.selekt.pools
 
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
-import kotlin.test.assertFailsWith
 
 internal class TieredObjectPoolTest {
     private val singleObjectPool: SingleObjectPool<String, PooledObject> = mock()
@@ -87,20 +85,5 @@ internal class TieredObjectPoolTest {
         pool.clear(priority)
         verify(singleObjectPool, times(1)).clear(same(priority))
         verify(commonObjectPool, times(1)).clear(same(priority))
-    }
-
-    @Test
-    fun interruptDelegatesToBothPools() {
-        pool.interrupt()
-        verify(singleObjectPool, times(1)).interrupt()
-        verify(commonObjectPool, times(1)).interrupt()
-    }
-
-    @Test
-    fun interruptDelegatesToSecondaryEvenIfPrimaryThrows() {
-        whenever(singleObjectPool.interrupt()) doThrow RuntimeException("Primary failed!")
-        assertFailsWith<RuntimeException> { pool.interrupt() }
-        verify(singleObjectPool, times(1)).interrupt()
-        verify(commonObjectPool, times(1)).interrupt()
     }
 }

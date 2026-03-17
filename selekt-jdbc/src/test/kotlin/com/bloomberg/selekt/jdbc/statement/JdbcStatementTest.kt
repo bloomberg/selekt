@@ -42,6 +42,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
@@ -225,9 +226,19 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun cancellationDelegatesToDatabaseInterrupt() {
+    fun cancellationWithNoExecutingThreadIsNoOp() {
         statement.cancel()
-        verify(mockDatabase, times(1)).interrupt()
+        verify(mockDatabase, never()).interruptSession(any())
+    }
+
+    @Test
+    fun cancellationDelegatesToInterruptSession() {
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
+            statement.cancel()
+            mockCursor
+        }
+        statement.executeQuery("SELECT 1")
+        verify(mockDatabase, times(1)).interruptSession(Thread.currentThread().threadId())
     }
 
     @Test

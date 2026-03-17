@@ -1171,10 +1171,10 @@ internal class JdbcConnectionTest {
             }
         }
     }
-
     @Test
-    fun interruptDelegatesToDatabase() {
-        connection.interrupt()
-        verify(mockDatabase, times(1)).interrupt()
+    fun interruptSessionDelegatesToDatabase() {
+        val threadId = Thread.currentThread().threadId()
+        connection.interruptSession(threadId)
+        verify(mockDatabase, times(1)).interruptSession(threadId)
     }
 }

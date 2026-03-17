@@ -95,6 +95,4 @@ internal class SQLConnectionFactory(
             connections.add(it)
         }
     }
-
-    override fun interrupt(): Unit = connections.forEach(SQLExecutor::interrupt)
 }

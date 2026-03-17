@@ -102,9 +102,6 @@ public class CommonObjectPoolBenchmark {
                 public @NotNull Task makePrimaryObject() {
                     return makeObject();
                 }
-
-                @Override
-                public void interrupt() {}
             };
 
             pool = new CommonObjectPool<>(
@@ -153,9 +150,6 @@ public class CommonObjectPoolBenchmark {
                 public @NotNull Task makePrimaryObject() {
                     return makeObject();
                 }
-
-                @Override
-                public void interrupt() {}
             };
 
             pool = new CommonObjectPool<>(

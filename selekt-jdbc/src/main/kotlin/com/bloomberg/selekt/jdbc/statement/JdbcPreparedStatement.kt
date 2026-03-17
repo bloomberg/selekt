@@ -80,7 +80,8 @@ internal open class JdbcPreparedStatement(
 
     override fun executeQuery(): ResultSet {
         checkClosed()
-        return runCatching {
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
+        return try {
             connection.ensureTransaction()
             JdbcResultSet(
                 database.query(sql, buildBindArgs()),
@@ -89,24 +90,30 @@ internal open class JdbcPreparedStatement(
                 resultSetConcurrency,
                 resultSetHoldability
             )
-        }.getOrElse { e ->
+        } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
     override fun executeUpdate(): Int {
         checkClosed()
-        return runCatching {
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
+        return try {
             connection.ensureTransaction()
             executeUpdate(database.compileStatement(sql, buildBindArgs()))
-        }.getOrElse { e ->
+        } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
     override fun execute(): Boolean {
         checkClosed()
-        return runCatching {
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
+        return try {
             connection.ensureTransaction()
             val statement = database.compileStatement(sql, buildBindArgs())
             if (statement.isReadOnly) {
@@ -116,8 +123,10 @@ internal open class JdbcPreparedStatement(
                 executeUpdate(statement)
                 false
             }
-        }.getOrElse { e ->
+        } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
         }
     }
 
@@ -179,6 +188,7 @@ internal open class JdbcPreparedStatement(
         if (totalBatchCount == 0) {
             return IntArray(0)
         }
+        EXECUTING_THREAD_ID.setRelease(this, Thread.currentThread().threadId())
         try {
             if (database.compileStatement(sql).isReadOnly) {
                 throw SQLException("Read-only statements are not allowed in batch execution")
@@ -209,6 +219,7 @@ internal open class JdbcPreparedStatement(
                 )
             }
         } finally {
+            EXECUTING_THREAD_ID.setRelease(this, -1L)
             clearBatch()
         }
     }
