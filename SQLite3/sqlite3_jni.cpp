@@ -665,6 +665,24 @@ Java_com_bloomberg_selekt_ExternalSQLite_hardHeapLimit64(
     return sqlite3_hard_heap_limit64(-1);
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_interrupt(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb
+) {
+    sqlite3_interrupt(reinterpret_cast<sqlite3*>(jdb));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_isInterrupted(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb
+) {
+    return sqlite3_is_interrupted(reinterpret_cast<sqlite3*>(jdb));
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_key(
     JNIEnv* env,
