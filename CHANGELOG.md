@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.29.3
+
+### Dependencies
+
+* SQLCipher 4.14.0
+
 ## Version 0.29.2
 
 ### Fixes
