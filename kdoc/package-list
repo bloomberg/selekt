@@ -486,6 +486,8 @@ $dokka.location:com.bloomberg.selekt/IExternalSQLite/finalize/#kotlin.Long/Point
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/getAutocommit/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/get-autocommit.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/gitCommit/#/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/git-commit.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/hardHeapLimit64/#/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/hard-heap-limit64.md
+$dokka.location:com.bloomberg.selekt/IExternalSQLite/interrupt/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/interrupt.md
+$dokka.location:com.bloomberg.selekt/IExternalSQLite/isInterrupted/#kotlin.Long/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/is-interrupted.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/key/#kotlin.Long#kotlin.ByteArray#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/key.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/keyConventionally/#kotlin.Long#kotlin.ByteArray#kotlin.Int/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/key-conventionally.md
 $dokka.location:com.bloomberg.selekt/IExternalSQLite/keywordCount/#/PointingToDeclaration/selekt-sqlite3-api/selekt-sqlite3-api/com.bloomberg.selekt/-i-external-s-q-lite/keyword-count.md
