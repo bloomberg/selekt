@@ -135,6 +135,10 @@ interface IExternalSQLite {
 
     fun hardHeapLimit64(): Long
 
+    fun interrupt(db: Long)
+
+    fun isInterrupted(db: Long): Int
+
     fun key(db: Long, key: ByteArray, length: Int): SQLCode
 
     fun keyConventionally(db: Long, key: ByteArray, length: Int): SQLCode

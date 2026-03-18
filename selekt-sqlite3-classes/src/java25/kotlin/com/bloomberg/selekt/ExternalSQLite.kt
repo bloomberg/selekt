@@ -458,6 +458,16 @@ internal class ExternalSQLite(
 
     override fun hardHeapLimit64(): Long = sqlite3_hard_heap_limit64.invoke(-1L) as Long
 
+    override fun interrupt(
+        db: Long
+    ) {
+        sqlite3_interrupt.invoke(MemorySegment.ofAddress(db))
+    }
+
+    override fun isInterrupted(
+        db: Long
+    ): Int = sqlite3_is_interrupted.invoke(MemorySegment.ofAddress(db)) as Int
+
     override fun key(
         db: Long,
         key: ByteArray,
@@ -892,6 +902,16 @@ internal class ExternalSQLite(
         private val sqlite3_hard_heap_limit64: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_hard_heap_limit64").orElseThrow(),
             FunctionDescriptor.of(JAVA_LONG, JAVA_LONG),
+            criticalOption
+        )
+        private val sqlite3_interrupt: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_interrupt").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS),
+            criticalOption
+        )
+        private val sqlite3_is_interrupted: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_is_interrupted").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS),
             criticalOption
         )
         private val sqlite3_key: MethodHandle = linker.downcallHandle(

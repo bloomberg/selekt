@@ -19,6 +19,7 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
@@ -821,6 +822,122 @@ internal class ExternalSQLiteTest {
         val db = dbHolder[0]
         try {
             sqlite.traceV2(db, 0)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `isInterrupted returns zero for fresh database`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(0, sqlite.isInterrupted(db))
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `interrupt sets interrupted flag`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.interrupt(db)
+            assertTrue(sqlite.isInterrupted(db) != 0)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `interrupt flag is cleared after completion`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.interrupt(db)
+            assertTrue(sqlite.isInterrupted(db) != 0)
+            // Executing a statement should clear the interrupt flag.
+            sqlite.exec(db, "SELECT 1")
+            assertEquals(0, sqlite.isInterrupted(db))
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `interrupt does not affect other database connections`() {
+        val dbHolder1 = LongArray(1)
+        val dbHolder2 = LongArray(1)
+        sqlite.openV2(File(tempDir, "test1.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder1)
+        sqlite.openV2(File(tempDir, "test2.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder2)
+        val db1 = dbHolder1[0]
+        val db2 = dbHolder2[0]
+        try {
+            sqlite.interrupt(db1)
+            assertTrue(sqlite.isInterrupted(db1) != 0)
+            assertEquals(0, sqlite.isInterrupted(db2))
+        } finally {
+            sqlite.closeV2(db1)
+            sqlite.closeV2(db2)
+        }
+    }
+
+    @Test
+    fun `interrupt can be called multiple times`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.interrupt(db)
+            sqlite.interrupt(db)
+            assertTrue(sqlite.isInterrupted(db) != 0)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `interrupt from another thread sets flag`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(0, sqlite.isInterrupted(db))
+            val latch = CountDownLatch(1)
+            val thread = Thread {
+                sqlite.interrupt(db)
+                latch.countDown()
+            }
+            thread.start()
+            latch.await()
+            assertTrue(sqlite.isInterrupted(db) != 0)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `interrupt clears after step completes`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.interrupt(db)
+            assertTrue(sqlite.isInterrupted(db) != 0)
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 1"
+            sqlite.prepareV2(db, sql, sql.length, statementHolder)
+            val statement = statementHolder[0]
+            try {
+                sqlite.step(statement)
+            } finally {
+                sqlite.finalize(statement)
+            }
+            assertEquals(0, sqlite.isInterrupted(db), "Interrupt flag should be cleared after step")
         } finally {
             sqlite.closeV2(db)
         }
