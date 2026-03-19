@@ -604,6 +604,7 @@ internal class JdbcDatabaseMetaDataTest {
         }
     }
 
+    @Suppress("Detekt.CognitiveComplexMethod")
     private fun makePragmaCursor(cols: List<List<Any?>>): ICursor {
         val n = arrayOf("cid", "name", "type", "notnull", "dflt_value", "pk")
         return mock {
