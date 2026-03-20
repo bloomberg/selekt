@@ -581,74 +581,12 @@ internal class JdbcDatabaseMetaDataTest {
         assertTrue(metaData.supportsConvert(Types.INTEGER, Types.VARCHAR))
     }
 
-    private fun makeTablesCursor(): ICursor {
-        val n = arrayOf("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS",
-            "TYPE_CAT", "TYPE_SCHEM", "TYPE_NAME", "SELF_REFERENCING_COL_NAME", "REF_GENERATION")
-        return mock {
-            var c = 0
-            whenever(it.moveToNext()) doAnswer { ++c == 1 }
-            whenever(it.columnCount) doReturn n.size
-            whenever(it.columnNames()) doReturn n
-            whenever(it.columnIndex(any())) doAnswer { inv -> n.indexOf(inv.getArgument<String>(0)) }
-            whenever(it.getString(any())) doAnswer { inv ->
-                if (n.getOrNull(inv.getArgument<Int>(0)) == "TABLE_NAME") "test_table" else null
-            }
-            whenever(it.isClosed()) doReturn false
-        }
-    }
-
-    @Suppress("Detekt.CognitiveComplexMethod")
-    private fun makePragmaCursor(cols: List<List<Any?>>): ICursor {
-        val n = arrayOf("cid", "name", "type", "notnull", "dflt_value", "pk")
-        return mock {
-            var c = 0
-            whenever(it.moveToNext()) doAnswer { ++c <= cols.size }
-            whenever(it.columnCount) doReturn n.size
-            whenever(it.columnNames()) doReturn n
-            whenever(it.columnIndex(any())) doAnswer { inv -> n.indexOf(inv.getArgument<String>(0)) }
-            whenever(it.getString(any())) doAnswer { inv ->
-                if (c in 1..cols.size) cols[c - 1].getOrNull(inv.getArgument<Int>(0))?.toString() else null
-            }
-            whenever(it.getInt(any())) doAnswer { inv ->
-                if (c in 1..cols.size) cols[c - 1].getOrNull(inv.getArgument<Int>(0)) as? Int ?: 0 else 0
-            }
-            whenever(it.position()) doAnswer { c - 1 }
-            whenever(it.type(any())) doAnswer { inv ->
-                when (inv.getArgument<Int>(0)) {
-                    0, 3, 5 -> ColumnType.INTEGER
-                    4 -> ColumnType.NULL
-                    else -> ColumnType.STRING
-                }
-            }
-            whenever(it.isNull(any())) doAnswer { inv ->
-                if (c in 1..cols.size) cols[c - 1].getOrNull(inv.getArgument<Int>(0)) == null else true
-            }
-            whenever(it.isClosed()) doReturn false
-        }
-    }
-
-    private fun makeEmptyCursor(count: Int, names: Array<String>): ICursor = mock {
-        whenever(it.moveToNext()) doReturn false
-        whenever(it.columnCount) doReturn count
-        whenever(it.columnNames()) doReturn names
-        whenever(it.isClosed()) doReturn false
-    }
-
-    private val colsResultNames = arrayOf(
-        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "TYPE_NAME",
-        "COLUMN_SIZE", "BUFFER_LENGTH", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
-        "REMARKS", "COLUMN_DEF", "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH",
-        "ORDINAL_POSITION", "IS_NULLABLE", "SCOPE_CATALOG", "SCOPE_SCHEMA", "SCOPE_TABLE",
-        "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN")
-
-    private val pkNames = arrayOf(
-        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME")
 
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getColumnsWithVariousColumnTypes() {
-        val tc = makeTablesCursor()
-        val pc = makePragmaCursor(listOf(
+        val tableCursor = makeTablesCursor()
+        val pragmaCursor = makePragmaCursor(listOf(
             listOf(0, "int_col", "INTEGER", 0, null, 0),
             listOf(1, "text_col", "TEXT", 0, null, 0),
             listOf(2, "real_col", "REAL", 0, null, 0),
@@ -667,13 +605,13 @@ internal class JdbcDatabaseMetaDataTest {
             listOf(15, "mediumint_col", "MEDIUMINT", 0, null, 0),
             listOf(16, "doubleprecision_col", "DOUBLE PRECISION", 0, null, 0),
             listOf(17, "character_col", "CHARACTER", 0, null, 0)))
-        val uc = makeEmptyCursor(24, colsResultNames)
+        val unionCursor = makeEmptyCursor(24, colsResultNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.contains("sqlite_master") && s.contains("type IN ('table', 'view')") -> tc
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("UNION ALL") -> uc
+                arg.contains("sqlite_master") && arg.contains("type IN ('table', 'view')") -> tableCursor
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("UNION ALL") -> unionCursor
                 else -> mockCursor
             }
         }
@@ -683,15 +621,15 @@ internal class JdbcDatabaseMetaDataTest {
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getColumnsWithIntType() {
-        val tc = makeTablesCursor()
-        val pc = makePragmaCursor(listOf(listOf(0, "int_type_col", "INT", 1, "42", 1)))
-        val uc = makeEmptyCursor(24, colsResultNames)
+        val tableCursor = makeTablesCursor()
+        val pragmaCursor = makePragmaCursor(listOf(listOf(0, "int_type_col", "INT", 1, "42", 1)))
+        val unionCursor = makeEmptyCursor(24, colsResultNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.contains("sqlite_master") && s.contains("type IN ('table', 'view')") -> tc
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("UNION ALL") -> uc
+                arg.contains("sqlite_master") && arg.contains("type IN ('table', 'view')") -> tableCursor
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("UNION ALL") -> unionCursor
                 else -> mockCursor
             }
         }
@@ -701,18 +639,18 @@ internal class JdbcDatabaseMetaDataTest {
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getColumnsWithColumnNamePatternFiltering() {
-        val tc = makeTablesCursor()
-        val pc = makePragmaCursor(listOf(
+        val tableCursor = makeTablesCursor()
+        val pragmaCursor = makePragmaCursor(listOf(
             listOf(0, "id", "INTEGER", 1, null, 1),
             listOf(1, "name", "TEXT", 0, null, 0),
             listOf(2, "email", "TEXT", 0, null, 0)))
-        val uc = makeEmptyCursor(24, colsResultNames)
+        val unionCursor = makeEmptyCursor(24, colsResultNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.contains("sqlite_master") && s.contains("type IN ('table', 'view')") -> tc
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("UNION ALL") || s.contains("WHERE 1 = 0") -> uc
+                arg.contains("sqlite_master") && arg.contains("type IN ('table', 'view')") -> tableCursor
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("UNION ALL") || arg.contains("WHERE 1 = 0") -> unionCursor
                 else -> mockCursor
             }
         }
@@ -722,17 +660,17 @@ internal class JdbcDatabaseMetaDataTest {
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getColumnsWithNullColumnNamePattern() {
-        val tc = makeTablesCursor()
-        val pc = makePragmaCursor(listOf(
+        val tableCursor = makeTablesCursor()
+        val pragmaCursor = makePragmaCursor(listOf(
             listOf(0, "id", "INTEGER", 1, "0", 1),
             listOf(1, "name", "TEXT", 0, null, 0)))
-        val uc = makeEmptyCursor(24, colsResultNames)
+        val unionCursor = makeEmptyCursor(24, colsResultNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.contains("sqlite_master") && s.contains("type IN ('table', 'view')") -> tc
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("UNION ALL") -> uc
+                arg.contains("sqlite_master") && arg.contains("type IN ('table', 'view')") -> tableCursor
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("UNION ALL") -> unionCursor
                 else -> mockCursor
             }
         }
@@ -741,15 +679,15 @@ internal class JdbcDatabaseMetaDataTest {
 
     @Test
     fun getColumnsWithEmptyResult() {
-        val tc = makeEmptyCursor(10, arrayOf("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME",
+        val tableCursor = makeEmptyCursor(10, arrayOf("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME",
             "TABLE_TYPE", "REMARKS", "TYPE_CAT", "TYPE_SCHEM", "TYPE_NAME",
             "SELF_REFERENCING_COL_NAME", "REF_GENERATION"))
-        val ec = makeEmptyCursor(24, colsResultNames)
+        val emptyCursor = makeEmptyCursor(24, colsResultNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.contains("sqlite_master") && s.contains("type IN ('table', 'view')") -> tc
-                s.contains("WHERE 1 = 0") -> ec
+                arg.contains("sqlite_master") && arg.contains("type IN ('table', 'view')") -> tableCursor
+                arg.contains("WHERE 1 = 0") -> emptyCursor
                 else -> mockCursor
             }
         }
@@ -759,16 +697,16 @@ internal class JdbcDatabaseMetaDataTest {
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getPrimaryKeysWithMultipleKeys() {
-        val pc = makePragmaCursor(listOf(
+        val pragmaCursor = makePragmaCursor(listOf(
             listOf(0, "id", "INTEGER", 1, null, 1),
             listOf(1, "sub_id", "INTEGER", 1, null, 2),
             listOf(2, "name", "TEXT", 0, null, 0)))
-        val uc = makeEmptyCursor(6, pkNames)
+        val unionCursor = makeEmptyCursor(6, pkNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("UNION ALL") -> uc
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("UNION ALL") -> unionCursor
                 else -> mockCursor
             }
         }
@@ -778,15 +716,15 @@ internal class JdbcDatabaseMetaDataTest {
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
     @Test
     fun getPrimaryKeysWithEmptyResult() {
-        val pc = makePragmaCursor(listOf(
+        val pragmaCursor = makePragmaCursor(listOf(
             listOf(0, "id", "INTEGER", 0, null, 0),
             listOf(1, "name", "TEXT", 0, null, 0)))
-        val ec = makeEmptyCursor(6, pkNames)
+        val emptyCursor = makeEmptyCursor(6, pkNames)
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
+            val arg = it.getArgument<String>(0)
             when {
-                s.startsWith("PRAGMA table_info") -> pc
-                s.contains("WHERE 1 = 0") -> ec
+                arg.startsWith("PRAGMA table_info") -> pragmaCursor
+                arg.contains("WHERE 1 = 0") -> emptyCursor
                 else -> mockCursor
             }
         }
@@ -810,8 +748,8 @@ internal class JdbcDatabaseMetaDataTest {
             "TABLE_TYPE", "REMARKS", "TYPE_CAT", "TYPE_SCHEM", "TYPE_NAME",
             "SELF_REFERENCING_COL_NAME", "REF_GENERATION"))
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer {
-            val s = it.getArgument<String>(0)
-            if (s.contains("sqlite_master") && s.contains("AND name GLOB")) { cursor } else { mockCursor }
+            val arg = it.getArgument<String>(0)
+            if (arg.contains("sqlite_master") && arg.contains("AND name GLOB")) { cursor } else { mockCursor }
         }
         metaData.getTables(null, null, "test_%", null).use { assertNotNull(it) }
     }
@@ -834,4 +772,87 @@ internal class JdbcDatabaseMetaDataTest {
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())).doReturn(mockCursor)
         assertNotNull(metaData.getIndexInfo(null, null, "users", unique = false, approximate = false))
     }
+
+    private fun makeTablesCursor(): ICursor {
+        val columns = arrayOf("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS",
+            "TYPE_CAT", "TYPE_SCHEM", "TYPE_NAME", "SELF_REFERENCING_COL_NAME", "REF_GENERATION")
+        return mock {
+            var count = 0
+            whenever(it.moveToNext()) doAnswer { ++count == 1 }
+            whenever(it.columnCount) doReturn columns.size
+            whenever(it.columnNames()) doReturn columns
+            whenever(it.columnIndex(any())) doAnswer { invocation ->
+                columns.indexOf(invocation.getArgument<String>(0))
+            }
+            whenever(it.getString(any())) doAnswer { invocation ->
+                if (columns.getOrNull(invocation.getArgument<Int>(0)) == "TABLE_NAME") {
+                    "test_table"
+                } else {
+                    null
+                }
+            }
+            whenever(it.isClosed()) doReturn false
+        }
+    }
+
+    @Suppress("Detekt.CognitiveComplexMethod")
+    private fun makePragmaCursor(cols: List<List<Any?>>): ICursor {
+        val columns = arrayOf("cid", "name", "type", "notnull", "dflt_value", "pk")
+        return mock {
+            var count = 0
+            whenever(it.moveToNext()) doAnswer { ++count <= cols.size }
+            whenever(it.columnCount) doReturn columns.size
+            whenever(it.columnNames()) doReturn columns
+            whenever(it.columnIndex(any())) doAnswer { invocation ->
+                columns.indexOf(invocation.getArgument<String>(0))
+            }
+            whenever(it.getString(any())) doAnswer { invocation ->
+                if (count in 1..cols.size) {
+                    cols[count - 1].getOrNull(invocation.getArgument<Int>(0))?.toString()
+                } else {
+                    null
+                }
+            }
+            whenever(it.getInt(any())) doAnswer { invocation ->
+                if (count in 1..cols.size) {
+                    cols[count - 1].getOrNull(invocation.getArgument<Int>(0)) as? Int ?: 0
+                } else {
+                    0
+                }
+            }
+            whenever(it.position()) doAnswer { count - 1 }
+            whenever(it.type(any())) doAnswer { invocation ->
+                when (invocation.getArgument<Int>(0)) {
+                    0, 3, 5 -> ColumnType.INTEGER
+                    4 -> ColumnType.NULL
+                    else -> ColumnType.STRING
+                }
+            }
+            whenever(it.isNull(any())) doAnswer { invocation ->
+                if (count in 1..cols.size) {
+                    cols[count - 1].getOrNull(invocation.getArgument<Int>(0)) == null
+                } else {
+                    true
+                }
+            }
+            whenever(it.isClosed()) doReturn false
+        }
+    }
+
+    private fun makeEmptyCursor(count: Int, names: Array<String>): ICursor = mock {
+        whenever(it.moveToNext()) doReturn false
+        whenever(it.columnCount) doReturn count
+        whenever(it.columnNames()) doReturn names
+        whenever(it.isClosed()) doReturn false
+    }
+
+    private val colsResultNames = arrayOf(
+        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "TYPE_NAME",
+        "COLUMN_SIZE", "BUFFER_LENGTH", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
+        "REMARKS", "COLUMN_DEF", "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH",
+        "ORDINAL_POSITION", "IS_NULLABLE", "SCOPE_CATALOG", "SCOPE_SCHEMA", "SCOPE_TABLE",
+        "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT", "IS_GENERATEDCOLUMN")
+
+    private val pkNames = arrayOf(
+        "TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME")
 }
