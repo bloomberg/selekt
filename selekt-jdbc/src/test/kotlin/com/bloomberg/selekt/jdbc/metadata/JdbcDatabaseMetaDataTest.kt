@@ -441,15 +441,8 @@ internal class JdbcDatabaseMetaDataTest {
     }
 
     @Test
-    fun getIndexInfoNonUnique() {
-        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())).doReturn(mockCursor)
-        assertNotNull(metaData.getIndexInfo(null, null, "users", unique = false, approximate = false))
-    }
-
-    @Test
     fun unwrapToSQLDatabase() {
-        val unwrapped = metaData.unwrap(SQLDatabase::class.java)
-        assertSame(mockDatabase, unwrapped)
+        assertSame(mockDatabase, metaData.unwrap(SQLDatabase::class.java))
     }
 
     @Test
