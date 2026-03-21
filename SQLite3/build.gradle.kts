@@ -67,7 +67,11 @@ val cFlags = arrayOf(
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")
-    commandLine("./configure")
+    if (osName() == "windows") {
+        commandLine("bash", "./configure")
+    } else {
+        commandLine("./configure")
+    }
     environment("CFLAGS", cFlags.joinToString(" "))
     args("--with-tempstore=yes")
     logging.captureStandardOutput(LogLevel.INFO)
@@ -122,7 +126,7 @@ tasks.register<Exec>("cmakeSQLite") {
 tasks.register<Exec>("makeSQLite") {
     dependsOn("cmakeSQLite")
     workingDir(".cxx-host")
-    commandLine("make", "selekt")
+    commandLine("cmake", "--build", ".", "--target", "selekt")
 }
 
 fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
