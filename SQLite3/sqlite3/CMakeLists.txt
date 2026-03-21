@@ -88,7 +88,7 @@ target_link_libraries(selekt PRIVATE ${LIBCRYPTO})
 if(NOT ANDROID_ABI AND NOT ANDROID)
   find_library(MIMALLOC_STATIC_LIB
     NAMES libmimalloc.a mimalloc-static
-    PATHS /usr/local/lib /usr/lib
+    PATHS /usr/local/lib /usr/lib $ENV{CMAKE_PREFIX_PATH}/lib
     NO_DEFAULT_PATH)
   if(MIMALLOC_STATIC_LIB)
     message(STATUS "Found static mimalloc: ${MIMALLOC_STATIC_LIB}")
