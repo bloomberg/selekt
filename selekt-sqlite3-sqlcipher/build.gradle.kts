@@ -73,7 +73,8 @@ publishing {
             "linux-aarch64",
             "linux-aarch64-musl",
             "linux-amd64",
-            "linux-amd64-musl"
+            "linux-amd64-musl",
+            "windows-amd64"
         ).forEach {
             artifact(file("build/libs/${project.name}-$version-$it.jar")) {
                 classifier = it

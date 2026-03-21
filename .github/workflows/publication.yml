@@ -28,6 +28,9 @@ jobs:
           - os: macos-15
             platform: darwin-aarch64
             shell: bash
+          - os: windows-latest
+            platform: windows-amd64
+            shell: bash
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     defaults:
@@ -51,10 +54,20 @@ jobs:
             fi
           elif [ "${{ runner.os }}" = "macOS" ]; then
             brew install make tcl-tk mimalloc
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            choco install mingw make magicsplat-tcl-tk -y --no-progress
           fi
 
+      - name: 'Configure Windows Perl'
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -S perl make"
+          C:\msys64\usr\bin\bash.exe -lc "echo | cpan Locale::Maketext::Simple Pod::Usage"
+          C:\msys64\usr\bin\bash.exe -lc "perl -e 'use Locale::Maketext::Simple; use Pod::Usage; print qq{OK\n}'"
+
       - name: 'Build mimalloc'
-        if: runner.os == 'Linux'
+        if: runner.os != 'macOS'
         run: |
           cd /tmp
           curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
@@ -62,11 +75,23 @@ jobs:
           cd mimalloc-3.1.6
           mkdir -p out/release
           cd out/release
-          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
-          make -j$(nproc) mimalloc-static
-          mkdir -p /usr/local/lib /usr/local/include
-          cp libmimalloc.a /usr/local/lib/libmimalloc.a
-          cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake ../.. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
+            cmake --build . --target mimalloc-static
+            mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
+            cp libmimalloc.a "C:/mimalloc/lib/"
+            cp ../../include/mimalloc.h "C:/mimalloc/include/"
+          else
+            cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
+            make -j$(nproc) mimalloc-static
+            mkdir -p /usr/local/lib /usr/local/include
+            cp libmimalloc.a /usr/local/lib/libmimalloc.a
+            cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+          fi
+
+      - name: 'Setup MSVC'
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: 'Setup Java 17'
         if: "!contains(matrix.platform, 'musl')"
@@ -87,6 +112,8 @@ jobs:
             fi
           elif [ "${{ runner.os }}" = "macOS" ]; then
             echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            echo "JAVA_HOME=${JAVA_HOME_17_X64//\\//}" >> $GITHUB_ENV
           fi
 
       - name: 'Setup Android SDK'
@@ -137,12 +164,14 @@ jobs:
 
       - name: 'Build'
         env:
-          CC: ${{ runner.os == 'macOS' && 'clang' || 'gcc' }}
-          CXX: ${{ runner.os == 'macOS' && 'clang++' || 'g++' }}
           LDFLAGS: '-s'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
+          CMAKE_PREFIX_PATH: ${{ runner.os == 'Windows' && 'C:/mimalloc' || '' }}
         run: |
-          if [ "${{ runner.os }}" = "Linux" ]; then
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            export CC=clang
+            export CXX=clang++
+          elif [ "${{ runner.os }}" = "Linux" ]; then
             export CC=gcc
             export CXX=g++
           fi
@@ -155,7 +184,7 @@ jobs:
 
       - name: 'Verify native library'
         run: |
-          LIB=$(find SQLite3/build/intermediates/libs -name 'libselekt.*' -type f | head -1)
+          LIB=$(find SQLite3/build/intermediates/libs \( -name 'libselekt.*' -o -name 'selekt.dll' \) -type f | head -1)
           if [ -z "$LIB" ]; then
             echo "ERROR: No native library found in build output."
             exit 1
