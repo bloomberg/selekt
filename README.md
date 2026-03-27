@@ -28,7 +28,7 @@ Selekt sits somewhere between the two: when Selekt uses SQLCipher, it does so in
 
 ## Quick Start
 
-Please refer to the [main documentation](https://bloomberg.github.io/selekt/getting_started/).
+Please refer to the [main documentation](https://bloomberg.github.io/selekt/getting_started_android/).
 
 ## Contributions
 
