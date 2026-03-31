@@ -58,7 +58,7 @@ jobs:
           fi
 
       - name: 'Setup Android SDK'
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: 'Checkout'
         uses: actions/checkout@v6
