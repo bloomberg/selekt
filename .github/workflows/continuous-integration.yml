@@ -211,7 +211,7 @@ jobs:
 
       - name: 'Build others'
         run: |
-          ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble dokkaHtml
+          ./gradlew assembleAndroidTest :AndroidCLI:assembleDebug :selekt-android-lint:assemble dokkaGenerate
 
       - name: 'Tear down'
         if: always()
