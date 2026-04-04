@@ -38,9 +38,9 @@ jobs:
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
       - name: 'Dokka'
         run: |
-          ./gradlew :dokkaGfmMultiModule :dokkaHtmlMultiModule
-          cp -R build/dokka/gfmMultiModule docs/kdoc
-          cp -R build/dokka/htmlMultiModule docs/kdoc/api
+          ./gradlew dokkaGeneratePublicationHtml
+          mkdir -p docs/kdoc
+          cp -R build/dokka/html/* docs/kdoc/
       - name: 'Set version'
         run: echo "VERSION=$(grep -hnr 'selekt.versionName' gradle.properties | sed 's/.*=//')" >> $GITHUB_ENV
       - name: 'Mkdocs'
