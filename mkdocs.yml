@@ -3,7 +3,7 @@ site_name: Selekt
 site_url: https://bloomberg.github.io/selekt
 repo_name: Selekt
 repo_url: https://github.com/bloomberg/selekt
-site_description: "A Kotlin and Android wrapper over SQLCipher, providing 256-bit AES encryption of database files"
+site_description: "Android and JVM SQLite database library that uses encryption"
 site_author: Bloomberg L.P.
 remote_branch: gh-pages
 edit_uri: ""
@@ -37,4 +37,3 @@ nav:
     - 'Android': getting_started_android.md
   - 'Native libraries': native_libraries.md
   - 'Benchmarks': benchmarks.md
-  - 'API': kdoc/selekt-android/index.md

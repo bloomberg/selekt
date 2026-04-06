@@ -18,12 +18,12 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
-import java.net.URL
+import java.net.URI
 import java.time.Duration
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.gradle.ext.copyright
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -63,6 +63,13 @@ nexusPublishing {
 }
 
 dependencies {
+    dokka(projects.selektAndroid)
+    dokka(projects.selektApi)
+    dokka(projects.selektCommons)
+    dokka(projects.selektJava)
+    dokka(projects.selektJdbc)
+    dokka(projects.selektJvm)
+    dokka(projects.selektSqlite3Api)
     kover(projects.selektAndroid)
     kover(projects.selektApi)
     kover(projects.selektCommons)
@@ -192,19 +199,15 @@ subprojects {
             }
         }
     }
-    tasks.withType<DokkaTask>().configureEach {
-        moduleName.set("Selekt")
-        dokkaSourceSets.named("main") {
-            sourceLink {
-                remoteUrl = URL(
-                    "https://github.com/bloomberg/selekt/tree/master/${this@configureEach.project.name}/src/main/kotlin"
-                )
-                localDirectory.set(file("src/main/kotlin"))
+    plugins.withId("org.jetbrains.dokka") {
+        configure<DokkaExtension> {
+            moduleName.set("Selekt")
+            dokkaSourceSets.configureEach {
+                sourceLink {
+                    remoteUrl.set(URI("https://github.com/bloomberg/selekt/tree/master/${project.name}/src/main/kotlin"))
+                    localDirectory.set(file("src/main/kotlin"))
+                }
             }
-            includeNonPublic.set(false)
-            noAndroidSdkLink.set(false)
-            noJdkLink.set(false)
-            noStdlibLink.set(false)
         }
     }
 }
