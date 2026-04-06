@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.29.4
+
+### Fixes
+
+* Define Gradle daemon JVM toolchain as Java 17.
+
+### Features
+
+* Provide bindings for SQLite3 interrupt.
+
+### Dependencies
+
+* Dokka 2.2.0
+* Gradle 9.4.1
+* Kotlin 2.3.20
+
 ## Version 0.29.3
 
 ### Dependencies
