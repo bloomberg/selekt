@@ -1,0 +1,1 @@
+sourceset_dependencies = '{":selekt-sqlite3-api/main":[]}'
