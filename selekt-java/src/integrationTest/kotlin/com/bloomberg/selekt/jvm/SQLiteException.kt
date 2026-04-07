@@ -17,11 +17,12 @@
 package com.bloomberg.selekt.jvm
 
 import com.bloomberg.selekt.SQL_OK
+import java.sql.SQLException
 
 class SQLiteException internal constructor(
     val code: Int,
     message: String
-) : Exception(message) {
+) : SQLException(message, null, code and 0xFF) {
     init {
         require(SQL_OK != code)
     }
