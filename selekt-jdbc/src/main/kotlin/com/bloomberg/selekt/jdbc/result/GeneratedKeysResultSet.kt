@@ -192,7 +192,7 @@ internal class GeneratedKeysResultSet(
 
     override fun getObject(columnLabel: String, map: Map<String, Class<*>>?): Any = generatedKey
 
-    override fun <T : Any?> getObject(columnIndex: Int, type: Class<T>?): T {
+    override fun <T> getObject(columnIndex: Int, type: Class<T>?): T {
         @Suppress("UNCHECKED_CAST")
         return generatedKey as T
     }
