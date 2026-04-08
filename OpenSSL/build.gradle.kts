@@ -148,7 +148,11 @@ tasks.register<Exec>("configureHost") {
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
     outputs.cacheIf { false } // TODO Restore me.
-    commandLine("./config")
+    if (osName() == "windows") {
+        commandLine("perl", "Configure", "mingw64")
+    } else {
+        commandLine("./config")
+    }
     args(
         "-fPIC",
         "-fstack-protector-all",
