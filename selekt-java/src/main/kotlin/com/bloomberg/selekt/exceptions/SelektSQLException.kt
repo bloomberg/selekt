@@ -17,5 +17,7 @@
 package com.bloomberg.selekt.exceptions
 
 interface SelektSQLException {
-    val vendorCode: Int
+    val code: Int
+
+    val extendedCode: Int
 }

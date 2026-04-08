@@ -267,9 +267,11 @@ open class SQLite(
     ): Nothing = throw object : SQLException(
         "Code: $code; Extended: $extendedCode; Message: $message; Context: $context",
         null,
-        code
+        code.toUByte().toInt()
     ), SelektSQLException {
-        override val vendorCode: Int = code
+        override val code: Int = code
+
+        override val extendedCode: Int = extendedCode
     }
 
     fun throwSQLException(db: Long, context: String? = null): Nothing =

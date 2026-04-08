@@ -21,5 +21,6 @@ import com.bloomberg.selekt.exceptions.SelektSQLException
 
 internal class SelektSQLiteConstraintException(
     error: String,
-    override val vendorCode: Int
+    override val code: Int,
+    override val extendedCode: Int
 ) : SQLiteConstraintException(error), SelektSQLException

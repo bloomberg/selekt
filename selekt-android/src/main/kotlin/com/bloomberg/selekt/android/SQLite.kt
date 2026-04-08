@@ -104,7 +104,7 @@ internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
             SQL_NOT_FOUND, SQL_AUTH, SQL_CANT_OPEN -> SQLiteCantOpenDatabaseException(exceptionMessage)
             SQL_MISMATCH -> SQLiteDatatypeMismatchException(exceptionMessage)
             SQL_ABORT -> SQLiteAbortException(exceptionMessage)
-            SQL_CONSTRAINT -> SelektSQLiteConstraintException(exceptionMessage, code)
+            SQL_CONSTRAINT -> SelektSQLiteConstraintException(exceptionMessage, code, extendedCode)
             SQL_TOO_BIG -> SQLiteBlobTooBigException(exceptionMessage)
             SQL_FULL -> SQLiteFullException(exceptionMessage)
             SQL_RANGE -> SQLiteBindOrColumnIndexOutOfRangeException(exceptionMessage)
