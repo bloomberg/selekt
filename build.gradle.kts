@@ -201,7 +201,6 @@ subprojects {
     }
     plugins.withId("org.jetbrains.dokka") {
         configure<DokkaExtension> {
-            moduleName.set("Selekt")
             dokkaSourceSets.configureEach {
                 sourceLink {
                     remoteUrl.set(URI("https://github.com/bloomberg/selekt/tree/master/${project.name}/src/main/kotlin"))
