@@ -1,1 +1,1 @@
-sourceset_dependencies = '{":selekt-sqlite3-api/main":[]}'
+sourceset_dependencies = '{":selekt-api/main":[],":selekt-jdbc/main":[],":selekt-commons/main":[],":selekt-android/main":[],":selekt-android/release":[],":selekt-sqlite3-api/main":[],":selekt-java/main":[]}'
