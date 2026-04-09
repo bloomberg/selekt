@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.29.5
+
+### Fixes
+
+* Separate code properties in SelektSQLException.
+
 ## Version 0.29.4
 
 ### Fixes
