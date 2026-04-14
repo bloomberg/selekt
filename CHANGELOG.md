@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.29.7
+
+### Fixes
+
+* Install missing library for native publication workflow.
+
 ## Version 0.29.6
 
 ### Fixes
