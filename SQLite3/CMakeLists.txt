@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required (VERSION 3.5.0 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.13.0 FATAL_ERROR)
 
 set(PROJECT_NAME Selekt)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
@@ -51,4 +51,9 @@ message(STATUS "Including OpenSSL headers from: ${INCLUDE_OPENSSL_DIR}")
 target_include_directories(selekt SYSTEM PUBLIC ${INCLUDE_OPENSSL_DIR})
 
 target_sources(selekt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3_jni.cpp)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_options(selekt PRIVATE -static-libstdc++ -static-libgcc)
+endif()
+
 #target_compile_options(selekt PRIVATE "-Werror")
