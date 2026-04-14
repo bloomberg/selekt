@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.29.6
+
+### Fixes
+
+* Statically link libstdc++ and libgcc into the Linux native library.
+
 ## Version 0.29.5
 
 ### Fixes
