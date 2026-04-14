@@ -28,6 +28,7 @@ tasks.register<Exec>("cmakeSelektric") {
         Files.createDirectories(workingDir)
     }
     workingDir(".cxx-host")
+    environment("JAVA_HOME", System.getProperty("java.home"))
     commandLine("cmake")
     args(
         "-DCMAKE_BUILD_TYPE=Release",
