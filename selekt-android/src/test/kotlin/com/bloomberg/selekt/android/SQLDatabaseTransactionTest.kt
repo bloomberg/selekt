@@ -846,6 +846,84 @@ internal class SQLDatabaseTransactionTest {
 
     @ParameterizedTest
     @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointRejectsSqlInjection(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            assertFailsWith<IllegalArgumentException> {
+                it.setSavepoint("x; DROP TABLE Foo; --")
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointRejectsEmptyName(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            assertFailsWith<IllegalArgumentException> {
+                it.setSavepoint("")
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointRejectsNameStartingWithDigit(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            assertFailsWith<IllegalArgumentException> {
+                it.setSavepoint("1bad")
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun setSavepointAcceptsValidName(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            val name = it.setSavepoint("valid_Name_123")
+            assertEquals("valid_Name_123", name)
+            it.releaseSavepoint(name)
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun rollbackToSavepointRejectsSqlInjection(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            assertFailsWith<IllegalArgumentException> {
+                it.rollbackToSavepoint("x; DROP TABLE Foo")
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun releaseSavepointRejectsSqlInjection(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            assertFailsWith<IllegalArgumentException> {
+                it.releaseSavepoint("x; DROP TABLE Foo")
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
     fun transactionListenerOnBeginExceptionRollsBack(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
