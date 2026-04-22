@@ -1,6 +1,18 @@
 Change Log
 ==========
 
+## Version 0.29.8
+
+### Fixes
+
+* Optimistically retain SharedCloseable.
+* Replace a use of update holder.
+* Validate savepoint names.
+
+### Dependencies
+
+* OpenSSL 3.5.6
+
 ## Version 0.29.7
 
 ### Fixes
