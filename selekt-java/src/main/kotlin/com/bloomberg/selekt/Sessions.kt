@@ -58,6 +58,17 @@ private class SQLSessionState(
 
 private fun <T> MutableList<T>.removeLast() = removeAt(lastIndex)
 
+private fun requireSafeSavepointName(name: String) {
+    require(name.isNotEmpty() && (name.first().isLetter() || name.first() == '_')) {
+        "Invalid savepoint name: '$name'. Must start with a letter or underscore."
+    }
+    for (c in name) {
+        require(c.isLetterOrDigit() || c == '_') {
+            "Invalid savepoint name: '$name'. Must contain only letters, digits, or underscores."
+        }
+    }
+}
+
 @NotThreadSafe
 internal class SQLSession(
     pool: SQLExecutorPool,
@@ -159,7 +170,7 @@ internal class SQLSession(
 
     fun setSavepoint(name: String? = null): String {
         checkInTransaction()
-        val savepointName = name ?: "sp_user_${state.savepointStack.size}"
+        val savepointName = name?.also(::requireSafeSavepointName) ?: "sp_user_${state.savepointStack.size}"
         execute(true) {
             it.execute("SAVEPOINT $savepointName")
         }
@@ -168,6 +179,7 @@ internal class SQLSession(
     }
 
     fun rollbackToSavepoint(name: String) {
+        requireSafeSavepointName(name)
         checkInTransaction()
         val index = state.savepointStack.indexOfLast { it.name == name }
         check(index >= 0) { "Savepoint $name not found" }
@@ -180,6 +192,7 @@ internal class SQLSession(
     }
 
     fun releaseSavepoint(name: String) {
+        requireSafeSavepointName(name)
         checkInTransaction()
         val index = state.savepointStack.indexOfLast { it.name == name }
         if (index < 0) {
