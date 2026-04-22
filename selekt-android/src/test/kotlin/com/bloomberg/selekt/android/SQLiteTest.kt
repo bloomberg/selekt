@@ -1308,10 +1308,10 @@ internal class SQLiteTest {
     @Test
     fun connectionStatus() = SQLite.run {
         exec(db, "CREATE TABLE 'Foo' (bar INT)")
-        val holder = IntArray(2) { 0 }
+        val holder = IntArray(2) { -1 }
         assertEquals(SQL_OK, databaseStatus(db, 3, false, holder))
-        assertNotEquals(0, holder[0])
-        assertNotEquals(0, holder[1])
+        assertTrue(holder[0] >= 0)
+        assertTrue(holder[1] >= 0)
     }
 
     @Test

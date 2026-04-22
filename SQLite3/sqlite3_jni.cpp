@@ -574,8 +574,14 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseStatus(
         &highWater,
         reset
     );
-    updateHolder(env, holder, 0, &current);
-    updateHolder(env, holder, 1, &highWater);
+    auto elements = static_cast<jint*>(env->GetPrimitiveArrayCritical(holder, nullptr));
+    if (elements == nullptr) {
+        throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
+        return result;
+    }
+    elements[0] = current;
+    elements[1] = highWater;
+    env->ReleasePrimitiveArrayCritical(holder, elements, 0);
     return result;
 }
 
