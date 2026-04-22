@@ -31,7 +31,13 @@ abstract class SharedCloseable : Closeable {
     protected abstract fun onReleased()
 
     private fun retain() {
-        check(retainCountUpdater.getAndIncrement(this) > 0) { "Attempting to retain an already released object: $this." }
+        while (true) {
+            val current = retainCountUpdater[this]
+            check(current > 0) { "Attempting to retain an already released object: $this." }
+            if (retainCountUpdater.compareAndSet(this, current, current + 1)) {
+                return
+            }
+        }
     }
 
     private fun release() {
