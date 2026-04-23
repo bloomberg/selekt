@@ -83,7 +83,7 @@ internal class BlobInputStream(
     override fun close() = Unit
 
     override fun read() = byteArrayOf(0).let {
-        if (read(it, index, 1) > -1) it.first().toInt() else -1
+        if (read(it, 0, 1) > -1) { it.first().toInt() } else { -1 }
     }
 
     override fun read(
