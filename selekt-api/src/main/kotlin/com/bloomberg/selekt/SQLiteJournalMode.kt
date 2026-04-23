@@ -19,7 +19,7 @@ package com.bloomberg.selekt
 import com.bloomberg.selekt.DatabaseConfiguration.Companion.COMMON_BUSY_TIMEOUT_MILLIS
 
 /**
- * @since v0.1.0.
+ * @since 0.1.0.
  */
 enum class SQLiteJournalMode(
     @JvmField

@@ -19,7 +19,7 @@ package com.bloomberg.selekt.android
 import com.bloomberg.selekt.IConflictAlgorithm
 
 /**
- * @since v0.1.0.
+ * @since 0.1.0.
  */
 enum class ConflictAlgorithm(
     conflictAlgorithm: IConflictAlgorithm

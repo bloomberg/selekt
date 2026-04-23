@@ -26,6 +26,15 @@ import java.lang.StringBuilder
 import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 
+private val allowedPragmaKeys = SQLitePragma.entries.map(SQLitePragma::key).toSet()
+
+private fun requireSafePragmaKey(key: String) {
+    val baseKey = key.substringBefore('(').substringBefore('=').substringAfterLast('.').lowercase()
+    require(baseKey in allowedPragmaKeys) {
+        "Unknown pragma key: '$baseKey'. Use SQLitePragma enum for type-safe access."
+    }
+}
+
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
 private object SharedSqlBuilder {
@@ -169,7 +178,12 @@ class SQLDatabase(
         }
     }
 
+    fun pragma(pragma: SQLitePragma) = pragma(pragma.key)
+
+    fun pragma(pragma: SQLitePragma, value: Any) = pragma(pragma.key, value)
+
     fun pragma(key: String) = pledge {
+        requireSafePragmaKey(key)
         checkNotNull(SQLStatement.executeForString(
             session,
             "PRAGMA $key",
@@ -179,6 +193,7 @@ class SQLDatabase(
     }
 
     fun pragma(key: String, value: Any) = pledge {
+        requireSafePragmaKey(key)
         SQLStatement.executeForString(session, "PRAGMA $key=$value", SQLStatementType.PRAGMA, EMPTY_ARRAY)
     }
 

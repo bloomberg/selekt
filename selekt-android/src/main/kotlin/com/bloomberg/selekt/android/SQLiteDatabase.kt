@@ -42,7 +42,7 @@ import javax.annotation.concurrent.ThreadSafe
 import kotlin.jvm.Throws
 
 /**
- * @since v0.1.0.
+ * @since 0.1.0.
  */
 @ThreadSafe
 @Suppress("Detekt.TooManyFunctions", "Detekt.LongParameterList") // Mirrors the Android SDK APIs.
