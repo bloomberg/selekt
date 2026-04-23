@@ -194,18 +194,39 @@ internal class SQLBlobInputStreamTest {
     }
 
     @Test
+    fun readMultipleSingleBytes() {
+        val expectedBytes = byteArrayOf(0x41, 0x42, 0x43)
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn expectedBytes.size
+            whenever(it.read(any(), any(), any(), any())).doAnswer { invocation ->
+                val blobOffset = requireNotNull(invocation.arguments[0] as? Int)
+                val buffer = requireNotNull(invocation.arguments[1] as? ByteArray)
+                val destOffset = requireNotNull(invocation.arguments[2] as? Int)
+                val length = requireNotNull(invocation.arguments[3] as? Int)
+                System.arraycopy(expectedBytes, blobOffset, buffer, destOffset, length)
+            }
+        }
+        BlobInputStream(blob).use {
+            assertEquals(0x41, it.read())
+            assertEquals(0x42, it.read())
+            assertEquals(0x43, it.read())
+            assertEquals(-1, it.read())
+        }
+    }
+
+    @Test
     fun readFromOffsetWithLimit() {
         val expectedBytes = ByteArray(100) { (it + 42).toByte() }
-        val blob = mock<SQLBlob>().apply {
-            whenever(size) doReturn expectedBytes.size
-            whenever(read(any(), any(), any(), any())).doAnswer {
-                val buffer = requireNotNull(it.arguments[1] as? ByteArray)
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn expectedBytes.size
+            whenever(it.read(any(), any(), any(), any())).doAnswer { invocation ->
+                val buffer = requireNotNull(invocation.arguments[1] as? ByteArray)
                 System.arraycopy(
                     expectedBytes,
-                    requireNotNull(it.arguments[0] as? Int),
+                    requireNotNull(invocation.arguments[0] as? Int),
                     buffer,
-                    requireNotNull(it.arguments[2] as? Int),
-                    requireNotNull(it.arguments[3] as? Int)
+                    requireNotNull(invocation.arguments[2] as? Int),
+                    requireNotNull(invocation.arguments[3] as? Int)
                 )
             }
         }
