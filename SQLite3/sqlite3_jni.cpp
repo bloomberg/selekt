@@ -18,8 +18,6 @@
 #include <sqlite3/sqlite3.h>
 #include <cstddef>
 #include <cstring>
-#include <sstream>
-#include <string>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
@@ -58,17 +56,22 @@ static jint rawKey(
         return SQLITE_ERROR;
     }
     AutoJByteArray key(env, jkey, keyLength);
-    std::ostringstream oss;
-    oss << "PRAGMA key=\"x'";
+    char sql[81];
+    std::memcpy(sql, "PRAGMA key=\"x'", 14);
     const char hex_chars[] = "0123456789abcdef";
     for (int i = 0; i < keyLength; ++i) {
         auto byte = static_cast<std::byte>(key[i]);
-        oss << hex_chars[std::to_integer<unsigned char>(byte >> 4)]
-            << hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
+        sql[14 + 2*i]     = hex_chars[std::to_integer<unsigned char>(byte >> 4)];
+        sql[14 + 2*i + 1] = hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
     }
-    oss << "'\"";
-    std::string sql = oss.str();
-    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql.c_str(), nullptr, nullptr, nullptr);
+    sql[78] = '\'';
+    sql[79] = '"';
+    sql[80] = '\0';
+    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
+    volatile char* p = sql;
+    for (size_t i = 0; i < sizeof(sql); ++i) {
+        p[i] = '\0';
+    }
     return result;
 }
 
