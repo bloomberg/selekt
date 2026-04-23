@@ -21,7 +21,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import java.util.concurrent.locks.LockSupport
 
 /**
- * A non-fair and non-reentrant lock.
+ * A mostly-fair and non-reentrant lock. Queued waiters are preferred over new callers in [lock],
+ * but best-effort [withTryLock] callers may still barge ahead.
  */
 internal class Mutex {
     @Suppress("unused")
@@ -36,7 +37,7 @@ internal class Mutex {
         when {
             Thread.interrupted() -> throw InterruptedException()
             isCancelled() -> cancellationError()
-            internalTryLock() -> return
+            waiters.isEmpty() && internalTryLock() -> return
         }
         check(awaitLock(Long.MIN_VALUE, true)) { "Failed to acquire lock." }
     }
