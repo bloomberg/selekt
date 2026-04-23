@@ -352,7 +352,7 @@ class SQLDatabase(
                 .append(") ON CONFLICT (")
                 .append(columns.first())
             1.forUntil(columns.size) {
-                append(',').append(it)
+                append(',').append(columns[it])
             }
             append(") DO UPDATE SET ")
                 .append(update)
