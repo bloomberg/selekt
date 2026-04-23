@@ -166,6 +166,33 @@ internal class SQLBlobInputStreamTest {
     }
 
     @Test
+    fun readSingleHighByte() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 1
+            whenever(it.read(any(), any(), any(), any())).doAnswer { invocation ->
+                requireNotNull(invocation.arguments[1] as? ByteArray)[0] = 0xFF.toByte()
+            }
+        }
+        BlobInputStream(blob).use {
+            assertEquals(0xFF, it.read())
+            assertEquals(-1, it.read())
+        }
+    }
+
+    @Test
+    fun readSingleByteAt0x80() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 1
+            whenever(it.read(any(), any(), any(), any())).doAnswer { invocation ->
+                requireNotNull(invocation.arguments[1] as? ByteArray)[0] = 0x80.toByte()
+            }
+        }
+        BlobInputStream(blob).use {
+            assertEquals(0x80, it.read())
+        }
+    }
+
+    @Test
     fun readToBuffer() {
         val expectedBytes = ByteArray(100) { (it + 42).toByte() }
         val blob = mock<SQLBlob>().apply {
