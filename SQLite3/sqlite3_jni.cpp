@@ -39,6 +39,10 @@ static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
         return nullptr;
     } else if (size > 0) {
         void* buffer = env->GetPrimitiveArrayCritical(array, nullptr);
+        if (buffer == nullptr) {
+            throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
+            return nullptr;
+        }
         std::memcpy(buffer, p, static_cast<size_t>(size));
         env->ReleasePrimitiveArrayCritical(array, buffer, 0);
     }
