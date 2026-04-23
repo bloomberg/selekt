@@ -31,7 +31,7 @@ import javax.annotation.concurrent.NotThreadSafe
  * the database lazily and only when needed, not during application startup. All you need to do is call
  * [writableDatabase()].
  *
- * @since v0.1.0.
+ * @since 0.1.0.
  */
 class SQLiteOpenHelper internal constructor(
     private val file: File,

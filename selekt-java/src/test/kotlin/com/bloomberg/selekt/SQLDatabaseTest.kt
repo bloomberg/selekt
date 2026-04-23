@@ -119,6 +119,51 @@ internal class SQLDatabaseTest {
         }
     }
 
+    @Test
+    fun pragmaRejectsUnknownKey(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma("malicious; DROP TABLE foo --")
+        }
+    }
+
+    @Test
+    fun pragmaRejectsArbitraryString(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma("not_a_real_pragma")
+        }
+    }
+
+    @Test
+    fun pragmaWithValueRejectsUnknownKey(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma("evil_pragma", 42)
+        }
+    }
+
+    @Test
+    fun pragmaAcceptsAllowListedKey(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn ""
+        SQLitePragma.entries.forEach { pragma(it) }
+    }
+
+    @Test
+    fun pragmaAcceptsEnumKey(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn "wal"
+        pragma(SQLitePragma.JOURNAL_MODE)
+    }
+
+    @Test
+    fun pragmaAcceptsIncrementalVacuumWithArgument(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn ""
+        pragma("incremental_vacuum(100)")
+    }
+
+    @Test
+    fun pragmaAcceptsSchemaPrefixedKey(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn "ok"
+        pragma("main.integrity_check")
+    }
+
     private fun verifyCommit(): Unit = inOrder(sqlite).run {
         verify(sqlite, times(1)).prepareV2(eq(DB), eq("END"), any())
         verify(sqlite, times(1)).stepWithoutThrowing(eq(STMT))
