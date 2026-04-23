@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 0.29.10
+
+### Fixes
+
+* Add a null check in sqlite3_jni.newByteArray.
+* Initialise sqlite3_blob pointer to null.
+* Guard against OOM in AutoJByteArray and null return from GetByteArrayElements.
+* Check for null return from GetByteArrayElements in blobRead and blobWrite.
+
 ## Version 0.29.9
 
 ### Fixes
