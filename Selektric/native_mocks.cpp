@@ -37,15 +37,18 @@ static jstring SystemProperties_get(
     jstring defJ
 ) {
     auto key = env->GetStringUTFChars(keyJ, nullptr);
-    if (strcmp("ro.product.cpu.abilist", key)) {
+    if (!strcmp("ro.product.cpu.abilist", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("arm64-v8a,armeabi-v7a");
-    } else if (strcmp("ro.product.cpu.abilist32", key)) {
+    } else if (!strcmp("ro.product.cpu.abilist32", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("armeabi-v7a");
-    } else if (strcmp("ro.product.cpu.abilist64", key)) {
+    } else if (!strcmp("ro.product.cpu.abilist64", key)) {
         env->ReleaseStringUTFChars(keyJ, key);
         return env->NewStringUTF("arm64-v8a");
+    } else if (!strcmp("ro.build.version.all_codenames", key)) {
+        env->ReleaseStringUTFChars(keyJ, key);
+        return env->NewStringUTF("REL");
     }
     env->ReleaseStringUTFChars(keyJ, key);
     return defJ;
