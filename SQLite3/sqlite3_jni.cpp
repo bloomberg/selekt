@@ -609,7 +609,13 @@ Java_com_bloomberg_selekt_ExternalSQLite_expandedSql(
     jobject clazz,
     jlong jstatement
 ) {
-    return env->NewStringUTF(sqlite3_expanded_sql(reinterpret_cast<sqlite3_stmt*>(jstatement)));
+    auto sql = sqlite3_expanded_sql(reinterpret_cast<sqlite3_stmt*>(jstatement));
+    if (sql == nullptr) {
+        return nullptr;
+    }
+    auto result = env->NewStringUTF(sql);
+    sqlite3_free(sql);
+    return result;
 }
 
 extern "C" JNIEXPORT jint JNICALL
