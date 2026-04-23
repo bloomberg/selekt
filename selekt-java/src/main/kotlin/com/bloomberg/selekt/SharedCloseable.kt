@@ -41,8 +41,17 @@ abstract class SharedCloseable : Closeable {
     }
 
     private fun release() {
-        if (retainCountUpdater.decrementAndGet(this) == 0) {
-            onReleased()
+        while (true) {
+            val current = retainCountUpdater[this]
+            if (current <= 0) {
+                return
+            }
+            if (retainCountUpdater.compareAndSet(this, current, current - 1)) {
+                if (current == 1) {
+                    onReleased()
+                }
+                return
+            }
         }
     }
 
