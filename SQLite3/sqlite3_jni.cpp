@@ -274,6 +274,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobRead(
     jint jLength
 ) {
     auto source = env->GetByteArrayElements(jDestination, nullptr);
+    if (source == nullptr) {
+        throwOutOfMemoryError(env, "GetByteArrayElements");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_blob_read(
         reinterpret_cast<sqlite3_blob*>(jBlob),
         source + jDestinationOffset,
@@ -305,6 +309,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobWrite(
     jint jLength
 ) {
     auto source = env->GetByteArrayElements(jSource, nullptr);
+    if (source == nullptr) {
+        throwOutOfMemoryError(env, "GetByteArrayElements");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_blob_write(
         reinterpret_cast<sqlite3_blob*>(jBlob),
         source + jSourceOffset,
