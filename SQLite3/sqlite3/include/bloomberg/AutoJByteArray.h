@@ -18,7 +18,12 @@
 #define SELEKT_AUTOJBYTEARRAY_H
 
 #include <jni.h>
+#include <stdexcept>
 #include "Throws.h"
+
+struct JniOutOfMemoryError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
 
 class AutoJByteArray
 {
@@ -30,6 +35,7 @@ public:
           mLength(length) {
         if (mpBytes == nullptr) {
             throwOutOfMemoryError(mEnv, "GetByteArrayElements");
+            throw JniOutOfMemoryError("GetByteArrayElements");
         }
     }
 
