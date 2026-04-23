@@ -59,6 +59,7 @@ static jint rawKey(
         throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
         return SQLITE_ERROR;
     }
+    try {
     AutoJByteArray key(env, jkey, keyLength);
     char sql[81];
     std::memcpy(sql, "PRAGMA key=\"x'", 14);
@@ -77,6 +78,9 @@ static jint rawKey(
         p[i] = '\0';
     }
     return result;
+    } catch (const JniOutOfMemoryError&) {
+        return SQLITE_NOMEM;
+    }
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -97,8 +101,12 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
     jint length
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    AutoJByteArray value(env, jvalue, length);
-    return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
+    try {
+        AutoJByteArray value(env, jvalue, length);
+        return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
+    } catch (const JniOutOfMemoryError&) {
+        return SQLITE_NOMEM;
+    }
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -710,8 +718,12 @@ Java_com_bloomberg_selekt_ExternalSQLite_key(
     jbyteArray jkey,
     jint length
 ) {
-    AutoJByteArray key(env, jkey, length);
-    return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
+    try {
+        AutoJByteArray key(env, jkey, length);
+        return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
+    } catch (const JniOutOfMemoryError&) {
+        return SQLITE_NOMEM;
+    }
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -818,11 +830,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     jbyteArray jkey,
     jint length
 ) {
-    AutoJByteArray key(env, jkey, length);
-    if (key.length() == 0) {
-        return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), nullptr, key.length());
+    try {
+        AutoJByteArray key(env, jkey, length);
+        if (key.length() == 0) {
+            return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), nullptr, key.length());
+        }
+        return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
+    } catch (const JniOutOfMemoryError&) {
+        return SQLITE_NOMEM;
     }
-    return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
 }
 
 extern "C" JNIEXPORT jint JNICALL
