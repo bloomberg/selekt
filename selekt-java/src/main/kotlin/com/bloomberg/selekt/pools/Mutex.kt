@@ -32,6 +32,9 @@ internal class Mutex {
     private var isCancelled = 0
     private val waiters = ConcurrentLinkedQueue<Thread>()
 
+    @Volatile
+    private var ownerThread: Thread? = null
+
     fun lock() {
         when {
             Thread.interrupted() -> throw InterruptedException()
@@ -55,6 +58,8 @@ internal class Mutex {
     }
 
     fun unlock() {
+        check(Thread.currentThread() === ownerThread) { "Mutex is not held by the current thread." }
+        ownerThread = null
         isLockedUpdater[this] = 0
         LockSupport.unpark(waiters.peek())
     }
@@ -99,7 +104,11 @@ internal class Mutex {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    private inline fun internalTryLock() = isLockedUpdater.compareAndSet(this, 0, 1)
+    private inline fun internalTryLock() = isLockedUpdater.compareAndSet(this, 0, 1).also {
+        if (it) {
+            ownerThread = Thread.currentThread()
+        }
+    }
 
     /**
      * @param intervalNanos the maximum time to wait for the lock in nanoseconds; negative indicates indefinitely.
