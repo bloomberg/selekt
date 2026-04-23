@@ -235,7 +235,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
     jint jflags,
     jlongArray jholder
 ) {
-    sqlite3_blob* blob;
+    sqlite3_blob* blob = nullptr;
     auto name = env->GetStringUTFChars(jname, nullptr);
     auto table = env->GetStringUTFChars(jtable, nullptr);
     auto column = env->GetStringUTFChars(jcolumn, nullptr);
