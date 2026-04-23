@@ -296,6 +296,41 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertWithMultipleConflictColumns(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (a TEXT, b TEXT, count INT DEFAULT 0, PRIMARY KEY (a, b))")
+        val values = ContentValues().apply {
+            put("a", "hello")
+            put("b", "world")
+        }
+        val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
+        assertEquals(id, upsert("Foo", values, arrayOf("a", "b"), "count=count+1"))
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(1, it.getInt(0))
+        }
+    }
+
+    @OptIn(Experimental::class)
+    @Test
+    fun upsertWithThreeConflictColumns(): Unit = database.run {
+        exec("CREATE TABLE 'Bar' (x TEXT, y TEXT, z TEXT, count INT DEFAULT 0, PRIMARY KEY (x, y, z))")
+        val values = ContentValues().apply {
+            put("x", "a")
+            put("y", "b")
+            put("z", "c")
+        }
+        insert("Bar", values, ConflictAlgorithm.REPLACE)
+        assertEquals(1L, upsert("Bar", values, arrayOf("x", "y", "z"), "count=count+1"))
+        query(false, "Bar", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(1, it.getInt(0))
+        }
+    }
+
     @Test
     fun transactionAsQuery(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)")
