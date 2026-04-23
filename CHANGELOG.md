@@ -1,6 +1,19 @@
 Change Log
 ==========
 
+## Version 0.29.9
+
+### Fixes
+
+* Fix column append in Database.upsert.
+* Free expanded SQL string from sqlite3_expanded_sql.
+* Fix reading multiple single bytes from an SQLBlob.
+* Use stack buffer for raw key pragma.
+* Validate pragma keys against an allow-list.
+* Defensively optimistically release SharedCloseables.
+* Fix single SQLBlob.read return value.
+* Fix traceV2 case fall-through in sqlite3_jni.cpp.
+
 ## Version 0.29.8
 
 ### Fixes
