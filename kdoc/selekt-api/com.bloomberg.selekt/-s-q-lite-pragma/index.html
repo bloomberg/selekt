@@ -1,0 +1,1124 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>SQLitePragma</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    Selekt
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">0.30.0-SNAPSHOT
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":selekt-api/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":selekt-api/main" data-filter=":selekt-api/main">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    Selekt
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-api::com.bloomberg.selekt/SQLitePragma///PointingToDeclaration//-1715436031">
+  <div class="breadcrumbs"><a href="../../index.html">selekt-api</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt</a><span class="delimiter">/</span><span class="current">SQLitePragma</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>SQLite</span><wbr><span><span>Pragma</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">enum </span><a href="index.html">SQLitePragma</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="index.html">SQLitePragma</a><span class="token operator">&gt; </span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-api/src/main/kotlin/com/bloomberg/selekt/SQLitePragma.kt#L24">source</a>)</span></span></div><p class="paragraph">An allow-list of SQLite PRAGMA statements that may be used with SQLDatabase.pragma.</p><span class="kdoc-tag"><h4 class="">Since</h4><p class="paragraph">0.29.9.</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="ENTRY">Entries</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="ENTRY">
+        <h2 class="tableheader">Entries</h2>
+        <div class="table"><a data-name="1477095735%2FClasslikes%2F-1715436031" anchor-label="ANALYSIS_LIMIT" id="1477095735%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-n-a-l-y-s-i-s_-l-i-m-i-t/index.html">ANALYSIS_LIMIT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1477095735%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-a-n-a-l-y-s-i-s_-l-i-m-i-t/index.html">ANALYSIS_LIMIT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1511215159%2FClasslikes%2F-1715436031" anchor-label="APPLICATION_ID" id="-1511215159%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-p-p-l-i-c-a-t-i-o-n_-i-d/index.html">APPLICATION_ID</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1511215159%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-a-p-p-l-i-c-a-t-i-o-n_-i-d/index.html">APPLICATION_ID</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1716209102%2FClasslikes%2F-1715436031" anchor-label="AUTO_VACUUM" id="1716209102%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-u-t-o_-v-a-c-u-u-m/index.html">AUTO_VACUUM</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1716209102%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-a-u-t-o_-v-a-c-u-u-m/index.html">AUTO_VACUUM</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2134671673%2FClasslikes%2F-1715436031" anchor-label="AUTOMATIC_INDEX" id="-2134671673%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-u-t-o-m-a-t-i-c_-i-n-d-e-x/index.html">AUTOMATIC_INDEX</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2134671673%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-a-u-t-o-m-a-t-i-c_-i-n-d-e-x/index.html">AUTOMATIC_INDEX</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1153822406%2FClasslikes%2F-1715436031" anchor-label="BUSY_TIMEOUT" id="-1153822406%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-b-u-s-y_-t-i-m-e-o-u-t/index.html">BUSY_TIMEOUT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1153822406%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-b-u-s-y_-t-i-m-e-o-u-t/index.html">BUSY_TIMEOUT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="638016125%2FClasslikes%2F-1715436031" anchor-label="CACHE_SIZE" id="638016125%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-a-c-h-e_-s-i-z-e/index.html">CACHE_SIZE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="638016125%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-a-c-h-e_-s-i-z-e/index.html">CACHE_SIZE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="268220664%2FClasslikes%2F-1715436031" anchor-label="CACHE_SPILL" id="268220664%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-a-c-h-e_-s-p-i-l-l/index.html">CACHE_SPILL</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="268220664%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-a-c-h-e_-s-p-i-l-l/index.html">CACHE_SPILL</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="997610424%2FClasslikes%2F-1715436031" anchor-label="CASE_SENSITIVE_LIKE" id="997610424%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-a-s-e_-s-e-n-s-i-t-i-v-e_-l-i-k-e/index.html">CASE_SENSITIVE_LIKE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="997610424%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-a-s-e_-s-e-n-s-i-t-i-v-e_-l-i-k-e/index.html">CASE_SENSITIVE_LIKE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-777320016%2FClasslikes%2F-1715436031" anchor-label="CELL_SIZE_CHECK" id="-777320016%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-e-l-l_-s-i-z-e_-c-h-e-c-k/index.html">CELL_SIZE_CHECK</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-777320016%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-e-l-l_-s-i-z-e_-c-h-e-c-k/index.html">CELL_SIZE_CHECK</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="529513978%2FClasslikes%2F-1715436031" anchor-label="CHECKPOINT_FULLFSYNC" id="529513978%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-h-e-c-k-p-o-i-n-t_-f-u-l-l-f-s-y-n-c/index.html">CHECKPOINT_FULLFSYNC</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="529513978%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-h-e-c-k-p-o-i-n-t_-f-u-l-l-f-s-y-n-c/index.html">CHECKPOINT_FULLFSYNC</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="180344691%2FClasslikes%2F-1715436031" anchor-label="COLLATION_LIST" id="180344691%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-o-l-l-a-t-i-o-n_-l-i-s-t/index.html">COLLATION_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="180344691%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-o-l-l-a-t-i-o-n_-l-i-s-t/index.html">COLLATION_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="619896475%2FClasslikes%2F-1715436031" anchor-label="COMPILE_OPTIONS" id="619896475%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-o-m-p-i-l-e_-o-p-t-i-o-n-s/index.html">COMPILE_OPTIONS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="619896475%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-c-o-m-p-i-l-e_-o-p-t-i-o-n-s/index.html">COMPILE_OPTIONS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-775510174%2FClasslikes%2F-1715436031" anchor-label="DATA_VERSION" id="-775510174%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-a-t-a_-v-e-r-s-i-o-n/index.html">DATA_VERSION</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-775510174%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-d-a-t-a_-v-e-r-s-i-o-n/index.html">DATA_VERSION</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1338375061%2FClasslikes%2F-1715436031" anchor-label="DATABASE_LIST" id="-1338375061%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-a-t-a-b-a-s-e_-l-i-s-t/index.html">DATABASE_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1338375061%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-d-a-t-a-b-a-s-e_-l-i-s-t/index.html">DATABASE_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="524051115%2FClasslikes%2F-1715436031" anchor-label="DEFER_FOREIGN_KEYS" id="524051115%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-e-f-e-r_-f-o-r-e-i-g-n_-k-e-y-s/index.html">DEFER_FOREIGN_KEYS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="524051115%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-d-e-f-e-r_-f-o-r-e-i-g-n_-k-e-y-s/index.html">DEFER_FOREIGN_KEYS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-144322286%2FClasslikes%2F-1715436031" anchor-label="ENCODING" id="-144322286%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-c-o-d-i-n-g/index.html">ENCODING</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-144322286%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-e-n-c-o-d-i-n-g/index.html">ENCODING</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="685542630%2FClasslikes%2F-1715436031" anchor-label="FOREIGN_KEY_CHECK" id="685542630%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-o-r-e-i-g-n_-k-e-y_-c-h-e-c-k/index.html">FOREIGN_KEY_CHECK</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="685542630%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-o-r-e-i-g-n_-k-e-y_-c-h-e-c-k/index.html">FOREIGN_KEY_CHECK</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="818371592%2FClasslikes%2F-1715436031" anchor-label="FOREIGN_KEY_LIST" id="818371592%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-o-r-e-i-g-n_-k-e-y_-l-i-s-t/index.html">FOREIGN_KEY_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="818371592%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-o-r-e-i-g-n_-k-e-y_-l-i-s-t/index.html">FOREIGN_KEY_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1522912222%2FClasslikes%2F-1715436031" anchor-label="FOREIGN_KEYS" id="1522912222%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-o-r-e-i-g-n_-k-e-y-s/index.html">FOREIGN_KEYS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1522912222%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-o-r-e-i-g-n_-k-e-y-s/index.html">FOREIGN_KEYS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1788908217%2FClasslikes%2F-1715436031" anchor-label="FREELIST_COUNT" id="1788908217%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-r-e-e-l-i-s-t_-c-o-u-n-t/index.html">FREELIST_COUNT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1788908217%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-r-e-e-l-i-s-t_-c-o-u-n-t/index.html">FREELIST_COUNT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="61656251%2FClasslikes%2F-1715436031" anchor-label="FULLFSYNC" id="61656251%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-u-l-l-f-s-y-n-c/index.html">FULLFSYNC</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="61656251%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-u-l-l-f-s-y-n-c/index.html">FULLFSYNC</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-402687762%2FClasslikes%2F-1715436031" anchor-label="FUNCTION_LIST" id="-402687762%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-u-n-c-t-i-o-n_-l-i-s-t/index.html">FUNCTION_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-402687762%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-f-u-n-c-t-i-o-n_-l-i-s-t/index.html">FUNCTION_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="106128421%2FClasslikes%2F-1715436031" anchor-label="HARD_HEAP_LIMIT" id="106128421%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-h-a-r-d_-h-e-a-p_-l-i-m-i-t/index.html">HARD_HEAP_LIMIT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="106128421%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-h-a-r-d_-h-e-a-p_-l-i-m-i-t/index.html">HARD_HEAP_LIMIT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-176331375%2FClasslikes%2F-1715436031" anchor-label="IGNORE_CHECK_CONSTRAINTS" id="-176331375%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-g-n-o-r-e_-c-h-e-c-k_-c-o-n-s-t-r-a-i-n-t-s/index.html">IGNORE_CHECK_CONSTRAINTS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-176331375%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-g-n-o-r-e_-c-h-e-c-k_-c-o-n-s-t-r-a-i-n-t-s/index.html">IGNORE_CHECK_CONSTRAINTS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-714549351%2FClasslikes%2F-1715436031" anchor-label="INCREMENTAL_VACUUM" id="-714549351%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-n-c-r-e-m-e-n-t-a-l_-v-a-c-u-u-m/index.html">INCREMENTAL_VACUUM</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-714549351%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-n-c-r-e-m-e-n-t-a-l_-v-a-c-u-u-m/index.html">INCREMENTAL_VACUUM</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1714068250%2FClasslikes%2F-1715436031" anchor-label="INDEX_INFO" id="1714068250%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-n-d-e-x_-i-n-f-o/index.html">INDEX_INFO</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1714068250%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-n-d-e-x_-i-n-f-o/index.html">INDEX_INFO</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="209658634%2FClasslikes%2F-1715436031" anchor-label="INDEX_LIST" id="209658634%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-n-d-e-x_-l-i-s-t/index.html">INDEX_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="209658634%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-n-d-e-x_-l-i-s-t/index.html">INDEX_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1663256126%2FClasslikes%2F-1715436031" anchor-label="INDEX_XINFO" id="-1663256126%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-n-d-e-x_-x-i-n-f-o/index.html">INDEX_XINFO</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1663256126%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-n-d-e-x_-x-i-n-f-o/index.html">INDEX_XINFO</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1926413471%2FClasslikes%2F-1715436031" anchor-label="INTEGRITY_CHECK" id="1926413471%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-n-t-e-g-r-i-t-y_-c-h-e-c-k/index.html">INTEGRITY_CHECK</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1926413471%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-i-n-t-e-g-r-i-t-y_-c-h-e-c-k/index.html">INTEGRITY_CHECK</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="222448138%2FClasslikes%2F-1715436031" anchor-label="JOURNAL_MODE" id="222448138%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-j-o-u-r-n-a-l_-m-o-d-e/index.html">JOURNAL_MODE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="222448138%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-j-o-u-r-n-a-l_-m-o-d-e/index.html">JOURNAL_MODE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1908969852%2FClasslikes%2F-1715436031" anchor-label="JOURNAL_SIZE_LIMIT" id="-1908969852%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-j-o-u-r-n-a-l_-s-i-z-e_-l-i-m-i-t/index.html">JOURNAL_SIZE_LIMIT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1908969852%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-j-o-u-r-n-a-l_-s-i-z-e_-l-i-m-i-t/index.html">JOURNAL_SIZE_LIMIT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1829932974%2FClasslikes%2F-1715436031" anchor-label="LEGACY_ALTER_TABLE" id="1829932974%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-e-g-a-c-y_-a-l-t-e-r_-t-a-b-l-e/index.html">LEGACY_ALTER_TABLE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1829932974%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-l-e-g-a-c-y_-a-l-t-e-r_-t-a-b-l-e/index.html">LEGACY_ALTER_TABLE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-591718806%2FClasslikes%2F-1715436031" anchor-label="LOCKING_MODE" id="-591718806%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-o-c-k-i-n-g_-m-o-d-e/index.html">LOCKING_MODE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-591718806%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-l-o-c-k-i-n-g_-m-o-d-e/index.html">LOCKING_MODE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1256076889%2FClasslikes%2F-1715436031" anchor-label="MAX_PAGE_COUNT" id="1256076889%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-a-g-e_-c-o-u-n-t/index.html">MAX_PAGE_COUNT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1256076889%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-m-a-x_-p-a-g-e_-c-o-u-n-t/index.html">MAX_PAGE_COUNT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="394250810%2FClasslikes%2F-1715436031" anchor-label="MMAP_SIZE" id="394250810%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-m-a-p_-s-i-z-e/index.html">MMAP_SIZE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="394250810%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-m-m-a-p_-s-i-z-e/index.html">MMAP_SIZE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="20865818%2FClasslikes%2F-1715436031" anchor-label="MODULE_LIST" id="20865818%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-o-d-u-l-e_-l-i-s-t/index.html">MODULE_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="20865818%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-m-o-d-u-l-e_-l-i-s-t/index.html">MODULE_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1666895588%2FClasslikes%2F-1715436031" anchor-label="OPTIMIZE" id="-1666895588%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-o-p-t-i-m-i-z-e/index.html">OPTIMIZE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1666895588%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-o-p-t-i-m-i-z-e/index.html">OPTIMIZE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-126681282%2FClasslikes%2F-1715436031" anchor-label="PAGE_COUNT" id="-126681282%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-a-g-e_-c-o-u-n-t/index.html">PAGE_COUNT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-126681282%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-p-a-g-e_-c-o-u-n-t/index.html">PAGE_COUNT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="961798522%2FClasslikes%2F-1715436031" anchor-label="PAGE_SIZE" id="961798522%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-a-g-e_-s-i-z-e/index.html">PAGE_SIZE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="961798522%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-p-a-g-e_-s-i-z-e/index.html">PAGE_SIZE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="989983306%2FClasslikes%2F-1715436031" anchor-label="PRAGMA_LIST" id="989983306%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-r-a-g-m-a_-l-i-s-t/index.html">PRAGMA_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="989983306%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-p-r-a-g-m-a_-l-i-s-t/index.html">PRAGMA_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-511114782%2FClasslikes%2F-1715436031" anchor-label="QUERY_ONLY" id="-511114782%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-q-u-e-r-y_-o-n-l-y/index.html">QUERY_ONLY</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-511114782%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-q-u-e-r-y_-o-n-l-y/index.html">QUERY_ONLY</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-806163009%2FClasslikes%2F-1715436031" anchor-label="QUICK_CHECK" id="-806163009%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-q-u-i-c-k_-c-h-e-c-k/index.html">QUICK_CHECK</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-806163009%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-q-u-i-c-k_-c-h-e-c-k/index.html">QUICK_CHECK</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1504570937%2FClasslikes%2F-1715436031" anchor-label="READ_UNCOMMITTED" id="1504570937%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-a-d_-u-n-c-o-m-m-i-t-t-e-d/index.html">READ_UNCOMMITTED</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1504570937%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-r-e-a-d_-u-n-c-o-m-m-i-t-t-e-d/index.html">READ_UNCOMMITTED</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-461711737%2FClasslikes%2F-1715436031" anchor-label="RECURSIVE_TRIGGERS" id="-461711737%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-c-u-r-s-i-v-e_-t-r-i-g-g-e-r-s/index.html">RECURSIVE_TRIGGERS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-461711737%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-r-e-c-u-r-s-i-v-e_-t-r-i-g-g-e-r-s/index.html">RECURSIVE_TRIGGERS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1980590136%2FClasslikes%2F-1715436031" anchor-label="REVERSE_UNORDERED_SELECTS" id="1980590136%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-v-e-r-s-e_-u-n-o-r-d-e-r-e-d_-s-e-l-e-c-t-s/index.html">REVERSE_UNORDERED_SELECTS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1980590136%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-r-e-v-e-r-s-e_-u-n-o-r-d-e-r-e-d_-s-e-l-e-c-t-s/index.html">REVERSE_UNORDERED_SELECTS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2003888807%2FClasslikes%2F-1715436031" anchor-label="SCHEMA_VERSION" id="-2003888807%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-c-h-e-m-a_-v-e-r-s-i-o-n/index.html">SCHEMA_VERSION</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2003888807%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-s-c-h-e-m-a_-v-e-r-s-i-o-n/index.html">SCHEMA_VERSION</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="64254780%2FClasslikes%2F-1715436031" anchor-label="SECURE_DELETE" id="64254780%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-c-u-r-e_-d-e-l-e-t-e/index.html">SECURE_DELETE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="64254780%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-s-e-c-u-r-e_-d-e-l-e-t-e/index.html">SECURE_DELETE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1836787904%2FClasslikes%2F-1715436031" anchor-label="SHRINK_MEMORY" id="1836787904%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-h-r-i-n-k_-m-e-m-o-r-y/index.html">SHRINK_MEMORY</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1836787904%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-s-h-r-i-n-k_-m-e-m-o-r-y/index.html">SHRINK_MEMORY</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="57628614%2FClasslikes%2F-1715436031" anchor-label="SOFT_HEAP_LIMIT" id="57628614%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-o-f-t_-h-e-a-p_-l-i-m-i-t/index.html">SOFT_HEAP_LIMIT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="57628614%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-s-o-f-t_-h-e-a-p_-l-i-m-i-t/index.html">SOFT_HEAP_LIMIT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1073443406%2FClasslikes%2F-1715436031" anchor-label="SYNCHRONOUS" id="-1073443406%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c-h-r-o-n-o-u-s/index.html">SYNCHRONOUS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1073443406%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-s-y-n-c-h-r-o-n-o-u-s/index.html">SYNCHRONOUS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-639986018%2FClasslikes%2F-1715436031" anchor-label="TABLE_INFO" id="-639986018%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-a-b-l-e_-i-n-f-o/index.html">TABLE_INFO</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-639986018%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-a-b-l-e_-i-n-f-o/index.html">TABLE_INFO</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2144395634%2FClasslikes%2F-1715436031" anchor-label="TABLE_LIST" id="-2144395634%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-a-b-l-e_-l-i-s-t/index.html">TABLE_LIST</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2144395634%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-a-b-l-e_-l-i-s-t/index.html">TABLE_LIST</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1624494402%2FClasslikes%2F-1715436031" anchor-label="TABLE_XINFO" id="-1624494402%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-a-b-l-e_-x-i-n-f-o/index.html">TABLE_XINFO</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1624494402%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-a-b-l-e_-x-i-n-f-o/index.html">TABLE_XINFO</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1378895275%2FClasslikes%2F-1715436031" anchor-label="TEMP_STORE" id="-1378895275%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-e-m-p_-s-t-o-r-e/index.html">TEMP_STORE</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1378895275%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-e-m-p_-s-t-o-r-e/index.html">TEMP_STORE</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-797755246%2FClasslikes%2F-1715436031" anchor-label="THREADS" id="-797755246%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-h-r-e-a-d-s/index.html">THREADS</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-797755246%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-h-r-e-a-d-s/index.html">THREADS</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1761623288%2FClasslikes%2F-1715436031" anchor-label="TRUSTED_SCHEMA" id="-1761623288%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-r-u-s-t-e-d_-s-c-h-e-m-a/index.html">TRUSTED_SCHEMA</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1761623288%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-t-r-u-s-t-e-d_-s-c-h-e-m-a/index.html">TRUSTED_SCHEMA</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1190672067%2FClasslikes%2F-1715436031" anchor-label="USER_VERSION" id="1190672067%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-v-e-r-s-i-o-n/index.html">USER_VERSION</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1190672067%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-u-s-e-r_-v-e-r-s-i-o-n/index.html">USER_VERSION</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1607320019%2FClasslikes%2F-1715436031" anchor-label="WAL_AUTOCHECKPOINT" id="1607320019%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-w-a-l_-a-u-t-o-c-h-e-c-k-p-o-i-n-t/index.html">WAL_AUTOCHECKPOINT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1607320019%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-w-a-l_-a-u-t-o-c-h-e-c-k-p-o-i-n-t/index.html">WAL_AUTOCHECKPOINT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1637039908%2FClasslikes%2F-1715436031" anchor-label="WAL_CHECKPOINT" id="1637039908%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-w-a-l_-c-h-e-c-k-p-o-i-n-t/index.html">WAL_CHECKPOINT</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1637039908%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-w-a-l_-c-h-e-c-k-p-o-i-n-t/index.html">WAL_CHECKPOINT</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1689187095%2FClasslikes%2F-1715436031" anchor-label="WRITABLE_SCHEMA" id="-1689187095%2FClasslikes%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-togglable="ENTRY" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-w-r-i-t-a-b-l-e_-s-c-h-e-m-a/index.html">WRITABLE_SCHEMA</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1689187095%2FClasslikes%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><a href="-w-r-i-t-a-b-l-e_-s-c-h-e-m-a/index.html">WRITABLE_SCHEMA</a></div></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="tableheader">Properties</h2>
+        <div class="table"><a data-name="-1491371815%2FProperties%2F-1715436031" anchor-label="entries" id="-1491371815%2FProperties%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="entries.html"><span><span>entries</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1491371815%2FProperties%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="entries.html">entries</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.enums/-enum-entries/index.html">EnumEntries</a><span class="token operator">&lt;</span><a href="index.html">SQLitePragma</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Returns a representation of an immutable list of all enum entries, in the order they're declared.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1596681194%2FProperties%2F-1715436031" anchor-label="key" id="1596681194%2FProperties%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="key.html"><span><span>key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1596681194%2FProperties%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-field/index.html"><span class="token annotation builtin">JvmField</span></a></div></div><span class="token keyword">val </span><a href="key.html">key</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-372974862%2FProperties%2F-1715436031" anchor-label="name" id="-372974862%2FProperties%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/index.html#-372974862%2FProperties%2F-1715436031"><span><span>name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-372974862%2FProperties%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/index.html#-372974862%2FProperties%2F-1715436031">name</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-739389684%2FProperties%2F-1715436031" anchor-label="ordinal" id="-739389684%2FProperties%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/index.html#-739389684%2FProperties%2F-1715436031"><span><span>ordinal</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-739389684%2FProperties%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="../-s-q-lite-transaction-mode/-i-m-m-e-d-i-a-t-e/index.html#-739389684%2FProperties%2F-1715436031">ordinal</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="1712541027%2FFunctions%2F-1715436031" anchor-label="valueOf" id="1712541027%2FFunctions%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="value-of.html"><span>value</span><wbr><span><span>Of</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1712541027%2FFunctions%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="value-of.html"><span class="token function">valueOf</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">SQLitePragma</a></div><div class="brief "><p class="paragraph">Returns the enum constant of this type with the specified name. The string must match exactly an identifier used to declare an enum constant in this type. (Extraneous whitespace characters are not permitted.)</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1509493841%2FFunctions%2F-1715436031" anchor-label="values" id="-1509493841%2FFunctions%2F-1715436031" data-filterable-set=":selekt-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-api/main" data-filterable-set=":selekt-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="values.html"><span><span>values</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1509493841%2FFunctions%2F-1715436031"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-api/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="values.html"><span class="token function">values</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="index.html">SQLitePragma</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Returns an array containing the constants of this enum type, in the order they're declared.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
