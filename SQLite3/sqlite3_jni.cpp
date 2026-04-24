@@ -354,7 +354,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobRead(
         throwIllegalArgumentException(env, "blobRead: length must be non-negative");
         return SQLITE_ERROR;
     }
-    if (jDestinationOffset < 0 || jDestinationOffset + jLength > arrayLength) {
+    if (jDestinationOffset < 0 || jDestinationOffset > arrayLength - jLength) {
         throwIndexOutOfBoundsException(env, "blobRead: offset/length out of bounds");
         return SQLITE_ERROR;
     }
