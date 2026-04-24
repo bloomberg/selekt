@@ -860,7 +860,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     }
     auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
     env->ReleaseStringUTFChars(jsql, sql);
-    updateHolder(env, statementHolder, 0, statement);
+    if (result == SQLITE_OK) {
+        updateHolder(env, statementHolder, 0, statement);
+    }
     return result;
 }
 
