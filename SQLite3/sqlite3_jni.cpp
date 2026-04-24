@@ -730,7 +730,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_errorMessage(
     jobject clazz,
     jlong jdb
 ) {
-    return env->NewStringUTF(sqlite3_errmsg(reinterpret_cast<sqlite3*>(jdb)));
+    auto msg = sqlite3_errmsg(reinterpret_cast<sqlite3*>(jdb));
+    return msg != nullptr ? env->NewStringUTF(msg) : nullptr;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
