@@ -37,7 +37,7 @@ namespace {
     }
 }
 
-void initThrowableClasses(JNIEnv* env) {
+bool initThrowableClasses(JNIEnv* env) {
     auto& classes = throwableClasses();
     auto findAndCache = [&](const char* name) -> jclass {
         auto local = env->FindClass(name);
@@ -47,6 +47,10 @@ void initThrowableClasses(JNIEnv* env) {
     classes.illegalStateException = findAndCache("java/lang/IllegalStateException");
     classes.indexOutOfBoundsException = findAndCache("java/lang/IndexOutOfBoundsException");
     classes.outOfMemoryError = findAndCache("java/lang/OutOfMemoryError");
+    return classes.illegalArgumentException != nullptr
+        && classes.illegalStateException != nullptr
+        && classes.indexOutOfBoundsException != nullptr
+        && classes.outOfMemoryError != nullptr;
 }
 
 void throwIllegalArgumentException(JNIEnv* env, const char* message) {
@@ -1232,6 +1236,8 @@ JNI_OnLoad(
     if (vm->GetEnv((void**) &env, JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }
-    initThrowableClasses(env);
+    if (!initThrowableClasses(env)) {
+        return JNI_ERR;
+    }
     return JNI_VERSION_1_6;
 }
