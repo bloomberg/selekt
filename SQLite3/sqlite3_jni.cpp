@@ -1124,7 +1124,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
         [](unsigned trace, void* context, void* p, void* x){
             switch (trace) {
                 case SQLITE_TRACE_ROW: LOG_D("ROW: %p", p); break;
-                case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, reinterpret_cast<sqlite3_int64>(x)); break;
+                case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, *static_cast<sqlite3_int64*>(x)); break;
                 case SQLITE_TRACE_STMT: LOG_D("STMT: %p %s", p, static_cast<const char*>(x)); break;
                 case SQLITE_TRACE_CLOSE: LOG_D("CLOSE: %p", p); break;
                 default: break;
