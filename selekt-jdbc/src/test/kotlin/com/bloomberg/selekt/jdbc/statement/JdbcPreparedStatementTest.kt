@@ -752,6 +752,38 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun setClobWithReaderAndLengthReadsCorrectContent() {
+        val captured = mutableListOf<Array<Any?>>()
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doAnswer {
+            captured.add(it.getArgument<Array<Any?>>(1))
+            cursor
+        }
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE clob=?").run {
+            "hello world!".reader().use {
+                setClob(1, it, 12L)
+            }
+            executeQuery()
+        }
+        assertEquals("hello world!", captured.first()[0])
+    }
+
+    @Test
+    fun setClobWithReaderShorterThanLength() {
+        val captured = mutableListOf<Array<Any?>>()
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doAnswer {
+            captured.add(it.getArgument<Array<Any?>>(1))
+            cursor
+        }
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE clob=?").run {
+            "short".reader().use {
+                setClob(1, it, 100L)
+            }
+            executeQuery()
+        }
+        assertEquals("short", captured.first()[0])
+    }
+
+    @Test
     fun setBigDecimal() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE amount=?").run {
