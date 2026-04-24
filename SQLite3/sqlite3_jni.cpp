@@ -39,10 +39,14 @@ namespace {
 
 void initThrowableClasses(JNIEnv* env) {
     auto& classes = throwableClasses();
-    classes.illegalArgumentException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IllegalArgumentException"));
-    classes.illegalStateException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IllegalStateException"));
-    classes.indexOutOfBoundsException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IndexOutOfBoundsException"));
-    classes.outOfMemoryError = (jclass)env->NewGlobalRef(env->FindClass("java/lang/OutOfMemoryError"));
+    auto findAndCache = [&](const char* name) -> jclass {
+        auto local = env->FindClass(name);
+        return local != nullptr ? (jclass)env->NewGlobalRef(local) : nullptr;
+    };
+    classes.illegalArgumentException = findAndCache("java/lang/IllegalArgumentException");
+    classes.illegalStateException = findAndCache("java/lang/IllegalStateException");
+    classes.indexOutOfBoundsException = findAndCache("java/lang/IndexOutOfBoundsException");
+    classes.outOfMemoryError = findAndCache("java/lang/OutOfMemoryError");
 }
 
 void throwIllegalArgumentException(JNIEnv* env, const char* message) {
