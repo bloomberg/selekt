@@ -175,6 +175,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindParameterIndex(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto name = env->GetStringUTFChars(jname, nullptr);
+    if (name == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return 0;
+    }
     auto result = sqlite3_bind_parameter_index(statement, name);
     env->ReleaseStringUTFChars(jname, name);
     return result;
@@ -190,6 +194,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindText(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto value = env->GetStringUTFChars(jvalue, nullptr);
+    if (value == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_bind_text(
         statement,
         index,
@@ -245,8 +253,23 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
 ) {
     sqlite3_blob* blob = nullptr;
     auto name = env->GetStringUTFChars(jname, nullptr);
+    if (name == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto table = env->GetStringUTFChars(jtable, nullptr);
+    if (table == nullptr) {
+        env->ReleaseStringUTFChars(jname, name);
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto column = env->GetStringUTFChars(jcolumn, nullptr);
+    if (column == nullptr) {
+        env->ReleaseStringUTFChars(jname, name);
+        env->ReleaseStringUTFChars(jtable, table);
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_blob_open(
         reinterpret_cast<sqlite3*>(jdb),
         name,
@@ -432,7 +455,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnName(
     jint index
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    return env->NewStringUTF(sqlite3_column_name(statement, index));
+    auto name = sqlite3_column_name(statement, index);
+    return name != nullptr ? env->NewStringUTF(name) : nullptr;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -444,7 +468,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnText(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto text = reinterpret_cast<const char*>(sqlite3_column_text(statement, index));
-    return env->NewStringUTF(text);
+    return text != nullptr ? env->NewStringUTF(text) : nullptr;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -570,6 +594,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseReadOnly(
     jstring jname
 ) {
     auto name = env->GetStringUTFChars(jname, nullptr);
+    if (name == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return -1;
+    }
     auto result = sqlite3_db_readonly(reinterpret_cast<sqlite3*>(jdb), name);
     env->ReleaseStringUTFChars(jname, name);
     return result;
@@ -654,6 +682,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_exec(
     jstring jquery
 ) {
     auto query = env->GetStringUTFChars(jquery, nullptr);
+    if (query == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), query, nullptr, nullptr, nullptr);
     env->ReleaseStringUTFChars(jquery, query);
     return result;
@@ -801,6 +833,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
 ) {
     sqlite3* db = nullptr;
     auto filename = env->GetStringUTFChars(jfilename, nullptr);
+    if (filename == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
     env->ReleaseStringUTFChars(jfilename, filename);
     updateHolder(env, dbHolder, 0, db);
@@ -818,6 +854,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
 ) {
     sqlite3_stmt* statement = nullptr;
     auto sql = env->GetStringUTFChars(jsql, nullptr);
+    if (sql == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
     env->ReleaseStringUTFChars(jsql, sql);
     updateHolder(env, statementHolder, 0, statement);
@@ -1045,6 +1085,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_walCheckpointV2(
         return sqlite3_wal_checkpoint_v2(reinterpret_cast<sqlite3*>(jdb), nullptr, mode, nullptr, nullptr);
     }
     auto name = env->GetStringUTFChars(jname, nullptr);
+    if (name == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
     auto result = sqlite3_wal_checkpoint_v2(
         reinterpret_cast<sqlite3*>(jdb),
         name,
