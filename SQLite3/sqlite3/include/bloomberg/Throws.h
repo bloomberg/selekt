@@ -17,20 +17,9 @@
 #ifndef SELEKT_THROWS_H
 #define SELEKT_THROWS_H
 
-void throwOutOfMemoryError(JNIEnv* env, const char* message) {
-    env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"), message);
-}
-
-void throwIllegalArgumentException(JNIEnv* env, const char* message) {
-    env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), message);
-}
-
-void throwIllegalStateException(JNIEnv* env, const char* message) {
-    env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), message);
-}
-
-void throwIndexOutOfBoundsException(JNIEnv* env, const char* message) {
-    env->ThrowNew(env->FindClass("java/lang/IndexOutOfBoundsException"), message);
-}
+extern void throwOutOfMemoryError(JNIEnv* env, const char* message);
+extern void throwIllegalArgumentException(JNIEnv* env, const char* message);
+extern void throwIllegalStateException(JNIEnv* env, const char* message);
+extern void throwIndexOutOfBoundsException(JNIEnv* env, const char* message);
 
 #endif //SELEKT_THROWS_H

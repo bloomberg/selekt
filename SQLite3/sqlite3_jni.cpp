@@ -22,6 +22,56 @@
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
 
+namespace {
+    struct ThrowableClasses {
+        jclass illegalArgumentException = nullptr;
+        jclass illegalStateException = nullptr;
+        jclass indexOutOfBoundsException = nullptr;
+        jclass outOfMemoryError = nullptr;
+    };
+
+    ThrowableClasses& throwableClasses() {
+        static ThrowableClasses instance;
+        return instance;
+    }
+}
+
+static void initThrowableClasses(JNIEnv* env) {
+    auto& classes = throwableClasses();
+    classes.illegalArgumentException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IllegalArgumentException"));
+    classes.illegalStateException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IllegalStateException"));
+    classes.indexOutOfBoundsException = (jclass)env->NewGlobalRef(env->FindClass("java/lang/IndexOutOfBoundsException"));
+    classes.outOfMemoryError = (jclass)env->NewGlobalRef(env->FindClass("java/lang/OutOfMemoryError"));
+}
+
+void throwOutOfMemoryError(JNIEnv* env, const char* message) {
+    auto cls = throwableClasses().outOfMemoryError;
+    if (cls != nullptr) {
+        env->ThrowNew(cls, message);
+    }
+}
+
+void throwIllegalArgumentException(JNIEnv* env, const char* message) {
+    auto cls = throwableClasses().illegalArgumentException;
+    if (cls != nullptr) {
+        env->ThrowNew(cls, message);
+    }
+}
+
+void throwIllegalStateException(JNIEnv* env, const char* message) {
+    auto cls = throwableClasses().illegalStateException;
+    if (cls != nullptr) {
+        env->ThrowNew(cls, message);
+    }
+}
+
+void throwIndexOutOfBoundsException(JNIEnv* env, const char* message) {
+    auto cls = throwableClasses().indexOutOfBoundsException;
+    if (cls != nullptr) {
+        env->ThrowNew(cls, message);
+    }
+}
+
 static inline void updateHolder(JNIEnv* env, jarray array, int offset, void* p) {
     auto pp = static_cast<size_t*>(env->GetPrimitiveArrayCritical(array, nullptr));
     if (pp == nullptr) {
@@ -1150,5 +1200,6 @@ JNI_OnLoad(
     if (vm->GetEnv((void**) &env, JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }
+    initThrowableClasses(env);
     return JNI_VERSION_1_6;
 }
