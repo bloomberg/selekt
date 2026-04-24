@@ -1,6 +1,36 @@
 Change Log
 ==========
 
+## Version 0.29.12
+
+### Fixes
+
+* Scrub entries from JDBC connection properties.
+* Close JdbcStatements.
+* Fix more potential null returns in JNI layer.
+* Emit safe URL from JDBC connect exception.
+* Fix query in JdbcDatabaseMetaData.getIndexInfo.
+* Zero key in SelektDataSource.
+* Optional maximum database cache size in SelektDriver.
+* Fix counting in JdbcPreparedStatement.setClob.
+* Fix double writes in JdbcClob.
+* Sanitise values in JdbcDatabaseMetaData.
+* Save critical calls in sqlite3_jni.prepareV2 on failure.
+* Check blobRead and blobWrite bounds in sqlite3_jni.cpp.
+* Check for pending Java exception in sqlite3_jni.commitHookCallback.
+* Fix potential null return when calling FindClass to throw Java exception from JNI.
+* Fix SystemProperties_get in native_mocks by checking for null return from GetStringUTFChars.
+* Handle potential allocation failure in commitHook.
+* Fix bounds check in sqlite3_jni.blobRead and .blobWrite.
+* Guard sqlite3_jni.blobOpen write to holder.
+* Fix sqlite3_jni.errorMessage potentially passing null.
+* Fix potentially passing null in sqlite3_jni.sql.
+* Fix commitHook potentially throwing across boundary.
+* Fix deleting the context in sqlite3_jni.freeCommitListener.
+* Save NewGlobalRef call if FindClass should fail in sqlite3_jni.initThrowableClasses.
+* Fix logging trace profile in sqlite3_jni.traceV2.
+* Return JNI_ERR from JNI_OnLoad if initThrowableClasses fails.
+
 ## Version 0.29.11
 
 ### Fixes
