@@ -17,7 +17,7 @@
 #ifndef SELEKT_THROWS_H
 #define SELEKT_THROWS_H
 
-void initThrowableClasses(JNIEnv* env);
+bool initThrowableClasses(JNIEnv* env);
 void throwIllegalArgumentException(JNIEnv* env, const char* message);
 void throwIllegalStateException(JNIEnv* env, const char* message);
 void throwIndexOutOfBoundsException(JNIEnv* env, const char* message);
