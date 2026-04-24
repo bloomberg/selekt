@@ -436,4 +436,63 @@ internal class SelektDriverTest {
             }
         }
     }
+
+    @Test
+    fun propertyInfoIncludesMaxCachedDatabases() {
+        driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties()).run {
+            val prop = find { it.name == "maxCachedDatabases" }
+            assertNotNull(prop)
+            assertEquals("-1", prop.value)
+            assertEquals(
+                "Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching)",
+                prop.description
+            )
+            assertFalse(prop.required)
+        }
+    }
+
+    @Test
+    fun maxCachedDatabasesDefaultIsUnlimited() {
+        val properties = Properties()
+        val connectionOne = driver.connect("jdbc:sqlite:/tmp/test_cache_a.db", properties)!!.also(connections::add)
+        val connectionTwo = driver.connect("jdbc:sqlite:/tmp/test_cache_b.db", properties)!!.also(connections::add)
+        val connectionThree = driver.connect("jdbc:sqlite:/tmp/test_cache_c.db", properties)!!.also(connections::add)
+        assertNotNull(connectionOne)
+        assertNotNull(connectionTwo)
+        assertNotNull(connectionThree)
+    }
+
+    @Test
+    fun maxCachedDatabasesZeroDisablesCaching() {
+        val properties = Properties().apply {
+            setProperty("maxCachedDatabases", "0")
+        }
+        val connectionOne = driver.connect("jdbc:sqlite:/tmp/test_nocache.db", properties)!!.also(connections::add)
+        val connectionTwo = driver.connect("jdbc:sqlite:/tmp/test_nocache.db", properties)!!.also(connections::add)
+        assertNotNull(connectionOne)
+        assertNotNull(connectionTwo)
+        connectionOne.close()
+        assertFalse(connectionTwo.isClosed)
+    }
+
+    @Test
+    fun maxCachedDatabasesBounded() {
+        val properties = Properties().apply {
+            setProperty("maxCachedDatabases", "1")
+        }
+        val connectionOne = driver.connect("jdbc:sqlite:/tmp/test_bounded_a.db", properties)!!.also(connections::add)
+        assertNotNull(connectionOne)
+        val connectionTwo = driver.connect("jdbc:sqlite:/tmp/test_bounded_b.db", properties)!!.also(connections::add)
+        assertNotNull(connectionTwo)
+    }
+
+    @Test
+    fun maxCachedDatabasesRejectsInvalidValue() {
+        val properties = Properties().apply {
+            setProperty("maxCachedDatabases", "-2")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_invalid_cache.db", properties)
+        }
+    }
 }
