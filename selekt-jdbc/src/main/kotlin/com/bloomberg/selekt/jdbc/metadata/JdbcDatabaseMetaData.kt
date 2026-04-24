@@ -29,6 +29,8 @@ import java.sql.SQLFeatureNotSupportedException
 import java.sql.Types
 import javax.annotation.concurrent.NotThreadSafe
 
+private fun escapeSql(value: String): String = value.replace("'", "''")
+
 @Suppress("Detekt.LargeClass")
 @NotThreadSafe
 internal class JdbcDatabaseMetaData(
@@ -339,7 +341,7 @@ internal class JdbcDatabaseMetaData(
     ): ResultSet {
         val namePattern = tableNamePattern?.replace("%", "*") ?: "*"
         val whereClause = if (tableNamePattern != null) {
-            "AND name GLOB '$namePattern'"
+            "AND name GLOB '${escapeSql(namePattern)}'"
         } else {
             ""
         }
@@ -379,7 +381,7 @@ internal class JdbcDatabaseMetaData(
         tablesResult.use { tablesResult ->
             while (tablesResult.next()) {
                 val tableName = tablesResult.getString("TABLE_NAME")
-                val pragmaSql = "PRAGMA table_info('$tableName')"
+                val pragmaSql = "PRAGMA table_info('${escapeSql(tableName)}')"
                 val pragmaResult = executeMetadataQuery(pragmaSql)
                 pragmaResult.use { pragmaResult ->
                     while (pragmaResult.next()) {
@@ -401,8 +403,8 @@ internal class JdbcDatabaseMetaData(
                             SELECT
                                 NULL as TABLE_CAT,
                                 NULL as TABLE_SCHEM,
-                                '$tableName' as TABLE_NAME,
-                                '$columnName' as COLUMN_NAME,
+                                '${escapeSql(tableName)}' as TABLE_NAME,
+                                '${escapeSql(columnName)}' as COLUMN_NAME,
                                 $sqlType as DATA_TYPE,
                                 '$typeName' as TYPE_NAME,
                                 $columnSize as COLUMN_SIZE,
@@ -411,7 +413,11 @@ internal class JdbcDatabaseMetaData(
                                 10 as NUM_PREC_RADIX,
                                 ${if (notNull == 1) { "0" } else { "1" } } as NULLABLE,
                                 '' as REMARKS,
-                                ${if (defaultValue != null) { "'$defaultValue'" } else { "NULL" } } as COLUMN_DEF,
+                                ${if (defaultValue != null) {
+                                    "'${escapeSql(defaultValue)}'"
+                                } else {
+                                    "NULL"
+                                } } as COLUMN_DEF,
                                 NULL as SQL_DATA_TYPE,
                                 NULL as SQL_DATETIME_SUB,
                                 NULL as CHAR_OCTET_LENGTH,
@@ -448,7 +454,7 @@ internal class JdbcDatabaseMetaData(
     }
 
     override fun getPrimaryKeys(catalog: String?, schema: String?, table: String): ResultSet {
-        val sql = "PRAGMA table_info('$table')"
+        val sql = "PRAGMA table_info('${escapeSql(table)}')"
         val pragmaResult = executeMetadataQuery(sql)
         val pkRows = mutableListOf<String>()
         pragmaResult.use { pragmaResult ->
@@ -459,8 +465,8 @@ internal class JdbcDatabaseMetaData(
                         SELECT
                             NULL as TABLE_CAT,
                             NULL as TABLE_SCHEM,
-                            '$table' as TABLE_NAME,
-                            '${pragmaResult.getString("name")}' as COLUMN_NAME,
+                            '${escapeSql(table)}' as TABLE_NAME,
+                            '${escapeSql(pragmaResult.getString("name"))}' as COLUMN_NAME,
                             $primaryKey as KEY_SEQ,
                             'PRIMARY' as PK_NAME
                     """.trimIndent())
@@ -490,7 +496,7 @@ internal class JdbcDatabaseMetaData(
         SELECT
             NULL as TABLE_CAT,
             NULL as TABLE_SCHEM,
-            '${table.replace("'", "''")}' as TABLE_NAME,
+            '${escapeSql(table)}' as TABLE_NAME,
             CASE WHEN il."unique" = 1 THEN 0 ELSE 1 END as NON_UNIQUE,
             NULL as INDEX_QUALIFIER,
             il.name as INDEX_NAME,
@@ -501,7 +507,7 @@ internal class JdbcDatabaseMetaData(
             0 as CARDINALITY,
             0 as PAGES,
             NULL as FILTER_CONDITION
-        FROM pragma_index_list('${table.replace("'", "''")}') as il
+        FROM pragma_index_list('${escapeSql(table)}') as il
         ${if (unique) "WHERE il.\"unique\" = 1" else ""}
     """.trimIndent())
 

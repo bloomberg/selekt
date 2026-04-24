@@ -1040,4 +1040,41 @@ internal class JdbcDatabaseMetaDataTest {
             assertNotNull(it)
         }
     }
+
+    @Test
+    fun getTablesEscapesQuotesInPattern() {
+        val capturedSql = mutableListOf<String>()
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            capturedSql.add(invocation.getArgument(0))
+            mockCursor
+        }
+        metaData.getTables(null, null, "it's", null)
+        assertTrue(capturedSql.any { it.contains("it''s") }, "Single quote should be escaped")
+        assertFalse(capturedSql.any { it.contains("it's") && !it.contains("it''s") }, "Unescaped quote found")
+    }
+
+    @Test
+    fun getPrimaryKeysEscapesQuotesInTableName() {
+        val capturedSql = mutableListOf<String>()
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            capturedSql.add(invocation.getArgument(0))
+            mockCursor
+        }
+        metaData.getPrimaryKeys(null, null, "it's")
+        assertTrue(capturedSql.any { it.contains("it''s") }, "Single quote should be escaped in PRAGMA")
+    }
+
+    @Test
+    fun getIndexInfoEscapesQuotesInTableName() {
+        val capturedSql = mutableListOf<String>()
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            capturedSql.add(invocation.getArgument(0))
+            mockCursor
+        }
+        metaData.getIndexInfo(null, null, "it's", unique = false, approximate = false)
+        assertTrue(capturedSql.all { sql ->
+            !sql.contains("'it's'")
+        }, "Unescaped quote should not appear")
+        assertTrue(capturedSql.any { it.contains("it''s") }, "Single quote should be escaped")
+    }
 }
