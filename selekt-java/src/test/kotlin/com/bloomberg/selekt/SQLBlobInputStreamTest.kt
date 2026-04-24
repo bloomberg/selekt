@@ -264,4 +264,34 @@ internal class SQLBlobInputStreamTest {
             assertEquals(-1, it.read(buffer, 0, buffer.size))
         }
     }
+
+    @Test
+    fun initRejectsOverflowingStartPlusLimit() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 100
+        }
+        assertFailsWith<IllegalArgumentException> {
+            BlobInputStream(blob, start = Int.MAX_VALUE, limit = 1)
+        }
+    }
+
+    @Test
+    fun initRejectsLimitExceedingBlobSize() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 10
+        }
+        assertFailsWith<IllegalArgumentException> {
+            BlobInputStream(blob, start = 5, limit = 6)
+        }
+    }
+
+    @Test
+    fun initAcceptsStartPlusLimitEqualToBlobSize() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 10
+        }
+        BlobInputStream(blob, start = 5, limit = 5).use {
+            assertEquals(5, it.available())
+        }
+    }
 }

@@ -75,7 +75,7 @@ internal class BlobInputStream(
     private var index = start
 
     init {
-        require(start > -1 && limit > -1 && start + limit <= blob.size)
+        require(start >= 0 && limit >= 0 && start <= blob.size && limit <= blob.size - start)
     }
 
     override fun available() = start + limit - index
@@ -134,7 +134,7 @@ internal class BlobOutputStream(
         offset: Int,
         length: Int
     ) = when {
-        offset < 0 || length < 0 || offset + length > source.size ->
+        offset < 0 || length < 0 || offset > source.size - length ->
             throw ArrayIndexOutOfBoundsException("Size: ${source.size}; offset: $offset; length: $length")
         length == 0 -> Unit
         remainingCapacity >= length -> {

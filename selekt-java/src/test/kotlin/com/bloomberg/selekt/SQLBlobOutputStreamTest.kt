@@ -165,4 +165,17 @@ internal class SQLBlobOutputStreamTest {
             }
         }
     }
+
+    @Test
+    fun writeRejectsOverflowingOffsetPlusLength() {
+        val blob = mock<SQLBlob> {
+            whenever(it.size) doReturn 100
+            whenever(it.readOnly) doReturn false
+        }
+        BlobOutputStream(blob).use {
+            assertFailsWith<ArrayIndexOutOfBoundsException> {
+                it.write(ByteArray(10), Int.MAX_VALUE, 1)
+            }
+        }
+    }
 }
