@@ -570,11 +570,30 @@ struct CommitListenerContext {
 static void freeCommitListenerContext(void* ctx) {
     if (ctx != nullptr) {
         auto context = static_cast<CommitListenerContext*>(ctx);
+        JavaVM* vm = context->vm;
+        void* envVoid = nullptr;
         JNIEnv* env = nullptr;
-        if (context->vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK) {
+        bool didAttach = false;
+        if (vm->GetEnv(&envVoid, JNI_VERSION_1_6) != JNI_OK) {
+#ifdef __ANDROID__
+            didAttach = vm->AttachCurrentThread(&env, nullptr) == JNI_OK;
+#else
+            void* attachedEnv = nullptr;
+            if (vm->AttachCurrentThread(&attachedEnv, nullptr) == JNI_OK) {
+                env = static_cast<JNIEnv*>(attachedEnv);
+                didAttach = true;
+            }
+#endif
+        } else {
+            env = static_cast<JNIEnv*>(envVoid);
+        }
+        if (env != nullptr) {
             env->DeleteGlobalRef(context->listener);
         }
         delete context;
+        if (didAttach) {
+            vm->DetachCurrentThread();
+        }
     }
 }
 
