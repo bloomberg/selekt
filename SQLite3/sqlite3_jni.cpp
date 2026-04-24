@@ -540,6 +540,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_commitHook(
     auto context = new CommitListenerContext;
     env->GetJavaVM(&context->vm);
     context->listener = env->NewGlobalRef(listener);
+    if (context->listener == nullptr) {
+        delete context;
+        throwOutOfMemoryError(env, "NewGlobalRef");
+        return SQLITE_NOMEM;
+    }
     context->onCommitMethod = onCommitMethod;
     context->onRollbackMethod = onRollbackMethod;
     void* oldContext = sqlite3_commit_hook(db, commitHookCallback, context);
