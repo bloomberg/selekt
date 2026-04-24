@@ -33,7 +33,6 @@ import java.sql.DriverPropertyInfo
 import java.sql.SQLException
 import java.util.Properties
 import java.util.logging.Logger as JulLogger
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -43,10 +42,11 @@ import org.slf4j.LoggerFactory
  *
  * Supported connection properties:
  * - key: Encryption key (hex string or file path)
- * - poolSize: Maximum connection pool size (integer)
- * - busyTimeout: SQLite busy timeout in milliseconds (integer)
- * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc.)
- * - foreignKeys: Enable foreign key constraints (true/false)
+ * - poolSize: Maximum connection pool size (integer, default: 10)
+ * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
+ * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
+ * - foreignKeys: Enable foreign key constraints (true/false, default: true)
+ * - maxCachedDatabases: Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching, >0 = bounded LRU, default: -1)
  */
 @Suppress("TooGenericExceptionCaught")
 class SelektDriver : Driver {
@@ -64,7 +64,10 @@ class SelektDriver : Driver {
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
+        private const val PROPERTY_MAX_CACHED_DATABASES = "maxCachedDatabases"
+
         private const val DEFAULT_POOL_SIZE = 10
+        private const val DEFAULT_MAX_CACHED_DATABASES = -1
 
         private const val HEX_PREFIX_LENGTH = 2
         private const val HEX_CHUNK_SIZE = 2
@@ -72,7 +75,12 @@ class SelektDriver : Driver {
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
-        private val databaseCache = ConcurrentHashMap<String, SharedDatabase>()
+        private val databaseCacheLock = Any()
+        private val databaseCache = LinkedHashMap<String, SharedDatabase>(16, 0.75f, true)
+        private var maxCachedDatabases: Int = System.getProperty(
+            "selekt.jdbc.maxCachedDatabases",
+            DEFAULT_MAX_CACHED_DATABASES.toString()
+        ).toIntOrNull() ?: DEFAULT_MAX_CACHED_DATABASES
 
         init {
             runCatching {
@@ -81,9 +89,11 @@ class SelektDriver : Driver {
                     start = false,
                     name = "selekt-driver-shutdown"
                 ) {
-                    databaseCache.run {
-                        values.forEachCatching(SharedDatabase::release)
-                        clear()
+                    synchronized(databaseCacheLock) {
+                        databaseCache.run {
+                            values.forEachCatching(SharedDatabase::release)
+                            clear()
+                        }
                     }
                 })
                 logger.info("{} {} registered successfully", DRIVER_NAME, DRIVER_VERSION)
@@ -141,6 +151,13 @@ class SelektDriver : Driver {
                 description = "Enable foreign key constraints"
                 required = false
                 choices = BOOLEAN_CHOICES
+            },
+            DriverPropertyInfo(
+                PROPERTY_MAX_CACHED_DATABASES,
+                info.getProperty(PROPERTY_MAX_CACHED_DATABASES, DEFAULT_MAX_CACHED_DATABASES.toString())
+            ).apply {
+                description = "Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching)"
+                required = false
             }
         )
     }
@@ -158,11 +175,52 @@ class SelektDriver : Driver {
         properties: Properties
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
-        return databaseCache.computeIfAbsent(cacheKey) {
-            SharedDatabase(createDatabase(connectionURL, properties)) {
-                databaseCache.remove(cacheKey)
+        val requestedMaxCachedDatabases = validateMaxCachedDatabases(
+            properties.getProperty(PROPERTY_MAX_CACHED_DATABASES)?.toIntOrNull()
+        )
+        if (requestedMaxCachedDatabases == 0) {
+            return SharedDatabase(createDatabase(connectionURL, properties))
+        }
+        val evicted = mutableListOf<SharedDatabase>()
+        val sharedDatabase = synchronized(databaseCacheLock) {
+            if (requestedMaxCachedDatabases != null && requestedMaxCachedDatabases > 0) {
+                maxCachedDatabases = requestedMaxCachedDatabases
             }
-        }.also(SharedDatabase::retain)
+            databaseCache.getOrPut(cacheKey) {
+                SharedDatabase(createDatabase(connectionURL, properties)) {
+                    synchronized(databaseCacheLock) {
+                        databaseCache.remove(cacheKey)
+                    }
+                }
+            }.also { db ->
+                db.retain()
+                evictExcess(cacheKey, evicted)
+            }
+        }
+        evicted.forEachCatching(SharedDatabase::release)
+        return sharedDatabase
+    }
+
+    private fun validateMaxCachedDatabases(value: Int?): Int? {
+        if (value == null) return null
+        require(value >= -1) {
+            "maxCachedDatabases must be -1 (unlimited), 0 (no caching), or a positive integer, was: $value"
+        }
+        return value
+    }
+
+    private fun evictExcess(currentKey: String, evicted: MutableList<SharedDatabase>) {
+        if (maxCachedDatabases < 0) {
+            return
+        }
+        val iterator = databaseCache.iterator()
+        while (databaseCache.size > maxCachedDatabases && iterator.hasNext()) {
+            val entry = iterator.next()
+            if (entry.key != currentKey) {
+                iterator.remove()
+                evicted.add(entry.value)
+            }
+        }
     }
 
     private fun createDatabase(
@@ -249,14 +307,14 @@ class SelektDriver : Driver {
         connectionURL: ConnectionURL,
         properties: Properties
     ): String {
-        val propString = listOf(
-            PROPERTY_POOL_SIZE,
+        val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
+            PROPERTY_FOREIGN_KEYS,
             PROPERTY_JOURNAL_MODE,
-            PROPERTY_FOREIGN_KEYS
+            PROPERTY_POOL_SIZE
         ).mapNotNull { key ->
             properties.getProperty(key)?.let { "$key=$it" }
-        }.sorted().joinToString("&")
-        return "${connectionURL.databasePath}?$propString"
+        }.joinToString("&")
+        return "${connectionURL.databasePath}?$propertiesString"
     }
 }
