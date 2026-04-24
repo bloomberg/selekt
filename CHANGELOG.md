@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.29.11
+
+### Fixes
+
+* Fix possible null NewGlobalRef listener reference in commitHook.
+* Ensure JdbcConnection calls release on a shared database when closing.
+
 ## Version 0.29.10
 
 ### Fixes
