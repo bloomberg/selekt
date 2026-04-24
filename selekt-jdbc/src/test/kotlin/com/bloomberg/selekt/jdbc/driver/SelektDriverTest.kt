@@ -361,32 +361,41 @@ internal class SelektDriverTest {
     fun sharedDatabaseCacheReturnsSharedInstance() {
         val url = "jdbc:sqlite:/tmp/test_shared.db"
         val properties = Properties()
-        val connectionOne = driver.connect(url, properties).also { connections.add(it!!) }
-        val connectionTwo = driver.connect(url, properties).also { connections.add(it!!) }
-        assertNotNull(connectionOne)
-        assertNotNull(connectionTwo)
+        assertNotNull(driver.connect(url, properties)).also(connections::add)
+        assertNotNull(driver.connect(url, properties)).also(connections::add)
     }
 
     @Test
     fun closingAllConnectionsReleasesFromCache() {
         val url = "jdbc:sqlite:/tmp/test_lifecycle.db"
         val properties = Properties()
-        val connectionOne = driver.connect(url, properties)!!.also { connections.add(it) }
-        val connectionTwo = driver.connect(url, properties)!!.also { connections.add(it) }
+        val connectionOne = driver.connect(url, properties)!!.also(connections::add)
+        val connectionTwo = driver.connect(url, properties)!!.also(connections::add)
         connectionOne.close()
         connectionTwo.close()
-        val connectionThree = driver.connect(url, properties).also { connections.add(it!!) }
-        assertNotNull(connectionThree)
+        assertNotNull(driver.connect(url, properties)).also(connections::add)
     }
 
     @Test
     fun closingConnectionDoesNotAffectOtherConnections() {
         val url = "jdbc:sqlite:/tmp/test_independent.db"
         val properties = Properties()
-        val connectionOne = driver.connect(url, properties)!!.also { connections.add(it) }
-        val connectionTwo = driver.connect(url, properties)!!.also { connections.add(it) }
+        val connectionOne = driver.connect(url, properties)!!.also(connections::add)
+        val connectionTwo = driver.connect(url, properties)!!.also(connections::add)
         connectionOne.close()
         assertTrue(connectionOne.isClosed)
         assertFalse(connectionTwo.isClosed)
+    }
+
+    @Test
+    fun connectWithKeyDoesNotRetainKeyInConnectionProperties() {
+        val properties = Properties().apply {
+            setProperty("key", "0x0123456789ABCDEF")
+        }
+        val connection = driver.connect("jdbc:sqlite:/tmp/test_key_scrub.db", properties)!!.also(connections::add)
+        assertNotNull(connection)
+        val metadata = connection.metaData
+        assertNotNull(metadata)
+        assertFalse(metadata.url.contains("0123456789ABCDEF"))
     }
 }

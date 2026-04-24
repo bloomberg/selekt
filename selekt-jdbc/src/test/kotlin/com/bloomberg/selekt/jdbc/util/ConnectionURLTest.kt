@@ -102,4 +102,13 @@ internal class ConnectionURLTest {
     fun urlEncoding() {
         assertEquals("hello world", ConnectionURL.parse("jdbc:sqlite:/test.db?key=hello%20world").getProperty("key"))
     }
+
+    @Test
+    fun toStringRedactsKey(): Unit = ConnectionURL.parse(
+        "jdbc:sqlite:/test.db?key=supersecret&poolSize=10"
+    ).toString().run {
+        assertFalse(contains("supersecret"))
+        assertTrue(contains("key=***"))
+        assertTrue(contains("poolSize=10"))
+    }
 }
