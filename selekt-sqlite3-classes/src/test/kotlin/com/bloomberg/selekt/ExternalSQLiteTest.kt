@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -938,6 +939,102 @@ internal class ExternalSQLiteTest {
                 sqlite.finalize(statement)
             }
             assertEquals(0, sqlite.isInterrupted(db), "Interrupt flag should be cleared after step")
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobRead rejects out of bounds offset`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 0, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = ByteArray(5)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.blobRead(blob, 0, buffer, 3, 5)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobRead rejects negative offset`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 0, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = ByteArray(5)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.blobRead(blob, 0, buffer, -1, 5)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobWrite rejects out of bounds offset`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 1, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = byteArrayOf(1, 2, 3)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.blobWrite(blob, 0, buffer, 2, 3)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobWrite rejects negative length`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 1, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = byteArrayOf(1, 2, 3)
+                assertFailsWith<IllegalArgumentException> {
+                    sqlite.blobWrite(blob, 0, buffer, 0, -1)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
         } finally {
             sqlite.closeV2(db)
         }

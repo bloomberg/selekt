@@ -29,4 +29,8 @@ void throwIllegalStateException(JNIEnv* env, const char* message) {
     env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), message);
 }
 
+void throwIndexOutOfBoundsException(JNIEnv* env, const char* message) {
+    env->ThrowNew(env->FindClass("java/lang/IndexOutOfBoundsException"), message);
+}
+
 #endif //SELEKT_THROWS_H
