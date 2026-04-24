@@ -129,6 +129,24 @@ internal class JdbcClobTest {
     }
 
     @Test
+    fun setStringReplaceOverflowsContent(): Unit = JdbcClob("ABCD").run {
+        setString(2, "XYZW")
+        assertEquals("AXYZW", asString())
+    }
+
+    @Test
+    fun setStringReplaceExactFit(): Unit = JdbcClob("ABCD").run {
+        setString(2, "XYZ")
+        assertEquals("AXYZ", asString())
+    }
+
+    @Test
+    fun setStringReplaceShorter(): Unit = JdbcClob("ABCD").run {
+        setString(2, "X")
+        assertEquals("AXCD", asString())
+    }
+
+    @Test
     fun setStringExtend(): Unit = JdbcClob("Hello").run {
         setString(7, "World")
         assertEquals("Hello World", getSubString(1, 11))
@@ -331,6 +349,24 @@ internal class JdbcClobTest {
             flush()
         }
         assertEquals("Hello World", asString())
+    }
+
+    @Test
+    fun characterStreamOverflowsContent(): Unit = JdbcClob("ABCD").run {
+        setCharacterStream(2).run {
+            write("XYZW")
+            flush()
+        }
+        assertEquals("AXYZW", asString())
+    }
+
+    @Test
+    fun asciiStreamOverflowsContent(): Unit = JdbcClob("ABCD").run {
+        setAsciiStream(2).run {
+            write("XYZW".toByteArray(Charsets.US_ASCII))
+            flush()
+        }
+        assertEquals("AXYZW", asString())
     }
 
     @Test
