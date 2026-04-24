@@ -18,6 +18,7 @@
 #include <sqlite3/sqlite3.h>
 #include <cstddef>
 #include <cstring>
+#include <new>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
@@ -585,7 +586,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_commitHook(
     if (onCommitMethod == nullptr || onRollbackMethod == nullptr) {
         return SQLITE_ERROR;
     }
-    auto context = new CommitListenerContext;
+    auto context = new (std::nothrow) CommitListenerContext;
+    if (context == nullptr) {
+        throwOutOfMemoryError(env, "CommitListenerContext allocation");
+        return SQLITE_NOMEM;
+    }
     env->GetJavaVM(&context->vm);
     context->listener = env->NewGlobalRef(listener);
     if (context->listener == nullptr) {
