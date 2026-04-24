@@ -332,7 +332,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
     env->ReleaseStringUTFChars(jname, name);
     env->ReleaseStringUTFChars(jtable, table);
     env->ReleaseStringUTFChars(jcolumn, column);
-    updateHolder(env, jholder, 0, blob);
+    if (result == SQLITE_OK) {
+        updateHolder(env, jholder, 0, blob);
+    }
     return result;
 }
 
