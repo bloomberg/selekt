@@ -40,10 +40,22 @@ import javax.sql.DataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+sealed interface EncryptionKeySource {
+    data class Literal(val key: CharArray) : EncryptionKeySource {
+        fun zero() { key.fill('\u0000') }
+
+        override fun equals(other: Any?): Boolean =
+            other is Literal && key.contentEquals(other.key)
+
+        override fun hashCode(): Int = key.contentHashCode()
+    }
+
+    data class FilePath(val path: String) : EncryptionKeySource
+}
+
 @Suppress("TooGenericExceptionCaught")
 class SelektDataSource : DataSource {
     companion object {
-        private const val PROPERTY_ENCRYPT = "encrypt"
         private const val PROPERTY_KEY = "key"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
@@ -105,10 +117,15 @@ class SelektDataSource : DataSource {
     var foreignKeys: Boolean = true
 
     @Volatile
-    var encryptionEnabled: Boolean = false
+    var encryptionKeySource: EncryptionKeySource? = null
+        set(value) {
+            (field as? EncryptionKeySource.Literal)?.zero()
+            field = value
+        }
 
-    @Volatile
-    var encryptionKey: String? = null
+    val encryptionEnabled: Boolean
+        get() = encryptionKeySource != null
+
 
     @Volatile
     private var loginTimeoutSeconds = 0
@@ -140,13 +157,16 @@ class SelektDataSource : DataSource {
         }
     }
 
-    fun setEncryption(enabled: Boolean, key: String? = null) {
-        encryptionEnabled = enabled
-        encryptionKey = key
+    fun setEncryption(keySource: EncryptionKeySource?) {
+        encryptionKeySource = when (keySource) {
+            is EncryptionKeySource.Literal -> EncryptionKeySource.Literal(keySource.key.copyOf())
+            else -> keySource
+        }
     }
 
     fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
+            encryptionKeySource = null
             databaseCache.run {
                 values.forEachCatching(SharedDatabase::release)
                 clear()
@@ -199,10 +219,6 @@ class SelektDataSource : DataSource {
     private fun buildUrlFromProperties(): String {
         val baseUrl = "jdbc:sqlite:$databasePath"
         return mutableListOf<String>().apply {
-            if (encryptionEnabled) {
-                add("encrypt=true")
-                encryptionKey?.let { add("key=$it") }
-            }
             add("poolSize=$maxPoolSize")
             add("busyTimeout=$busyTimeout")
             add("journalMode=$journalMode")
@@ -217,8 +233,11 @@ class SelektDataSource : DataSource {
     }
 
     private fun buildConnectionProperties(): Properties = Properties().apply {
-        setProperty(PROPERTY_ENCRYPT, encryptionEnabled.toString())
-        encryptionKey?.let { setProperty(PROPERTY_KEY, it) }
+        when (val source = encryptionKeySource) {
+            is EncryptionKeySource.Literal -> setProperty(PROPERTY_KEY, String(source.key))
+            is EncryptionKeySource.FilePath -> setProperty(PROPERTY_KEY, source.path)
+            null -> Unit
+        }
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
@@ -234,7 +253,10 @@ class SelektDataSource : DataSource {
             SharedDatabase(createDatabase(connectionURL, properties)) {
                 databaseCache.remove(cacheKey)
             }
-        }.also(SharedDatabase::retain)
+        }.also {
+            properties.remove(PROPERTY_KEY)
+            it.retain()
+        }
     }
 
     private fun createDatabase(
@@ -281,11 +303,7 @@ class SelektDataSource : DataSource {
     }
 
     private fun getEncryptionKey(properties: Properties): ByteArray? {
-        val encrypt = properties.getProperty(PROPERTY_ENCRYPT)?.toBoolean() == true
-        val keyProperty = properties.getProperty(PROPERTY_KEY)
-        if (!encrypt || keyProperty == null) {
-            return null
-        }
+        val keyProperty = properties.getProperty(PROPERTY_KEY) ?: return null
         return keyProperty.run {
             when {
                 startsWith("0x") || startsWith("0X") -> parseHexKey(this)
@@ -317,7 +335,6 @@ class SelektDataSource : DataSource {
         properties: Properties
     ): String {
         val propString = listOf(
-            PROPERTY_ENCRYPT,
             PROPERTY_POOL_SIZE,
             PROPERTY_BUSY_TIMEOUT,
             PROPERTY_JOURNAL_MODE,
