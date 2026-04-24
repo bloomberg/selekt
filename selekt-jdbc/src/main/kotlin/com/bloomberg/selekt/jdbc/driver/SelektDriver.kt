@@ -196,15 +196,15 @@ class SelektDriver : Driver {
         }
     }
 
-    private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
-        val poolSize = properties.getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: DEFAULT_POOL_SIZE
-        val busyTimeout = properties.getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull()
+    private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration = properties.run {
+        val poolSize = getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: DEFAULT_POOL_SIZE
+        val busyTimeout = getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull()
             ?: DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
-        val journalMode = properties.getProperty(PROPERTY_JOURNAL_MODE)?.let {
+        val journalMode = getProperty(PROPERTY_JOURNAL_MODE)?.let {
             SQLiteJournalMode.valueOf(it.uppercase())
         } ?: SQLiteJournalMode.WAL
         val baseConfig = journalMode.databaseConfiguration
-        return baseConfig.copy(
+        baseConfig.copy(
             maxConnectionPoolSize = poolSize,
             busyTimeoutMillis = busyTimeout,
             useNativeTransactionListeners = true

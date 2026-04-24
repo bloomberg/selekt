@@ -54,7 +54,7 @@ internal class SelektDataSourceTest {
         busyTimeout = 5_000
         journalMode = "WAL"
         foreignKeys = true
-        setEncryption(true, "test-key")
+        setEncryption(EncryptionKeySource.Literal("test-key".toCharArray()))
 
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
@@ -62,7 +62,7 @@ internal class SelektDataSourceTest {
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals("test-key", encryptionKey)
+        assertEquals(EncryptionKeySource.Literal("test-key".toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -165,7 +165,7 @@ internal class SelektDataSourceTest {
         busyTimeout = 2_000
         journalMode = "DELETE"
         foreignKeys = false
-        setEncryption(true, "secret123")
+        setEncryption(EncryptionKeySource.Literal("secret123".toCharArray()))
 
         assertEquals("/path/to/test.db", databasePath)
         assertEquals(5, maxPoolSize)
@@ -173,17 +173,17 @@ internal class SelektDataSourceTest {
         assertEquals("DELETE", journalMode)
         assertFalse(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals("secret123", encryptionKey)
+        assertEquals(EncryptionKeySource.Literal("secret123".toCharArray()), encryptionKeySource)
     }
 
     @Test
     fun setEncryptionWithNullKey(): Unit = dataSource.run {
-        setEncryption(true, null)
-        assertTrue(encryptionEnabled)
-        assertEquals(null, encryptionKey)
-        setEncryption(false, "somekey")
+        setEncryption(null)
         assertFalse(encryptionEnabled)
-        assertEquals("somekey", encryptionKey)
+        assertNull(encryptionKeySource)
+        setEncryption(EncryptionKeySource.Literal("somekey".toCharArray()))
+        assertTrue(encryptionEnabled)
+        assertEquals(EncryptionKeySource.Literal("somekey".toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -204,7 +204,7 @@ internal class SelektDataSourceTest {
 
     @Test
     fun encryptionKeyNullByDefault() {
-        assertEquals(null, dataSource.encryptionKey)
+        assertNull(dataSource.encryptionKeySource)
     }
 
     @Test
@@ -247,30 +247,30 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithEncryption(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted.db").absolutePath
-        setEncryption(true, "0x0123456789ABCDEF")
+        setEncryption(EncryptionKeySource.Literal("0x0123456789ABCDEF".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithFileBasedKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted2.db").absolutePath
-        setEncryption(true, File(tempDir, "keyfile.bin").apply {
+        setEncryption(EncryptionKeySource.FilePath(File(tempDir, "keyfile.bin").apply {
             writeBytes(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
-        }.absolutePath)
+        }.absolutePath))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithStringKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted3.db").absolutePath
-        setEncryption(true, "my-secret-key")
+        setEncryption(EncryptionKeySource.Literal("my-secret-key".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithEncryptionDisabled(): Unit = dataSource.run {
         databasePath = File(tempDir, "plain.db").absolutePath
-        setEncryption(false, "ignored-key")
+        setEncryption(null)
         getConnection().close()
     }
 
@@ -318,29 +318,52 @@ internal class SelektDataSourceTest {
         busyTimeout = 3000
         journalMode = "DELETE"
         foreignKeys = false
-        setEncryption(true, "test-key-123")
+        setEncryption(EncryptionKeySource.Literal("test-key-123".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun setEncryptionWithKey(): Unit = dataSource.run {
-        setEncryption(true, "my-key")
+        setEncryption(EncryptionKeySource.Literal("my-key".toCharArray()))
         assertTrue(encryptionEnabled)
-        assertEquals("my-key", encryptionKey)
+        assertEquals(EncryptionKeySource.Literal("my-key".toCharArray()), encryptionKeySource)
+    }
+
+    @Test
+    fun setEncryptionWithKeyPath(): Unit = dataSource.run {
+        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
+        assertTrue(encryptionEnabled)
+        assertEquals(EncryptionKeySource.FilePath("/path/to/key"), encryptionKeySource)
+    }
+
+    @Test
+    fun setEncryptionLiteralReplacesFilePath(): Unit = dataSource.run {
+        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
+        setEncryption(EncryptionKeySource.Literal("literal".toCharArray()))
+        assertEquals(EncryptionKeySource.Literal("literal".toCharArray()), encryptionKeySource)
+    }
+
+    @Test
+    fun setEncryptionFilePathReplacesLiteral(): Unit = dataSource.run {
+        setEncryption(EncryptionKeySource.Literal("literal".toCharArray()))
+        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
+        assertEquals(EncryptionKeySource.FilePath("/path/to/key"), encryptionKeySource)
     }
 
     @Test
     fun setEncryptionWithoutKey(): Unit = dataSource.run {
-        setEncryption(true)
-        assertTrue(encryptionEnabled)
-        assertNull(encryptionKey)
+        setEncryption(null)
+        assertFalse(encryptionEnabled)
+        assertNull(encryptionKeySource)
     }
 
     @Test
-    fun setEncryptionDisabled() {
-        dataSource.setEncryption(false, "ignored")
-        assertFalse(dataSource.encryptionEnabled)
-        assertEquals("ignored", dataSource.encryptionKey)
+    fun clearEncryption(): Unit = dataSource.run {
+        setEncryption(EncryptionKeySource.Literal("key".toCharArray()))
+        assertTrue(encryptionEnabled)
+        setEncryption(null)
+        assertFalse(encryptionEnabled)
+        assertNull(encryptionKeySource)
     }
 
     @Test
@@ -366,28 +389,28 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithHexKeyUppercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-upper.db").absolutePath
-        setEncryption(true, "0X123456")
+        setEncryption(EncryptionKeySource.Literal("0X123456".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithHexKeyLowercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-lower.db").absolutePath
-        setEncryption(true, "0x123456")
+        setEncryption(EncryptionKeySource.Literal("0x123456".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithNullEncryptionKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "null-key.db").absolutePath
-        setEncryption(true, null)
+        setEncryption(null)
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithNonExistentKeyFile(): Unit = dataSource.run {
         databasePath = File(tempDir, "nonexistent-key.db").absolutePath
-        setEncryption(true, "/nonexistent/path/to/keyfile.bin")
+        setEncryption(EncryptionKeySource.FilePath("/nonexistent/path/to/keyfile.bin"))
         getConnection().close()
     }
 
