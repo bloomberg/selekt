@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
 import com.bloomberg.selekt.jdbc.metadata.JdbcDatabaseMetaData
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory
 @Suppress("MethodOverloading", "TooGenericExceptionCaught", "Detekt.StringLiteralDuplication")
 @NotThreadSafe
 internal class JdbcConnection(
-    private val database: SQLDatabase,
+    private val sharedDatabase: SharedDatabase,
     private val connectionURL: ConnectionURL,
     private val properties: Properties
 ) : Connection {
@@ -61,6 +62,8 @@ internal class JdbcConnection(
             Boolean::class.javaPrimitiveType
         )
     }
+
+    private val database: SQLDatabase get() = sharedDatabase.database
 
     @Volatile
     private var closed = false
@@ -299,12 +302,10 @@ internal class JdbcConnection(
 
     override fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
-            database.runCatching {
-                if (inTransaction) {
-                    endTransaction()
-                }
+            sharedDatabase.runCatching {
+                release()
             }.onFailure { e ->
-                logger.warn("Error ending transaction on connection close: ${e.message}")
+                logger.warn("Error releasing database on connection close: ${e.message}")
             }
         }
     }

@@ -20,6 +20,7 @@ import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
+import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import java.io.InputStream
@@ -70,7 +71,7 @@ internal class JdbcPreparedStatementTest {
         cursor = mock<ICursor>()
         val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
-        connection = JdbcConnection(database, connectionURL, properties)
+        connection = JdbcConnection(SharedDatabase(database), connectionURL, properties)
         val sql = "SELECT * FROM users WHERE id = ? AND name = ?"
         preparedStatement = JdbcPreparedStatement(connection, database, sql)
     }

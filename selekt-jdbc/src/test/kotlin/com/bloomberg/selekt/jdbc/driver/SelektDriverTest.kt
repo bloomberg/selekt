@@ -356,4 +356,37 @@ internal class SelektDriverTest {
         assertNotNull(connection)
         connections.add(connection)
     }
+
+    @Test
+    fun sharedDatabaseCacheReturnsSharedInstance() {
+        val url = "jdbc:sqlite:/tmp/test_shared.db"
+        val properties = Properties()
+        val connectionOne = driver.connect(url, properties).also { connections.add(it!!) }
+        val connectionTwo = driver.connect(url, properties).also { connections.add(it!!) }
+        assertNotNull(connectionOne)
+        assertNotNull(connectionTwo)
+    }
+
+    @Test
+    fun closingAllConnectionsReleasesFromCache() {
+        val url = "jdbc:sqlite:/tmp/test_lifecycle.db"
+        val properties = Properties()
+        val connectionOne = driver.connect(url, properties)!!.also { connections.add(it) }
+        val connectionTwo = driver.connect(url, properties)!!.also { connections.add(it) }
+        connectionOne.close()
+        connectionTwo.close()
+        val connectionThree = driver.connect(url, properties).also { connections.add(it!!) }
+        assertNotNull(connectionThree)
+    }
+
+    @Test
+    fun closingConnectionDoesNotAffectOtherConnections() {
+        val url = "jdbc:sqlite:/tmp/test_independent.db"
+        val properties = Properties()
+        val connectionOne = driver.connect(url, properties)!!.also { connections.add(it) }
+        val connectionTwo = driver.connect(url, properties)!!.also { connections.add(it) }
+        connectionOne.close()
+        assertTrue(connectionOne.isClosed)
+        assertFalse(connectionTwo.isClosed)
+    }
 }

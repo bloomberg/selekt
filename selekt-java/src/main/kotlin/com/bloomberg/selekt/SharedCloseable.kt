@@ -17,57 +17,9 @@
 package com.bloomberg.selekt
 
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.ThreadSafe
 
 @ThreadSafe
-abstract class SharedCloseable : Closeable {
-    @Volatile private var retainCount = 1
-
+abstract class SharedCloseable : SharedResource(), Closeable {
     final override fun close() = release()
-
-    fun isOpen() = retainCount > 0
-
-    protected abstract fun onReleased()
-
-    private fun retain() {
-        while (true) {
-            val current = retainCountUpdater[this]
-            check(current > 0) { "Attempting to retain an already released object: $this." }
-            if (retainCountUpdater.compareAndSet(this, current, current + 1)) {
-                return
-            }
-        }
-    }
-
-    private fun release() {
-        while (true) {
-            val current = retainCountUpdater[this]
-            if (current <= 0) {
-                return
-            }
-            if (retainCountUpdater.compareAndSet(this, current, current - 1)) {
-                if (current == 1) {
-                    onReleased()
-                }
-                return
-            }
-        }
-    }
-
-    internal inline fun <T> pledge(block: () -> T): T {
-        retain()
-        try {
-            return block()
-        } finally {
-            release()
-        }
-    }
-
-    private companion object {
-        val retainCountUpdater: AtomicIntegerFieldUpdater<SharedCloseable> = AtomicIntegerFieldUpdater.newUpdater(
-            SharedCloseable::class.java,
-            "retainCount"
-        )
-    }
 }

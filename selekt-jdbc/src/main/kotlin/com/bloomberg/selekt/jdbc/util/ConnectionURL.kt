@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.util
 
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.sql.SQLException
 import java.util.Properties
 
@@ -123,6 +124,6 @@ internal class ConnectionURL private constructor(
         "${if (properties.isNotEmpty()) { "?" } else { "" } }${propertiesToQueryString()}"
 
     private fun propertiesToQueryString(): String = properties.entries.joinToString("&") { (key, value) ->
-        "$key=${java.net.URLEncoder.encode(value.toString(), "UTF-8")}"
+        "$key=${URLEncoder.encode(value.toString(), "UTF-8")}"
     }
 }

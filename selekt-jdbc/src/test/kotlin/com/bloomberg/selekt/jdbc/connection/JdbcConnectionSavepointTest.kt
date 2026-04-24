@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,7 +46,7 @@ internal class JdbcConnectionSavepointTest {
         mockDatabase = mock()
         connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         properties = Properties()
-        connection = JdbcConnection(mockDatabase, connectionURL, properties)
+        connection = JdbcConnection(SharedDatabase(mockDatabase), connectionURL, properties)
     }
 
     @Test
