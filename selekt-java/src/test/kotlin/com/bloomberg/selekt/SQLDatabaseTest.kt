@@ -164,6 +164,45 @@ internal class SQLDatabaseTest {
         pragma("main.integrity_check")
     }
 
+    @Test
+    fun pragmaValueRejectsSqlInjection(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma(SQLitePragma.JOURNAL_MODE, "wal; DROP TABLE foo--")
+        }
+    }
+
+    @Test
+    fun pragmaValueRejectsSemiColon(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma(SQLitePragma.JOURNAL_MODE, "wal;")
+        }
+    }
+
+    @Test
+    fun pragmaValueRejectsEmptyString(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            pragma(SQLitePragma.JOURNAL_MODE, "")
+        }
+    }
+
+    @Test
+    fun pragmaValueAcceptsAlphanumeric(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn "wal"
+        pragma(SQLitePragma.JOURNAL_MODE, "wal")
+    }
+
+    @Test
+    fun pragmaValueAcceptsInteger(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn "1"
+        pragma(SQLitePragma.JOURNAL_MODE, 1)
+    }
+
+    @Test
+    fun pragmaValueAcceptsNegativeInteger(): Unit = database.run {
+        whenever(sqlite.columnText(any(), any())) doReturn "-1"
+        pragma(SQLitePragma.SOFT_HEAP_LIMIT, -1)
+    }
+
     private fun verifyCommit(): Unit = inOrder(sqlite).run {
         verify(sqlite, times(1)).prepareV2(eq(DB), eq("END"), any())
         verify(sqlite, times(1)).stepWithoutThrowing(eq(STMT))
