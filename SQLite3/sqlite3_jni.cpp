@@ -539,6 +539,9 @@ static int commitHookCallback(void* ctx) {
         return 1;
     }
     jint result = env->CallIntMethod(context->listener, context->onCommitMethod);
+    if (env->ExceptionCheck()) {
+        return 1;
+    }
     return result;
 }
 
@@ -553,6 +556,9 @@ static void rollbackHookCallback(void* ctx) {
         return;
     }
     env->CallVoidMethod(context->listener, context->onRollbackMethod);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
 }
 
 extern "C" JNIEXPORT jint JNICALL
