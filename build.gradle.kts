@@ -161,7 +161,8 @@ subprojects {
         useJUnitPlatform()
         mapOf(
             "junit.jupiter.execution.parallel.enabled" to true,
-            "junit.jupiter.execution.parallel.mode.default" to "concurrent",
+            "junit.jupiter.execution.parallel.mode.classes.default" to "concurrent",
+            "junit.jupiter.execution.parallel.mode.default" to "same_thread",
             "junit.jupiter.execution.timeout.lifecycle.method.default" to "60s",
             "junit.jupiter.execution.timeout.mode" to "disabled_on_debug",
             "junit.jupiter.execution.timeout.testable.method.default" to "60s"
