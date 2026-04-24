@@ -104,8 +104,9 @@ class SelektDriver : Driver {
             mergedProperties.remove(PROPERTY_KEY)
             JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
         }.getOrElse { e ->
+            val safeUrl = runCatching { ConnectionURL.parse(url).toString() }.getOrDefault("<unparseable URL>")
             throw SQLExceptionMapper.mapException(
-                "Failed to create connection to $url: ${e.message}",
+                "Failed to create connection to $safeUrl: ${e.message}",
                 -1,
                 -1,
                 e

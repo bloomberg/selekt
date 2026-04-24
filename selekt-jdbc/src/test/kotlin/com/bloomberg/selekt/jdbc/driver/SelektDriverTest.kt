@@ -398,4 +398,20 @@ internal class SelektDriverTest {
         assertNotNull(metadata)
         assertFalse(metadata.url.contains("0123456789ABCDEF"))
     }
+
+    @Test
+    fun connectErrorMessageRedactsKey() {
+        val secret = "SUPERSECRETKEY123"
+        val properties = Properties().apply {
+            setProperty("key", secret)
+            setProperty("journalMode", "INVALID_MODE")
+        }
+        val exception = assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_redact_error.db?key=$secret", properties)
+        }
+        assertFalse(
+            exception.message?.contains(secret) == true,
+            "Error message should not contain the encryption key"
+        )
+    }
 }
