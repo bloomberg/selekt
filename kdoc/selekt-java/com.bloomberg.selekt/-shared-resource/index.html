@@ -2,7 +2,7 @@
 <html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>SharedCloseable</title>
+    <title>SharedResource</title>
 <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
     <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
@@ -89,23 +89,23 @@
         </nav>
         <div id="resizer" class="resizer" data-item-type="BAR"></div>
         <div id="main" data-item-type="SECTION" role="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-java::com.bloomberg.selekt/SharedCloseable///PointingToDeclaration//1099649801">
-  <div class="breadcrumbs"><a href="../../index.html">selekt-java</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt</a><span class="delimiter">/</span><span class="current">SharedCloseable</span></div>
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-java::com.bloomberg.selekt/SharedResource///PointingToDeclaration//1099649801">
+  <div class="breadcrumbs"><a href="../../index.html">selekt-java</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt</a><span class="delimiter">/</span><span class="current">SharedResource</span></div>
   <div class="cover ">
-    <h1 class="cover"><span>Shared</span><wbr><span><span>Closeable</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">SharedCloseable</a> : <a href="../-shared-resource/index.html">SharedResource</a>, <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/io/Closeable.html">Closeable</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-java/src/main/kotlin/com/bloomberg/selekt/SharedCloseable.kt#L23">source</a>)</span></span></div><h4 class="tableheader">Inheritors</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-s-q-l-database/index.html">SQLDatabase</a></div></span></div><div></div></div></div></div></div></div>
+    <h1 class="cover"><span>Shared</span><wbr><span><span>Resource</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="index.html">SharedResource</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-java/src/main/kotlin/com/bloomberg/selekt/SharedResource.kt#L28">source</a>)</span></span></div><p class="paragraph">A thread-safe reference-counted resource. The resource starts with a retain count of 1. Each call to <a href="retain.html">retain</a> increments the count; each call to <a href="release.html">release</a> decrements it. When the count reaches zero, <span data-unresolved-link="com.bloomberg.selekt/SharedResource/onReleased/#/PointingToDeclaration/">onReleased</span> is invoked exactly once.</p><h4 class="tableheader">Inheritors</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-shared-closeable/index.html">SharedCloseable</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="-50551955%2FConstructors%2F1099649801" anchor-label="SharedCloseable" id="-50551955%2FConstructors%2F1099649801" data-filterable-set=":selekt-java/main"></a>
+        <div class="table"><a data-name="599445417%2FConstructors%2F1099649801" anchor-label="SharedResource" id="599445417%2FConstructors%2F1099649801" data-filterable-set=":selekt-java/main"></a>
           <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-shared-closeable.html"><span>Shared</span><wbr><span><span>Closeable</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-50551955%2FConstructors%2F1099649801"></span>
+                  <div><a href="-shared-resource.html"><span>Shared</span><wbr><span><span>Resource</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="599445417%2FConstructors%2F1099649801"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
@@ -119,32 +119,17 @@
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="tableheader">Functions</h2>
-        <div class="table"><a data-name="-83586974%2FFunctions%2F1099649801" anchor-label="close" id="-83586974%2FFunctions%2F1099649801" data-filterable-set=":selekt-java/main"></a>
+        <div class="table"><a data-name="-263211288%2FFunctions%2F1099649801" anchor-label="isOpen" id="-263211288%2FFunctions%2F1099649801" data-filterable-set=":selekt-java/main"></a>
           <div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="close.html"><span><span>close</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-83586974%2FFunctions%2F1099649801"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">override </span><span class="token keyword">fun </span><a href="close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-263211288%2FFunctions%2F1099649801" anchor-label="isOpen" id="-263211288%2FFunctions%2F1099649801" data-filterable-set=":selekt-java/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="../-shared-resource/is-open.html"><span>is</span><wbr><span><span>Open</span></span></a></div>
+                  <div><a href="is-open.html"><span>is</span><wbr><span><span>Open</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-263211288%2FFunctions%2F1099649801"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-shared-resource/is-open.html"><span class="token function">isOpen</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-open.html"><span class="token function">isOpen</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -153,13 +138,13 @@
           <div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="../-shared-resource/release.html"><span><span>release</span></span></a></div>
+                  <div><a href="release.html"><span><span>release</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1433869769%2FFunctions%2F1099649801"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-shared-resource/release.html"><span class="token function">release</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="release.html"><span class="token function">release</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -168,13 +153,13 @@
           <div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="../-shared-resource/retain.html"><span><span>retain</span></span></a></div>
+                  <div><a href="retain.html"><span><span>retain</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1688091031%2FFunctions%2F1099649801"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-shared-resource/retain.html"><span class="token function">retain</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><span class="token keyword">fun </span><a href="retain.html"><span class="token function">retain</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>

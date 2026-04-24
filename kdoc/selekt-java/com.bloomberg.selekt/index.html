@@ -289,7 +289,22 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-shared-closeable/index.html">SharedCloseable</a> : <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/io/Closeable.html">Closeable</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-shared-closeable/index.html">SharedCloseable</a> : <a href="-shared-resource/index.html">SharedResource</a>, <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/io/Closeable.html">Closeable</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-964197213%2FClasslikes%2F1099649801" anchor-label="SharedResource" id="-964197213%2FClasslikes%2F1099649801" data-filterable-set=":selekt-java/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-java/main" data-filterable-set=":selekt-java/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-shared-resource/index.html"><span>Shared</span><wbr><span><span>Resource</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-964197213%2FClasslikes%2F1099649801"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-java/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/ThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">ThreadSafe</span></span></div></div><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-shared-resource/index.html">SharedResource</a></div><div class="brief "><p class="paragraph">A thread-safe reference-counted resource. The resource starts with a retain count of 1. Each call to <a href="-shared-resource/retain.html">retain</a> increments the count; each call to <a href="-shared-resource/release.html">release</a> decrements it. When the count reaches zero, <span data-unresolved-link="com.bloomberg.selekt/SharedResource/onReleased/#/PointingToDeclaration/">onReleased</span> is invoked exactly once.</p></div></div></div>
                 </div>
               </div>
             </div>
