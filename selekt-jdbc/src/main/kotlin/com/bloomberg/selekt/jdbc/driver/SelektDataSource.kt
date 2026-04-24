@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQLDatabase
@@ -114,7 +115,7 @@ class SelektDataSource : DataSource {
     @Volatile
     private var logWriter: PrintWriter? = null
 
-    private val databaseCache = ConcurrentHashMap<String, SQLDatabase>()
+    private val databaseCache = ConcurrentHashMap<String, SharedDatabase>()
 
     override fun getConnection(): Connection = getConnection(null, null)
 
@@ -145,21 +146,11 @@ class SelektDataSource : DataSource {
 
     fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
-            var firstException: Throwable? = null
-            databaseCache.values.forEach { database ->
-                runCatching {
-                    database.close()
-                }.onFailure { e ->
-                    if (firstException == null) {
-                        firstException = e
-                    } else {
-                        firstException.addSuppressed(e)
-                    }
-                }
+            databaseCache.run {
+                values.forEachCatching(SharedDatabase::release)
+                clear()
             }
-            databaseCache.clear()
             logger.info("SelektDataSource closed")
-            firstException?.let { throw it }
         }
     }
 
@@ -236,11 +227,13 @@ class SelektDataSource : DataSource {
     private fun getOrCreateDatabase(
         connectionURL: ConnectionURL,
         properties: Properties
-    ): SQLDatabase {
+    ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
         return databaseCache.computeIfAbsent(cacheKey) {
-            createDatabase(connectionURL, properties)
-        }
+            SharedDatabase(createDatabase(connectionURL, properties)) {
+                databaseCache.remove(cacheKey)
+            }
+        }.also(SharedDatabase::retain)
     }
 
     private fun createDatabase(

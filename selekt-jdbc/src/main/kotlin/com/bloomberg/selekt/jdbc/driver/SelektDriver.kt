@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.driver
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -32,6 +33,7 @@ import java.sql.SQLException
 import java.util.Properties
 import java.util.logging.Logger as JulLogger
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -69,11 +71,20 @@ class SelektDriver : Driver {
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
-        private val databaseCache = ConcurrentHashMap<String, SQLDatabase>()
+        private val databaseCache = ConcurrentHashMap<String, SharedDatabase>()
 
         init {
             runCatching {
                 DriverManager.registerDriver(SelektDriver())
+                Runtime.getRuntime().addShutdownHook(thread(
+                    start = false,
+                    name = "selekt-driver-shutdown"
+                ) {
+                    databaseCache.run {
+                        values.forEachCatching(SharedDatabase::release)
+                        clear()
+                    }
+                })
                 logger.info("{} {} registered successfully", DRIVER_NAME, DRIVER_VERSION)
             }.onFailure { e ->
                 logger.error("Failed to register {}: {}", DRIVER_NAME, e.message)
@@ -88,8 +99,8 @@ class SelektDriver : Driver {
         runCatching {
             val connectionURL = ConnectionURL.parse(url)
             val mergedProperties = mergeProperties(connectionURL.properties, info)
-            val database = getOrCreateDatabase(connectionURL, mergedProperties)
-            JdbcConnection(database, connectionURL, mergedProperties)
+            val sharedDatabase = getOrCreateDatabase(connectionURL, mergedProperties)
+            JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(
                 "Failed to create connection to $url: ${e.message}",
@@ -142,8 +153,13 @@ class SelektDriver : Driver {
     private fun getOrCreateDatabase(
         connectionURL: ConnectionURL,
         properties: Properties
-    ): SQLDatabase = databaseCache.computeIfAbsent(buildCacheKey(connectionURL, properties)) {
-        createDatabase(connectionURL, properties)
+    ): SharedDatabase {
+        val cacheKey = buildCacheKey(connectionURL, properties)
+        return databaseCache.computeIfAbsent(cacheKey) {
+            SharedDatabase(createDatabase(connectionURL, properties)) {
+                databaseCache.remove(cacheKey)
+            }
+        }.also(SharedDatabase::retain)
     }
 
     private fun createDatabase(
