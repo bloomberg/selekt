@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.commons.forEachCatching
+import com.bloomberg.selekt.commons.zero
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQLDatabase
@@ -252,13 +253,17 @@ class SelektDataSource : DataSource {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
         }
-        return SQLDatabase(
-            path = connectionURL.databasePath,
-            sqlite = sqlite,
-            configuration = configuration,
-            key = encryptionKeyBytes,
-            random = com.bloomberg.selekt.CommonThreadLocalRandom
-        )
+        return try {
+            SQLDatabase(
+                path = connectionURL.databasePath,
+                sqlite = sqlite,
+                configuration = configuration,
+                key = encryptionKeyBytes,
+                random = com.bloomberg.selekt.CommonThreadLocalRandom
+            )
+        } finally {
+            encryptionKeyBytes?.zero()
+        }
     }
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
@@ -313,7 +318,6 @@ class SelektDataSource : DataSource {
     ): String {
         val propString = listOf(
             PROPERTY_ENCRYPT,
-            PROPERTY_KEY,
             PROPERTY_POOL_SIZE,
             PROPERTY_BUSY_TIMEOUT,
             PROPERTY_JOURNAL_MODE,

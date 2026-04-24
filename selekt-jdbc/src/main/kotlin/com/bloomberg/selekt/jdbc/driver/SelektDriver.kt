@@ -24,6 +24,7 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
+import com.bloomberg.selekt.commons.zero
 import java.io.File
 import java.sql.Connection
 import java.sql.Driver
@@ -100,6 +101,7 @@ class SelektDriver : Driver {
             val connectionURL = ConnectionURL.parse(url)
             val mergedProperties = mergeProperties(connectionURL.properties, info)
             val sharedDatabase = getOrCreateDatabase(connectionURL, mergedProperties)
+            mergedProperties.remove(PROPERTY_KEY)
             JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(
@@ -180,13 +182,17 @@ class SelektDriver : Driver {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
         }
-        return SQLDatabase(
-            path = connectionURL.databasePath,
-            sqlite = sqlite,
-            configuration = configuration,
-            key = encryptionKey,
-            random = com.bloomberg.selekt.CommonThreadLocalRandom
-        )
+        return try {
+            SQLDatabase(
+                path = connectionURL.databasePath,
+                sqlite = sqlite,
+                configuration = configuration,
+                key = encryptionKey,
+                random = com.bloomberg.selekt.CommonThreadLocalRandom
+            )
+        } finally {
+            encryptionKey?.zero()
+        }
     }
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
@@ -243,7 +249,6 @@ class SelektDriver : Driver {
         properties: Properties
     ): String {
         val propString = listOf(
-            PROPERTY_KEY,
             PROPERTY_POOL_SIZE,
             PROPERTY_BUSY_TIMEOUT,
             PROPERTY_JOURNAL_MODE,

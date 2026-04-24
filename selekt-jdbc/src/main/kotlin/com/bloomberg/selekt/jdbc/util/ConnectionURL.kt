@@ -124,6 +124,10 @@ internal class ConnectionURL private constructor(
         "${if (properties.isNotEmpty()) { "?" } else { "" } }${propertiesToQueryString()}"
 
     private fun propertiesToQueryString(): String = properties.entries.joinToString("&") { (key, value) ->
-        "$key=${URLEncoder.encode(value.toString(), "UTF-8")}"
+        if (key == "key") {
+            "$key=***"
+        } else {
+            "$key=${URLEncoder.encode(value.toString(), "UTF-8")}"
+        }
     }
 }
