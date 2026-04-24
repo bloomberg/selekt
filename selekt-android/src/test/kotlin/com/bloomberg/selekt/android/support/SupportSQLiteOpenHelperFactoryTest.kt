@@ -48,6 +48,7 @@ private fun <T : RoomDatabase> buildRoomDatabase(
     klass: Class<T>
 ) = Room.databaseBuilder(context, klass, "app")
     .openHelperFactory(createSupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, ByteArray(32) { 0x42 }))
+    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
     .allowMainThreadQueries()
     .build()
 
