@@ -296,6 +296,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobRead(
     jint jDestinationOffset,
     jint jLength
 ) {
+    jsize arrayLength = env->GetArrayLength(jDestination);
+    if (jLength < 0) {
+        throwIllegalArgumentException(env, "blobRead: length must be non-negative");
+        return SQLITE_ERROR;
+    }
+    if (jDestinationOffset < 0 || jDestinationOffset + jLength > arrayLength) {
+        throwIndexOutOfBoundsException(env, "blobRead: offset/length out of bounds");
+        return SQLITE_ERROR;
+    }
     auto source = env->GetByteArrayElements(jDestination, nullptr);
     if (source == nullptr) {
         throwOutOfMemoryError(env, "GetByteArrayElements");
@@ -331,6 +340,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobWrite(
     jint jSourceOffset,
     jint jLength
 ) {
+    jsize arrayLength = env->GetArrayLength(jSource);
+    if (jLength < 0) {
+        throwIllegalArgumentException(env, "blobWrite: length must be non-negative");
+        return SQLITE_ERROR;
+    }
+    if (jSourceOffset < 0 || jSourceOffset + jLength > arrayLength) {
+        throwIndexOutOfBoundsException(env, "blobWrite: offset/length out of bounds");
+        return SQLITE_ERROR;
+    }
     auto source = env->GetByteArrayElements(jSource, nullptr);
     if (source == nullptr) {
         throwOutOfMemoryError(env, "GetByteArrayElements");
