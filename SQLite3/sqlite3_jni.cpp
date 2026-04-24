@@ -395,7 +395,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobWrite(
         throwIllegalArgumentException(env, "blobWrite: length must be non-negative");
         return SQLITE_ERROR;
     }
-    if (jSourceOffset < 0 || jSourceOffset + jLength > arrayLength) {
+    if (jSourceOffset < 0 || jSourceOffset > arrayLength - jLength) {
         throwIndexOutOfBoundsException(env, "blobWrite: offset/length out of bounds");
         return SQLITE_ERROR;
     }
