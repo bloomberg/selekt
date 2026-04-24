@@ -85,7 +85,7 @@ open class JdbcStatement internal constructor(
     override fun executeUpdate(sql: String): Int {
         checkClosed()
         return runCatching {
-            executeUpdate(sql, database.compileStatement(sql))
+            database.compileStatement(sql).use { executeUpdate(sql, it) }
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -99,12 +99,14 @@ open class JdbcStatement internal constructor(
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
-        return if (statement.isReadOnly) {
-            executeQuery(sql)
-            true
-        } else {
-            executeUpdate(sql, statement)
-            false
+        return statement.use {
+            if (it.isReadOnly) {
+                executeQuery(sql)
+                true
+            } else {
+                executeUpdate(sql, it)
+                false
+            }
         }
     }
 
@@ -266,8 +268,10 @@ open class JdbcStatement internal constructor(
     }
 
     private fun validateBatchSql(sql: String) {
-        if (database.compileStatement(sql).isReadOnly) {
-            throw SQLException("Read-only statements are not allowed in batch execution")
+        database.compileStatement(sql).use {
+            if (it.isReadOnly) {
+                throw SQLException("Read-only statements are not allowed in batch execution")
+            }
         }
     }
 
