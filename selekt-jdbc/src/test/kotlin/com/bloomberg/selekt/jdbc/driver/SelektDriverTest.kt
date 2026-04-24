@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.DriverPropertyInfo
@@ -24,6 +25,7 @@ import java.util.Properties
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test
 internal class SelektDriverTest {
     private lateinit var driver: SelektDriver
     private val connections = mutableListOf<Connection>()
+    private val tempFiles = mutableListOf<File>()
 
     @BeforeEach
     fun setUp() {
@@ -47,6 +50,10 @@ internal class SelektDriverTest {
                     it.close()
                 }
             }
+            clear()
+        }
+        tempFiles.run {
+            forEach(File::delete)
             clear()
         }
     }
@@ -409,9 +416,24 @@ internal class SelektDriverTest {
         val exception = assertFailsWith<SQLException> {
             driver.connect("jdbc:sqlite:/tmp/test_redact_error.db?key=$secret", properties)
         }
-        assertFalse(
-            exception.message?.contains(secret) == true,
-            "Error message should not contain the encryption key"
-        )
+        assertNotEquals(exception.message?.contains(secret), true, "Error message should not contain the encryption key")
+    }
+
+    @Test
+    fun getIndexInfoReturnsCreatedIndex() {
+        val dbFile = File.createTempFile("selekt_idx_test_", ".db").also(tempFiles::add)
+        driver.connect("jdbc:sqlite:${dbFile.absolutePath}", Properties())!!.use { connection ->
+            connection.createStatement().use {
+                it.execute("CREATE TABLE idx_test (id INTEGER PRIMARY KEY, name TEXT)")
+                it.execute("CREATE INDEX idx_test_name ON idx_test (name)")
+            }
+            connection.metaData.getIndexInfo(null, null, "idx_test", false, false).use { rs ->
+                val indexNames = mutableListOf<String?>()
+                while (rs.next()) {
+                    indexNames.add(rs.getString("INDEX_NAME"))
+                }
+                assertTrue(indexNames.any { it == "idx_test_name" })
+            }
+        }
     }
 }

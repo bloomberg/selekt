@@ -490,10 +490,10 @@ internal class JdbcDatabaseMetaData(
         SELECT
             NULL as TABLE_CAT,
             NULL as TABLE_SCHEM,
-            '$table' as TABLE_NAME,
-            CASE WHEN "unique" = 1 THEN 0 ELSE 1 END as NON_UNIQUE,
+            '${table.replace("'", "''")}' as TABLE_NAME,
+            CASE WHEN il."unique" = 1 THEN 0 ELSE 1 END as NON_UNIQUE,
             NULL as INDEX_QUALIFIER,
-            name as INDEX_NAME,
+            il.name as INDEX_NAME,
             3 as TYPE,
             0 as ORDINAL_POSITION,
             NULL as COLUMN_NAME,
@@ -501,9 +501,8 @@ internal class JdbcDatabaseMetaData(
             0 as CARDINALITY,
             0 as PAGES,
             NULL as FILTER_CONDITION
-        FROM sqlite_master
-        WHERE type = 'index' AND tbl_name = '$table'
-        ${if (unique) { "AND \"unique\" = 1" } else { "" } }
+        FROM pragma_index_list('${table.replace("'", "''")}') as il
+        ${if (unique) "WHERE il.\"unique\" = 1" else ""}
     """.trimIndent())
 
     override fun getProcedures(

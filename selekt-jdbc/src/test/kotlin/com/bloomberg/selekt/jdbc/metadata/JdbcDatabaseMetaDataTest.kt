@@ -1032,7 +1032,7 @@ internal class JdbcDatabaseMetaDataTest {
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
             val sql = invocation.getArgument<String>(0)
             when {
-                sql.contains("AND \"unique\" = 1") -> cursor
+                sql.contains("il.\"unique\" = 1") -> cursor
                 else -> mockCursor
             }
         }
