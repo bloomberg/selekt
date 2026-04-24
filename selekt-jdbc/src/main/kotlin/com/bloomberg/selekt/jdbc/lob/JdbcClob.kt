@@ -120,9 +120,6 @@ internal class JdbcClob : Clob {
         if (startIndex < content.length) {
             val endIndex = minOf(startIndex + len, content.length)
             content.replace(startIndex, endIndex, substring)
-            if (len > endIndex - startIndex) {
-                content.append(substring.substring(endIndex - startIndex))
-            }
         } else {
             content.append(substring)
         }
@@ -147,9 +144,6 @@ internal class JdbcClob : Clob {
                 } else {
                     val endIndex = minOf(startIndex + len, content.length)
                     content.replace(startIndex, endIndex, str)
-                    if (len > endIndex - startIndex) {
-                        content.append(str.substring(endIndex - startIndex))
-                    }
                 }
             }
 
@@ -191,9 +185,6 @@ internal class JdbcClob : Clob {
                 if (currentPos < content.length) {
                     val endIndex = minOf(currentPos + len, content.length)
                     content.replace(currentPos, endIndex, str)
-                    if (len > endIndex - currentPos) {
-                        content.append(str.substring(endIndex - currentPos))
-                    }
                 } else {
                     content.append(str)
                 }
