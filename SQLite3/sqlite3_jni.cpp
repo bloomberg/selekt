@@ -681,6 +681,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_commitHook(
     jmethodID onCommitMethod = env->GetMethodID(listenerClass, "onCommit", "()I");
     jmethodID onRollbackMethod = env->GetMethodID(listenerClass, "onRollback", "()V");
     if (onCommitMethod == nullptr || onRollbackMethod == nullptr) {
+        env->ExceptionClear();
         return SQLITE_ERROR;
     }
     auto context = new (std::nothrow) CommitListenerContext;
