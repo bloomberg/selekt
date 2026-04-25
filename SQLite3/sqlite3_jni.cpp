@@ -47,10 +47,23 @@ bool initThrowableClasses(JNIEnv* env) {
     classes.illegalStateException = findAndCache("java/lang/IllegalStateException");
     classes.indexOutOfBoundsException = findAndCache("java/lang/IndexOutOfBoundsException");
     classes.outOfMemoryError = findAndCache("java/lang/OutOfMemoryError");
-    return classes.illegalArgumentException != nullptr
+    if (classes.illegalArgumentException != nullptr
         && classes.illegalStateException != nullptr
         && classes.indexOutOfBoundsException != nullptr
-        && classes.outOfMemoryError != nullptr;
+        && classes.outOfMemoryError != nullptr) {
+        return true;
+    }
+    auto cleanup = [&](jclass& ref) {
+        if (ref != nullptr) {
+            env->DeleteGlobalRef(ref);
+            ref = nullptr;
+        }
+    };
+    cleanup(classes.illegalArgumentException);
+    cleanup(classes.illegalStateException);
+    cleanup(classes.indexOutOfBoundsException);
+    cleanup(classes.outOfMemoryError);
+    return false;
 }
 
 void throwIllegalArgumentException(JNIEnv* env, const char* message) {
