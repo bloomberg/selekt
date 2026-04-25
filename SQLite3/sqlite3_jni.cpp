@@ -966,7 +966,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
     }
     auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
     env->ReleaseStringUTFChars(jfilename, filename);
-    updateHolder(env, dbHolder, 0, reinterpret_cast<jlong>(db));
+    if (result == SQLITE_OK) {
+        updateHolder(env, dbHolder, 0, reinterpret_cast<jlong>(db));
+    } else if (db != nullptr) {
+        sqlite3_close_v2(db);
+    }
     return result;
 }
 
