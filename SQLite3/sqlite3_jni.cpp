@@ -680,6 +680,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_commitHook(
     jclass listenerClass = env->GetObjectClass(listener);
     jmethodID onCommitMethod = env->GetMethodID(listenerClass, "onCommit", "()I");
     jmethodID onRollbackMethod = env->GetMethodID(listenerClass, "onRollback", "()V");
+    env->DeleteLocalRef(listenerClass);
     if (onCommitMethod == nullptr || onRollbackMethod == nullptr) {
         env->ExceptionClear();
         return SQLITE_ERROR;
