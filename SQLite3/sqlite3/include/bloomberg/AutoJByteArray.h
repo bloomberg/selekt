@@ -18,8 +18,10 @@
 #define SELEKT_AUTOJBYTEARRAY_H
 
 #include <jni.h>
+#include <cstring>
 #include <stdexcept>
 #include "Throws.h"
+#include "secure_zero.h"
 
 struct JniOutOfMemoryError : std::runtime_error {
     using std::runtime_error::runtime_error;
@@ -40,6 +42,7 @@ public:
     }
 
     ~AutoJByteArray() {
+        selekt::secure_zero(reinterpret_cast<unsigned char*>(mpBytes), static_cast<size_t>(mLength));
         mEnv->ReleaseByteArrayElements(mJArray, mpBytes, JNI_ABORT);
     }
 

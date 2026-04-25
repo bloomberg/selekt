@@ -100,9 +100,8 @@ void throwOutOfMemoryError(JNIEnv* env, const char* message) {
     }
 }
 
-static inline void updateHolder(JNIEnv* env, jlongArray array, int offset, void* p) {
-    auto val = reinterpret_cast<jlong>(p);
-    env->SetLongArrayRegion(array, offset, 1, &val);
+static inline void updateHolder(JNIEnv* env, jlongArray array, int offset, jlong value) {
+    env->SetLongArrayRegion(array, offset, 1, &value);
 }
 
 static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
@@ -133,24 +132,21 @@ static jint rawKey(
         return SQLITE_ERROR;
     }
     try {
-    AutoJByteArray key(env, jkey, keyLength);
-    char sql[81];
-    std::memcpy(sql, "PRAGMA key=\"x'", 14);
-    const char hex_chars[] = "0123456789abcdef";
-    for (int i = 0; i < keyLength; ++i) {
-        auto byte = static_cast<std::byte>(key[i]);
-        sql[14 + 2*i]     = hex_chars[std::to_integer<unsigned char>(byte >> 4)];
-        sql[14 + 2*i + 1] = hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
-    }
-    sql[78] = '\'';
-    sql[79] = '"';
-    sql[80] = '\0';
-    auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
-    volatile char* p = sql;
-    for (size_t i = 0; i < sizeof(sql); ++i) {
-        p[i] = '\0';
-    }
-    return result;
+        AutoJByteArray key(env, jkey, keyLength);
+        char sql[81];
+        std::memcpy(sql, "PRAGMA key=\"x'", 14);
+        const char hex_chars[] = "0123456789abcdef";
+        for (int i = 0; i < keyLength; ++i) {
+            auto byte = static_cast<std::byte>(key[i]);
+            sql[14 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte >> 4)];
+            sql[15 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
+        }
+        sql[78] = '\'';
+        sql[79] = '"';
+        sql[80] = '\0';
+        auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
+        selekt::secure_zero(reinterpret_cast<unsigned char*>(sql), sizeof(sql));
+        return result;
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
     }
@@ -356,7 +352,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
     env->ReleaseStringUTFChars(jtable, table);
     env->ReleaseStringUTFChars(jcolumn, column);
     if (result == SQLITE_OK) {
-        updateHolder(env, jholder, 0, blob);
+        updateHolder(env, jholder, 0, reinterpret_cast<jlong>(blob));
     }
     return result;
 }
@@ -596,29 +592,33 @@ struct CommitListenerContext {
     jmethodID onRollbackMethod;
 };
 
+static JNIEnv* getEnvOrAttach(JavaVM* vm, bool& didAttach) {
+    didAttach = false;
+    if (void* envVoid = nullptr; vm->GetEnv(&envVoid, JNI_VERSION_1_6) == JNI_OK) {
+        return static_cast<JNIEnv*>(envVoid);
+    }
+#ifdef __ANDROID__
+    if (JNIEnv* env = nullptr; vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+        didAttach = true;
+        return env;
+    }
+#else
+    if (void* attachedEnv = nullptr; vm->AttachCurrentThread(&attachedEnv, nullptr) == JNI_OK) {
+        didAttach = true;
+        return static_cast<JNIEnv*>(attachedEnv);
+    }
+#endif
+    return nullptr;
+}
+
 static void freeCommitListenerContext(void* ctx) {
     if (ctx != nullptr) {
         auto context = static_cast<CommitListenerContext*>(ctx);
-        JavaVM* vm = context->vm;
-        void* envVoid = nullptr;
-        JNIEnv* env = nullptr;
         bool didAttach = false;
-        if (vm->GetEnv(&envVoid, JNI_VERSION_1_6) != JNI_OK) {
-#ifdef __ANDROID__
-            didAttach = vm->AttachCurrentThread(&env, nullptr) == JNI_OK;
-#else
-            void* attachedEnv = nullptr;
-            if (vm->AttachCurrentThread(&attachedEnv, nullptr) == JNI_OK) {
-                env = static_cast<JNIEnv*>(attachedEnv);
-                didAttach = true;
-            }
-#endif
-        } else {
-            env = static_cast<JNIEnv*>(envVoid);
-        }
-        if (env != nullptr) {
+        if (auto env = getEnvOrAttach(context->vm, didAttach); env != nullptr) {
             env->DeleteGlobalRef(context->listener);
         }
+        auto vm = context->vm;
         delete context;
         if (didAttach) {
             vm->DetachCurrentThread();
@@ -628,34 +628,34 @@ static void freeCommitListenerContext(void* ctx) {
 
 static int commitHookCallback(void* ctx) {
     auto context = static_cast<CommitListenerContext*>(ctx);
-    JNIEnv* env = nullptr;
-#ifdef __ANDROID__
-    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-#else
-    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
-#endif
+    bool didAttach = false;
+    auto env = getEnvOrAttach(context->vm, didAttach);
+    if (env == nullptr) {
         return 1;
     }
     jint result = env->CallIntMethod(context->listener, context->onCommitMethod);
     if (env->ExceptionCheck()) {
-        return 1;
+        result = 1;
+    }
+    if (didAttach) {
+        context->vm->DetachCurrentThread();
     }
     return result;
 }
 
 static void rollbackHookCallback(void* ctx) {
     auto context = static_cast<CommitListenerContext*>(ctx);
-    JNIEnv* env = nullptr;
-#ifdef __ANDROID__
-    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-#else
-    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
-#endif
+    bool didAttach = false;
+    auto env = getEnvOrAttach(context->vm, didAttach);
+    if (env == nullptr) {
         return;
     }
     env->CallVoidMethod(context->listener, context->onRollbackMethod);
     if (env->ExceptionCheck()) {
         env->ExceptionClear();
+    }
+    if (didAttach) {
+        context->vm->DetachCurrentThread();
     }
 }
 
@@ -966,7 +966,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
     }
     auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
     env->ReleaseStringUTFChars(jfilename, filename);
-    updateHolder(env, dbHolder, 0, db);
+    updateHolder(env, dbHolder, 0, reinterpret_cast<jlong>(db));
     return result;
 }
 
@@ -988,7 +988,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
     env->ReleaseStringUTFChars(jsql, sql);
     if (result == SQLITE_OK) {
-        updateHolder(env, statementHolder, 0, statement);
+        updateHolder(env, statementHolder, 0, reinterpret_cast<jlong>(statement));
     }
     return result;
 }
