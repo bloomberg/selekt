@@ -1250,7 +1250,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     jobject obj,
     jlong jSoftHeapLimit
 ) {
-    sqlite3_initialize();
+    if (sqlite3_initialize() != SQLITE_OK) {
+        throwIllegalStateException(env, "sqlite3_initialize failed");
+        return;
+    }
     sqlite3_soft_heap_limit64(jSoftHeapLimit);
     LOG_D("SQLite3 has soft heap limit %llu bytes.", sqlite3_soft_heap_limit64(-1));
     LOG_D("SQLite3 has hard heap limit %llu bytes.", sqlite3_hard_heap_limit64(-1));
