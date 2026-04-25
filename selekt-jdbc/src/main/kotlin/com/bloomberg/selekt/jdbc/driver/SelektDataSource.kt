@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger as JulLogger
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
+import java.nio.CharBuffer
 import javax.sql.DataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -48,22 +49,16 @@ sealed interface EncryptionKeySource {
 
         override fun hashCode(): Int = key.contentHashCode()
     }
-
-    data class FilePath(val path: String) : EncryptionKeySource
 }
 
 @Suppress("TooGenericExceptionCaught")
 class SelektDataSource : DataSource {
     companion object {
-        private const val PROPERTY_KEY = "key"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
         private const val DEFAULT_POOL_SIZE = 10
-        private const val HEX_PREFIX_LENGTH = 2
-        private const val HEX_CHUNK_SIZE = 2
-        private const val HEX_RADIX = 16
 
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(SelektDataSource::class.java, "closed", Boolean::class.javaPrimitiveType)
@@ -232,11 +227,6 @@ class SelektDataSource : DataSource {
     }
 
     private fun buildConnectionProperties(): Properties = Properties().apply {
-        when (val source = encryptionKeySource) {
-            is EncryptionKeySource.Literal -> setProperty(PROPERTY_KEY, String(source.key))
-            is EncryptionKeySource.FilePath -> setProperty(PROPERTY_KEY, source.path)
-            null -> Unit
-        }
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
@@ -252,9 +242,8 @@ class SelektDataSource : DataSource {
             SharedDatabase(createDatabase(connectionURL, properties)) {
                 databaseCache.remove(cacheKey)
             }
-        }.also {
-            properties.remove(PROPERTY_KEY)
-            it.retain()
+        }.apply {
+            retain()
         }
     }
 
@@ -262,8 +251,6 @@ class SelektDataSource : DataSource {
         connectionURL: ConnectionURL,
         properties: Properties
     ): SQLDatabase {
-        val configuration = buildDatabaseConfiguration(properties)
-        val encryptionKeyBytes = getEncryptionKey(properties)
         val sqlite = object : SQLite(externalSQLiteSingleton()) {
             override fun throwSQLException(
                 code: SQLCode,
@@ -274,11 +261,18 @@ class SelektDataSource : DataSource {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
         }
+        val encryptionKeyBytes = when (val source = encryptionKeySource) {
+            is EncryptionKeySource.Literal -> {
+                val buffer = Charsets.UTF_8.encode(CharBuffer.wrap(source.key))
+                ByteArray(buffer.remaining()).also(buffer::get)
+            }
+            null -> null
+        }
         return try {
             SQLDatabase(
                 path = connectionURL.databasePath,
                 sqlite = sqlite,
-                configuration = configuration,
+                configuration = buildDatabaseConfiguration(properties),
                 key = encryptionKeyBytes,
                 random = com.bloomberg.selekt.CommonThreadLocalRandom
             )
@@ -300,22 +294,6 @@ class SelektDataSource : DataSource {
             useNativeTransactionListeners = true
         )
     }
-
-    private fun getEncryptionKey(properties: Properties): ByteArray? {
-        val keyProperty = properties.getProperty(PROPERTY_KEY) ?: return null
-        return keyProperty.run {
-            when {
-                startsWith("0x") || startsWith("0X") -> parseHexKey(this)
-                else -> toByteArray(Charsets.UTF_8)
-            }
-        }
-    }
-
-    private fun parseHexKey(keyProperty: String): ByteArray = keyProperty.substring(HEX_PREFIX_LENGTH)
-        .chunked(HEX_CHUNK_SIZE)
-        .map {
-            it.toInt(HEX_RADIX).toByte()
-        }.toByteArray()
 
     private fun buildCacheKey(
         connectionURL: ConnectionURL,
