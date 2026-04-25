@@ -30,6 +30,9 @@ struct JniOutOfMemoryError : std::runtime_error {
 class AutoJByteArray
 {
 public:
+    AutoJByteArray(const AutoJByteArray&) = delete;
+    AutoJByteArray& operator=(const AutoJByteArray&) = delete;
+
     AutoJByteArray(JNIEnv* env, jbyteArray j, jint length)
         : mEnv(env),
           mJArray(j),
