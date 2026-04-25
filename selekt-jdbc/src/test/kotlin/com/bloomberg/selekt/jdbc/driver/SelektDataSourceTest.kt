@@ -251,14 +251,6 @@ internal class SelektDataSourceTest {
         getConnection().close()
     }
 
-    @Test
-    fun getConnectionWithFileBasedKey(): Unit = dataSource.run {
-        databasePath = File(tempDir, "encrypted2.db").absolutePath
-        setEncryption(EncryptionKeySource.FilePath(File(tempDir, "keyfile.bin").apply {
-            writeBytes(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8))
-        }.absolutePath))
-        getConnection().close()
-    }
 
     @Test
     fun getConnectionWithStringKey(): Unit = dataSource.run {
@@ -330,24 +322,10 @@ internal class SelektDataSourceTest {
     }
 
     @Test
-    fun setEncryptionWithKeyPath(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
-        assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.FilePath("/path/to/key"), encryptionKeySource)
-    }
-
-    @Test
-    fun setEncryptionLiteralReplacesFilePath(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
-        setEncryption(EncryptionKeySource.Literal("literal".toCharArray()))
-        assertEquals(EncryptionKeySource.Literal("literal".toCharArray()), encryptionKeySource)
-    }
-
-    @Test
-    fun setEncryptionFilePathReplacesLiteral(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.Literal("literal".toCharArray()))
-        setEncryption(EncryptionKeySource.FilePath("/path/to/key"))
-        assertEquals(EncryptionKeySource.FilePath("/path/to/key"), encryptionKeySource)
+    fun setEncryptionLiteralReplacesLiteral(): Unit = dataSource.run {
+        setEncryption(EncryptionKeySource.Literal("first".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal("second".toCharArray()))
+        assertEquals(EncryptionKeySource.Literal("second".toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -404,13 +382,6 @@ internal class SelektDataSourceTest {
     fun getConnectionWithNullEncryptionKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "null-key.db").absolutePath
         setEncryption(null)
-        getConnection().close()
-    }
-
-    @Test
-    fun getConnectionWithNonExistentKeyFile(): Unit = dataSource.run {
-        databasePath = File(tempDir, "nonexistent-key.db").absolutePath
-        setEncryption(EncryptionKeySource.FilePath("/nonexistent/path/to/keyfile.bin"))
         getConnection().close()
     }
 
