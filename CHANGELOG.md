@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.29.15
+
+### Fixes
+
+* Delete the localRef in initThrowableClasses.
+* Use SetLongArrayRegion in updateHolder for 32-bit platforms.
+* Case insensitive string comparison in sqlite3_jni.traceV2.
+* Pair AttachCurrentThread with DetachCurrentThread in commit/rollback hook callbacks.
+* Use explicit_bzero for key scrubbing in JNI.
+
 ## Version 0.29.14
 
 ### Fixes
