@@ -151,10 +151,8 @@ internal open class JdbcPreparedStatement(
             }
         }
         currentChunk!!.run {
-            if (data[count] == null) {
-                data[count] = Array(parameterCount) { i ->
-                    TypeMapping.convertToSQLite(parameters[i])
-                }
+            data[count] = Array(parameterCount) { i ->
+                TypeMapping.convertToSQLite(parameters[i])
             }
             ++count
         }
