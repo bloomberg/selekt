@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.29.13
+
+### Fixes
+
+* Sanity check pragma values in selekt-java.
+* Fix bounds checks in SQLBlobInputStream and SQLBlobOutputStream.
+* Escape meta-characters in JdbcDatabaseMetaData.
+* Remove file encryption key support from JDBC.
+* Always write JDBC batch parameters regardless of slot state.
+* Set query_only pragma for JdbcConnection.
+* Harden CommonObjectPoolTest.scheduledEviction test.
+* Pass encryption key directly when creating JDBC database.
+* Fix runtime shutdown of shared JDBC database.
+* Move JdbcConnection timeout validation.
+* Apply JDBC maximum rows in queries.
+
 ## Version 0.29.12
 
 ### Fixes
