@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.29.14
+
+### Fixes
+
+* Free commit hook listener in closeV2.
+* Fix potential sqlite3_jni.blobRead and .blobWrite underflow.
+* Unload global throwables in JNI.
+* Fix cleaning partially initialised exception classes in JNI.
+* Redact JNI trace key logs for our rawKey.
+
 ## Version 0.29.13
 
 ### Fixes
