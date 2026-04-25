@@ -1245,3 +1245,27 @@ JNI_OnLoad(
     }
     return JNI_VERSION_1_6;
 }
+
+JNIEXPORT void
+JNI_OnUnload(
+    JavaVM* vm,
+    [[maybe_unused]] void* reserved
+) {
+    JNIEnv* env = nullptr;
+    void* envVoid = nullptr;
+    if (vm->GetEnv(&envVoid, JNI_VERSION_1_6) != JNI_OK) {
+        return;
+    }
+    env = static_cast<JNIEnv*>(envVoid);
+    auto& classes = throwableClasses();
+    auto deleteIfNonNull = [&](jclass& ref) {
+        if (ref != nullptr) {
+            env->DeleteGlobalRef(ref);
+            ref = nullptr;
+        }
+    };
+    deleteIfNonNull(classes.illegalArgumentException);
+    deleteIfNonNull(classes.illegalStateException);
+    deleteIfNonNull(classes.indexOutOfBoundsException);
+    deleteIfNonNull(classes.outOfMemoryError);
+}
