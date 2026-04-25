@@ -1039,4 +1039,74 @@ internal class ExternalSQLiteTest {
             sqlite.closeV2(db)
         }
     }
+
+    @Test
+    fun `blobRead rejects length exceeding array size`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 0, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = ByteArray(0)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.blobRead(blob, 0, buffer, 0, 1)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobWrite rejects length exceeding array size`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(10))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 1, blobHolder))
+            val blob = blobHolder[0]
+            try {
+                val buffer = ByteArray(2)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.blobWrite(blob, 0, buffer, 0, 5)
+                }
+            } finally {
+                sqlite.blobClose(blob)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `closeV2 cleans up commit hook context`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val listener = object : SQLCommitListener {
+            override fun onCommit(): Int = 0
+
+            override fun onRollback() = Unit
+        }
+        assertEquals(SQL_OK, sqlite.commitHook(db, true, listener))
+        assertEquals(SQL_OK, sqlite.closeV2(db))
+    }
+
+    @Test
+    fun `closeV2 succeeds without commit hook`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        assertEquals(SQL_OK, sqlite.closeV2(db))
+    }
 }
