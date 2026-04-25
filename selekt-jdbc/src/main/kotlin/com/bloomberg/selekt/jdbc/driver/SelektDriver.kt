@@ -89,11 +89,10 @@ class SelektDriver : Driver {
                     name = "selekt-driver-shutdown"
                 ) {
                     synchronized(databaseCacheLock) {
-                        databaseCache.run {
-                            values.forEachCatching(SharedDatabase::release)
-                            clear()
+                        databaseCache.values.toList().also {
+                            databaseCache.clear()
                         }
-                    }
+                    }.forEachCatching(SharedDatabase::release)
                 })
                 logger.info("{} {} registered successfully", DRIVER_NAME, DRIVER_VERSION)
             }.onFailure { e ->
