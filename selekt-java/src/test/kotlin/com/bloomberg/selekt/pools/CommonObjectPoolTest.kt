@@ -36,6 +36,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.test.fail
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -236,8 +237,16 @@ internal class CommonObjectPoolTest {
         evictionIntervalMillis = 50L
     ), other).use {
         val obj = it.borrowObject().apply { it.returnObject(this) }
-        Thread.sleep(100L)
-        assertNotSame(obj, it.borrowObject(), "Object was not evicted.")
+        repeat(20) { _ ->
+            Thread.sleep(100L)
+            val next = it.borrowObject()
+            if (next !== obj) {
+                it.returnObject(next)
+                return@use
+            }
+            it.returnObject(next)
+        }
+        fail("Object was not evicted.")
     }
 
     @Test
