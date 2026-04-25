@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstring>
 #include <new>
+#include <strings.h>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
@@ -1153,7 +1154,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
                 case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, *static_cast<sqlite3_int64*>(x)); break;
                 case SQLITE_TRACE_STMT: {
                     auto sql = static_cast<const char*>(x);
-                    if (sql != nullptr && std::strncmp(sql, "PRAGMA key", 10) == 0) {
+                    if (sql != nullptr && strncasecmp(sql, "PRAGMA key", 10) == 0) {
                         LOG_D("STMT: %p PRAGMA key=<redacted>", p);
                     } else {
                         LOG_D("STMT: %p %s", p, sql);
