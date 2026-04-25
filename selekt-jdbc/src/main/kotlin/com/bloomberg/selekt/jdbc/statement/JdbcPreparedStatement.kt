@@ -83,7 +83,7 @@ internal open class JdbcPreparedStatement(
         return runCatching {
             connection.ensureTransaction()
             JdbcResultSet(
-                database.query(sql, buildBindArgs()),
+                database.query(applyMaxRows(sql), buildBindArgs()),
                 this,
                 resultSetType,
                 resultSetConcurrency,

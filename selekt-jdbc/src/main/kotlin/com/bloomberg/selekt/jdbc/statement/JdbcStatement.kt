@@ -51,6 +51,8 @@ open class JdbcStatement internal constructor(
     companion object {
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(JdbcStatement::class.java, "closed", Boolean::class.javaPrimitiveType)
+
+        private val limitPattern = Regex("""\bLIMIT\s+\d+""", RegexOption.IGNORE_CASE)
     }
 
     @Volatile
@@ -73,7 +75,7 @@ open class JdbcStatement internal constructor(
         checkClosed()
         try {
             connection.ensureTransaction()
-            val cursor = database.query(sql, emptyArray())
+            val cursor = database.query(applyMaxRows(sql), emptyArray())
             currentResultSet = JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability)
             updateCount = -1
             return currentResultSet!!
@@ -318,6 +320,18 @@ open class JdbcStatement internal constructor(
 
     override fun isWrapperFor(iface: Class<*>): Boolean = iface.isAssignableFrom(this::class.java) ||
         iface.isAssignableFrom(SQLDatabase::class.java)
+
+    protected fun applyMaxRows(sql: String): String {
+        if (maxRows <= 0) {
+            return sql
+        }
+        val trimmed = sql.trimEnd().removeSuffix(";").trimEnd()
+        return if (trimmed.contains(limitPattern)) {
+            sql
+        } else {
+            "$trimmed LIMIT $maxRows"
+        }
+    }
 
     protected fun checkClosed() {
         if (closed) {

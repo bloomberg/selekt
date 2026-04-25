@@ -43,6 +43,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 
 internal class JdbcStatementTest {
     private lateinit var mockDatabase: SQLDatabase
@@ -160,6 +162,42 @@ internal class JdbcStatementTest {
         assertFailsWith<SQLException> {
             maxRows = -1
         }
+    }
+
+    @Test
+    fun maxRowsAppendsLimit() {
+        statement.maxRows = 5
+        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT 5"), any<Array<Any?>>()))
+            .doReturn(mockCursor)
+        statement.executeQuery("SELECT * FROM users")
+        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT 5"), any<Array<Any?>>())
+    }
+
+    @Test
+    fun maxRowsDoesNotAppendLimitWhenZero() {
+        statement.maxRows = 0
+        whenever(mockDatabase.query(eq("SELECT * FROM users"), any<Array<Any?>>()))
+            .doReturn(mockCursor)
+        statement.executeQuery("SELECT * FROM users")
+        verify(mockDatabase).query(eq("SELECT * FROM users"), any<Array<Any?>>())
+    }
+
+    @Test
+    fun maxRowsDoesNotOverrideExistingLimit() {
+        statement.maxRows = 5
+        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT 10"), any<Array<Any?>>()))
+            .doReturn(mockCursor)
+        statement.executeQuery("SELECT * FROM users LIMIT 10")
+        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT 10"), any<Array<Any?>>())
+    }
+
+    @Test
+    fun maxRowsStripsTrailingSemiColon() {
+        statement.maxRows = 5
+        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT 5"), any<Array<Any?>>()))
+            .doReturn(mockCursor)
+        statement.executeQuery("SELECT * FROM users;")
+        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT 5"), any<Array<Any?>>())
     }
 
     @Test
