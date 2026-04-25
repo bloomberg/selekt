@@ -41,7 +41,12 @@ bool initThrowableClasses(JNIEnv* env) {
     auto& classes = throwableClasses();
     auto findAndCache = [&](const char* name) -> jclass {
         auto local = env->FindClass(name);
-        return local != nullptr ? (jclass)env->NewGlobalRef(local) : nullptr;
+        if (local == nullptr) {
+            return nullptr;
+        }
+        auto global = (jclass)env->NewGlobalRef(local);
+        env->DeleteLocalRef(local);
+        return global;
     };
     classes.illegalArgumentException = findAndCache("java/lang/IllegalArgumentException");
     classes.illegalStateException = findAndCache("java/lang/IllegalStateException");
