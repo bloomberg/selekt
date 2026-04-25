@@ -716,6 +716,49 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseHandle(
     return reinterpret_cast<jlong>(sqlite3_db_handle(reinterpret_cast<sqlite3_stmt*>(jstatement)));
 }
 
+static bool isBooleanDbConfigOp(int op) {
+    switch (op) {
+        case SQLITE_DBCONFIG_ENABLE_FKEY:
+        case SQLITE_DBCONFIG_ENABLE_TRIGGER:
+        case SQLITE_DBCONFIG_ENABLE_FTS3_TOKENIZER:
+        case SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION:
+        case SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE:
+        case SQLITE_DBCONFIG_ENABLE_QPSG:
+        case SQLITE_DBCONFIG_TRIGGER_EQP:
+        case SQLITE_DBCONFIG_RESET_DATABASE:
+        case SQLITE_DBCONFIG_DEFENSIVE:
+        case SQLITE_DBCONFIG_WRITABLE_SCHEMA:
+        case SQLITE_DBCONFIG_LEGACY_ALTER_TABLE:
+        case SQLITE_DBCONFIG_DQS_DML:
+        case SQLITE_DBCONFIG_DQS_DDL:
+        case SQLITE_DBCONFIG_ENABLE_VIEW:
+        case SQLITE_DBCONFIG_LEGACY_FILE_FORMAT:
+        case SQLITE_DBCONFIG_TRUSTED_SCHEMA:
+        case SQLITE_DBCONFIG_STMT_SCANSTATUS:
+        case SQLITE_DBCONFIG_REVERSE_SCANORDER:
+            return true;
+        default:
+            return false;
+    }
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_databaseConfig(
+    JNIEnv* env,
+    jobject obj,
+    jlong jdb,
+    jint op,
+    jint value
+) {
+    if (!isBooleanDbConfigOp(static_cast<int>(op))) {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "Unsupported sqlite3_db_config op: %d", static_cast<int>(op));
+        throwIllegalArgumentException(env, msg);
+        return SQLITE_ERROR;
+    }
+    return sqlite3_db_config(reinterpret_cast<sqlite3*>(jdb), static_cast<int>(op), static_cast<int>(value), nullptr);
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_databaseReadOnly(
     JNIEnv* env,

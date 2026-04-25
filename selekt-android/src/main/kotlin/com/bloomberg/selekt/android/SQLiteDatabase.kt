@@ -244,6 +244,15 @@ class SQLiteDatabase private constructor(
 
     fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
 
+    /**
+     * Configures a database connection using [sqlite3_db_config](https://www.sqlite.org/c3ref/db_config.html).
+     * This is intended for boolean-style configuration options such as `SQLITE_DBCONFIG_DEFENSIVE` (1010).
+     *
+     * @param op the configuration option.
+     * @param value the value to set (typically 0 or 1).
+     */
+    fun databaseConfig(op: Int, value: Int) = database.databaseConfig(op, value)
+
     fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
         database.delete(
             table,

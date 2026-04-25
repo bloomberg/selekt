@@ -102,6 +102,8 @@ interface IExternalSQLite {
 
     fun commitHook(db: Long, enabled: Boolean, listener: SQLCommitListener?): SQLCode
 
+    fun databaseConfig(db: Long, op: Int, value: Int): Int
+
     fun databaseHandle(statement: Long): Long
 
     fun databaseReadOnly(db: Long, name: String): Int
