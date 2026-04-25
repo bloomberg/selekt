@@ -1133,7 +1133,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
             switch (trace) {
                 case SQLITE_TRACE_ROW: LOG_D("ROW: %p", p); break;
                 case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, *static_cast<sqlite3_int64*>(x)); break;
-                case SQLITE_TRACE_STMT: LOG_D("STMT: %p %s", p, static_cast<const char*>(x)); break;
+                case SQLITE_TRACE_STMT: {
+                    auto sql = static_cast<const char*>(x);
+                    if (sql != nullptr && std::strncmp(sql, "PRAGMA key", 10) == 0) {
+                        LOG_D("STMT: %p PRAGMA key=<redacted>", p);
+                    } else {
+                        LOG_D("STMT: %p %s", p, sql);
+                    }
+                    break;
+                }
                 case SQLITE_TRACE_CLOSE: LOG_D("CLOSE: %p", p); break;
                 default: break;
             }
