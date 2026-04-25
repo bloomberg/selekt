@@ -31,6 +31,18 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private fun escapeSql(value: String): String = value.replace("'", "''")
 
+@JvmSynthetic
+internal fun String.toJdbcPatternRegex(): Regex = buildString {
+    for (c in this@toJdbcPatternRegex) {
+        when (c) {
+            '%' -> append(".*")
+            '_' -> append('.')
+            '.', '\\', '(', ')', '[', ']', '{', '}', '^', '$', '|', '?', '*', '+' -> append('\\').append(c)
+            else -> append(c)
+        }
+    }
+}.toRegex()
+
 @Suppress("Detekt.LargeClass")
 @NotThreadSafe
 internal class JdbcDatabaseMetaData(
@@ -391,7 +403,7 @@ internal class JdbcDatabaseMetaData(
                         val defaultValue = pragmaResult.getString("dflt_value")
                         val primaryKey = pragmaResult.getInt("pk")
                         if (columnNamePattern != null && !columnName.matches(
-                            columnNamePattern.replace("%", ".*").toRegex()
+                            columnNamePattern.toJdbcPatternRegex()
                             )
                         ) {
                             continue
