@@ -53,6 +53,7 @@ internal class ExternalSQLite(
 ) : IExternalSQLite {
     private val callbackArena = Arena.ofShared()
     private val activeListeners = mutableMapOf<Long, Pair<MemorySegment, MemorySegment>>()
+    private val activeProgressHandlers = mutableMapOf<Long, MemorySegment>()
 
     init {
         loader()
@@ -538,6 +539,22 @@ internal class ExternalSQLite(
         result
     }
 
+    override fun progressHandler(
+        db: Long,
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) {
+        val segment = MemorySegment.ofAddress(db)
+        if (handler != null) {
+            val stub = createProgressHandlerStub(handler)
+            sqlite3_progress_handler.invoke(segment, instructionCount, stub, MemorySegment.NULL)
+            activeProgressHandlers[db] = stub
+        } else {
+            sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
+            activeProgressHandlers.remove(db)
+        }
+    }
+
     override fun rawKey(
         db: Long,
         key: ByteArray,
@@ -677,6 +694,19 @@ internal class ExternalSQLite(
         return linker.upcallStub(
             MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
             FunctionDescriptor.ofVoid(ADDRESS),
+            callbackArena
+        )
+    }
+
+    private fun createProgressHandlerStub(handler: SQLProgressHandler): MemorySegment {
+        val methodHandle = MethodHandles.lookup().findVirtual(
+            SQLProgressHandler::class.java,
+            "onProgress",
+            MethodType.methodType(Int::class.javaPrimitiveType)
+        ).bindTo(handler)
+        return linker.upcallStub(
+            MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS),
             callbackArena
         )
     }
@@ -952,6 +982,10 @@ internal class ExternalSQLite(
             symbolLookup.find("sqlite3_prepare_v2").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS),
             criticalOption
+        )
+        private val sqlite3_progress_handler: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_progress_handler").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, ADDRESS, ADDRESS)
         )
         private val sqlite3_rekey: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_rekey").orElseThrow(),

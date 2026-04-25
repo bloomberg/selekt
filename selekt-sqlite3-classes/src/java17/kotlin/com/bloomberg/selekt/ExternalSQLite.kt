@@ -182,6 +182,8 @@ internal class ExternalSQLite(
 
     external override fun prepareV2(db: Long, sql: String, length: Int, statementHolder: LongArray): SQLCode
 
+    external override fun progressHandler(db: Long, instructionCount: Int, handler: SQLProgressHandler?)
+
     external override fun rawKey(db: Long, key: ByteArray, length: Int): SQLCode
 
     external override fun rekey(db: Long, key: ByteArray, length: Int): SQLCode

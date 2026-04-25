@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.ManagedStringBuilder
 import com.bloomberg.selekt.commons.forUntil
+import com.bloomberg.selekt.exceptions.SelektSQLException
 import com.bloomberg.selekt.pools.Priority
 import java.io.Closeable
 import java.io.InputStream
@@ -66,7 +67,7 @@ private object SharedSqlBuilder {
  *
  * @see <a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a>
  */
-@Suppress("Detekt.TooManyFunctions")
+@Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 @ThreadSafe
 class SQLDatabase(
     val path: String,
@@ -75,8 +76,16 @@ class SQLDatabase(
     key: ByteArray?,
     random: IRandom = CommonThreadLocalRandom
 ) : IDatabase, SharedCloseable() {
-    private val connectionPool = openConnectionPool(path, sqlite, configuration, random, key)
-    private val session = ThreadLocalSession(connectionPool, configuration.useNativeTransactionListeners)
+    private val connectionFactory: SQLConnectionFactory
+    private val connectionPool: SQLExecutorPool
+    private val session: ThreadLocalSession
+
+    init {
+        val (pool, factory) = openConnectionPool(path, sqlite, configuration, random, key)
+        connectionPool = pool
+        connectionFactory = factory
+        session = ThreadLocalSession(connectionPool, configuration.useNativeTransactionListeners)
+    }
 
     override val inTransaction: Boolean
         get() = session().inTransaction
@@ -188,6 +197,37 @@ class SQLDatabase(
         }
     }
 
+    /**
+     * Interrupts all database connections managed by this database. This causes any pending database operations on those
+     * connections to abort and return at the earliest opportunity. This method is safe to call from any thread.
+     *
+     * @see <a href="https://www.sqlite.org/c3ref/interrupt.html">sqlite3_interrupt</a>
+     */
+    fun interrupt() {
+        connectionFactory.interrupt()
+    }
+
+    /**
+     * Returns true if any database connection managed by this database has been interrupted and has not yet completed.
+     * This method is safe to call from any thread.
+     *
+     * @see <a href="https://www.sqlite.org/c3ref/interrupt.html">sqlite3_is_interrupted</a>
+     */
+    val isInterrupted: Boolean
+        get() = connectionFactory.isInterrupted
+
+    /**
+     * Registers a progress handler that is invoked periodically during long-running SQL statements on all database
+     * connections managed by this database. If the handler returns non-zero, the operation is interrupted.
+     *
+     * @param instructionCount approximate number of virtual machine instructions between invocations of the handler.
+     * @param handler the progress handler, or null to clear the handler.
+     * @see <a href="https://www.sqlite.org/c3ref/progress_handler.html">sqlite3_progress_handler</a>
+     */
+    fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
+        connectionFactory.setProgressHandler(instructionCount, handler)
+    }
+
     fun pragma(pragma: SQLitePragma) = pragma(pragma.key)
 
     fun pragma(pragma: SQLitePragma, value: Any) = pragma(pragma.key, value)
@@ -243,6 +283,60 @@ class SQLDatabase(
             query.argCount
         ).also { query.bindTo(it) }
     )
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    @Suppress("Detekt.LongParameterList")
+    fun query(
+        distinct: Boolean,
+        table: String,
+        columns: Array<out String>,
+        selection: String,
+        selectionArgs: Array<out Any?>,
+        groupBy: String?,
+        having: String?,
+        orderBy: String?,
+        limit: Int?,
+        cancellationSignal: CancellationSignal
+    ): ICursor = withCancellationSignal(cancellationSignal) {
+        query(distinct, table, columns, selection, selectionArgs, groupBy, having, orderBy, limit)
+    }
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @param sql the SQL query.
+     * @param selectionArgs arguments to bind.
+     * @param cancellationSignal signal to cancel the query.
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    fun query(
+        sql: String,
+        selectionArgs: Array<out Any?>,
+        cancellationSignal: CancellationSignal
+    ): ICursor = withCancellationSignal(cancellationSignal) {
+        query(sql, selectionArgs)
+    }
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @param query the query to execute.
+     * @param cancellationSignal signal to cancel the query.
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    fun query(
+        query: ISQLQuery,
+        cancellationSignal: CancellationSignal
+    ): ICursor = withCancellationSignal(cancellationSignal) {
+        query(query)
+    }
 
     @Suppress("Detekt.LongParameterList")
     fun readFromBlob(
@@ -440,6 +534,30 @@ class SQLDatabase(
 
     override fun onReleased() {
         connectionPool.close()
+    }
+
+    private fun <T> withCancellationSignal(
+        cancellationSignal: CancellationSignal,
+        block: SQLDatabase.() -> T
+    ): T = pledge {
+        cancellationSignal.throwIfCancelled()
+        session().execute(false) { executor ->
+            executor.setProgressHandler(cancellationSignal.instructionCount) {
+                if (cancellationSignal.isCancelled) { 1 } else { 0 }
+            }
+            try {
+                block()
+            } catch (@Suppress("Detekt.TooGenericExceptionCaught") e: Exception) {
+                if (cancellationSignal.isCancelled &&
+                    (e as? SelektSQLException)?.code == SQL_INTERRUPT
+                ) {
+                    throw OperationCancelledException("Operation was cancelled.")
+                }
+                throw e
+            } finally {
+                executor.setProgressHandler(0, null)
+            }
+        }
     }
 
     private fun blob(

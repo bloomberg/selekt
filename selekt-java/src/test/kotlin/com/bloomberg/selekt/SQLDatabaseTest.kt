@@ -25,11 +25,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.mockito.kotlin.verify
 
 private val databaseConfiguration = DatabaseConfiguration(
     busyTimeoutMillis = 2_000,
@@ -110,6 +112,42 @@ internal class SQLDatabaseTest {
         assertFailsWith<IllegalArgumentException> {
             insert("Foo", ContentValues(), ConflictAlgorithm.REPLACE)
         }
+    }
+
+    @Test
+    fun interrupt() {
+        database.transact { }
+        database.interrupt()
+        verify(sqlite, times(1)).interrupt(eq(DB))
+    }
+
+    @Test
+    fun isInterruptedFalse() {
+        database.transact { }
+        whenever(sqlite.isInterrupted(any())) doReturn false
+        assertFalse(database.isInterrupted)
+    }
+
+    @Test
+    fun isInterruptedTrue() {
+        database.transact { }
+        whenever(sqlite.isInterrupted(any())) doReturn true
+        assertTrue(database.isInterrupted)
+    }
+
+    @Test
+    fun setProgressHandler() {
+        database.transact { }
+        val handler = SQLProgressHandler { 0 }
+        database.setProgressHandler(100, handler)
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+    }
+
+    @Test
+    fun clearProgressHandler() {
+        database.transact { }
+        database.setProgressHandler(0, null)
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(0), isNull())
     }
 
     @Test
@@ -211,6 +249,37 @@ internal class SQLDatabaseTest {
     private fun verifyRollback(): Unit = inOrder(sqlite) {
         verify(sqlite, times(1)).prepareV2(eq(DB), eq("ROLLBACK"), any())
         verify(sqlite, times(1)).step(eq(STMT))
+    }
+
+    @Test
+    fun queryWithAlreadyCancelledSignalThrows() {
+        val signal = CancellationSignal()
+        signal.cancel()
+        assertFailsWith<OperationCancelledException> {
+            database.query("SELECT 1", emptyArray(), signal)
+        }
+    }
+
+    @Test
+    fun queryWithCancellationSignalSetsProgressHandler() {
+        database.transact { }
+        val signal = CancellationSignal(500)
+        whenever(sqlite.columnCount(any())) doReturn 0
+        whenever(sqlite.step(any())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any())) doReturn 1
+        database.query("SELECT 1", emptyArray(), signal)
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(500), any())
+    }
+
+    @Test
+    fun queryWithCancellationSignalClearsProgressHandler() {
+        database.transact { }
+        val signal = CancellationSignal(500)
+        whenever(sqlite.columnCount(any())) doReturn 0
+        whenever(sqlite.step(any())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any())) doReturn 1
+        database.query("SELECT 1", emptyArray(), signal)
+        verify(sqlite).progressHandler(eq(DB), eq(0), isNull())
     }
 
     private companion object {

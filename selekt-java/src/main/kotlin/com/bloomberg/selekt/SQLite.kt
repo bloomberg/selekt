@@ -187,6 +187,10 @@ open class SQLite(
 
     fun hardHeapLimit64() = sqlite.hardHeapLimit64()
 
+    fun interrupt(db: Long) = sqlite.interrupt(db)
+
+    fun isInterrupted(db: Long) = sqlite.isInterrupted(db) != 0
+
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
     fun keyConventionally(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))
@@ -208,6 +212,12 @@ open class SQLite(
         sql: String,
         statementHolder: LongArray
     ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+
+    fun progressHandler(
+        db: Long,
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) = sqlite.progressHandler(db, instructionCount, handler)
 
     fun rawKey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rawKey(db, key, key.size))
 

@@ -24,6 +24,9 @@ import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLProgressHandler
+import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
 import com.bloomberg.selekt.SQLiteJournalMode
@@ -42,10 +45,12 @@ import javax.annotation.concurrent.ThreadSafe
 import kotlin.jvm.Throws
 
 /**
+ * Mirrors the Android SDK APIs.
+ *
  * @since 0.1.0.
  */
 @ThreadSafe
-@Suppress("Detekt.TooManyFunctions", "Detekt.LongParameterList") // Mirrors the Android SDK APIs.
+@Suppress("Detekt.LongParameterList", "Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 class SQLiteDatabase private constructor(
     private val database: SQLDatabase
 ) : Closeable {
@@ -286,6 +291,34 @@ class SQLiteDatabase private constructor(
 
     fun integrityCheck(name: String = "main") = "ok".equals(database.pragma("$name.integrity_check(1)"), true)
 
+    /**
+     * Interrupts all database connections managed by this database. This causes any pending database operations on those
+     * connections to abort and return at the earliest opportunity. This method is safe to call from any thread.
+     *
+     * @see <a href="https://www.sqlite.org/c3ref/interrupt.html">sqlite3_interrupt</a>
+     */
+    fun interrupt() = database.interrupt()
+
+    /**
+     * Returns true if any database connection managed by this database has been interrupted and has not yet completed.
+     * This method is safe to call from any thread.
+     *
+     * @see <a href="https://www.sqlite.org/c3ref/interrupt.html">sqlite3_is_interrupted</a>
+     */
+    val isInterrupted: Boolean
+        get() = database.isInterrupted
+
+    /**
+     * Registers a progress handler that is invoked periodically during long-running SQL statements on all database
+     * connections managed by this database. If the handler returns non-zero, the operation is interrupted.
+     *
+     * @param instructionCount approximate number of virtual machine instructions between invocations of the handler.
+     * @param handler the progress handler, or null to clear the handler.
+     * @see <a href="https://www.sqlite.org/c3ref/progress_handler.html">sqlite3_progress_handler</a>
+     */
+    fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) =
+        database.setProgressHandler(instructionCount, handler)
+
     fun query(
         distinct: Boolean,
         table: String,
@@ -312,6 +345,65 @@ class SQLiteDatabase private constructor(
         database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
 
     fun query(query: ISQLQuery) = database.query(query).asAndroidCursor()
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @param cancellationSignal signal to cancel the query.
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    fun query(
+        distinct: Boolean,
+        table: String,
+        columns: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out Any?>?,
+        groupBy: String? = null,
+        having: String? = null,
+        limit: Int? = null,
+        orderBy: String? = null,
+        cancellationSignal: CancellationSignal
+    ) = database.query(
+        distinct,
+        table,
+        columns.orEmpty(),
+        selection.orEmpty(),
+        selectionArgs.orEmpty(),
+        groupBy,
+        having,
+        orderBy,
+        limit,
+        cancellationSignal
+    ).asAndroidCursor()
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @param sql the SQL query.
+     * @param selectionArgs arguments to bind.
+     * @param cancellationSignal signal to cancel the query.
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    fun query(
+        @Language("RoomSql") sql: String,
+        selectionArgs: Array<out Any?>?,
+        cancellationSignal: CancellationSignal
+    ) = database.query(sql, selectionArgs.orEmpty(), cancellationSignal).asAndroidCursor()
+
+    /**
+     * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
+     * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
+     *
+     * @param query the query to execute.
+     * @param cancellationSignal signal to cancel the query.
+     * @throws OperationCancelledException if the operation was cancelled.
+     */
+    fun query(
+        query: ISQLQuery,
+        cancellationSignal: CancellationSignal
+    ) = database.query(query, cancellationSignal).asAndroidCursor()
 
     /**
      * @since 0.7.4
