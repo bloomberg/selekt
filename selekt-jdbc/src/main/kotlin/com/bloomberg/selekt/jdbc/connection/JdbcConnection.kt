@@ -408,13 +408,13 @@ internal class JdbcConnection(
     override fun createSQLXML(): SQLXML = throw SQLFeatureNotSupportedException("SQLite does not support SQLXML")
 
     override fun isValid(timeout: Int): Boolean {
+        if (timeout < 0) {
+            throw SQLException("Timeout must be non-negative")
+        }
         if (isClosed) {
             return false
         }
         return runCatching {
-            if (timeout < 0) {
-                throw SQLException("Timeout must be non-negative")
-            }
             database.exec("SELECT 1")
             true
         }.getOrElse { e ->
