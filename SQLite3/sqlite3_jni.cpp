@@ -596,29 +596,33 @@ struct CommitListenerContext {
     jmethodID onRollbackMethod;
 };
 
+static JNIEnv* getEnvOrAttach(JavaVM* vm, bool& didAttach) {
+    didAttach = false;
+    if (void* envVoid = nullptr; vm->GetEnv(&envVoid, JNI_VERSION_1_6) == JNI_OK) {
+        return static_cast<JNIEnv*>(envVoid);
+    }
+#ifdef __ANDROID__
+    if (JNIEnv* env = nullptr; vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+        didAttach = true;
+        return env;
+    }
+#else
+    if (void* attachedEnv = nullptr; vm->AttachCurrentThread(&attachedEnv, nullptr) == JNI_OK) {
+        didAttach = true;
+        return static_cast<JNIEnv*>(attachedEnv);
+    }
+#endif
+    return nullptr;
+}
+
 static void freeCommitListenerContext(void* ctx) {
     if (ctx != nullptr) {
         auto context = static_cast<CommitListenerContext*>(ctx);
-        JavaVM* vm = context->vm;
-        void* envVoid = nullptr;
-        JNIEnv* env = nullptr;
         bool didAttach = false;
-        if (vm->GetEnv(&envVoid, JNI_VERSION_1_6) != JNI_OK) {
-#ifdef __ANDROID__
-            didAttach = vm->AttachCurrentThread(&env, nullptr) == JNI_OK;
-#else
-            void* attachedEnv = nullptr;
-            if (vm->AttachCurrentThread(&attachedEnv, nullptr) == JNI_OK) {
-                env = static_cast<JNIEnv*>(attachedEnv);
-                didAttach = true;
-            }
-#endif
-        } else {
-            env = static_cast<JNIEnv*>(envVoid);
-        }
-        if (env != nullptr) {
+        if (auto env = getEnvOrAttach(context->vm, didAttach); env != nullptr) {
             env->DeleteGlobalRef(context->listener);
         }
+        auto vm = context->vm;
         delete context;
         if (didAttach) {
             vm->DetachCurrentThread();
@@ -628,34 +632,34 @@ static void freeCommitListenerContext(void* ctx) {
 
 static int commitHookCallback(void* ctx) {
     auto context = static_cast<CommitListenerContext*>(ctx);
-    JNIEnv* env = nullptr;
-#ifdef __ANDROID__
-    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-#else
-    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
-#endif
+    bool didAttach = false;
+    auto env = getEnvOrAttach(context->vm, didAttach);
+    if (env == nullptr) {
         return 1;
     }
     jint result = env->CallIntMethod(context->listener, context->onCommitMethod);
     if (env->ExceptionCheck()) {
-        return 1;
+        result = 1;
+    }
+    if (didAttach) {
+        context->vm->DetachCurrentThread();
     }
     return result;
 }
 
 static void rollbackHookCallback(void* ctx) {
     auto context = static_cast<CommitListenerContext*>(ctx);
-    JNIEnv* env = nullptr;
-#ifdef __ANDROID__
-    if (context->vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-#else
-    if (context->vm->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr) != JNI_OK) {
-#endif
+    bool didAttach = false;
+    auto env = getEnvOrAttach(context->vm, didAttach);
+    if (env == nullptr) {
         return;
     }
     env->CallVoidMethod(context->listener, context->onRollbackMethod);
     if (env->ExceptionCheck()) {
         env->ExceptionClear();
+    }
+    if (didAttach) {
+        context->vm->DetachCurrentThread();
     }
 }
 
