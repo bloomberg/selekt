@@ -495,4 +495,25 @@ internal class SelektDriverTest {
             driver.connect("jdbc:sqlite:/tmp/test_invalid_cache.db", properties)
         }
     }
+
+    @Test
+    fun setReadOnlyPreventsWrites() {
+        val dbFile = File.createTempFile("selekt_readonly_test_", ".db").also(tempFiles::add)
+        driver.connect("jdbc:sqlite:${dbFile.absolutePath}", Properties())!!.use { connection ->
+            connection.createStatement().use {
+                it.execute("CREATE TABLE readonly_test (id INTEGER PRIMARY KEY, value TEXT)")
+                it.execute("INSERT INTO readonly_test VALUES (1, 'initial')")
+            }
+            connection.isReadOnly = true
+            connection.createStatement().use {
+                assertFailsWith<SQLException> {
+                    it.execute("INSERT INTO readonly_test VALUES (2, 'should_fail')")
+                }
+            }
+            connection.isReadOnly = false
+            connection.createStatement().use {
+                it.execute("INSERT INTO readonly_test VALUES (3, 'after_restore')")
+            }
+        }
+    }
 }

@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLitePragma
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
@@ -207,6 +208,19 @@ internal class JdbcConnectionTest {
         assertTrue(isReadOnly)
         isReadOnly = false
         assertFalse(isReadOnly)
+    }
+
+    @Test
+    fun setReadOnlyEnforcesQueryOnlyPragma(): Unit = connection.run {
+        isReadOnly = true
+        verify(mockDatabase).pragma(SQLitePragma.QUERY_ONLY, 1)
+    }
+
+    @Test
+    fun clearReadOnlyClearsQueryOnlyPragma(): Unit = connection.run {
+        isReadOnly = true
+        isReadOnly = false
+        verify(mockDatabase).pragma(SQLitePragma.QUERY_ONLY, 0)
     }
 
     @Test

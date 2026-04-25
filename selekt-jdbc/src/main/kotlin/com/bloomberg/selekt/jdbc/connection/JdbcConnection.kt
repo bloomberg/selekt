@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLitePragma
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
@@ -316,6 +317,7 @@ internal class JdbcConnection(
 
     override fun setReadOnly(readOnly: Boolean) {
         checkClosed()
+        database.pragma(SQLitePragma.QUERY_ONLY, if (readOnly) { 1 } else { 0 })
         this.readOnly = readOnly
     }
 
