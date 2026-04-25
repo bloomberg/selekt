@@ -35,6 +35,16 @@ private fun requireSafePragmaKey(key: String) {
     }
 }
 
+private val safePragmaValuePattern = Regex("^[a-zA-Z0-9_.+-]+$")
+
+private fun requireSafePragmaValue(value: Any) {
+    value.toString().let {
+        require(it.isNotEmpty() && safePragmaValuePattern.matches(it)) {
+            "Invalid pragma value: '$it'. Must contain only alphanumeric characters, dots, underscores, plus, or minus."
+        }
+    }
+}
+
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
 private object SharedSqlBuilder {
@@ -194,6 +204,7 @@ class SQLDatabase(
 
     fun pragma(key: String, value: Any) = pledge {
         requireSafePragmaKey(key)
+        requireSafePragmaValue(value)
         SQLStatement.executeForString(session, "PRAGMA $key=$value", SQLStatementType.PRAGMA, EMPTY_ARRAY)
     }
 
