@@ -551,6 +551,28 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun addBatchAfterClearBatchWritesFreshParameters() {
+        val capturedParams = mutableListOf<Array<out Any?>>()
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
+        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
+            invocation.getArgument<Sequence<Array<out Any?>>>(1).forEach {
+                capturedParams.add(it.copyOf())
+            }
+            capturedParams.size
+        }
+        JdbcPreparedStatement(connection, database, "INSERT INTO t VALUES(?)").run {
+            setInt(1, 111)
+            addBatch()
+            clearBatch()
+            setInt(1, 222)
+            addBatch()
+            executeBatch()
+        }
+        assertEquals(1, capturedParams.size)
+        assertEquals(222L, capturedParams[0][0])
+    }
+
+    @Test
     fun setNullWithTypeName() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(
