@@ -454,13 +454,19 @@ Java_com_bloomberg_selekt_ExternalSQLite_clearBindings(
     return sqlite3_clear_bindings(statement);
 }
 
+static void freeCommitListenerContext(void* ctx);
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_closeV2(
     JNIEnv* env,
     jobject jobj,
     jlong jdb
 ) {
-    return sqlite3_close_v2(reinterpret_cast<sqlite3*>(jdb));
+    auto db = reinterpret_cast<sqlite3*>(jdb);
+    void* commitCtx = sqlite3_commit_hook(db, nullptr, nullptr);
+    sqlite3_rollback_hook(db, nullptr, nullptr);
+    freeCommitListenerContext(commitCtx);
+    return sqlite3_close_v2(db);
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
@@ -471,8 +477,6 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnBlob(
     jint index
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    // sqlite3_column_blob returns null for a zero-length blob.
-    // ref: https://www.sqlite.org/c3ref/column_blob.html
     auto result = sqlite3_column_blob(statement, index);
     if (result) {
         auto size = sqlite3_column_bytes(statement, index);
