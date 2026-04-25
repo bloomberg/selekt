@@ -27,7 +27,6 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
-import java.io.File
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
@@ -307,7 +306,7 @@ class SelektDataSource : DataSource {
         return keyProperty.run {
             when {
                 startsWith("0x") || startsWith("0X") -> parseHexKey(this)
-                else -> parseStringOrFileKey(this)
+                else -> toByteArray(Charsets.UTF_8)
             }
         }
     }
@@ -317,18 +316,6 @@ class SelektDataSource : DataSource {
         .map {
             it.toInt(HEX_RADIX).toByte()
         }.toByteArray()
-
-    private fun parseStringOrFileKey(keyProperty: String): ByteArray = runCatching {
-        val file = File(keyProperty)
-        if (file.exists() && file.isFile) {
-            file.readBytes()
-        } else {
-            keyProperty.toByteArray(Charsets.UTF_8)
-        }
-    }.getOrElse { e ->
-        logger.debug("Failed to read key from file '{}', treating as string key: {}", keyProperty, e.message)
-        keyProperty.toByteArray(Charsets.UTF_8)
-    }
 
     private fun buildCacheKey(
         connectionURL: ConnectionURL,

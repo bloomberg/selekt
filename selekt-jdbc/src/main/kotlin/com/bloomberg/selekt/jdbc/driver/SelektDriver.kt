@@ -25,7 +25,6 @@ import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import com.bloomberg.selekt.commons.zero
-import java.io.File
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.DriverManager
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory
  * Supports the URL format: jdbc:sqlite:path/to/database.sqlite[?properties]
  *
  * Supported connection properties:
- * - key: Encryption key (hex string or file path)
+ * - key: Encryption key (hex string)
  * - poolSize: Maximum connection pool size (integer, default: 10)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
@@ -274,7 +273,7 @@ class SelektDriver : Driver {
     ): ByteArray? = (properties.getProperty(PROPERTY_KEY) ?: return null).run {
         when {
             startsWith("0x") || startsWith("0X") -> parseHexKey(this)
-            else -> parseStringOrFileKey(this)
+            else -> toByteArray(Charsets.UTF_8)
         }
     }
 
@@ -283,17 +282,6 @@ class SelektDriver : Driver {
         .map {
             it.toInt(HEX_RADIX).toByte()
         }.toByteArray()
-
-    private fun parseStringOrFileKey(keyProperty: String): ByteArray = File(keyProperty).runCatching {
-        if (exists() && isFile) {
-            readBytes()
-        } else {
-            keyProperty.toByteArray(Charsets.UTF_8)
-        }
-    }.getOrElse { e ->
-        logger.debug("Failed to read key from file '{}', treating as string key: {}", keyProperty, e.message)
-        keyProperty.toByteArray(Charsets.UTF_8)
-    }
 
     private fun mergeProperties(
         urlProperties: Properties,
