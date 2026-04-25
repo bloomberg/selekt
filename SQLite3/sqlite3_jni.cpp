@@ -99,14 +99,9 @@ void throwOutOfMemoryError(JNIEnv* env, const char* message) {
     }
 }
 
-static inline void updateHolder(JNIEnv* env, jarray array, int offset, void* p) {
-    auto pp = static_cast<size_t*>(env->GetPrimitiveArrayCritical(array, nullptr));
-    if (pp == nullptr) {
-        throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
-        return;
-    }
-    *(pp + offset) = reinterpret_cast<size_t>(p);
-    env->ReleasePrimitiveArrayCritical(array, pp, 0);
+static inline void updateHolder(JNIEnv* env, jlongArray array, int offset, void* p) {
+    auto val = reinterpret_cast<jlong>(p);
+    env->SetLongArrayRegion(array, offset, 1, &val);
 }
 
 static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
