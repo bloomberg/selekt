@@ -591,8 +591,8 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun isValidWithNegativeTimeout() {
-        assertFalse(connection.isValid(-1))
+    fun isValidWithNegativeTimeoutThrows() {
+        assertFailsWith<SQLException> { connection.isValid(-1) }
     }
 
     @Test
