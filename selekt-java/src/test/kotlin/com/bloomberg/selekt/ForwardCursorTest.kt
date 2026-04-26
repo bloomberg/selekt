@@ -69,56 +69,53 @@ internal class ForwardCursorTest {
 
     @Test
     fun getBlob() {
+        val expected = byteArrayOf(1, 2, 3)
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnBlob(any())) doReturn expected
         }
-        ForwardCursor(statement).getBlob(0)
-        verify(statement, times(1)).columnBlob(eq(1))
+        assertSame(expected, ForwardCursor(statement).getBlob(0))
+        verify(statement, times(1)).columnBlob(eq(0))
     }
 
     @Test
     fun getDouble() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnDouble(any())) doReturn 42.0
         }
-        ForwardCursor(statement).getDouble(0)
-        verify(statement, times(1)).columnDouble(eq(1))
+        assertEquals(42.0, ForwardCursor(statement).getDouble(0))
+        verify(statement, times(1)).columnDouble(eq(0))
     }
 
     @Test
     fun getInt() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnInt(any())) doReturn 42
         }
-        ForwardCursor(statement).getInt(0)
-        verify(statement, times(1)).columnInt(eq(1))
+        assertEquals(42, ForwardCursor(statement).getInt(0))
+        verify(statement, times(1)).columnInt(eq(0))
     }
 
     @Test
     fun getLong() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnLong(any())) doReturn 42L
         }
-        ForwardCursor(statement).getLong(0)
-        verify(statement, times(1)).columnLong(eq(1))
-    }
-
-    @Test
-    fun getShort() {
-        val statement = mock<SQLPreparedStatement>().apply {
-            whenever(columnNames) doReturn arrayOf("bar")
-        }
-        ForwardCursor(statement).getInt(0)
-        verify(statement, times(1)).columnInt(eq(1))
+        assertEquals(42L, ForwardCursor(statement).getLong(0))
+        verify(statement, times(1)).columnLong(eq(0))
     }
 
     @Test
     fun getString() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnString(any())) doReturn "hello"
         }
-        ForwardCursor(statement).getString(0)
-        verify(statement, times(1)).columnString(eq(1))
+        assertEquals("hello", ForwardCursor(statement).getString(0))
+        verify(statement, times(1)).columnString(eq(0))
     }
 
     @Test
@@ -183,7 +180,7 @@ internal class ForwardCursorTest {
             whenever(columnType(any())) doReturn ColumnType.NULL.sqlDataType
         }
         assertTrue(ForwardCursor(statement).isNull(0))
-        verify(statement, times(1)).columnType(eq(1))
+        verify(statement, times(1)).columnType(eq(0))
     }
 
     @Test
@@ -193,7 +190,7 @@ internal class ForwardCursorTest {
             whenever(columnType(any())) doReturn ColumnType.STRING.sqlDataType
         }
         assertFalse(ForwardCursor(statement).isNull(0))
-        verify(statement, times(1)).columnType(eq(1))
+        verify(statement, times(1)).columnType(eq(0))
     }
 
     @Test
@@ -235,7 +232,7 @@ internal class ForwardCursorTest {
                 }
             }
             whenever(columnString(any())) doAnswer Answer<String> {
-                if (stepCount == 1 && requireNotNull(it.getArgument(0) as? Int) == 1) {
+                if (stepCount == 1 && requireNotNull(it.getArgument(0) as? Int) == 0) {
                     "abc"
                 } else {
                     error("No type available.")
@@ -256,7 +253,17 @@ internal class ForwardCursorTest {
             whenever(columnType(any())) doReturn ColumnType.NULL.sqlDataType
         }
         assertEquals(ColumnType.NULL, ForwardCursor(statement).type(0))
-        verify(statement, times(1)).columnType(eq(1))
+        verify(statement, times(1)).columnType(eq(0))
+    }
+
+    @Test
+    fun typePassesIndexWithoutOffset() {
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("foo", "bar", "baz")
+            whenever(columnType(any())) doReturn ColumnType.INTEGER.sqlDataType
+        }
+        assertEquals(ColumnType.INTEGER, ForwardCursor(statement).type(2))
+        verify(statement, times(1)).columnType(eq(2))
     }
 
     @Test
