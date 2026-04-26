@@ -253,7 +253,7 @@ internal class JdbcDatabaseMetaData(
     override fun supportsGetGeneratedKeys(): Boolean = true
 
     override fun supportsResultSetType(type: Int): Boolean = when (type) {
-        ResultSet.TYPE_FORWARD_ONLY -> true
+        ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE -> true
         else -> false
     }
 

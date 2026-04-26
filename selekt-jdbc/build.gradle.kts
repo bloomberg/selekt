@@ -81,6 +81,9 @@ jmh {
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())
     }
+    if (hasProperty("jmh.profilers")) {
+        profilers.add(property("jmh.profilers").toString())
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {

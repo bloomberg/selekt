@@ -67,7 +67,14 @@ internal class JdbcPreparedStatementTest {
 
     @BeforeEach
     fun setUp() {
-        database = mock<SQLDatabase>()
+        database = mock<SQLDatabase> {
+            whenever(it.queryForwardOnly(any<String>(), any<Array<Any?>>())).thenAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<Array<Any?>>(1)
+                )
+            }
+        }
         cursor = mock<ICursor>()
         val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
