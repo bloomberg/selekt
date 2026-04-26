@@ -160,7 +160,12 @@ internal class SQLStatement private constructor(
             session: ThreadLocalSession,
             sql: String,
             bindArgs: Iterable<Array<out Any?>>
-        ) = execute(session, sql, bindArgs.asSequence())
+        ): Int {
+            require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) { ONLY_BATCH_UPDATES }
+            return session().execute(true, sql) {
+                it.executeBatchForChangedRowCount(sql, bindArgs)
+            }
+        }
 
         fun execute(
             session: ThreadLocalSession,
