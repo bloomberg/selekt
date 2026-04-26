@@ -20,7 +20,11 @@ internal inline fun String.trimStartByIndex(predicate: (Char) -> Boolean): Strin
     var i = 0
     while (i < length) {
         if (!predicate(this[i])) {
-            return substring(i)
+            return if (i == 0) {
+                this
+            } else {
+                substring(i)
+            }
         }
         ++i
     }
