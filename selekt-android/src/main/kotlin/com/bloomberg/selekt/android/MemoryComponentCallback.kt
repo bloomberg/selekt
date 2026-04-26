@@ -36,7 +36,7 @@ internal object MemoryComponentCallback : ComponentCallbacks2 {
             Log.d(TAG, "Releasing resources from all registered databases.")
             SQLiteDatabaseRegistry.releaseMemory(Priority.HIGH)
         } else if (level >= TRIM_MEMORY_RUNNING_LOW) {
-            sqlite.releaseMemory(minOf(Int.MIN_VALUE, sqlite.softHeapLimit64().toInt() / 2)).also {
+            sqlite.releaseMemory(maxOf(0, (sqlite.softHeapLimit64() / 2).toInt())).also {
                 Log.d(TAG, "sqlite released $it bytes.")
             }
             Log.d(TAG, "Releasing some resources from all registered databases.")
