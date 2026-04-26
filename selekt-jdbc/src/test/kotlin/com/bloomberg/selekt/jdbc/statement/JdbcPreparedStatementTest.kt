@@ -576,7 +576,7 @@ internal class JdbcPreparedStatementTest {
             executeBatch()
         }
         assertEquals(1, capturedParams.size)
-        assertEquals(222L, capturedParams[0][0])
+        assertEquals(222, capturedParams[0][0])
     }
 
     @Test

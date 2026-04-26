@@ -68,7 +68,6 @@ internal open class JdbcPreparedStatement(
 
     private val parameterCount = sql.count { it == '?' }
     private val parameters = arrayOfNulls<Any?>(parameterCount)
-    private val bindArgs = arrayOfNulls<Any?>(parameterCount)
     private var firstChunk: BatchChunk? = null
     private var currentChunk: BatchChunk? = null
     private var totalBatchCount = 0
@@ -86,9 +85,9 @@ internal open class JdbcPreparedStatement(
             closeCurrentResultSet()
             connection.ensureTransaction()
             val cursor = if (getResultSetType() == ResultSet.TYPE_FORWARD_ONLY) {
-                database.queryForwardOnly(applyMaxRows(sql), buildBindArgs())
+                database.queryForwardOnly(applyMaxRows(sql), parameters)
             } else {
-                database.query(applyMaxRows(sql), buildBindArgs())
+                database.query(applyMaxRows(sql), parameters)
             }
             JdbcResultSet(
                 cursor,
@@ -106,7 +105,7 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return try {
             connection.ensureTransaction()
-            executeUpdate(database.compileStatement(sql, buildBindArgs()))
+            executeUpdate(database.compileStatement(sql, parameters))
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
@@ -119,7 +118,7 @@ internal open class JdbcPreparedStatement(
         return try {
             closeCurrentResultSet()
             connection.ensureTransaction()
-            val statement = database.compileStatement(sql, buildBindArgs())
+            val statement = database.compileStatement(sql, parameters)
             if (statement.isReadOnly) {
                 executeQuery()
                 true
@@ -148,7 +147,6 @@ internal open class JdbcPreparedStatement(
     override fun clearParameters() {
         checkClosed()
         parameters.fill(null)
-        bindArgs.fill(null)
     }
 
     override fun addBatch() {
@@ -167,7 +165,7 @@ internal open class JdbcPreparedStatement(
         currentChunk!!.run {
             val row = data[count] ?: Array<Any?>(parameterCount) { null }.also { data[count] = it }
             0.forUntil(parameterCount) {
-                row[it] = TypeMapping.convertToSQLite(parameters[it])
+                row[it] = parameters[it]
             }
             ++count
         }
@@ -226,12 +224,6 @@ internal open class JdbcPreparedStatement(
         }
     }
 
-    private fun buildBindArgs(): Array<out Any?> = bindArgs.apply {
-        0.forUntil(parameterCount) {
-            this[it] = TypeMapping.convertToSQLite(parameters[it])
-        }
-    }
-
     override fun setNull(parameterIndex: Int, sqlType: Int) {
         validateParameterIndex(parameterIndex)
         parameters[parameterIndex - 1] = null
@@ -243,17 +235,17 @@ internal open class JdbcPreparedStatement(
 
     override fun setBoolean(parameterIndex: Int, x: Boolean) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = if (x) { 1 } else { 0 }
     }
 
     override fun setByte(parameterIndex: Int, x: Byte) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = x.toInt()
     }
 
     override fun setShort(parameterIndex: Int, x: Short) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = x.toInt()
     }
 
     override fun setInt(parameterIndex: Int, x: Int) {
@@ -268,7 +260,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setFloat(parameterIndex: Int, x: Float) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = x.toDouble()
     }
 
     override fun setDouble(parameterIndex: Int, x: Double) {
@@ -278,7 +270,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setBigDecimal(parameterIndex: Int, x: BigDecimal?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = x?.toPlainString()
     }
 
     override fun setString(parameterIndex: Int, x: String?) {
@@ -320,17 +312,17 @@ internal open class JdbcPreparedStatement(
 
     override fun setObject(parameterIndex: Int, x: Any?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int, scaleOrLength: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Int) {
