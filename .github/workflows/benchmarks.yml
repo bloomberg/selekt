@@ -1,0 +1,83 @@
+name: 'Benchmarks'
+
+on:
+  schedule:
+    - cron: '0 3 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  jmh:
+    name: 'JMH Benchmarks'
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: 'Install system packages'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+
+      - name: 'Checkout'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          submodules: recursive
+
+      - name: 'Setup Java 17'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: 'Setup Java 25'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: 'Set JAVA_HOME'
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+
+      - name: 'Configure Gradle'
+        run: |
+          echo 'org.gradle.caching=false' >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
+
+      - name: 'Run JDBC benchmarks'
+        run: ./gradlew :selekt-jdbc:jmh -Pjmh.profilers=gc
+
+      - name: 'Run Java benchmarks'
+        run: ./gradlew :selekt-java:jmh -Pjmh.profilers=gc
+
+      - name: 'Merge results'
+        run: |
+          sudo apt-get install -y jq
+          jq -s 'add' \
+            selekt-jdbc/build/results/jmh/results.json \
+            selekt-java/build/results/jmh/results.json \
+            > combined-results.json
+
+      - name: 'Store benchmark results'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'Selekt JMH Benchmarks'
+          tool: 'jmh'
+          output-file-path: combined-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+
+      - name: 'Upload raw results'
+        uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: 'JMH Results'
+          path: |
+            selekt-jdbc/build/results/jmh/
+            selekt-java/build/results/jmh/
