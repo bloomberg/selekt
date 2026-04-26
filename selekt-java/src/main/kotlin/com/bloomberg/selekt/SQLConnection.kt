@@ -275,7 +275,9 @@ internal class SQLConnection(
     ]
 
     private fun releasePreparedStatement(preparedStatement: SQLPreparedStatement) {
-        if (runCatching { preparedStatement.resetAndClearBindings() }.isFailure) {
+        try {
+            preparedStatement.resetAndClearBindings()
+        } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
             preparedStatements.evict(preparedStatement.sql)
         }
     }
