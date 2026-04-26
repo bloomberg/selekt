@@ -277,15 +277,15 @@ internal class JdbcPreparedStatementTest {
             addBatch()
         }
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Sequence<Array<Any?>>>(1).count()
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<Array<Any?>>>(1).count()
         }
         batchStatement.executeBatch().run {
             assertEquals(2, size)
             assertEquals(-2, first())
             assertEquals(-2, this[1])
         }
-        verify(database).batch(any<String>(), any<Sequence<Array<Any?>>>())
+        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
     }
 
     @Test
@@ -299,12 +299,12 @@ internal class JdbcPreparedStatementTest {
             }
         }
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Sequence<Array<Any?>>>(1).count()
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<Array<Any?>>>(1).count()
         }
         val updateCounts = batchStatement.executeBatch()
         assertEquals(150, updateCounts.size)
-        verify(database).batch(any<String>(), any<Sequence<Array<Any?>>>())
+        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
     }
 
     @Test
@@ -522,7 +522,7 @@ internal class JdbcPreparedStatementTest {
     @Test
     fun addBatchWithoutParameters() {
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doReturn 2
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 2
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -537,12 +537,12 @@ internal class JdbcPreparedStatementTest {
             executeBatch()
         }
         assertEquals(2, results.size)
-        verify(database).batch(any<String>(), any<Sequence<Array<Any?>>>())
+        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
     }
 
     @Test
     fun clearBatch() {
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doReturn 0
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 0
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -561,8 +561,8 @@ internal class JdbcPreparedStatementTest {
     fun addBatchAfterClearBatchWritesFreshParameters() {
         val capturedParams = mutableListOf<Array<out Any?>>()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Sequence<Array<out Any?>>>(1).forEach {
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<Array<out Any?>>>(1).forEach {
                 capturedParams.add(it.copyOf())
             }
             capturedParams.size
@@ -887,7 +887,7 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun executeBatchWithException() {
-        whenever(database.batch(any<String>(), any<Sequence<Array<out Any?>>>())) doThrow SQLException("Batch failed")
+        whenever(database.batch(any<String>(), any<Iterable<Array<out Any?>>>())) doThrow SQLException("Batch failed")
         JdbcPreparedStatement(connection, database, "UPDATE test SET value=? WHERE id=?").run {
             setInt(1, 100)
             setInt(2, 1)
@@ -901,7 +901,7 @@ internal class JdbcPreparedStatementTest {
     @Test
     fun largeBatch() {
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Sequence<Array<Any?>>>())) doReturn 50
+        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 50
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -918,7 +918,7 @@ internal class JdbcPreparedStatementTest {
             executeBatch()
         }
         assertEquals(50, results.size)
-        verify(database).batch(any<String>(), any<Sequence<Array<Any?>>>())
+        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
     }
 
     @Test

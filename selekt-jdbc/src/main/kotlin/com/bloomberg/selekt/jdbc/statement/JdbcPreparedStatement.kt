@@ -60,10 +60,30 @@ internal open class JdbcPreparedStatement(
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
     @Suppress("Detekt.UseDataClass")
-    private class BatchChunk(val capacity: Int) {
+    private class BatchChunk(val capacity: Int) : Iterable<Array<out Any?>> {
         val data = arrayOfNulls<Array<Any?>>(capacity)
         var count = 0
         var next: BatchChunk? = null
+
+        override fun iterator() = object : Iterator<Array<out Any?>> {
+            private var chunk: BatchChunk? = this@BatchChunk
+            private var index = 0
+            private var previous: Array<Any?>? = null
+
+            override fun hasNext() = chunk != null && index < chunk!!.count
+
+            override fun next(): Array<out Any?> {
+                previous?.fill(null)
+                val current = chunk ?: throw NoSuchElementException()
+                val row = current.data[index]!!
+                previous = row
+                if (++index >= current.count) {
+                    chunk = current.next
+                    index = 0
+                }
+                return row
+            }
+        }
     }
 
     private val parameterCount = sql.count { it == '?' }
@@ -194,18 +214,7 @@ internal open class JdbcPreparedStatement(
             if (database.compileStatement(sql).isReadOnly) {
                 throw SQLException("Read-only statements are not allowed in batch execution")
             }
-            database.batch(sql, sequence {
-                var chunk: BatchChunk? = firstChunk
-                while (chunk != null) {
-                    for (i in 0 until chunk.count) {
-                        chunk.data[i]!!.let { data ->
-                            yield(data)
-                            data.fill(null)
-                        }
-                    }
-                    chunk = chunk.next
-                }
-            })
+            database.batch(sql, firstChunk!!)
             return IntArray(totalBatchCount) { Statement.SUCCESS_NO_INFO }
         } catch (e: Exception) {
             SQLExceptionMapper.mapException(
