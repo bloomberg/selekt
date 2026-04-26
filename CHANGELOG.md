@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.30.0
+
+### Fixes
+
+* Save bindArgs array allocation in JdbcPreparedStatement.
+* JDBC forward-only query optimisation.
+* Replace use of runCatching where we return boxed primitives as a result on the hotpath.
+* Eliminate per-execution type conversion in JdbcPreparedStatement bind path.
+* Replace runCatching with try-catch in releasePreparedStatement to avoid Result boxing.
+* Replace sequence coroutine with plain iterator in batch execution.
+
+### Features
+
+* Support sqlite3_db_config.
+* Support database interrupts and progress handlers.
+
 ## Version 0.29.16
 
 ### Fixes
