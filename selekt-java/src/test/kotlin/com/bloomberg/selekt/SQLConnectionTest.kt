@@ -31,7 +31,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.stubbing.Answer
 import org.mockito.kotlin.argumentCaptor
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -68,7 +67,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun constructionChecksNull(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
@@ -79,11 +78,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun prepareChecksNull(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
@@ -128,7 +127,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun prepareChecksArgumentCount(): Unit = sqlite.run {
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer<Any> {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             SQL_OK
         }
@@ -152,11 +151,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun executeForLastInsertedRowIdChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -168,11 +167,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun executeForLastInsertedRowIdChecksChanges(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -185,11 +184,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun executeForChangedRowCountChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -204,11 +203,11 @@ internal class SQLConnectionTest {
     fun executeForInt(): Unit = sqlite.run {
         val value = 7
         val statement = 43L
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
@@ -224,11 +223,11 @@ internal class SQLConnectionTest {
     fun executeForLong(): Unit = sqlite.run {
         val value = 7L
         val statement = 43L
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
@@ -244,11 +243,11 @@ internal class SQLConnectionTest {
     fun executeForString(): Unit = sqlite.run {
         val text = "hello"
         val statement = 43L
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
@@ -262,11 +261,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun executeForBlobReadOnly(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer Answer {
+        whenever(blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer {
             (it.arguments[6] as LongArray)[0] = 43L
             0
         }
@@ -278,11 +277,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountSequenceChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -295,11 +294,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountEmptyArrayChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -312,11 +311,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountWithRangeChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -331,11 +330,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountWithRangeSuccess(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -355,11 +354,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountIterableChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -372,11 +371,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun batchExecuteForChangedRowCountStreamChecksDone(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -395,11 +394,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun connectionChecksWindowAllocation(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
@@ -415,11 +414,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun connectionChecksSqlColumnType(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer Answer {
+        whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer Answer {
+        whenever(prepareV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
