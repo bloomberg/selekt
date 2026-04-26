@@ -26,31 +26,16 @@ private const val MAX_PAUSE_MILLIS = 100L
 @NotThreadSafe
 @Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 internal class SQLPreparedStatement(
-    private var pointer: Pointer,
-    private var rawSql: String,
+    private val pointer: Pointer,
+    val sql: String,
     private val sqlite: SQLite,
     private val random: IRandom
 ) : Closeable {
-    companion object {
-        fun recycle(
-            preparedStatement: SQLPreparedStatement,
-            pointer: Long,
-            sql: String
-        ) = preparedStatement.apply {
-            this.pointer = pointer
-            this.rawSql = sql
-            this.parameterCount = sqlite.bindParameterCount(pointer)
-            this.isReadOnly = sqlite.statementReadOnly(pointer) != 0
-        }
+    val columnCount = sqlite.columnCount(pointer)
+
+    val columnNames: Array<out String> = sqlite.run {
+        Array(columnCount) { columnName(pointer, it) }
     }
-
-    val columnCount: Int
-        get() = sqlite.columnCount(pointer)
-
-    val columnNames: Array<out String>
-        get() = sqlite.run {
-            Array(columnCount) { columnName(pointer, it) }
-        }
 
     /**
      * True if and only if the prepared statement makes no direct changes to the content of the database.
@@ -60,14 +45,9 @@ internal class SQLPreparedStatement(
      *
      * @see <a href="https://www.sqlite.org/c3ref/stmt_readonly.html">SQLite's stmt_readonly</a>
      */
-    var isReadOnly = sqlite.statementReadOnly(pointer) != 0
-        private set
+    val isReadOnly = sqlite.statementReadOnly(pointer) != 0
 
-    var parameterCount = sqlite.bindParameterCount(pointer)
-        private set
-
-    val sql: String
-        get() = rawSql
+    val parameterCount = sqlite.bindParameterCount(pointer)
 
     fun bind(index: Int, value: ByteArray) {
         sqlite.bindBlob(pointer, index, value)
@@ -127,8 +107,6 @@ internal class SQLPreparedStatement(
 
     override fun close() {
         sqlite.finalize(pointer)
-        pointer = NULL
-        rawSql = ""
     }
 
     fun columnBlob(index: Int) = sqlite.columnBlob(pointer, index)

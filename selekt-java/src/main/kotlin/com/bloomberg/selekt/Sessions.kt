@@ -98,6 +98,26 @@ internal class SQLSession(
         it.executeForBlob(name, table, column, row)
     }
 
+    /**
+     * Acquires a connection from the pool, creates a [ForwardCursor] backed by a leased prepared statement,
+     * and wraps the close callback so that closing the cursor releases the statement back to the connection
+     * cache and then releases the connection back to the pool.
+     */
+    fun executeForForwardCursor(
+        sql: String,
+        bindArgs: Array<out Any?>
+    ): ForwardCursor {
+        val executor = retain(false, sql)
+        return runCatching {
+            executor.executeForForwardCursor(sql, bindArgs) {
+                release()
+            }
+        }.getOrElse {
+            release()
+            throw it
+        }
+    }
+
     override fun endTransaction(): Unit = state.run {
         val autoSavepointIndex = savepointStack.indexOfLast { it.automatic }
         if (autoSavepointIndex < 0) {

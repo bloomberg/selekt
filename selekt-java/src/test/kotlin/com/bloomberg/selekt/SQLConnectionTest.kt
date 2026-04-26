@@ -537,6 +537,97 @@ internal class SQLConnectionTest {
         }
     }
 
+    @Test
+    fun executeForForwardCursorStreamsRows(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        var stepCount = 0
+        whenever(step(any())) doAnswer { if (stepCount++ < 2) SQL_ROW else SQL_DONE }
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnType(any(), any())) doReturn ColumnType.INTEGER.sqlDataType
+        whenever(columnName(any(), any())) doReturn "id"
+        whenever(columnInt64(any(), any())) doReturn 99L
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
+            assertTrue(cursor.moveToNext())
+            assertEquals(99L, cursor.getLong(0))
+            assertTrue(cursor.moveToNext())
+            assertFalse(cursor.moveToNext())
+            cursor.close()
+        }
+    }
+
+    @Test
+    fun executeForForwardCursorReleasesStatementOnClose(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnName(any(), any())) doReturn "id"
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
+            cursor.close()
+            verify(this@run, times(1)).resetAndClearBindings(eq(43L))
+        }
+    }
+
+    @Test
+    fun executeForForwardCursorInvokesAdditionalOnClose(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnName(any(), any())) doReturn "id"
+        var additionalClosed = false
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
+                additionalClosed = true
+            }
+            assertFalse(additionalClosed)
+            cursor.close()
+            assertTrue(additionalClosed)
+        }
+    }
+
+    @Test
+    fun executeForForwardCursorCloseIsIdempotent(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(columnCount(any())) doReturn 1
+        whenever(columnName(any(), any())) doReturn "id"
+        var closeCount = 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
+                closeCount++
+            }
+            cursor.close()
+            cursor.close()
+            assertEquals(1, closeCount)
+        }
+    }
+
     private companion object {
         const val DB = 1L
     }

@@ -102,19 +102,21 @@ internal class JdbcResultSet(
     override fun getBoolean(columnIndex: Int): Boolean {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 false
             } else {
                 wasNull = false
-                runCatching {
+                try {
                     cursor.getLong(columnIndex - 1) != 0L
-                }.getOrElse { _ ->
+                } catch (_: Exception) {
                     cursor.getString(columnIndex - 1)?.toBoolean() ?: false
                 }
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting boolean from column $columnIndex: ${e.message}",
                 -1,
@@ -129,7 +131,7 @@ internal class JdbcResultSet(
     override fun getByte(columnIndex: Int): Byte {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 0
@@ -137,7 +139,9 @@ internal class JdbcResultSet(
                 wasNull = false
                 cursor.getInt(columnIndex - 1).toByte()
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting byte from column $columnIndex: ${e.message}",
                 -1,
@@ -211,7 +215,7 @@ internal class JdbcResultSet(
     override fun getLong(columnIndex: Int): Long {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 0L
@@ -219,7 +223,9 @@ internal class JdbcResultSet(
                 wasNull = false
                 cursor.getLong(columnIndex - 1)
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting long from column $columnIndex: ${e.message}",
                 -1,
@@ -234,7 +240,7 @@ internal class JdbcResultSet(
     override fun getFloat(columnIndex: Int): Float {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 0f
@@ -242,7 +248,9 @@ internal class JdbcResultSet(
                 wasNull = false
                 cursor.getFloat(columnIndex - 1)
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting float from column $columnIndex: ${e.message}",
                 -1,
@@ -257,7 +265,7 @@ internal class JdbcResultSet(
     override fun getDouble(columnIndex: Int): Double {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 0.0
@@ -276,7 +284,9 @@ internal class JdbcResultSet(
                     ColumnType.BLOB -> 0.0 // Cannot convert blob to double
                 }
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting double from column $columnIndex: ${e.message}",
                 -1,

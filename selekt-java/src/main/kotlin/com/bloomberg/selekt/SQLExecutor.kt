@@ -53,6 +53,12 @@ internal interface SQLExecutor : BatchSQLExecutor {
         window: ICursorWindow
     )
 
+    fun executeForForwardCursor(
+        sql: String,
+        bindArgs: Array<out Any?>,
+        additionalOnClose: (() -> Unit)? = null
+    ): ForwardCursor
+
     fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Long
 
     fun executeForInt(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Int

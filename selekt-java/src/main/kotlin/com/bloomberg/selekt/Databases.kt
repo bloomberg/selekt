@@ -464,6 +464,18 @@ class SQLDatabase(
             WindowedCursor(information.columnNames, it)
         }
     }
+
+    /**
+     * Returns a forward-only streaming [ICursor] backed by a [ForwardCursor].
+     * The caller **must** close the returned cursor to release the underlying prepared statement
+     * back to the connection's cache and to release the session's connection back to the pool.
+     */
+    fun queryForwardOnly(
+        sql: String,
+        selectionArgs: Array<out Any?>
+    ): ICursor = pledge {
+        session().executeForForwardCursor(sql, selectionArgs)
+    }
 }
 
 interface IDatabase : IReadableDatabase, ISQLTransactor {

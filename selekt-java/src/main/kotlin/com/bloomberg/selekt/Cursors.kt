@@ -53,6 +53,9 @@ interface ICursor : Closeable {
 
     fun isFirst(): Boolean
 
+    val isForwardOnly: Boolean
+        get() = false
+
     fun isLast(): Boolean
 
     fun isNull(index: Int): Boolean
@@ -153,7 +156,8 @@ internal class WindowedCursor(
 
 @NotThreadSafe
 internal class ForwardCursor(
-    private val statement: SQLPreparedStatement
+    private val statement: SQLPreparedStatement,
+    private val onClose: (() -> Unit)? = null
 ) : ICursor {
     private var closed = false
 
@@ -165,8 +169,15 @@ internal class ForwardCursor(
         get() = throw UnsupportedOperationException()
 
     override fun close() {
+        if (closed) {
+            return
+        }
         closed = true
-        statement.close()
+        if (onClose != null) {
+            onClose()
+        } else {
+            statement.close()
+        }
     }
 
     override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }
@@ -192,6 +203,9 @@ internal class ForwardCursor(
     override fun isClosed() = closed
 
     override fun isFirst() = throw UnsupportedOperationException()
+
+    override val isForwardOnly: Boolean
+        get() = true
 
     override fun isLast() = throw UnsupportedOperationException()
 

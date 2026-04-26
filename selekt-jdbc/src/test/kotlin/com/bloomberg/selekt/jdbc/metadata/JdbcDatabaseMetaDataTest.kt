@@ -145,7 +145,7 @@ internal class JdbcDatabaseMetaDataTest {
     @Test
     fun resultSetSupport(): Unit = metaData.run {
         assertTrue(supportsResultSetType(ResultSet.TYPE_FORWARD_ONLY))
-        assertFalse(supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
+        assertTrue(supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
         assertFalse(supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE))
         assertTrue(supportsResultSetConcurrency(
             ResultSet.TYPE_FORWARD_ONLY,
@@ -460,7 +460,7 @@ internal class JdbcDatabaseMetaDataTest {
 
     @Test
     fun supportsResultSetTypeScrollInsensitive() {
-        assertFalse(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
+        assertTrue(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
     }
 
     @Test

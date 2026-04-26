@@ -22,17 +22,12 @@ import java.sql.ResultSetMetaData
 import java.sql.SQLException
 import java.sql.Types
 import javax.annotation.concurrent.NotThreadSafe
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @NotThreadSafe
-@Suppress("TooGenericExceptionCaught")
 internal class JdbcResultSetMetaData(
     private val cursor: ICursor
 ) : ResultSetMetaData {
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(JdbcResultSetMetaData::class.java)
-
         private const val BOOLEAN_DISPLAY_SIZE = 5
         private const val TINYINT_DISPLAY_SIZE = 4
         private const val SMALLINT_DISPLAY_SIZE = 6
@@ -135,18 +130,15 @@ internal class JdbcResultSetMetaData(
 
     override fun getColumnType(column: Int): Int {
         validateColumnIndex(column)
-        return try {
-            if (cursor.position() >= 0 && !cursor.isBeforeFirst() && !cursor.isAfterLast()) {
-                val columnType = cursor.type(column - 1)
-                TypeMapping.toJdbcType(columnType)
-            } else {
-                Types.VARCHAR
-            }
-        } catch (e: Exception) {
-            logger.warn("Failed to determine column type for column {}, defaulting to VARCHAR: {}", column, e.message)
+        return if (hasCurrentRow()) {
+            TypeMapping.toJdbcType(cursor.type(column - 1))
+        } else {
             Types.VARCHAR
         }
     }
+
+    private fun hasCurrentRow(): Boolean = cursor.isForwardOnly ||
+        cursor.position() >= 0 && !cursor.isBeforeFirst() && !cursor.isAfterLast()
 
     override fun getColumnTypeName(column: Int): String {
         validateColumnIndex(column)

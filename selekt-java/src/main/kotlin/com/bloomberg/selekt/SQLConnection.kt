@@ -33,9 +33,7 @@ internal class SQLConnection(
     private val pointer = sqlite.open(path, flags)
     private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
         it.close()
-        pooledPreparedStatement = it
     }
-    private var pooledPreparedStatement: SQLPreparedStatement? = null
     private var commitListener: SQLTransactionListener? = null
 
     override val isAutoCommit: Boolean
@@ -183,6 +181,27 @@ internal class SQLConnection(
         }
     }
 
+    override fun executeForForwardCursor(
+        sql: String,
+        bindArgs: Array<out Any?>,
+        additionalOnClose: (() -> Unit)?
+    ): ForwardCursor {
+        val statement = acquirePreparedStatement(sql)
+        return runCatching {
+            statement.bindArguments(bindArgs)
+            ForwardCursor(statement) {
+                try {
+                    releasePreparedStatement(statement)
+                } finally {
+                    additionalOnClose?.invoke()
+                }
+            }
+        }.getOrElse {
+            releasePreparedStatement(statement)
+            throw it
+        }
+    }
+
     override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         if (SQL_DONE == step() && sqlite.changes(pointer) > 0) {
             sqlite.lastInsertRowId(pointer)
@@ -251,13 +270,7 @@ internal class SQLConnection(
     private fun acquirePreparedStatement(sql: String) = preparedStatements[
         sql, {
             val pointer = sqlite.prepare(pointer, sql)
-            pooledPreparedStatement.let {
-                if (it != null) {
-                    SQLPreparedStatement.recycle(it, pointer, sql).also { pooledPreparedStatement = null }
-                } else {
-                    SQLPreparedStatement(pointer, sql, sqlite, random)
-                }
-            }
+            SQLPreparedStatement(pointer, sql, sqlite, random)
         }
     ]
 

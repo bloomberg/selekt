@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory
 
 @Suppress("TooGenericExceptionCaught")
 internal object TypeMapping {
+    private val digitsOnly = Regex("\\d+")
     private val logger: Logger = LoggerFactory.getLogger(TypeMapping::class.java)
 
     private const val BOOLEAN_PRECISION = 1
@@ -303,7 +304,7 @@ internal object TypeMapping {
                 Timestamp.valueOf(dateTime)
             }
             contains(' ') -> Timestamp.valueOf(timestampString)
-            matches(Regex("\\d+")) -> Timestamp(timestampString.toLong())
+            matches(digitsOnly) -> Timestamp(timestampString.toLong())
             else -> null
         }
     }.getOrElse {

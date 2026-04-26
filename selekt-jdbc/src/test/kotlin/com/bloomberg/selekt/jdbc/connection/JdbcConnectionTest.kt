@@ -130,13 +130,14 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun createStatementWithScrollable() {
-        assertFailsWith<SQLException> {
-            connection.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY
-            )
-        }
+    fun createStatementWithScrollInsensitive() {
+        val statement = connection.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY
+        )
+        assertNotNull(statement)
+        assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, statement.resultSetType)
+        statement.close()
     }
 
     @Test
@@ -148,14 +149,15 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun prepareStatementWithScrollable() {
-        assertFailsWith<SQLException> {
-            connection.prepareStatement(
-                "SELECT * FROM test",
-                ResultSet.TYPE_SCROLL_INSENSITIVE,
-                ResultSet.CONCUR_READ_ONLY
-            )
-        }
+    fun prepareStatementWithScrollInsensitive() {
+        val preparedStatement = connection.prepareStatement(
+            "SELECT * FROM test",
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY
+        )
+        assertNotNull(preparedStatement)
+        assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, preparedStatement.resultSetType)
+        preparedStatement.close()
     }
 
     @Test

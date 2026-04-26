@@ -99,12 +99,8 @@ internal class JdbcConnection(
         resultSetHoldability: Int
     ): Statement {
         checkClosed()
-        if (resultSetType != ResultSet.TYPE_FORWARD_ONLY) {
-            throw SQLException("SQLite only supports TYPE_FORWARD_ONLY result sets")
-        }
-        if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
-            throw SQLException("SQLite only supports CONCUR_READ_ONLY concurrency")
-        }
+        checkResultSetType(resultSetType)
+        checkResultSetConcurrency(resultSetConcurrency)
         return JdbcStatement(this, database, resultSetType, resultSetConcurrency, resultSetHoldability)
     }
 
@@ -128,12 +124,8 @@ internal class JdbcConnection(
         resultSetHoldability: Int
     ): PreparedStatement {
         checkClosed()
-        if (resultSetType != ResultSet.TYPE_FORWARD_ONLY) {
-            throw SQLException("SQLite only supports TYPE_FORWARD_ONLY result sets")
-        }
-        if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
-            throw SQLException("SQLite only supports CONCUR_READ_ONLY concurrency")
-        }
+        checkResultSetType(resultSetType)
+        checkResultSetConcurrency(resultSetConcurrency)
         return JdbcPreparedStatement(this, database, sql, resultSetType, resultSetConcurrency, resultSetHoldability)
     }
 
@@ -479,5 +471,19 @@ internal class JdbcConnection(
 
     internal fun addWarning(warning: SQLWarning) {
         warnings.add(warning)
+    }
+
+    private fun checkResultSetType(resultSetType: Int) {
+        if (resultSetType != ResultSet.TYPE_FORWARD_ONLY && resultSetType != ResultSet.TYPE_SCROLL_INSENSITIVE) {
+            throw SQLException(
+                "SQLite supports TYPE_FORWARD_ONLY and TYPE_SCROLL_INSENSITIVE result sets, not $resultSetType"
+            )
+        }
+    }
+
+    private fun checkResultSetConcurrency(resultSetConcurrency: Int) {
+        if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
+            throw SQLException("SQLite only supports CONCUR_READ_ONLY concurrency")
+        }
     }
 }

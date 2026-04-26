@@ -74,8 +74,13 @@ open class JdbcStatement internal constructor(
     override fun executeQuery(sql: String): ResultSet {
         checkClosed()
         try {
+            closeCurrentResultSet()
             connection.ensureTransaction()
-            val cursor = database.query(applyMaxRows(sql), emptyArray())
+            val cursor = if (resultSetType == ResultSet.TYPE_FORWARD_ONLY) {
+                database.queryForwardOnly(applyMaxRows(sql), emptyArray())
+            } else {
+                database.query(applyMaxRows(sql), emptyArray())
+            }
             currentResultSet = JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability)
             updateCount = -1
             return currentResultSet!!
@@ -87,6 +92,7 @@ open class JdbcStatement internal constructor(
     override fun executeUpdate(sql: String): Int {
         checkClosed()
         return runCatching {
+            closeCurrentResultSet()
             database.compileStatement(sql).use { executeUpdate(sql, it) }
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
@@ -95,6 +101,7 @@ open class JdbcStatement internal constructor(
 
     override fun execute(sql: String): Boolean {
         checkClosed()
+        closeCurrentResultSet()
         val statement = runCatching {
             connection.ensureTransaction()
             database.compileStatement(sql)
@@ -337,5 +344,10 @@ open class JdbcStatement internal constructor(
         if (closed) {
             throw SQLException("Statement is closed")
         }
+    }
+
+    protected fun closeCurrentResultSet() {
+        currentResultSet?.close()
+        currentResultSet = null
     }
 }
