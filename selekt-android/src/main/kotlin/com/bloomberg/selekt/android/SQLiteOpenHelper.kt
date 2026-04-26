@@ -59,6 +59,8 @@ class SQLiteOpenHelper internal constructor(
         require(version > 0) { "Version must be at least 1." }
     }
 
+    private val _key: ByteArray? = key?.copyOf()
+
     /**
      * Create and/or open a database that will be used for reading and writing. The first time this is called, the database
      * will be opened and [onCreate(SQLiteDatabase)] and [onUpgrade(SQLiteDatabase, int, int)] or
@@ -70,7 +72,8 @@ class SQLiteOpenHelper internal constructor(
      * disk may cause this method to fail, but future attempts may succeed if the problem is fixed.
      */
     override val writableDatabase: SQLiteDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, key).also {
+        SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
+            _key?.fill(0)
             it.setPageSizeExponent(openParams.pageSizeExponent)
             it.setJournalMode(openParams.journalMode)
             configuration.callback.onConfigure(it)
