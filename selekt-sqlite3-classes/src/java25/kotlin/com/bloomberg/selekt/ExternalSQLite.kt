@@ -364,6 +364,17 @@ internal class ExternalSQLite(
         return SQL_OK
     }
 
+    override fun databaseConfig(
+        db: Long,
+        op: Int,
+        value: Int
+    ): Int = sqlite3_db_config.invoke(
+        MemorySegment.ofAddress(db),
+        op,
+        value,
+        MemorySegment.NULL
+    ) as Int
+
     override fun databaseHandle(
         statement: Long
     ): Long = (sqlite3_db_handle.invoke(
@@ -839,6 +850,10 @@ internal class ExternalSQLite(
             symbolLookup.find("sqlite3_commit_hook").orElseThrow(),
             FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS),
             criticalOption
+        )
+        private val sqlite3_db_config: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_db_config").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT, ADDRESS)
         )
         private val sqlite3_db_handle: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_db_handle").orElseThrow(),

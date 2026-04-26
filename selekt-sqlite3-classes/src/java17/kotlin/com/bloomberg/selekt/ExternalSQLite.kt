@@ -127,6 +127,8 @@ internal class ExternalSQLite(
 
     external override fun commitHook(db: Long, enabled: Boolean, listener: SQLCommitListener?): SQLCode
 
+    external override fun databaseConfig(db: Long, op: Int, value: Int): Int
+
     external override fun databaseHandle(statement: Long): Long
 
     external override fun databaseReadOnly(db: Long, name: String): Int

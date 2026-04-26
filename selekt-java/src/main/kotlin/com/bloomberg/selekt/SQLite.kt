@@ -179,6 +179,12 @@ open class SQLite(
 
     fun extendedErrorCode(db: Long) = sqlite.extendedErrorCode(db)
 
+    fun databaseConfig(
+        db: Long,
+        op: Int,
+        value: Int
+    ) = checkConnectionSQLCode(db, sqlite.databaseConfig(db, op, value))
+
     fun extendedResultCodes(db: Long, onOff: Int) = sqlite.extendedResultCodes(db, onOff)
 
     fun finalize(statement: Long) = checkStatementSQLCode(statement, sqlite.finalize(statement))

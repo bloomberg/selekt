@@ -18,7 +18,7 @@ package com.bloomberg.selekt
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
-@Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions") // Reflects SQLite3.
+@Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
 internal interface SQLExecutor : BatchSQLExecutor {
     val isAutoCommit: Boolean
 
@@ -30,6 +30,8 @@ internal interface SQLExecutor : BatchSQLExecutor {
     val isReadOnly: Boolean
 
     fun checkpoint(name: String? = null, mode: SQLCheckpointMode = SQLCheckpointMode.PASSIVE)
+
+    fun databaseConfig(op: Int, value: Int)
 
     fun execute(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Int
 

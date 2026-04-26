@@ -76,6 +76,10 @@ internal class SQLConnection(
         sqlite.walCheckpointV2(pointer, name, mode())
     }
 
+    override fun databaseConfig(op: Int, value: Int) {
+        sqlite.databaseConfig(pointer, op, value)
+    }
+
     override fun close() {
         try {
             optimiseQuietly()

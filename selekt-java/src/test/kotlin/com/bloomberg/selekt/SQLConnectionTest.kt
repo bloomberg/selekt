@@ -529,6 +529,14 @@ internal class SQLConnectionTest {
         }
     }
 
+    @Test
+    fun databaseConfig(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.databaseConfig(1010, 1)
+            verify(this@run, times(1)).databaseConfig(eq(DB), eq(1010), eq(1))
+        }
+    }
+
     private companion object {
         const val DB = 1L
     }

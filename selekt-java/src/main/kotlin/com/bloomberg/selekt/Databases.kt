@@ -149,6 +149,12 @@ class SQLDatabase(
 
     override fun endTransaction(): Unit = pledge { session().endTransaction() }
 
+    fun databaseConfig(op: Int, value: Int): Unit = pledge {
+        session().execute(false) { executor ->
+            executor.databaseConfig(op, value)
+        }
+    }
+
     override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
         compileStatement(
             sql,
