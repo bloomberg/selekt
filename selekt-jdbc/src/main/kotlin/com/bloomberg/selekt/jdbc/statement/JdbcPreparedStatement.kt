@@ -47,7 +47,7 @@ import java.sql.Timestamp
 import java.util.Calendar
 import javax.annotation.concurrent.NotThreadSafe
 
-private const val INITIAL_BATCH_CHUNK_SIZE = 128
+private const val INITIAL_BATCH_CHUNK_SIZE = 1024
 
 @Suppress("TooGenericExceptionCaught")
 @NotThreadSafe
