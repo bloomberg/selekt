@@ -91,11 +91,13 @@ open class JdbcStatement internal constructor(
 
     override fun executeUpdate(sql: String): Int {
         checkClosed()
-        return runCatching {
+        return try {
             closeCurrentResultSet()
             database.compileStatement(sql).use { executeUpdate(sql, it) }
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
+            throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
     }
 
@@ -121,7 +123,7 @@ open class JdbcStatement internal constructor(
 
     private fun executeUpdate(sql: String, statement: ISQLStatement): Int {
         checkClosed()
-        return runCatching {
+        return try {
             connection.ensureTransaction()
             statement.run {
                 if (isReadOnly) {
@@ -137,8 +139,10 @@ open class JdbcStatement internal constructor(
             }
             currentResultSet = null
             updateCount
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
+            throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
     }
 

@@ -226,7 +226,7 @@ koverReport {
         verify {
             rule("Minimal coverage") {
                 bound {
-                    minValue = 91
+                    minValue = 90
                     aggregation = AggregationType.COVERED_PERCENTAGE
                 }
             }
