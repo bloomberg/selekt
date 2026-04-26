@@ -67,6 +67,7 @@ jobs:
           name: 'Selekt JMH Benchmarks'
           tool: 'jmh'
           output-file-path: combined-results.json
+          benchmark-data-dir-path: benchmarks/jmh
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: '150%'
