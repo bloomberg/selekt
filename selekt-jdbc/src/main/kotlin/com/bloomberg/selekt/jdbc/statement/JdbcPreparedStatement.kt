@@ -68,6 +68,7 @@ internal open class JdbcPreparedStatement(
 
     private val parameterCount = sql.count { it == '?' }
     private val parameters = arrayOfNulls<Any?>(parameterCount)
+    private val bindArgs = arrayOfNulls<Any?>(parameterCount)
     private var firstChunk: BatchChunk? = null
     private var currentChunk: BatchChunk? = null
     private var totalBatchCount = 0
@@ -136,6 +137,7 @@ internal open class JdbcPreparedStatement(
     override fun clearParameters() {
         checkClosed()
         parameters.fill(null)
+        bindArgs.fill(null)
     }
 
     override fun addBatch() {
@@ -213,8 +215,10 @@ internal open class JdbcPreparedStatement(
         }
     }
 
-    private fun buildBindArgs(): Array<out Any?> = Array(parameterCount) { i ->
-        TypeMapping.convertToSQLite(parameters[i])
+    private fun buildBindArgs(): Array<out Any?> = bindArgs.apply {
+        0.forUntil(parameterCount) {
+            this[it] = TypeMapping.convertToSQLite(parameters[it])
+        }
     }
 
     override fun setNull(parameterIndex: Int, sqlType: Int) {
