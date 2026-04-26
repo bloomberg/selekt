@@ -84,6 +84,12 @@ jmh {
     if (hasProperty("jmh.profilers")) {
         profilers.add(property("jmh.profilers").toString())
     }
+    if (hasProperty("jmh.params")) {
+        property("jmh.params").toString().split(";").forEach { entry ->
+            val (key, value) = entry.split("=", limit = 2)
+            benchmarkParameters.put(key, objects.listProperty(String::class.java).also { it.set(value.split(",")) })
+        }
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {
