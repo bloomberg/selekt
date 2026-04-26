@@ -115,7 +115,7 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           submodules: recursive
 
       - name: 'Setup Java 17'
@@ -182,7 +182,7 @@ jobs:
             **/build/reports/detekt
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport :koverXmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
         uses: actions/upload-artifact@v7.0.1
@@ -196,6 +196,20 @@ jobs:
             selekt-jdbc/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/testJava17
             selekt-sqlite3-classes/build/reports/tests/testJava25
+
+      - name: 'SonarCloud'
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=bloomberg-1
+            -Dsonar.projectKey=bloomberg_selekt
+            -Dsonar.sources=.
+            -Dsonar.inclusions=selekt-*/src/main/**
+            -Dsonar.test.inclusions=selekt-*/src/test/**
+            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/kover/report.xml
+            -Dsonar.java.binaries=**/build/classes
 
       - name: 'Build Selekt Android'
         run: |
