@@ -81,6 +81,7 @@ internal class SQLConnection(
     override fun close() {
         try {
             optimiseQuietly()
+            sqlite.progressHandler(pointer, 0, null)
             sqlite.commitHook(pointer, false, null)
             sqlite.closeV2(pointer)
         } finally {
@@ -227,6 +228,17 @@ internal class SQLConnection(
 
     override fun executeWithRetry(sql: String) = withPreparedStatement(sql) {
         step(configuration.busyTimeoutMillis.toLong())
+    }
+
+    override fun interrupt() {
+        sqlite.interrupt(pointer)
+    }
+
+    override val isInterrupted: Boolean
+        get() = sqlite.isInterrupted(pointer)
+
+    override fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
+        sqlite.progressHandler(pointer, instructionCount, handler)
     }
 
     override fun matches(key: String) = preparedStatements.containsKey(key)

@@ -118,6 +118,53 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun interrupt(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.interrupt()
+            verify(this@run, times(1)).interrupt(eq(DB))
+        }
+    }
+
+    @Test
+    fun isInterruptedFalse(): Unit = sqlite.run {
+        whenever(isInterrupted(any())) doReturn false
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertFalse(it.isInterrupted)
+        }
+    }
+
+    @Test
+    fun isInterruptedTrue(): Unit = sqlite.run {
+        whenever(isInterrupted(any())) doReturn true
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertTrue(it.isInterrupted)
+        }
+    }
+
+    @Test
+    fun setProgressHandler(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setProgressHandler(100, handler)
+            verify(this@run, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun clearProgressHandler(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setProgressHandler(0, null)
+            verify(this@run, times(1)).progressHandler(eq(DB), eq(0), isNull())
+        }
+    }
+
+    @Test
+    fun closeResetsProgressHandler(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).close()
+        verify(this@run, times(1)).progressHandler(eq(DB), eq(0), isNull())
+    }
+
+    @Test
     fun checkpointDefault(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.checkpoint()

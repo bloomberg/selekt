@@ -16,11 +16,14 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.IObjectFactory
 import com.bloomberg.selekt.pools.PoolConfiguration
 import com.bloomberg.selekt.pools.createObjectPool
 import java.io.Closeable
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import javax.annotation.concurrent.ThreadSafe
@@ -49,13 +52,23 @@ internal fun openConnectionPool(
     configuration: DatabaseConfiguration,
     random: IRandom,
     key: ByteArray?
-) = createObjectPool(
-    SQLConnectionFactory(path, sqlite, configuration, random, key?.let { Key(it) }),
-    sharedExecutor,
-    configuration.toPoolConfiguration()
-)
+): Pair<SQLExecutorPool, SQLConnectionFactory> {
+    val factory = SQLConnectionFactory(path, sqlite, configuration, random, key?.let { Key(it) })
+    val pool = createObjectPool(
+        factory,
+        sharedExecutor,
+        configuration.toPoolConfiguration()
+    )
+    return pool to factory
+}
 
-internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<String>
+internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<String> {
+    fun interrupt()
+
+    val isInterrupted: Boolean
+
+    fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?)
+}
 
 private fun DatabaseConfiguration.toPoolConfiguration() = PoolConfiguration(
     evictionDelayMillis = evictionDelayMillis,
@@ -72,20 +85,37 @@ internal class SQLConnectionFactory(
     private val key: Key?
 ) : IObjectFactory<CloseableSQLExecutor> {
     private val busyLock = Any()
+    private val connections: MutableSet<CloseableSQLExecutor> = Collections.newSetFromMap(ConcurrentHashMap())
 
     override fun close() {
         key?.zero()
     }
 
     override fun destroyObject(obj: CloseableSQLExecutor) = synchronized(busyLock) {
+        connections.remove(obj)
         obj.close()
     }
 
+    fun interrupt() {
+        connections.forEachCatching(CloseableSQLExecutor::interrupt)
+    }
+
+    val isInterrupted: Boolean
+        get() = connections.any(CloseableSQLExecutor::isInterrupted)
+
+    fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
+        connections.forEach { it.setProgressHandler(instructionCount, handler) }
+    }
+
     override fun makeObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key)
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key).also {
+            connections.add(it)
+        }
     }
 
     override fun makePrimaryObject() = synchronized(busyLock) {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key)
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
+            connections.add(it)
+        }
     }
 }

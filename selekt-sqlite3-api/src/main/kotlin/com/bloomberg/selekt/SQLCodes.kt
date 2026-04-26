@@ -26,6 +26,7 @@ const val SQL_BUSY: SQLCode = 5
 const val SQL_LOCKED: SQLCode = 6
 const val SQL_NOMEM: SQLCode = 7
 const val SQL_READONLY: SQLCode = 8
+const val SQL_INTERRUPT: SQLCode = 9
 const val SQL_IO_ERROR: SQLCode = 10
 const val SQL_CORRUPT: SQLCode = 11
 const val SQL_NOT_FOUND: SQLCode = 12

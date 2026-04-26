@@ -159,6 +159,8 @@ interface IExternalSQLite {
 
     fun prepareV2(db: Long, sql: String, length: Int, statementHolder: LongArray): SQLCode
 
+    fun progressHandler(db: Long, instructionCount: Int, handler: SQLProgressHandler?)
+
     fun rawKey(db: Long, key: ByteArray, length: Int): SQLCode
 
     fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
