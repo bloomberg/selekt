@@ -68,7 +68,7 @@ internal class SQLConnection(
             sqlite.exec(pointer, "PRAGMA secure_delete=${configuration.secureDelete.name}")
         }.exceptionOrNull()?.let {
             close()
-            throw IllegalStateException(it)
+            throw it
         }
     }
 
