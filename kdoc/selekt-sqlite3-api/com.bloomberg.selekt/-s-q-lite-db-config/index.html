@@ -1,0 +1,396 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>SQLiteDbConfig</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    Selekt
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">0.30.0-SNAPSHOT
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":selekt-sqlite3-api/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":selekt-sqlite3-api/main" data-filter=":selekt-sqlite3-api/main">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    Selekt
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-sqlite3-api::com.bloomberg.selekt/SQLiteDbConfig///PointingToDeclaration//-970061605">
+  <div class="breadcrumbs"><a href="../../index.html">selekt-sqlite3-api</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt</a><span class="delimiter">/</span><span class="current">SQLiteDbConfig</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>SQLite</span><wbr><span>Db</span><wbr><span><span>Config</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">SQLiteDbConfig</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-sqlite3-api/src/main/kotlin/com/bloomberg/selekt/SQLiteDbConfig.kt#L25">source</a>)</span></span></div><p class="paragraph">Constants for <a href="https://www.sqlite.org/c3ref/db_config.html">sqlite3_db_config</a> operations that use the boolean <code class="lang-kotlin">(int, int*)</code> variadic signature.</p><h4 class="tableheader">See also</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div></div></span></div><div><div class="title"><p class="paragraph"><a href="https://www.sqlite.org/c3ref/c_dbconfig_defensive.html">SQLite DBCONFIG constants</a></p></div></div></div></div></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="tableheader">Properties</h2>
+        <div class="table"><a data-name="-1240560878%2FProperties%2F-970061605" anchor-label="DEFENSIVE" id="-1240560878%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-e-f-e-n-s-i-v-e.html"><span><span>DEFENSIVE</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1240560878%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-d-e-f-e-n-s-i-v-e.html">DEFENSIVE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1010</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1319239538%2FProperties%2F-970061605" anchor-label="DQS_DDL" id="1319239538%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-q-s_-d-d-l.html"><span>DQS_</span><wbr><span>DDL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1319239538%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-d-q-s_-d-d-l.html">DQS_DDL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1014</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1383831099%2FProperties%2F-970061605" anchor-label="DQS_DML" id="1383831099%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-q-s_-d-m-l.html"><span>DQS_</span><wbr><span>DML</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1383831099%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-d-q-s_-d-m-l.html">DQS_DML</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1013</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-340487760%2FProperties%2F-970061605" anchor-label="ENABLE_FKEY" id="-340487760%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-f-k-e-y.html"><span>ENABLE_</span><wbr><span>FKEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-340487760%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-f-k-e-y.html">ENABLE_FKEY</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">998</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-593553405%2FProperties%2F-970061605" anchor-label="ENABLE_FTS3_TOKENIZER" id="-593553405%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-f-t-s3_-t-o-k-e-n-i-z-e-r.html"><span>ENABLE_</span><wbr><span>FTS3_</span><wbr><span>TOKENIZER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-593553405%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-f-t-s3_-t-o-k-e-n-i-z-e-r.html">ENABLE_FTS3_TOKENIZER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1002</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2027674499%2FProperties%2F-970061605" anchor-label="ENABLE_LOAD_EXTENSION" id="2027674499%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-l-o-a-d_-e-x-t-e-n-s-i-o-n.html"><span>ENABLE_</span><wbr><span>LOAD_</span><wbr><span>EXTENSION</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2027674499%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-l-o-a-d_-e-x-t-e-n-s-i-o-n.html">ENABLE_LOAD_EXTENSION</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1004</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1734318710%2FProperties%2F-970061605" anchor-label="ENABLE_QPSG" id="1734318710%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-q-p-s-g.html"><span>ENABLE_</span><wbr><span>QPSG</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1734318710%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-q-p-s-g.html">ENABLE_QPSG</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1006</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1691692647%2FProperties%2F-970061605" anchor-label="ENABLE_TRIGGER" id="-1691692647%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-t-r-i-g-g-e-r.html"><span>ENABLE_</span><wbr><span>TRIGGER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1691692647%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-t-r-i-g-g-e-r.html">ENABLE_TRIGGER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">999</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1688329020%2FProperties%2F-970061605" anchor-label="ENABLE_VIEW" id="-1688329020%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-a-b-l-e_-v-i-e-w.html"><span>ENABLE_</span><wbr><span>VIEW</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1688329020%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-n-a-b-l-e_-v-i-e-w.html">ENABLE_VIEW</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1015</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1828473126%2FProperties%2F-970061605" anchor-label="LEGACY_ALTER_TABLE" id="1828473126%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-e-g-a-c-y_-a-l-t-e-r_-t-a-b-l-e.html"><span>LEGACY_</span><wbr><span>ALTER_</span><wbr><span>TABLE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1828473126%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-e-g-a-c-y_-a-l-t-e-r_-t-a-b-l-e.html">LEGACY_ALTER_TABLE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1012</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="764542161%2FProperties%2F-970061605" anchor-label="LEGACY_FILE_FORMAT" id="764542161%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-e-g-a-c-y_-f-i-l-e_-f-o-r-m-a-t.html"><span>LEGACY_</span><wbr><span>FILE_</span><wbr><span>FORMAT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="764542161%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-e-g-a-c-y_-f-i-l-e_-f-o-r-m-a-t.html">LEGACY_FILE_FORMAT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1016</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1904525224%2FProperties%2F-970061605" anchor-label="NO_CKPT_ON_CLOSE" id="1904525224%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-o_-c-k-p-t_-o-n_-c-l-o-s-e.html"><span>NO_</span><wbr><span>CKPT_</span><wbr><span>ON_</span><wbr><span>CLOSE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1904525224%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-n-o_-c-k-p-t_-o-n_-c-l-o-s-e.html">NO_CKPT_ON_CLOSE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1005</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-387907382%2FProperties%2F-970061605" anchor-label="RESET_DATABASE" id="-387907382%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-s-e-t_-d-a-t-a-b-a-s-e.html"><span>RESET_</span><wbr><span>DATABASE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-387907382%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-r-e-s-e-t_-d-a-t-a-b-a-s-e.html">RESET_DATABASE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1008</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-209644431%2FProperties%2F-970061605" anchor-label="REVERSE_SCANORDER" id="-209644431%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-v-e-r-s-e_-s-c-a-n-o-r-d-e-r.html"><span>REVERSE_</span><wbr><span>SCANORDER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-209644431%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-r-e-v-e-r-s-e_-s-c-a-n-o-r-d-e-r.html">REVERSE_SCANORDER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1019</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="456353471%2FProperties%2F-970061605" anchor-label="STMT_SCANSTATUS" id="456353471%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-t-m-t_-s-c-a-n-s-t-a-t-u-s.html"><span>STMT_</span><wbr><span>SCANSTATUS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="456353471%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-t-m-t_-s-c-a-n-s-t-a-t-u-s.html">STMT_SCANSTATUS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1018</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="106608168%2FProperties%2F-970061605" anchor-label="TRIGGER_EQP" id="106608168%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-r-i-g-g-e-r_-e-q-p.html"><span>TRIGGER_</span><wbr><span>EQP</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="106608168%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-t-r-i-g-g-e-r_-e-q-p.html">TRIGGER_EQP</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1007</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-141588724%2FProperties%2F-970061605" anchor-label="TRUSTED_SCHEMA" id="-141588724%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-r-u-s-t-e-d_-s-c-h-e-m-a.html"><span>TRUSTED_</span><wbr><span>SCHEMA</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-141588724%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-t-r-u-s-t-e-d_-s-c-h-e-m-a.html">TRUSTED_SCHEMA</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1017</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="585798245%2FProperties%2F-970061605" anchor-label="WRITABLE_SCHEMA" id="585798245%2FProperties%2F-970061605" data-filterable-set=":selekt-sqlite3-api/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-sqlite3-api/main" data-filterable-set=":selekt-sqlite3-api/main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-w-r-i-t-a-b-l-e_-s-c-h-e-m-a.html"><span>WRITABLE_</span><wbr><span>SCHEMA</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="585798245%2FProperties%2F-970061605"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-sqlite3-api/main"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-w-r-i-t-a-b-l-e_-s-c-h-e-m-a.html">WRITABLE_SCHEMA</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1011</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
