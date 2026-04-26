@@ -28,6 +28,8 @@ import java.sql.SQLException
 import java.sql.Savepoint
 import java.util.Properties
 import java.util.concurrent.Executors
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -1186,5 +1188,90 @@ internal class JdbcConnectionTest {
                 rollback(savepoint)
             }
         }
+    }
+
+    @Test
+    fun preparedStatementPoolReturnsPooledInstance() {
+        val sql = "SELECT 1"
+        val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        preparedStatement.close()
+        val reusedStatement = connection.prepareStatement(sql)
+        assertSame(preparedStatement, reusedStatement)
+        assertFalse(reusedStatement.isClosed)
+    }
+
+    @Test
+    fun preparedStatementPoolReturnsDifferentForDifferentSql() {
+        val preparedStatementOne = connection.prepareStatement("SELECT 1") as JdbcPreparedStatement
+        preparedStatementOne.close()
+        val preparedStatementTwo = connection.prepareStatement("SELECT 2")
+        assertTrue(preparedStatementTwo is JdbcPreparedStatement)
+        assertNotSame(preparedStatementOne, preparedStatementTwo)
+    }
+
+    @Test
+    fun preparedStatementPoolReplacesOnSecondReturn() {
+        val sql = "SELECT 1"
+        val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        preparedStatement.close()
+        val reusedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        assertSame(preparedStatement, reusedStatement)
+        reusedStatement.close()
+        val reusedAgain = connection.prepareStatement(sql) as JdbcPreparedStatement
+        assertSame(preparedStatement, reusedAgain)
+    }
+
+    @Test
+    fun preparedStatementPoolClosedOnConnectionClose() {
+        val sql = "SELECT 1"
+        val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        preparedStatement.close()
+        assertTrue(preparedStatement.isClosed)
+        connection.close()
+        assertFailsWith<SQLException> {
+            connection.prepareStatement(sql)
+        }
+    }
+
+    @Test
+    fun preparedStatementNotPooledWhenConnectionClosed() {
+        val sql = "SELECT 1"
+        val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        connection.close()
+        assertTrue(connection.isClosed)
+        assertFalse(connection.returnPreparedStatement(preparedStatement))
+    }
+
+    @Test
+    fun preparedStatementPoolCapIsRespected() {
+        val statements = (0 until 32).map {
+            connection.prepareStatement("SELECT $it") as JdbcPreparedStatement
+        }
+        statements.forEach(JdbcPreparedStatement::close)
+        assertEquals(32, statements.size)
+    }
+
+    @Test
+    fun preparedStatementPoolEvictsWhenFull() {
+        val statements = (0 until 32).map {
+            connection.prepareStatement("SELECT $it") as JdbcPreparedStatement
+        }
+        statements.forEach(JdbcPreparedStatement::close)
+        val extraStatement = connection.prepareStatement("SELECT 99") as JdbcPreparedStatement
+        assertTrue(connection.returnPreparedStatement(extraStatement))
+        val reused = connection.prepareStatement("SELECT 99") as JdbcPreparedStatement
+        assertSame(extraStatement, reused)
+    }
+
+    @Test
+    fun preparedStatementPoolEvictionRemovesEldest() {
+        val statements = (0 until 32).map {
+            connection.prepareStatement("SELECT $it") as JdbcPreparedStatement
+        }
+        statements.forEach(JdbcPreparedStatement::close)
+        val extraStatement = connection.prepareStatement("SELECT 99") as JdbcPreparedStatement
+        extraStatement.close()
+        val evictedStatement = connection.prepareStatement("SELECT 0") as JdbcPreparedStatement
+        assertNotSame(statements[0], evictedStatement)
     }
 }

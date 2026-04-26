@@ -153,6 +153,14 @@ open class JdbcStatement internal constructor(
         }
     }
 
+    protected fun markClosed() {
+        CLOSED.set(this, true)
+    }
+
+    protected fun markOpen() {
+        CLOSED.set(this, false)
+    }
+
     override fun isClosed(): Boolean = closed
 
     override fun getResultSet(): ResultSet? = currentResultSet
