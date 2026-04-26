@@ -1,6 +1,24 @@
 Change Log
 ==========
 
+## Version 0.29.16
+
+### Fixes
+
+* Close the database connection on sqlite3_open_v2 failure.
+* Clear pending exception on GetMethodID failure in commitHook.
+* Delete localRef in sqlite3_jni.commitHook.
+* Check sqlite3_initialize succeeds in sqlite3_jni.nativeInit.
+* AutoByteArray is explicitly non-movable and non-copyable.
+* Fix increment in SQLiteDatabase page count when calculating maximum size.
+* Fix clamp for trimming memory when running low.
+* Throw original exception when attempting to initialise a connection.
+* Use existing pin to save copy of SQLite blob.
+* Take defensive copy of key in SQLiteDatabase.
+* Save an Array allocation when writing to chunks in JdbcPreparedStatement.
+* Fix ForwardCursor index offset.
+* Simplify SQLConnectionTest by removing Answer.
+
 ## Version 0.29.15
 
 ### Fixes
