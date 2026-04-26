@@ -117,10 +117,8 @@ class SQLiteDatabase private constructor(
 
     fun setMaximumSize(bytes: Long) = database.run {
         val currentPageSize = pageSize
-        val pageCount = (bytes / currentPageSize).also {
-            if (it % currentPageSize != 0L) {
-                it + 1
-            }
+        val pageCount = (bytes / currentPageSize).let {
+            if (bytes % currentPageSize != 0L) { it + 1 } else { it }
         }
         setMaxPageCount(pageCount) * currentPageSize
     }
