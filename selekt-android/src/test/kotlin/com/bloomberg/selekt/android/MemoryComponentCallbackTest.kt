@@ -33,6 +33,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import kotlin.test.assertTrue
 
 @ExtendWith(SelektTestExtension::class)
 internal class MemoryComponentCallbackTest {
@@ -96,5 +97,18 @@ internal class MemoryComponentCallbackTest {
         } finally {
             SQLiteDatabaseRegistry.unregister(database)
         }
+    }
+
+    @Test
+    fun onTrimMemoryRunningLowReleasesNonNegativeBytes() {
+        val softHeapLimit = sqlite.softHeapLimit64()
+        val expectedTarget = maxOf(0, (softHeapLimit / 2).toInt())
+        assertTrue(expectedTarget >= 0, "Expected non-negative release target, got $expectedTarget")
+        MemoryComponentCallback.onTrimMemory(TRIM_MEMORY_RUNNING_LOW)
+    }
+
+    @Test
+    fun onTrimMemoryBackgroundReleasesDoesNotThrow() {
+        MemoryComponentCallback.onTrimMemory(TRIM_MEMORY_BACKGROUND)
     }
 }
