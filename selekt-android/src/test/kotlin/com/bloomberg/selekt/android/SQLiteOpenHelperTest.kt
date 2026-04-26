@@ -181,6 +181,25 @@ internal class SQLiteOpenHelperTest {
         }
     }
 
+    @Test
+    fun keyIsCopiedBeforeOpen() {
+        val key = ByteArray(32) { 0x42 }
+        val helper = SQLiteOpenHelper(
+            context = targetContext,
+            configuration = ISQLiteOpenHelper.Configuration(
+                callback = mock(),
+                key = key,
+                name = file.name
+            ),
+            openParams = SQLiteOpenParams(),
+            version = 1
+        )
+        helper.use {
+            it.writableDatabase
+            assertTrue(key.all { b -> b == 0x42.toByte() }, "Original key should not be zeroed after database is opened")
+        }
+    }
+
     private fun createHelper(
         version: Int,
         callback: ISQLiteOpenHelper.Callback,
