@@ -70,6 +70,7 @@ public class JdbcBatchBenchmark {
 
     private Connection selektConnection;
     private Connection xerialConnection;
+    private PreparedStatement selektReusedStatement;
 
     private String[] names;
     private double[] values;
@@ -80,10 +81,15 @@ public class JdbcBatchBenchmark {
         generateTestData();
         setupSelekt();
         setupXerial();
+        selektReusedStatement = selektConnection.prepareStatement(INSERT_SQL);
     }
 
     @TearDown(Level.Iteration)
     public void tearDown() throws SQLException {
+        if (selektReusedStatement != null && !selektReusedStatement.isClosed()) {
+            selektReusedStatement.close();
+            selektReusedStatement = null;
+        }
         if (selektConnection != null && !selektConnection.isClosed()) {
             selektConnection.close();
         }
@@ -104,6 +110,7 @@ public class JdbcBatchBenchmark {
         final String url = "jdbc:sqlite:" + selektDatabaseFile.getAbsolutePath();
         selektConnection = SELEKT_DRIVER.connect(url, new Properties());
         try (Statement statement = selektConnection.createStatement()) {
+            statement.execute("PRAGMA page_size=16384");
             statement.execute("PRAGMA journal_mode=WAL");
             statement.execute(CREATE_TABLE_SQL);
         }
@@ -153,6 +160,27 @@ public class JdbcBatchBenchmark {
     @Benchmark
     public void selektBatchInsert(final Blackhole blackhole) throws SQLException {
         blackhole.consume(executeBatch(selektConnection));
+    }
+
+    @Benchmark
+    public void selektReusedBatchInsert(final Blackhole blackhole) throws SQLException {
+        selektConnection.setAutoCommit(false);
+        try {
+            for (int i = 0; i < batchSize; i++) {
+                selektReusedStatement.setInt(1, i);
+                selektReusedStatement.setString(2, names[i]);
+                selektReusedStatement.setDouble(3, values[i]);
+                selektReusedStatement.setBytes(4, blobs[i]);
+                selektReusedStatement.addBatch();
+            }
+            blackhole.consume(selektReusedStatement.executeBatch());
+            selektConnection.commit();
+        } catch (final SQLException e) {
+            selektConnection.rollback();
+            throw e;
+        } finally {
+            selektConnection.setAutoCommit(true);
+        }
     }
 
     @Benchmark
