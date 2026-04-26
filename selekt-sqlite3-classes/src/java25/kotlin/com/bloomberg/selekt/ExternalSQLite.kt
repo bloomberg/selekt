@@ -77,11 +77,10 @@ internal class ExternalSQLite(
         blob: ByteArray,
         length: Int
     ): SQLCode = Arena.ofConfined().use {
-        val blobSegment = it.allocateFrom(JAVA_BYTE, *blob)
         sqlite3_bind_blob.invoke(
             MemorySegment.ofAddress(statement),
             index,
-            blobSegment,
+            MemorySegment.ofArray(blob),
             length,
             sqliteTransient
         ) as Int
