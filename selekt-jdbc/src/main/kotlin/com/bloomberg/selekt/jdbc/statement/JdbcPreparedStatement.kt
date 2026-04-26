@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.commons.forUntil
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
@@ -151,8 +152,9 @@ internal open class JdbcPreparedStatement(
             }
         }
         currentChunk!!.run {
-            data[count] = Array(parameterCount) { i ->
-                TypeMapping.convertToSQLite(parameters[i])
+            val row = data[count] ?: Array<Any?>(parameterCount) { null }.also { data[count] = it }
+            0.forUntil(parameterCount) {
+                row[it] = TypeMapping.convertToSQLite(parameters[it])
             }
             ++count
         }
