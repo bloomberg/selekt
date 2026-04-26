@@ -141,6 +141,21 @@ internal class SQLiteDatabaseWALTest {
     }
 
     @Test
+    fun setMaximumSizeRoundsUpWhenNotPageAligned(): Unit = database.run {
+        val currentPageSize = pageSize
+        val unalignedSize = currentPageSize * 10 + 1
+        val result = setMaximumSize(unalignedSize)
+        assertEquals(currentPageSize * 11, result)
+    }
+
+    @Test
+    fun setMaximumSizeExactMultipleDoesNotRoundUp(): Unit = database.run {
+        val currentPageSize = pageSize
+        val alignedSize = currentPageSize * 10
+        val result = setMaximumSize(alignedSize)
+        assertEquals(alignedSize, result)
+    }
+    @Test
     fun integrityCheckMain(): Unit = database.run {
         assertTrue(integrityCheck("main"))
     }
