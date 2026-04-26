@@ -104,17 +104,19 @@ internal open class JdbcPreparedStatement(
 
     override fun executeUpdate(): Int {
         checkClosed()
-        return runCatching {
+        return try {
             connection.ensureTransaction()
             executeUpdate(database.compileStatement(sql, buildBindArgs()))
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
+            throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
     }
 
     override fun execute(): Boolean {
         checkClosed()
-        return runCatching {
+        return try {
             closeCurrentResultSet()
             connection.ensureTransaction()
             val statement = database.compileStatement(sql, buildBindArgs())
@@ -125,8 +127,10 @@ internal open class JdbcPreparedStatement(
                 executeUpdate(statement)
                 false
             }
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
+            throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
     }
 
