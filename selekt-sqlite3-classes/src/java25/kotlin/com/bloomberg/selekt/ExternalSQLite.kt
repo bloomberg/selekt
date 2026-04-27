@@ -171,17 +171,17 @@ internal class ExternalSQLite(
                 val result = when (arg) {
                     is String -> sqlite3_bind_text.invoke(
                         segment, position, arena.allocateFrom(arg), -1, sqliteTransient
-                    ) as Int
-                    is Int -> sqlite3_bind_int.invoke(segment, position, arg) as Int
-                    null -> sqlite3_bind_null.invoke(segment, position) as Int
-                    is Long -> sqlite3_bind_int64.invoke(segment, position, arg) as Int
-                    is Double -> sqlite3_bind_double.invoke(segment, position, arg) as Int
+                    )
+                    is Int -> sqlite3_bind_int.invoke(segment, position, arg)
+                    null -> sqlite3_bind_null.invoke(segment, position)
+                    is Long -> sqlite3_bind_int64.invoke(segment, position, arg)
+                    is Double -> sqlite3_bind_double.invoke(segment, position, arg)
                     is ByteArray -> sqlite3_bind_blob.invoke(
                         segment, position, MemorySegment.ofArray(arg), arg.size, sqliteTransient
-                    ) as Int
+                    )
                     else -> throw IllegalArgumentException(
                         "Cannot bind arg of class ${arg.javaClass} at position $position.")
-                }
+                } as Int
                 if (result != SQL_OK) {
                     return result
                 }
