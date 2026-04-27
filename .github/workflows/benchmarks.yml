@@ -19,7 +19,7 @@ jobs:
       - name: 'Install system packages'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+          sudo apt-get install -y --no-install-recommends clang gcc jq make sed tcl
 
       - name: 'Checkout'
         uses: actions/checkout@v6
@@ -52,10 +52,8 @@ jobs:
 
       - name: 'Merge results'
         run: |
-          sudo apt-get install -y jq
           jq -s 'add' \
             selekt-jdbc/build/results/jmh/results.json \
-            selekt-java/build/results/jmh/results.json \
             > combined-results.json
 
       - name: 'Store benchmark results'
@@ -78,4 +76,3 @@ jobs:
           name: 'JMH Results'
           path: |
             selekt-jdbc/build/results/jmh/
-            selekt-java/build/results/jmh/
