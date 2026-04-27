@@ -78,6 +78,7 @@ dependencies {
 }
 
 jmh {
+    jvmArgs.add("-XX:+UseCompactObjectHeaders")
     resultFormat.set("JSON")
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())

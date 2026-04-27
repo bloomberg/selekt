@@ -44,6 +44,8 @@ interface IExternalSQLite {
 
     fun bindZeroBlob(statement: Long, index: Int, length: Int): SQLCode
 
+    fun <T> withScopedArena(block: () -> T): T = block()
+
     /**
      * Bind all arguments to a prepared statement.
      *

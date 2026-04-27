@@ -34,6 +34,18 @@ private fun <T> emptyIterator() = object : Iterator<T> {
     override fun next() = throw NoSuchElementException()
 }
 
+@JvmSynthetic
+inline fun <T> List<T>.forEachByIndexUntil(
+    from: Int = 0,
+    to: Int = size,
+    block: (Int, T) -> Unit
+) {
+    var i = from
+    while (i < to) {
+        block(i, this[i++])
+    }
+}
+
 inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwable> {
     val throwables = mutableListOf<Throwable>()
     forEach {

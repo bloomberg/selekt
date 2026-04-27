@@ -71,6 +71,8 @@ open class SQLite(
         sqlite.bindRow(statement, args)
     )
 
+    fun <T> withScopedArena(block: () -> T): T = sqlite.withScopedArena(block)
+
     fun blobBytes(blob: Long) = sqlite.blobBytes(blob)
 
     fun blobClose(blob: Long) = checkSQLCode(sqlite.blobClose(blob))

@@ -31,6 +31,7 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 
 private val databaseConfiguration = DatabaseConfiguration(
@@ -49,11 +50,15 @@ internal class SQLDatabaseTest {
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
-        whenever(sqlite.openV2(any(), any(), any())).thenAnswer {
+        whenever(sqlite.withScopedArena(any<() -> Any?>())) doAnswer {
+            @Suppress("UNCHECKED_CAST")
+            (it.arguments[0] as () -> Any?).invoke()
+        }
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())).thenAnswer {
+        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = STMT
             0
         }
