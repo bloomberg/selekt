@@ -16,6 +16,8 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.commons.forEachByPosition
+
 private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
 
 data class SQLiteConfiguration(
@@ -41,6 +43,29 @@ interface IExternalSQLite {
     fun bindText(statement: Long, index: Int, value: String): SQLCode
 
     fun bindZeroBlob(statement: Long, index: Int, length: Int): SQLCode
+
+    /**
+     * Bind all arguments to a prepared statement.
+     *
+     * @param args values to bind at 1-based positions.
+     */
+    fun bindRow(statement: Long, args: Array<out Any?>): SQLCode {
+        args.forEachByPosition { arg, position ->
+            val result = when (arg) {
+                is String -> bindText(statement, position, arg)
+                is Int -> bindInt(statement, position, arg)
+                null -> bindNull(statement, position)
+                is Long -> bindInt64(statement, position, arg)
+                is Double -> bindDouble(statement, position, arg)
+                is ByteArray -> bindBlob(statement, position, arg, arg.size)
+                else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
+            }
+            if (result != SQL_OK) {
+                return result
+            }
+        }
+        return SQL_OK
+    }
 
     fun blobBytes(blob: Long): Int
 

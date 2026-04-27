@@ -16,8 +16,8 @@
 
 package com.bloomberg.selekt.commons
 
-import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import org.junit.jupiter.api.Test
 
 internal class ArraysTest {
     @Test

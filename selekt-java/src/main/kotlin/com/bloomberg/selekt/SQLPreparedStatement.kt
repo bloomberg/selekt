@@ -101,6 +101,10 @@ internal class SQLPreparedStatement(
         sqlite.bindZeroBlob(pointer, index, length)
     }
 
+    fun bindRow(args: Array<out Any?>) {
+        sqlite.bindRow(pointer, args)
+    }
+
     fun clearBindings() {
         sqlite.clearBindings(pointer)
     }

@@ -44,7 +44,7 @@ inline fun <T> Array<T>.forEachByPositionUntil(index: Int, block: (T, Int) -> Un
 }
 
 @JvmSynthetic
-internal fun <T, A : Appendable> Array<out T>.joinTo(buffer: A, separator: Char) = buffer.apply {
+fun <T, A : Appendable> Array<out T>.joinTo(buffer: A, separator: Char) = buffer.apply {
     forEachByIndex { index, value ->
         if (index > 0) {
             append(separator)

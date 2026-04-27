@@ -587,7 +587,6 @@ internal class ExternalSQLiteTest {
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
         val db = dbHolder[0]
         try {
-            // Transaction state can be 0 (none), 1 (read), or 2 (write)
             val initialState = sqlite.transactionState(db)
             assertTrue(initialState >= 0)
             sqlite.exec(db, "CREATE TABLE IF NOT EXISTS test (id INTEGER)")
@@ -861,7 +860,6 @@ internal class ExternalSQLiteTest {
         try {
             sqlite.interrupt(db)
             assertTrue(sqlite.isInterrupted(db) != 0)
-            // Executing a statement should clear the interrupt flag.
             sqlite.exec(db, "SELECT 1")
             assertEquals(0, sqlite.isInterrupted(db))
         } finally {
@@ -1108,5 +1106,233 @@ internal class ExternalSQLiteTest {
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
         val db = dbHolder[0]
         assertEquals(SQL_OK, sqlite.closeV2(db))
+    }
+
+    @Test
+    fun `bindRow with string`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf("hello")))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals("hello", sqlite.columnText(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with int`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf(42)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(42, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with null`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf(null)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(SQL_NULL, sqlite.columnType(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with long`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf(Long.MAX_VALUE)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(Long.MAX_VALUE, sqlite.columnInt64(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with double`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf(3.14)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(3.14, sqlite.columnDouble(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with blob`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val blob = byteArrayOf(1, 2, 3)
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf(blob)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(blob.toList(), sqlite.columnBlob(statement, 0)!!.toList())
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with empty args`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, emptyArray()))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(1, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow with mixed types`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?, ?, ?, ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf<Any?>("text", 42, 3.14, null)))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals("text", sqlite.columnText(statement, 0))
+                assertEquals(42, sqlite.columnInt(statement, 1))
+                assertEquals(3.14, sqlite.columnDouble(statement, 2))
+                assertEquals(SQL_NULL, sqlite.columnType(statement, 3))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow throws on unsupported type`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                assertFailsWith<IllegalArgumentException> {
+                    sqlite.bindRow(statement, arrayOf<Any>(Any()))
+                }
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindRow in batch insert`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER, name TEXT)")
+            val sql = "INSERT INTO t VALUES (?, ?)"
+            val statementHolder = LongArray(1)
+            sqlite.prepareV2(db, sql, sql.length + 1, statementHolder)
+            val statement = statementHolder[0]
+            try {
+                for (i in 1..3) {
+                    sqlite.reset(statement)
+                    sqlite.clearBindings(statement)
+                    assertEquals(SQL_OK, sqlite.bindRow(statement, arrayOf<Any?>(i, "name$i")))
+                    sqlite.step(statement)
+                }
+            } finally {
+                sqlite.finalize(statement)
+            }
+            val selectSql = "SELECT COUNT(*) FROM t"
+            sqlite.prepareV2(db, selectSql, selectSql.length + 1, statementHolder)
+            val selectStmt = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(selectStmt))
+                assertEquals(3, sqlite.columnInt(selectStmt, 0))
+            } finally {
+                sqlite.finalize(selectStmt)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
     }
 }
