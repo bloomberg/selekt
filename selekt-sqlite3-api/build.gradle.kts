@@ -41,6 +41,10 @@ java {
     withSourcesJar()
 }
 
+dependencies {
+    implementation(projects.selektCommons)
+}
+
 publishing {
     publications {
         register<MavenPublication>("main") {

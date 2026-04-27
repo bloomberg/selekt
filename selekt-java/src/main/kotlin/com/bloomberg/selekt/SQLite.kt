@@ -66,6 +66,11 @@ open class SQLite(
         sqlite.bindZeroBlob(statement, index, length)
     )
 
+    fun bindRow(statement: Long, args: Array<out Any?>) = checkBindSQLCode(
+        statement,
+        sqlite.bindRow(statement, args)
+    )
+
     fun blobBytes(blob: Long) = sqlite.blobBytes(blob)
 
     fun blobClose(blob: Long) = checkSQLCode(sqlite.blobClose(blob))

@@ -119,7 +119,7 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         bindArgs.forEach {
             reset()
-            bindArguments(it)
+            bindRow(it)
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
@@ -139,7 +139,7 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         for (i in bindArgs.indices) {
             reset()
-            bindArguments(bindArgs[i])
+            bindRow(bindArgs[i])
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }
@@ -156,7 +156,7 @@ internal class SQLConnection(
         val changes = sqlite.totalChanges(pointer)
         for (i in fromIndex until toIndex) {
             reset()
-            bindArguments(bindArgs[i])
+            bindRow(bindArgs[i])
             if (SQL_DONE != step()) {
                 return@withPreparedStatement -1
             }

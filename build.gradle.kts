@@ -100,10 +100,9 @@ subprojects {
                     add(name, platform(libs.kotlinx.coroutines.bom))
                 }
                 configurations.getByName("testImplementation") {
+                    add(name, libs.bundles.mockito)
                     add(name, libs.kotlin.test)
                     add(name, libs.kotlinx.coroutines.core)
-                    add(name, libs.mockito.core)
-                    add(name, libs.mockito.kotlin)
                 }
             }
         }

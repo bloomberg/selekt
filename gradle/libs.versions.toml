@@ -43,6 +43,10 @@ slf4j-api = { module = "org.slf4j:slf4j-api", version = "2.0.17" }
 xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version = "3.51.1.0" }
 
 [bundles]
+mockito = [
+    "mockito-core",
+    "mockito-kotlin"
+]
 
 [plugins]
 androidx-benchmark = { id = "androidx.benchmark", version.ref = "benchmark" }
