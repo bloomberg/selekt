@@ -56,6 +56,9 @@ jobs:
             selekt-jdbc/build/results/jmh/results.json \
             > combined-results.json
 
+      - name: 'Restore working tree'
+        run: git checkout -- .
+
       - name: 'Store benchmark results'
         uses: benchmark-action/github-action-benchmark@v1
         with:
