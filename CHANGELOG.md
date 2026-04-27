@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 0.30.1
+
+### Fixes
+
+* Increase default JDBC default batch chunk size to 1024 (from 128).
+* Save an internal bounds check when trimming SQL.
+* Periodically generate JMH benchmarks.
+* Route batch execution through Iterable instead of Sequence.
+* Use the same Arena for a JDBC row binding.
+
 ## Version 0.30.0
 
 ### Fixes
