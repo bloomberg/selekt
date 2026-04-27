@@ -48,10 +48,7 @@ jobs:
           echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
       - name: 'Run JDBC benchmarks'
-        run: ./gradlew :selekt-jdbc:jmh -Pjmh.profilers=gc
-
-      - name: 'Run Java benchmarks'
-        run: ./gradlew :selekt-java:jmh -Pjmh.profilers=gc
+        run: ./gradlew :selekt-jdbc:jmh -Pjmh.includes="JdbcBatchBenchmark\..*BatchInsert" -Pjmh.profilers=gc -Pjmh.params="batchSize=1000"
 
       - name: 'Merge results'
         run: |
