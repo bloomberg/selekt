@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.30.2
+
+### Fixes
+
+* Pool JdbcPreparedStatements.
+
 ## Version 0.30.1
 
 ### Fixes
