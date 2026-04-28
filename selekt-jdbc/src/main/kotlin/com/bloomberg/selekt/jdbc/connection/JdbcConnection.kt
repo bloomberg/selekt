@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLitePragma
+import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
@@ -47,6 +48,8 @@ import javax.annotation.concurrent.NotThreadSafe
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+private const val MAX_POOLED_STATEMENTS = 32
+
 @Suppress("MethodOverloading", "TooGenericExceptionCaught", "Detekt.StringLiteralDuplication")
 @NotThreadSafe
 internal class JdbcConnection(
@@ -74,6 +77,7 @@ internal class JdbcConnection(
     private var networkTimeout = 0
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
+    private val preparedStatementPool = LinkedHashMap<String, JdbcPreparedStatement>()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
 
@@ -126,6 +130,10 @@ internal class JdbcConnection(
         checkClosed()
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
+        preparedStatementPool.remove(sql)?.let {
+            it.reopen()
+            return it
+        }
         return JdbcPreparedStatement(this, database, sql, resultSetType, resultSetConcurrency, resultSetHoldability)
     }
 
@@ -295,12 +303,33 @@ internal class JdbcConnection(
 
     override fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
+            closePreparedStatementPool()
             sharedDatabase.runCatching {
                 release()
             }.onFailure { e ->
                 logger.warn("Error releasing database on connection close: ${e.message}")
             }
         }
+    }
+
+    private fun closePreparedStatementPool() {
+        preparedStatementPool.run {
+            values.forEachCatching(JdbcPreparedStatement::closePooled)
+            clear()
+        }
+    }
+
+    internal fun returnPreparedStatement(statement: JdbcPreparedStatement): Boolean {
+        if (closed) {
+            return false
+        }
+        if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !preparedStatementPool.containsKey(statement.sql)) {
+            val eldest = preparedStatementPool.entries.iterator().next()
+            preparedStatementPool.remove(eldest.key)
+            runCatching { eldest.value.closePooled() }
+        }
+        preparedStatementPool[statement.sql] = statement
+        return true
     }
 
     override fun isClosed(): Boolean = closed

@@ -164,6 +164,27 @@ internal open class JdbcPreparedStatement(
         }
     }
 
+    override fun close() {
+        if (!isClosed) {
+            clearParameters()
+            clearBatch()
+            closeCurrentResultSet()
+            if (connection.returnPreparedStatement(this)) {
+                markClosed()
+            } else {
+                super.close()
+            }
+        }
+    }
+
+    internal fun reopen() {
+        markOpen()
+    }
+
+    internal fun closePooled() {
+        super.close()
+    }
+
     override fun clearParameters() {
         checkClosed()
         parameters.fill(null)
