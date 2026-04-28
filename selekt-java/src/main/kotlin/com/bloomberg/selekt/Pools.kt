@@ -26,7 +26,9 @@ import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.concurrent.withLock
 
 private const val KEEP_ALIVE_MULTIPLIER = 1.5
 
@@ -84,14 +86,14 @@ internal class SQLConnectionFactory(
     private val random: IRandom,
     private val key: Key?
 ) : IObjectFactory<CloseableSQLExecutor> {
-    private val busyLock = Any()
+    private val busyLock = ReentrantLock()
     private val connections: MutableSet<CloseableSQLExecutor> = Collections.newSetFromMap(ConcurrentHashMap())
 
     override fun close() {
         key?.zero()
     }
 
-    override fun destroyObject(obj: CloseableSQLExecutor) = synchronized(busyLock) {
+    override fun destroyObject(obj: CloseableSQLExecutor) = busyLock.withLock {
         connections.remove(obj)
         obj.close()
     }
@@ -107,13 +109,13 @@ internal class SQLConnectionFactory(
         connections.forEach { it.setProgressHandler(instructionCount, handler) }
     }
 
-    override fun makeObject() = synchronized(busyLock) {
+    override fun makeObject() = busyLock.withLock {
         SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key).also {
             connections.add(it)
         }
     }
 
-    override fun makePrimaryObject() = synchronized(busyLock) {
+    override fun makePrimaryObject() = busyLock.withLock {
         SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
             connections.add(it)
         }

@@ -31,6 +31,8 @@ import java.lang.foreign.ValueLayout.JAVA_LONG
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -62,13 +64,15 @@ internal class ExternalSQLite(
     }
 
     internal object Singleton {
+        private val lock = ReentrantLock()
+
         @Volatile
         private var instance: IExternalSQLite? = null
 
         operator fun invoke(
             configuration: SQLiteConfiguration,
             loader: () -> Unit
-        ): IExternalSQLite = instance ?: synchronized(this) {
+        ): IExternalSQLite = instance ?: lock.withLock {
             instance ?: ExternalSQLite(configuration, loader).also { instance = it }
         }
     }
