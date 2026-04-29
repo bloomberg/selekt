@@ -71,7 +71,7 @@ private object SharedSqlBuilder {
 @ThreadSafe
 class SQLDatabase(
     val path: String,
-    sqlite: SQLite,
+    private val sqlite: SQLite,
     configuration: DatabaseConfiguration,
     key: ByteArray?,
     random: IRandom = CommonThreadLocalRandom
@@ -117,6 +117,8 @@ class SQLDatabase(
     fun batch(sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
+
+    override fun beginDeferredTransaction() = pledge { session().beginDeferredTransaction() }
 
     override fun beginExclusiveTransaction() = pledge { session().beginExclusiveTransaction() }
 
@@ -388,6 +390,7 @@ class SQLDatabase(
     ): T = pledge {
         val session = session()
         when (transactionMode) {
+            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
         }
@@ -405,11 +408,12 @@ class SQLDatabase(
     ): T = pledge {
         val session = session()
         when (transactionMode) {
+            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
         }
         try {
-            block(this).also { session.setTransactionSuccessful() }
+            block(this@SQLDatabase).also { session.setTransactionSuccessful() }
         } finally {
             session.endTransaction()
         }
