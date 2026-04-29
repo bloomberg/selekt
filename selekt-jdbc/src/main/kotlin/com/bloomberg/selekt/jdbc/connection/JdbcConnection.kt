@@ -494,11 +494,7 @@ internal class JdbcConnection(
 
     internal fun ensureTransaction() {
         if (!autoCommit && !database.inTransaction) {
-            if (readOnly) {
-                database.beginDeferredTransaction()
-            } else {
-                database.beginImmediateTransaction()
-            }
+            database.beginImmediateTransaction()
         }
     }
 
