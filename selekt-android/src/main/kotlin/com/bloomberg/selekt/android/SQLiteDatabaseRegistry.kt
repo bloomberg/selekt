@@ -18,23 +18,25 @@ package com.bloomberg.selekt.android
 
 import android.util.Log
 import com.bloomberg.selekt.pools.Priority
+import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
+import kotlin.concurrent.withLock
 
 internal object SQLiteDatabaseRegistry {
-    private val lock = Any()
+    private val lock = ReentrantLock()
     @GuardedBy("lock")
     private val store = mutableSetOf<SQLiteDatabase>()
 
-    fun register(database: SQLiteDatabase) = synchronized(lock) {
+    fun register(database: SQLiteDatabase) = lock.withLock {
         require(store.add(database)) { "Failed to register a database, ${store.count()} registered." }
     }
 
-    fun unregister(database: SQLiteDatabase) = synchronized(lock) {
+    fun unregister(database: SQLiteDatabase) = lock.withLock {
         require(store.remove(database)) { "Failed to unregister a database, ${store.count()} registered." }
     }
 
     fun releaseMemory(priority: Priority) {
-        synchronized(lock) { store.toList() }.run {
+        lock.withLock { store.toList() }.run {
             forEach {
                 it.releaseMemory(priority)
             }

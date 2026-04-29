@@ -31,8 +31,10 @@ import java.sql.DriverManager
 import java.sql.DriverPropertyInfo
 import java.sql.SQLException
 import java.util.Properties
+import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Logger as JulLogger
 import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -74,7 +76,7 @@ class SelektDriver : Driver {
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
-        private val databaseCacheLock = Any()
+        private val databaseCacheLock = ReentrantLock()
         private val databaseCache = LinkedHashMap<String, SharedDatabase>(16, 0.75f, true)
         private var maxCachedDatabases: Int = System.getProperty(
             "selekt.jdbc.maxCachedDatabases",
@@ -88,7 +90,7 @@ class SelektDriver : Driver {
                     start = false,
                     name = "selekt-driver-shutdown"
                 ) {
-                    synchronized(databaseCacheLock) {
+                    databaseCacheLock.withLock {
                         databaseCache.values.toList().also {
                             databaseCache.clear()
                         }
@@ -180,13 +182,13 @@ class SelektDriver : Driver {
             return SharedDatabase(createDatabase(connectionURL, properties))
         }
         val evicted = mutableListOf<SharedDatabase>()
-        val sharedDatabase = synchronized(databaseCacheLock) {
+        val sharedDatabase = databaseCacheLock.withLock {
             if (requestedMaxCachedDatabases != null && requestedMaxCachedDatabases > 0) {
                 maxCachedDatabases = requestedMaxCachedDatabases
             }
             databaseCache.getOrPut(cacheKey) {
                 SharedDatabase(createDatabase(connectionURL, properties)) {
-                    synchronized(databaseCacheLock) {
+                    databaseCacheLock.withLock {
                         databaseCache.remove(cacheKey)
                     }
                 }

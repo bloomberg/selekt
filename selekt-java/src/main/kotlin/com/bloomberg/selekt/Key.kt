@@ -17,10 +17,12 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.zero
+import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
+import kotlin.concurrent.withLock
 
 internal class Key(value: ByteArray) {
-    private val lock = Any()
+    private val lock = ReentrantLock()
 
     @GuardedBy("lock")
     private val value: ByteArray = value.copyOf()
@@ -28,14 +30,14 @@ internal class Key(value: ByteArray) {
     @GuardedBy("lock")
     private var isDestroyed = false
 
-    fun zero() = synchronized(lock) {
+    fun zero() = lock.withLock {
         if (!isDestroyed) {
             value.zero()
             isDestroyed = true
         }
     }
 
-    inline fun <R> use(action: (ByteArray) -> R) = synchronized(lock) {
+    inline fun <R> use(action: (ByteArray) -> R) = lock.withLock {
         check(!isDestroyed) { "Key is destroyed." }
         value.copyOf()
     }.let {
