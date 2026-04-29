@@ -45,7 +45,8 @@ private class SQLSessionState(
     var outerSuccessful: Boolean = false,
     var savepointStack: ArrayList<SavepointInfo> = ArrayList(),
     var transactionSql: String = "",
-    var transactionListener: SQLTransactionListener? = null
+    var transactionListener: SQLTransactionListener? = null,
+    var transactionPrimary: Boolean = true
 ) {
     fun clear() {
         inOuterTransaction = false
@@ -53,6 +54,7 @@ private class SQLSessionState(
         savepointStack = ArrayList()
         transactionSql = ""
         transactionListener = null
+        transactionPrimary = true
     }
 }
 
@@ -75,6 +77,8 @@ internal class SQLSession(
     private val useNativeListeners: Boolean = false
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
     private val state = SQLSessionState()
+
+    override fun beginDeferredTransaction() = begin(SQLiteTransactionMode.DEFERRED, null)
 
     override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
 
@@ -164,13 +168,14 @@ internal class SQLSession(
         val oldSavepointStack = state.savepointStack
         val oldTransactionSql = state.transactionSql
         val oldTransactionListener = state.transactionListener
+        val oldTransactionPrimary = state.transactionPrimary
         val oldRetainCount = retainCount
         state.outerSuccessful = true
         internalEnd(oldRetainCount)
         if (pauseMillis > 0L) {
             Thread.sleep(pauseMillis)
         }
-        internalBegin(oldTransactionSql, oldTransactionListener, oldRetainCount)
+        internalBegin(oldTransactionSql, oldTransactionListener, oldRetainCount, oldTransactionPrimary)
         state.apply {
             inOuterTransaction = true
             outerSuccessful = false
@@ -251,11 +256,11 @@ internal class SQLSession(
     private fun begin(
         mode: SQLiteTransactionMode,
         listener: SQLTransactionListener?
-    ) = begin(mode.sql, listener)
+    ) = begin(mode.sql, listener, primary = mode != SQLiteTransactionMode.DEFERRED)
 
-    private fun begin(sql: String, listener: SQLTransactionListener?) {
+    private fun begin(sql: String, listener: SQLTransactionListener?, primary: Boolean = true) {
         if (!state.inOuterTransaction) {
-            internalBegin(sql, listener)
+            internalBegin(sql, listener, primary = primary)
             state.inOuterTransaction = true
         } else {
             SavepointInfo("sp_auto_${state.savepointStack.size}").let {
@@ -270,9 +275,10 @@ internal class SQLSession(
     private fun internalBegin(
         sql: String,
         listener: SQLTransactionListener?,
-        permits: Int = 1
+        permits: Int = 1,
+        primary: Boolean = true
     ) {
-        retain(true, sql, permits).runCatching {
+        retain(primary, sql, permits).runCatching {
             executeWithRetry(sql)
             listener?.let {
                 state.transactionListener = it
@@ -288,6 +294,7 @@ internal class SQLSession(
             throw it
         }
         state.transactionSql = sql
+        state.transactionPrimary = primary
     }
 
     private fun internalEnd(permits: Int = 1) {
@@ -343,6 +350,8 @@ internal class SQLSession(
 
 interface ISQLTransactor {
     val inTransaction: Boolean
+
+    fun beginDeferredTransaction()
 
     fun beginExclusiveTransaction()
 

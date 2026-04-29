@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 enum class SQLiteTransactionMode {
+    DEFERRED,
     EXCLUSIVE,
     IMMEDIATE;
 

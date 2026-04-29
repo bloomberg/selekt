@@ -183,8 +183,7 @@ internal class ExternalSQLite(
                     is ByteArray -> sqlite3_bind_blob.invoke(
                         segment, position, MemorySegment.ofArray(arg), arg.size, sqliteTransient
                     )
-                    else -> throw IllegalArgumentException(
-                        "Cannot bind arg of class ${arg.javaClass} at position $position.")
+                    else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
                 } as Int
                 if (result != SQL_OK) {
                     return result
