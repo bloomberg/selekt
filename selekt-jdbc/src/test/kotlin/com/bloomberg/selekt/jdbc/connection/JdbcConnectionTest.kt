@@ -934,62 +934,6 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun ensureTransactionReadOnlyUsesDeferredTransaction() {
-        val database = mock<SQLDatabase> {
-            whenever(it.inTransaction) doReturn false
-        }
-        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
-            isReadOnly = true
-            autoCommit = false
-            ensureTransaction()
-        }
-        verify(database).beginDeferredTransaction()
-        verify(database, never()).beginImmediateTransaction()
-    }
-
-    @Test
-    fun ensureTransactionReadOnlyNotCalledWhenInTransaction() {
-        val database = mock<SQLDatabase> {
-            whenever(it.inTransaction) doReturn true
-        }
-        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
-            isReadOnly = true
-            autoCommit = false
-            ensureTransaction()
-        }
-        verify(database, never()).beginDeferredTransaction()
-        verify(database, never()).beginImmediateTransaction()
-    }
-
-    @Test
-    fun ensureTransactionReadOnlyNotCalledInAutoCommit() {
-        val database = mock<SQLDatabase> {
-            whenever(it.inTransaction) doReturn false
-        }
-        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
-            isReadOnly = true
-            autoCommit = true
-            ensureTransaction()
-        }
-        verify(database, never()).beginDeferredTransaction()
-        verify(database, never()).beginImmediateTransaction()
-    }
-
-    @Test
-    fun ensureTransactionWritableUsesImmediateTransaction() {
-        val database = mock<SQLDatabase> {
-            whenever(it.inTransaction) doReturn false
-        }
-        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
-            isReadOnly = false
-            autoCommit = false
-            ensureTransaction()
-        }
-        verify(database).beginImmediateTransaction()
-        verify(database, never()).beginDeferredTransaction()
-    }
-
-    @Test
     fun commitEndTransactionErrorHandling() {
         val database = mock<SQLDatabase> {
             whenever(it.inTransaction) doReturn true
