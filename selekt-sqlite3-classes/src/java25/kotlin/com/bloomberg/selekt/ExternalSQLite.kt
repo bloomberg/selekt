@@ -44,9 +44,7 @@ fun externalSQLiteSingleton(
 private inline fun MemorySegment.getConfinedString(): String = if (address() == 0L) {
     ""
 } else {
-    Arena.ofConfined().use { arena ->
-        reinterpret(Long.MAX_VALUE, arena, null).getString(0)
-    }
+    reinterpret(Long.MAX_VALUE).getString(0)
 }
 
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
