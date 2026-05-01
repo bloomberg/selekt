@@ -76,6 +76,11 @@ internal class SQLSession(
 ) : Session<String, CloseableSQLExecutor>(pool), ISQLTransactor {
     private val state = SQLSessionState()
 
+    override fun beginDeferredTransaction() = begin(SQLiteTransactionMode.DEFERRED, null)
+
+    override fun beginDeferredTransactionWithListener(listener: SQLTransactionListener) =
+        begin(SQLiteTransactionMode.DEFERRED, listener)
+
     override fun beginExclusiveTransaction() = begin(SQLiteTransactionMode.EXCLUSIVE, null)
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) =
@@ -341,8 +346,13 @@ internal class SQLSession(
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }
 }
 
+@Suppress("Detekt.ComplexInterface")
 interface ISQLTransactor {
     val inTransaction: Boolean
+
+    fun beginDeferredTransaction()
+
+    fun beginDeferredTransactionWithListener(listener: SQLTransactionListener)
 
     fun beginExclusiveTransaction()
 
