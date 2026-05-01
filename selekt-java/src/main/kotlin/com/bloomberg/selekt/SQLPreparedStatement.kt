@@ -141,27 +141,26 @@ internal class SQLPreparedStatement(
 
     fun step(intervalMillis: Long): SQLCode {
         require(intervalMillis > -1L) { "Interval must be non-negative." }
-        return stepUntil(intervalMillis + System.nanoTime() / NANOS_PER_MILLI)
+        return stepUntil(deadlineNanos = System.nanoTime() + intervalMillis * NANOS_PER_MILLI)
     }
 
-    private tailrec fun stepUntil(expireAtMillis: Long): SQLCode = when (sqlite.stepWithoutThrowing(pointer)) {
+    private tailrec fun stepUntil(deadlineNanos: Long): SQLCode = when (sqlite.stepWithoutThrowing(pointer)) {
         SQL_ROW -> SQL_ROW
         SQL_DONE -> SQL_DONE
         SQL_BUSY -> {
-            pauseElseExpire(expireAtMillis)
-            stepUntil(expireAtMillis)
+            pauseElseExpire(deadlineNanos)
+            stepUntil(deadlineNanos)
         }
         else -> sqlite.throwSQLException(sqlite.databaseHandle(pointer))
     }
 
-    private fun pauseElseExpire(expireAtMillis: Long) {
-        val nowNanos = System.nanoTime()
-        val remainderMillis = (expireAtMillis - nowNanos / NANOS_PER_MILLI).also {
-            if (it < 1L) {
+    private fun pauseElseExpire(deadlineNanos: Long) {
+        val remainingNanos = (deadlineNanos - System.nanoTime()).also {
+            if (it < NANOS_PER_MILLI) {
                 sqlite.throwSQLException(sqlite.databaseHandle(pointer), "${sql.resolvedSqlStatementType()}")
             }
         }
-        Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainderMillis).nextRandom())
+        Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainingNanos / NANOS_PER_MILLI).nextRandom())
     }
 
     private fun Long.nextRandom() = random.nextLong(this)
