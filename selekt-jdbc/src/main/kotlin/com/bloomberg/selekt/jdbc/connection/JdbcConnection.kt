@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
-import com.bloomberg.selekt.SQLitePragma
 import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -338,7 +337,6 @@ internal class JdbcConnection(
 
     override fun setReadOnly(readOnly: Boolean) {
         checkClosed()
-        database.pragma(SQLitePragma.QUERY_ONLY, if (readOnly) { 1 } else { 0 })
         this.readOnly = readOnly
     }
 
@@ -493,8 +491,14 @@ internal class JdbcConnection(
     }
 
     internal fun ensureTransaction() {
-        if (!autoCommit && !database.inTransaction) {
+        if (!autoCommit && !readOnly && !database.inTransaction) {
             database.beginImmediateTransaction()
+        }
+    }
+
+    internal fun checkWritable() {
+        if (readOnly) {
+            throw SQLException("attempt to write a readonly database (SQLITE_READONLY)")
         }
     }
 
