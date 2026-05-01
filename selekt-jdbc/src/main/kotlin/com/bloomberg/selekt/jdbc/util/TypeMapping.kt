@@ -210,10 +210,10 @@ internal object TypeMapping {
 
     fun convertToSQLite(value: Any?): Any? = when (value) {
         null -> null
-        is Boolean -> if (value) 1L else 0L
-        is Byte -> value.toLong()
-        is Short -> value.toLong()
-        is Int -> value.toLong()
+        is Boolean -> if (value) { 1 } else { 0 }
+        is Byte -> value.toInt()
+        is Short -> value.toInt()
+        is Int -> value
         is Long -> value
         is Float -> value.toDouble()
         is Double -> value
