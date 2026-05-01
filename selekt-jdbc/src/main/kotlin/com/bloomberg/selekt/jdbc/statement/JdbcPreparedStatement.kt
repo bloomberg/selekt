@@ -91,6 +91,7 @@ internal open class JdbcPreparedStatement(
     private var firstChunk: BatchChunk? = null
     private var currentChunk: BatchChunk? = null
     private var totalBatchCount = 0
+    private var successArray: IntArray? = null
 
     private fun validateParameterIndex(parameterIndex: Int) {
         checkClosed()
@@ -236,7 +237,10 @@ internal open class JdbcPreparedStatement(
                 throw SQLException("Read-only statements are not allowed in batch execution")
             }
             database.batch(sql, firstChunk!!)
-            return IntArray(totalBatchCount) { Statement.SUCCESS_NO_INFO }
+            val result = successArray?.takeIf { it.size == totalBatchCount }
+                ?: IntArray(totalBatchCount).also { successArray = it }
+            result.fill(Statement.SUCCESS_NO_INFO)
+            return result
         } catch (e: Exception) {
             SQLExceptionMapper.mapException(
                 e as? SQLException ?: SQLException(e.message, e)
