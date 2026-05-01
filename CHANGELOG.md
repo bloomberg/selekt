@@ -1,6 +1,21 @@
 Change Log
 ==========
 
+## Version 0.30.3
+
+### Fixes
+
+* Replace synchronized with ReentrantLock to avoid virtual thread pinning.
+* Add deferred transactions.
+* Fix concurrent reads during writes and WAL checkpoint blocking.
+* Reuse the success array in JdbcPreparedStatement.
+* Simplify ExternalSqlite.bindBlob, skip arena for zero-length.
+* Save an arena usage in ExternalSQLite.MemorySegment.getConfinedString.
+* Use Scoped Arenas in Java 25 ExternalSQLite.
+* Replace runCatching with try-catch in JdbcResultSet getters to eliminate boxing.
+* Use Int over Long in convertToSQLite for sub-64-bit types.
+* Fix integer overflow in SQLPreparedStatement busy-retry deadline.
+
 ## Version 0.30.2
 
 ### Fixes
