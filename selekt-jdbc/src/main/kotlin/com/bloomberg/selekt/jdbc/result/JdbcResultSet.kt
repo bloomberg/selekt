@@ -79,7 +79,7 @@ internal class JdbcResultSet(
     override fun getString(columnIndex: Int): String? {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 null
@@ -87,7 +87,9 @@ internal class JdbcResultSet(
                 wasNull = false
                 cursor.getString(columnIndex - 1)
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting string from column $columnIndex: ${e.message}",
                 -1,
@@ -301,7 +303,7 @@ internal class JdbcResultSet(
     override fun getBigDecimal(columnIndex: Int): BigDecimal? {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 null
@@ -310,7 +312,9 @@ internal class JdbcResultSet(
                 val value = cursor.getDouble(columnIndex - 1)
                 BigDecimal.valueOf(value)
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting BigDecimal from column $columnIndex: ${e.message}",
                 -1,
@@ -337,7 +341,7 @@ internal class JdbcResultSet(
     override fun getBytes(columnIndex: Int): ByteArray? {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 null
@@ -345,7 +349,9 @@ internal class JdbcResultSet(
                 wasNull = false
                 cursor.getBlob(columnIndex - 1)
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting bytes from column $columnIndex: ${e.message}",
                 -1,
@@ -362,11 +368,13 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            runCatching {
+            try {
                 dateString?.let {
                     TypeMapping.convertFromSQLite(it, Types.DATE) as? Date
                 }
-            }.getOrElse { e ->
+            } catch (e: SQLException) {
+                throw SQLExceptionMapper.mapException(e)
+            } catch (e: RuntimeException) {
                 throw SQLExceptionMapper.mapException(
                     "Error parsing date from column $columnIndex: ${e.message}",
                     -1,
@@ -388,11 +396,13 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            runCatching {
+            try {
                 timeString?.let {
                     TypeMapping.convertFromSQLite(it, Types.TIME) as? Time
                 }
-            }.getOrElse { e ->
+            } catch (e: SQLException) {
+                throw SQLExceptionMapper.mapException(e)
+            } catch (e: RuntimeException) {
                 throw SQLExceptionMapper.mapException(
                     "Error parsing time from column $columnIndex: ${e.message}",
                     -1,
@@ -414,11 +424,13 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            runCatching {
+            try {
                 timestampString?.let {
                     TypeMapping.convertFromSQLite(it, Types.TIMESTAMP) as? Timestamp
                 }
-            }.getOrElse { e ->
+            } catch (e: SQLException) {
+                throw SQLExceptionMapper.mapException(e)
+            } catch (e: RuntimeException) {
                 throw SQLExceptionMapper.mapException(
                     "Error parsing timestamp from column $columnIndex: ${e.message}",
                     -1,
@@ -515,7 +527,7 @@ internal class JdbcResultSet(
     override fun getObject(columnIndex: Int): Any? {
         checkClosed()
         validateColumnIndex(columnIndex)
-        return runCatching {
+        return try {
             if (cursor.isNull(columnIndex - 1)) {
                 wasNull = true
                 null
@@ -530,7 +542,9 @@ internal class JdbcResultSet(
                     ColumnType.NULL -> null
                 }
             }
-        }.getOrElse { e ->
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(
                 "Error getting object from column $columnIndex: ${e.message}",
                 -1,
