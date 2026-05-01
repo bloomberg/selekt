@@ -118,6 +118,12 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
+    override fun beginDeferredTransaction() = pledge { session().beginDeferredTransaction() }
+
+    override fun beginDeferredTransactionWithListener(listener: SQLTransactionListener) = pledge {
+        session().beginDeferredTransactionWithListener(listener)
+    }
+
     override fun beginExclusiveTransaction() = pledge { session().beginExclusiveTransaction() }
 
     override fun beginExclusiveTransactionWithListener(listener: SQLTransactionListener) = pledge {
@@ -388,6 +394,7 @@ class SQLDatabase(
     ): T = pledge {
         val session = session()
         when (transactionMode) {
+            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
         }
@@ -405,6 +412,7 @@ class SQLDatabase(
     ): T = pledge {
         val session = session()
         when (transactionMode) {
+            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransactionWithListener(listener)
             SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
             SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
         }

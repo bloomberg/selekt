@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Bloomberg Finance L.P.
+ * Copyright 2026 Bloomberg Finance L.P.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,22 @@
 
 package com.bloomberg.selekt
 
-enum class SQLiteTransactionMode {
-    DEFERRED,
-    EXCLUSIVE,
-    IMMEDIATE;
+import kotlin.test.assertEquals
+import org.junit.jupiter.api.Test
 
-    val sql = "BEGIN $name"
+internal class SQLiteTransactionModeTest {
+    @Test
+    fun deferredSql() {
+        assertEquals("BEGIN DEFERRED", SQLiteTransactionMode.DEFERRED.sql)
+    }
+
+    @Test
+    fun exclusiveSql() {
+        assertEquals("BEGIN EXCLUSIVE", SQLiteTransactionMode.EXCLUSIVE.sql)
+    }
+
+    @Test
+    fun immediateSql() {
+        assertEquals("BEGIN IMMEDIATE", SQLiteTransactionMode.IMMEDIATE.sql)
+    }
 }
