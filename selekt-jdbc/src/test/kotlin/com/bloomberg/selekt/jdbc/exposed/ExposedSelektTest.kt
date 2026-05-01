@@ -30,6 +30,7 @@ import org.jetbrains.exposed.sql.update
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.sql.Connection
 import java.sql.DriverManager
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
@@ -317,8 +318,14 @@ internal class ExposedSelektTest {
         val database = connect()
         transaction(database) {
             SchemaUtils.create(Users)
-            Users.insert { it[name] = "A"; it[email] = null }
-            Users.insert { it[name] = "B"; it[email] = null }
+            Users.insert {
+                it[name] = "A"
+                it[email] = null
+            }
+            Users.insert {
+                it[name] = "B"
+                it[email] = null
+            }
             Users.deleteWhere { Users.id greaterEq 1 }
             assertEquals(0L, Users.selectAll().count())
         }
@@ -329,7 +336,10 @@ internal class ExposedSelektTest {
         val database = connect()
         transaction(database) {
             SchemaUtils.create(Users)
-            Users.insert { it[name] = "Alice"; it[email] = "alice@example.com" }
+            Users.insert {
+                it[name] = "Alice"
+                it[email] = "alice@example.com"
+            }
             val names = Users.select(Users.name).map { it[Users.name] }
             assertEquals(listOf("Alice"), names)
         }
@@ -343,6 +353,148 @@ internal class ExposedSelektTest {
             val rows = Users.selectAll().toList()
             assertTrue(rows.isEmpty())
             assertEquals(0L, Users.selectAll().count())
+        }
+    }
+
+    @Test
+    fun readOnlyTransactionQuery() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users)
+            Users.insert {
+                it[name] = "Alice"
+                it[email] = "alice@example.com"
+            }
+            Users.insert {
+                it[name] = "Bob"
+                it[email] = "bob@example.com"
+            }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            val rows = Users.selectAll().toList()
+            assertEquals(2, rows.size)
+            assertEquals("Alice", rows[0][Users.name])
+            assertEquals("Bob", rows[1][Users.name])
+        }
+    }
+
+    @Test
+    fun readOnlyTransactionWithWhereClause() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users)
+            Users.insert {
+                it[name] = "Alice"
+                it[email] = "alice@example.com"
+            }
+            Users.insert {
+                it[name] = "Bob"
+                it[email] = "bob@example.com"
+            }
+            Users.insert {
+                it[name] = "Charlie"
+                it[email] = "charlie@example.com"
+            }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            val results = Users.selectAll().where { Users.name eq "Bob" }.toList()
+            assertEquals(1, results.size)
+            assertEquals("Bob", results.first()[Users.name])
+            assertEquals(3L, Users.selectAll().count())
+        }
+    }
+
+    @Test
+    fun multipleReadOnlyTransactions() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users)
+            Users.insert {
+                it[name] = "Alice"
+                it[email] = null
+            }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            assertEquals(1L, Users.selectAll().count())
+        }
+        transaction(database) {
+            Users.insert {
+                it[name] = "Bob"
+                it[email] = null
+            }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            assertEquals(2L, Users.selectAll().count())
+        }
+    }
+
+    @Test
+    fun readOnlyTransactionBetweenWriteTransactions() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users)
+            Users.insert { it[name] = "First"; it[email] = null }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            val rows = Users.selectAll().toList()
+            assertEquals(1, rows.size)
+            assertEquals("First", rows.first()[Users.name])
+        }
+        transaction(database) {
+            Users.insert {
+                it[name] = "Second"
+                it[email] = null
+            }
+            assertEquals(2L, Users.selectAll().count())
+        }
+    }
+
+    @Test
+    fun readOnlyTransactionWithJoinedTables() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users, Posts)
+            val authorId = Users.insert {
+                it[name] = "Author"
+                it[email] = null
+            }[Users.id]
+            Posts.insert {
+                it[title] = "Post Title"
+                it[body] = "Post Body"
+                it[Posts.authorId] = authorId
+            }
+        }
+        transaction(
+            readOnly = true,
+            transactionIsolation = Connection.TRANSACTION_SERIALIZABLE,
+            db = database
+        ) {
+            val posts = Posts.selectAll().toList()
+            assertEquals(1, posts.size)
+            assertEquals("Post Title", posts.first()[Posts.title])
+            val users = Users.selectAll().toList()
+            assertEquals(1, users.size)
+            assertEquals("Author", users.first()[Users.name])
         }
     }
 }

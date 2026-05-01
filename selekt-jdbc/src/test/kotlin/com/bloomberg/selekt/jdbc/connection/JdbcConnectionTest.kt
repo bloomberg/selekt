@@ -22,12 +22,18 @@ import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
+import java.io.File
 import java.sql.Connection
+import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Savepoint
 import java.util.Properties
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertEquals
@@ -215,16 +221,18 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun setReadOnlyEnforcesQueryOnlyPragma(): Unit = connection.run {
+    fun setReadOnlyDoesNotApplyPragmaToSharedDatabase(): Unit = connection.run {
         isReadOnly = true
-        verify(mockDatabase).pragma(SQLitePragma.QUERY_ONLY, 1)
+        verify(mockDatabase, never()).pragma(SQLitePragma.QUERY_ONLY, 1)
+        assertTrue(isReadOnly)
     }
 
     @Test
-    fun clearReadOnlyClearsQueryOnlyPragma(): Unit = connection.run {
+    fun clearReadOnlyDoesNotApplyPragmaToSharedDatabase(): Unit = connection.run {
         isReadOnly = true
         isReadOnly = false
-        verify(mockDatabase).pragma(SQLitePragma.QUERY_ONLY, 0)
+        verify(mockDatabase, never()).pragma(SQLitePragma.QUERY_ONLY, 0)
+        assertFalse(isReadOnly)
     }
 
     @Test
@@ -934,6 +942,48 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun ensureTransactionReadOnlyNotCalledWhenInTransaction() {
+        val database = mock<SQLDatabase> {
+            whenever(it.inTransaction) doReturn true
+        }
+        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
+            isReadOnly = true
+            autoCommit = false
+            ensureTransaction()
+        }
+        verify(database, never()).beginDeferredTransaction()
+        verify(database, never()).beginImmediateTransaction()
+    }
+
+    @Test
+    fun ensureTransactionReadOnlyNotCalledInAutoCommit() {
+        val database = mock<SQLDatabase> {
+            whenever(it.inTransaction) doReturn false
+        }
+        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
+            isReadOnly = true
+            autoCommit = true
+            ensureTransaction()
+        }
+        verify(database, never()).beginDeferredTransaction()
+        verify(database, never()).beginImmediateTransaction()
+    }
+
+    @Test
+    fun ensureTransactionWritableUsesImmediateTransaction() {
+        val database = mock<SQLDatabase> {
+            whenever(it.inTransaction) doReturn false
+        }
+        JdbcConnection(SharedDatabase(database), connectionURL, properties).apply {
+            isReadOnly = false
+            autoCommit = false
+            ensureTransaction()
+        }
+        verify(database).beginImmediateTransaction()
+        verify(database, never()).beginDeferredTransaction()
+    }
+
+    @Test
     fun commitEndTransactionErrorHandling() {
         val database = mock<SQLDatabase> {
             whenever(it.inTransaction) doReturn true
@@ -1273,5 +1323,262 @@ internal class JdbcConnectionTest {
         extraStatement.close()
         val evictedStatement = connection.prepareStatement("SELECT 0") as JdbcPreparedStatement
         assertNotSame(statements[0], evictedStatement)
+    }
+
+    @Test
+    fun executeQueryOnReadOnlyConnectionDoesNotBeginTransaction() {
+        val database = mock<SQLDatabase> {
+            whenever(it.inTransaction) doReturn false
+        }
+        JdbcConnection(SharedDatabase(database), connectionURL, properties).use {
+            it.isReadOnly = true
+            it.autoCommit = false
+            it.ensureTransaction()
+            verify(database, never()).beginDeferredTransaction()
+            verify(database, never()).beginImmediateTransaction()
+            verify(database, never()).beginExclusiveTransaction()
+        }
+    }
+
+    @Test
+    fun readOnlyConnectionDoesNotBlockWalCheckpoint() {
+        val tempFile = File.createTempFile("selekt-wal-checkpoint-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=2"
+        try {
+            DriverManager.getConnection(url).use { writer ->
+                writer.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('row1')")
+                    statement.execute("INSERT INTO test (value) VALUES ('row2')")
+                }
+            }
+
+            val readerConnection = DriverManager.getConnection(url).apply {
+                isReadOnly = true
+                autoCommit = false
+            }
+            val readerStatement = readerConnection.createStatement()
+            val resultSet = readerStatement.executeQuery("SELECT * FROM test")
+            assertTrue(resultSet.next(), "Should have at least one row")
+
+            DriverManager.getConnection(url).use { writer ->
+                writer.createStatement().use { statement ->
+                    statement.execute("INSERT INTO test (value) VALUES ('row3')")
+                }
+            }
+
+            val checkpointSucceeded = runCatching {
+                DriverManager.getConnection(url).use { checkpointer ->
+                    checkpointer.createStatement().use { statement ->
+                        statement.execute("PRAGMA wal_checkpoint(FULL)")
+                    }
+                    true
+                }
+            }.getOrElse {
+                false
+            }
+
+            assertTrue(checkpointSucceeded, "WAL FULL checkpoint should succeed because " +
+                "read-only connections no longer hold a deferred transaction open.")
+
+            resultSet.close()
+            readerStatement.close()
+            readerConnection.close()
+        } finally {
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
+    }
+
+    @Test
+    fun readOnlyPreparedStatementDoesNotBlockWalCheckpoint() {
+        val tempFile = File.createTempFile("selekt-wal-ps-checkpoint-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=2"
+        try {
+            DriverManager.getConnection(url).use { setup ->
+                setup.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('row1')")
+                    statement.execute("INSERT INTO test (value) VALUES ('row2')")
+                }
+            }
+
+            val readerConnection = DriverManager.getConnection(url).apply {
+                isReadOnly = true
+                autoCommit = false
+            }
+            val preparedStatement = readerConnection.prepareStatement("SELECT * FROM test WHERE id >= ?").apply {
+                setInt(1, 1)
+            }
+            val resultSet = preparedStatement.executeQuery()
+            assertTrue(resultSet.next(), "Should have at least one row")
+
+            DriverManager.getConnection(url).use { writer ->
+                writer.createStatement().use { statement ->
+                    statement.execute("INSERT INTO test (value) VALUES ('row3')")
+                }
+            }
+
+            val checkpointSucceeded = runCatching {
+                DriverManager.getConnection(url).use { checkpointer ->
+                    checkpointer.createStatement().use { statement ->
+                        statement.execute("PRAGMA wal_checkpoint(FULL)")
+                    }
+                    true
+                }
+            }.getOrElse {
+                false
+            }
+
+            assertTrue(checkpointSucceeded, "WAL FULL checkpoint should succeed because " +
+                "read-only PreparedStatement connections no longer hold a deferred transaction open.")
+
+            resultSet.close()
+            preparedStatement.close()
+            readerConnection.close()
+        } finally {
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
+    }
+
+    @Suppress("Detekt.NestedBlockDepth")
+    @Test
+    fun readQueryOnSeparateThreadWhileWriteTransactionIsOpen() {
+        val tempFile = File.createTempFile("selekt-pool-concurrency-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=2"
+        try {
+            DriverManager.getConnection(url).use { setup ->
+                setup.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('seed')")
+                }
+            }
+
+            val writerConnection = DriverManager.getConnection(url)
+            val readerConnection = DriverManager.getConnection(url).apply {
+                isReadOnly = true
+            }
+
+            writerConnection.autoCommit = false
+
+            val readCompleted = CountDownLatch(1)
+            val readError = AtomicReference<Throwable>(null)
+            val readValue = AtomicReference<String>(null)
+
+            writerConnection.createStatement().use { statement ->
+                statement.execute("INSERT INTO test (value) VALUES ('in_transaction')")
+            }
+
+            thread(start = true, isDaemon = true) {
+                runCatching {
+                    readerConnection.createStatement().use { statement ->
+                        statement.executeQuery("SELECT value FROM test WHERE value = 'seed'").use { resultSet ->
+                            if (resultSet.next()) {
+                                readValue.set(resultSet.getString(1))
+                            }
+                        }
+                    }
+                }.onFailure {
+                    readError.set(it)
+                }
+                readCompleted.countDown()
+            }
+
+            assertTrue(readCompleted.await(5, TimeUnit.SECONDS),
+                "Read query on background thread should complete within timeout")
+            assertNull(readError.get(), "Read query should not throw: ${readError.get()?.message}")
+            assertEquals("seed", readValue.get(), "Background thread should have read the seed row")
+
+            writerConnection.commit()
+            writerConnection.close()
+            readerConnection.close()
+
+            DriverManager.getConnection(url).use { reader ->
+                reader.createStatement().use { statement ->
+                    statement.executeQuery("SELECT COUNT(*) FROM test").use { resultSet ->
+                        assertTrue(resultSet.next())
+                        assertEquals(2, resultSet.getInt(1))
+                    }
+                }
+            }
+        } finally {
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
+    }
+
+    @Suppress("Detekt.LongMethod", "Detekt.NestedBlockDepth")
+    @Test
+    fun readOnlyTransactionOnSeparateThreadWhileWriteTransactionIsOpen() {
+        val tempFile = File.createTempFile("selekt-ro-txn-concurrency-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=2"
+        try {
+            DriverManager.getConnection(url).use { setup ->
+                setup.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('seed')")
+                }
+            }
+
+            val writerConnection = DriverManager.getConnection(url)
+            val readerConnection = DriverManager.getConnection(url).apply {
+                isReadOnly = true
+            }
+
+            writerConnection.autoCommit = false
+
+            val readCompleted = CountDownLatch(1)
+            val readError = AtomicReference<Throwable>(null)
+            val readValue = AtomicReference<String>(null)
+
+            writerConnection.createStatement().use { statement ->
+                statement.execute("INSERT INTO test (value) VALUES ('in_transaction')")
+            }
+
+            thread(start = true, isDaemon = true) {
+                runCatching {
+                    readerConnection.autoCommit = false
+                    readerConnection.createStatement().use { statement ->
+                        statement.executeQuery("SELECT value FROM test WHERE value = 'seed'").use { resultSet ->
+                            if (resultSet.next()) {
+                                readValue.set(resultSet.getString(1))
+                            }
+                        }
+                    }
+                    readerConnection.commit()
+                }.onFailure {
+                    readError.set(it)
+                }
+                readCompleted.countDown()
+            }
+
+            assertTrue(readCompleted.await(5, TimeUnit.SECONDS),
+                "Read-only transaction on background thread should complete within timeout")
+            assertNull(readError.get(),
+                "Read-only transaction should not throw: ${readError.get()?.message}")
+            assertEquals("seed", readValue.get(),
+                "Background thread should have read the seed row")
+
+            writerConnection.commit()
+            writerConnection.close()
+            readerConnection.close()
+
+            DriverManager.getConnection(url).use { reader ->
+                reader.createStatement().use { statement ->
+                    statement.executeQuery("SELECT COUNT(*) FROM test").use { resultSet ->
+                        assertTrue(resultSet.next())
+                        assertEquals(2, resultSet.getInt(1))
+                    }
+                }
+            }
+        } finally {
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
     }
 }

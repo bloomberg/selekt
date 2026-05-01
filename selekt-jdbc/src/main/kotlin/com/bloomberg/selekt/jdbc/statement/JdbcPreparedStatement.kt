@@ -103,8 +103,7 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return runCatching {
             closeCurrentResultSet()
-            connection.ensureTransaction()
-            val cursor = if (getResultSetType() == ResultSet.TYPE_FORWARD_ONLY) {
+            val cursor = if (getResultSetType() == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
                 database.queryForwardOnly(applyMaxRows(sql), parameters)
             } else {
                 database.query(applyMaxRows(sql), parameters)
@@ -123,6 +122,7 @@ internal open class JdbcPreparedStatement(
 
     override fun executeUpdate(): Int {
         checkClosed()
+        connection.checkWritable()
         return try {
             connection.ensureTransaction()
             executeUpdate(database.compileStatement(sql, parameters))
@@ -137,12 +137,12 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return try {
             closeCurrentResultSet()
-            connection.ensureTransaction()
             val statement = database.compileStatement(sql, parameters)
             if (statement.isReadOnly) {
                 executeQuery()
                 true
             } else {
+                connection.checkWritable()
                 executeUpdate(statement)
                 false
             }
