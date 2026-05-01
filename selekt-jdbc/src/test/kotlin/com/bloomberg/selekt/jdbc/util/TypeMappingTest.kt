@@ -124,9 +124,9 @@ internal class TypeMappingTest {
 
     @Test
     fun convertToSQLite() {
-        assertEquals(1L, TypeMapping.convertToSQLite(true))
-        assertEquals(0L, TypeMapping.convertToSQLite(false))
-        assertEquals(42L, TypeMapping.convertToSQLite(42))
+        assertEquals(1, TypeMapping.convertToSQLite(true))
+        assertEquals(0, TypeMapping.convertToSQLite(false))
+        assertEquals(42, TypeMapping.convertToSQLite(42))
         assertEquals(42L, TypeMapping.convertToSQLite(42L))
         assertEquals(3.14, TypeMapping.convertToSQLite(3.14))
         assertEquals("hello", TypeMapping.convertToSQLite("hello"))
@@ -288,12 +288,12 @@ internal class TypeMappingTest {
 
     @Test
     fun convertToSQLiteFromByte() {
-        assertEquals(42L, TypeMapping.convertToSQLite(42.toByte()))
+        assertEquals(42, TypeMapping.convertToSQLite(42.toByte()))
     }
 
     @Test
     fun convertToSQLiteFromShort() {
-        assertEquals(42L, TypeMapping.convertToSQLite(42.toShort()))
+        assertEquals(42, TypeMapping.convertToSQLite(42.toShort()))
     }
 
     @Test
