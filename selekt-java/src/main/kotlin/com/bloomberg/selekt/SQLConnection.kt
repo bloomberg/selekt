@@ -89,9 +89,10 @@ internal class SQLConnection(
         }
     }
 
-    override fun execute(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
-        step()
-    }
+    override fun execute(
+        sql: String,
+        bindArgs: Array<out Any?>
+    ) = withPreparedStatement(sql, bindArgs, SQLPreparedStatement::step)
 
     override fun executeForBlob(
         name: String,
@@ -104,7 +105,10 @@ internal class SQLConnection(
         SQLBlob(it, sqlite, isReadOnly)
     }
 
-    override fun executeForChangedRowCount(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
+    override fun executeForChangedRowCount(
+        sql: String,
+        bindArgs: Array<out Any?>
+    ) = withPreparedStatement(sql, bindArgs) {
         if (SQL_DONE == step()) {
             sqlite.changes(pointer)
         } else {

@@ -41,10 +41,10 @@ fun externalSQLiteSingleton(
 ) = ExternalSQLite.Singleton(configuration) {}
 
 @Suppress("NOTHING_TO_INLINE")
-private inline fun MemorySegment.getConfinedString(): String = Arena.ofConfined().use { arena ->
-    if (address() == 0L) {
-        ""
-    } else {
+private inline fun MemorySegment.getConfinedString(): String = if (address() == 0L) {
+    ""
+} else {
+    Arena.ofConfined().use { arena ->
         reinterpret(Long.MAX_VALUE, arena, null).getString(0)
     }
 }
@@ -82,15 +82,13 @@ internal class ExternalSQLite(
         index: Int,
         blob: ByteArray,
         length: Int
-    ): SQLCode = Arena.ofConfined().use {
-        sqlite3_bind_blob.invoke(
-            MemorySegment.ofAddress(statement),
-            index,
-            MemorySegment.ofArray(blob),
-            length,
-            sqliteTransient
-        ) as Int
-    }
+    ): SQLCode = sqlite3_bind_blob.invoke(
+        MemorySegment.ofAddress(statement),
+        index,
+        MemorySegment.ofArray(blob),
+        length,
+        sqliteTransient
+    ) as Int
 
     override fun bindDouble(
         statement: Long,
