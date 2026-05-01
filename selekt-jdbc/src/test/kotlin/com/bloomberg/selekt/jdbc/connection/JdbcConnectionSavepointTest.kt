@@ -34,6 +34,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.mockito.kotlin.doAnswer
 
 internal class JdbcConnectionSavepointTest {
     private lateinit var mockDatabase: SQLDatabase
@@ -149,7 +150,7 @@ internal class JdbcConnectionSavepointTest {
     @Test
     fun generatedSavepointNamesAreUnique() {
         var callCount = 0
-        whenever(mockDatabase.setSavepoint(null)).thenAnswer { "sp_user_${++callCount}" }
+        whenever(mockDatabase.setSavepoint(null)) doAnswer { "sp_user_${++callCount}" }
         connection.run {
             autoCommit = false
             val savepointOne = setSavepoint()

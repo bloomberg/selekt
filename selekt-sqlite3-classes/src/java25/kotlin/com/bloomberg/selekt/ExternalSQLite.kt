@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.loadLibrary
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
@@ -73,6 +72,21 @@ internal class ExternalSQLite(
         ): IExternalSQLite = instance ?: lock.withLock {
             instance ?: ExternalSQLite(configuration, loader).also { instance = it }
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T> withScopedArena(block: () -> T): T = if (SCOPED_SLAB.isBound()) {
+        block()
+    } else {
+        SlabArena().use { slab ->
+            ScopedValue.where(SCOPED_SLAB, slab).call<T, Throwable> { block() }
+        }
+    }
+
+    private inline fun <T> withSlab(block: (SlabArena) -> T): T = if (SCOPED_SLAB.isBound()) {
+        block(SCOPED_SLAB.get().also(SlabArena::reset))
+    } else {
+        SlabArena().use { block(it) }
     }
 
     override fun bindBlob(
@@ -133,10 +147,10 @@ internal class ExternalSQLite(
     override fun bindParameterIndex(
         statement: Long,
         name: String
-    ): Int = Arena.ofConfined().use {
+    ): Int = withSlab { slab ->
         sqlite3_bind_parameter_index.invoke(
             MemorySegment.ofAddress(statement),
-            it.allocateFrom(name)
+            slab.allocateFrom(name)
         ) as Int
     }
 
@@ -144,11 +158,11 @@ internal class ExternalSQLite(
         statement: Long,
         index: Int,
         value: String
-    ): SQLCode = Arena.ofConfined().use {
+    ): SQLCode = withSlab { slab ->
         sqlite3_bind_text.invoke(
             MemorySegment.ofAddress(statement),
             index,
-            it.allocateFrom(value),
+            slab.allocateFrom(value),
             -1,
             sqliteTransient
         ) as Int
@@ -163,32 +177,6 @@ internal class ExternalSQLite(
         index,
         length
     ) as Int
-
-    override fun bindRow(statement: Long, args: Array<out Any?>): SQLCode {
-        Arena.ofConfined().use { arena ->
-            val segment = MemorySegment.ofAddress(statement)
-            args.forEachByPosition { arg, position ->
-                val result = when (arg) {
-                    is String -> sqlite3_bind_text.invoke(
-                        segment, position, arena.allocateFrom(arg), -1, sqliteTransient
-                    )
-                    is Int -> sqlite3_bind_int.invoke(segment, position, arg)
-                    null -> sqlite3_bind_null.invoke(segment, position)
-                    is Long -> sqlite3_bind_int64.invoke(segment, position, arg)
-                    is Double -> sqlite3_bind_double.invoke(segment, position, arg)
-                    is ByteArray -> sqlite3_bind_blob.invoke(
-                        segment, position, MemorySegment.ofArray(arg), arg.size, sqliteTransient
-                    )
-                    else -> throw IllegalArgumentException(
-                        "Cannot bind arg of class ${arg.javaClass} at position $position.")
-                } as Int
-                if (result != SQL_OK) {
-                    return result
-                }
-            }
-        }
-        return SQL_OK
-    }
 
     override fun blobBytes(
         blob: Long
@@ -206,11 +194,11 @@ internal class ExternalSQLite(
         row: Long,
         flags: Int,
         holder: LongArray
-    ): SQLCode = Arena.ofConfined().use {
-        val nameSegment = it.allocateFrom(name)
-        val tableSegment = it.allocateFrom(table)
-        val columnSegment = it.allocateFrom(column)
-        val blobPointer = it.allocate(ADDRESS)
+    ): SQLCode = withSlab { slab ->
+        val nameSegment = slab.allocateFrom(name)
+        val tableSegment = slab.allocateFrom(table)
+        val columnSegment = slab.allocateFrom(column)
+        val blobPointer = slab.allocate(ADDRESS)
         val result = sqlite3_blob_open.invoke(
             MemorySegment.ofAddress(db),
             nameSegment,
@@ -232,8 +220,8 @@ internal class ExternalSQLite(
         destination: ByteArray,
         destinationOffset: Int,
         length: Int
-    ): SQLCode = Arena.ofConfined().use {
-        val buffer = it.allocate(length.toLong())
+    ): SQLCode = withSlab { slab ->
+        val buffer = slab.allocate(length.toLong())
         val result = sqlite3_blob_read.invoke(
             MemorySegment.ofAddress(blob),
             buffer,
@@ -260,8 +248,8 @@ internal class ExternalSQLite(
         source: ByteArray,
         sourceOffset: Int,
         length: Int
-    ): SQLCode = Arena.ofConfined().use {
-        val buffer = it.allocate(length.toLong())
+    ): SQLCode = withSlab { slab ->
+        val buffer = slab.allocate(length.toLong())
         MemorySegment.copy(source, sourceOffset, buffer, JAVA_BYTE, 0, length)
         sqlite3_blob_write.invoke(
             MemorySegment.ofAddress(blob),
@@ -412,10 +400,10 @@ internal class ExternalSQLite(
     override fun databaseReadOnly(
         db: Long,
         name: String
-    ): Int = Arena.ofConfined().use {
+    ): Int = withSlab { slab ->
         sqlite3_db_readonly.invoke(
             MemorySegment.ofAddress(db),
-            it.allocateFrom(name)
+            slab.allocateFrom(name)
         ) as Int
     }
 
@@ -428,9 +416,9 @@ internal class ExternalSQLite(
         options: Int,
         reset: Boolean,
         holder: IntArray
-    ): SQLCode = Arena.ofConfined().use { arena ->
-        val current = arena.allocate(JAVA_INT)
-        val highwater = arena.allocate(JAVA_INT)
+    ): SQLCode = withSlab { slab ->
+        val current = slab.allocate(JAVA_INT)
+        val highwater = slab.allocate(JAVA_INT)
         (sqlite3_db_status.invoke(
             MemorySegment.ofAddress(db),
             options,
@@ -457,10 +445,10 @@ internal class ExternalSQLite(
     override fun exec(
         db: Long,
         query: String
-    ): SQLCode = Arena.ofConfined().use {
+    ): SQLCode = withSlab { slab ->
         sqlite3_exec.invoke(
             MemorySegment.ofAddress(db),
-            it.allocateFrom(query),
+            slab.allocateFrom(query),
             MemorySegment.NULL,
             MemorySegment.NULL,
             MemorySegment.NULL
@@ -510,10 +498,10 @@ internal class ExternalSQLite(
         db: Long,
         key: ByteArray,
         length: Int
-    ): SQLCode = Arena.ofConfined().use {
+    ): SQLCode = withSlab { slab ->
         sqlite3_key.invoke(
             MemorySegment.ofAddress(db),
-            it.allocateFrom(JAVA_BYTE, *key),
+            slab.allocateFromBytes(*key),
             length
         ) as Int
     }
@@ -541,9 +529,9 @@ internal class ExternalSQLite(
         path: String,
         flags: Int,
         dbHolder: LongArray
-    ): SQLCode = Arena.ofConfined().use {
-        val pathSegment = it.allocateFrom(path)
-        val dbPointer = it.allocate(ADDRESS)
+    ): SQLCode = withSlab { slab ->
+        val pathSegment = slab.allocateFrom(path)
+        val dbPointer = slab.allocate(ADDRESS)
         val result = sqlite3_open_v2.invoke(
             pathSegment,
             dbPointer,
@@ -561,11 +549,11 @@ internal class ExternalSQLite(
         sql: String,
         length: Int,
         statementHolder: LongArray
-    ): SQLCode = Arena.ofConfined().use {
-        val statement = it.allocate(ADDRESS)
+    ): SQLCode = withSlab { slab ->
+        val statement = slab.allocate(ADDRESS)
         val result = sqlite3_prepare_v2.invoke(
             MemorySegment.ofAddress(db),
-            it.allocateFrom(sql),
+            slab.allocateFrom(sql),
             length,
             statement,
             MemorySegment.NULL
@@ -602,10 +590,10 @@ internal class ExternalSQLite(
         db: Long,
         key: ByteArray,
         length: Int
-    ): SQLCode = Arena.ofConfined().use {
+    ): SQLCode = withSlab { slab ->
         sqlite3_rekey.invoke(
             MemorySegment.ofAddress(db),
-            it.allocateFrom(JAVA_BYTE, *key),
+            slab.allocateFromBytes(*key),
             length
         ) as Int
     }
@@ -699,10 +687,10 @@ internal class ExternalSQLite(
         db: Long,
         name: String?,
         mode: Int
-    ): SQLCode = Arena.ofConfined().use {
+    ): SQLCode = withSlab { slab ->
         sqlite3_wal_checkpoint_v2.invoke(
             MemorySegment.ofAddress(db),
-            if (name != null) { it.allocateFrom(name) } else { MemorySegment.NULL },
+            if (name != null) { slab.allocateFrom(name) } else { MemorySegment.NULL },
             mode,
             MemorySegment.NULL,
             MemorySegment.NULL
@@ -761,6 +749,8 @@ internal class ExternalSQLite(
         private val sqliteTransient = MemorySegment.ofAddress(-1L)
 
         private val criticalOption = Linker.Option.critical(true)
+
+        private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
         private val sqlite3_bind_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_blob").orElseThrow(),

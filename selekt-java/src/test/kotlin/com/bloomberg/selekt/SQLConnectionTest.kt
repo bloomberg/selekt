@@ -51,7 +51,11 @@ internal class SQLConnectionTest {
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
-        whenever(sqlite.openV2(any(), any(), any())).thenAnswer {
+        whenever(sqlite.withScopedArena(any<() -> Any?>())) doAnswer {
+            @Suppress("UNCHECKED_CAST")
+            (it.arguments[0] as () -> Any?).invoke()
+        }
+        whenever(sqlite.openV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
         }

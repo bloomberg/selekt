@@ -71,7 +71,7 @@ private object SharedSqlBuilder {
 @ThreadSafe
 class SQLDatabase(
     val path: String,
-    sqlite: SQLite,
+    private val sqlite: SQLite,
     configuration: DatabaseConfiguration,
     key: ByteArray?,
     random: IRandom = CommonThreadLocalRandom
@@ -393,15 +393,17 @@ class SQLDatabase(
         block: D.() -> T
     ): T = pledge {
         val session = session()
-        when (transactionMode) {
-            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
-            SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
-            SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
-        }
-        try {
-            block(database).also { session.setTransactionSuccessful() }
-        } finally {
-            session.endTransaction()
+        sqlite.withScopedArena {
+            when (transactionMode) {
+                SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
+                SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransaction()
+                SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransaction()
+            }
+            try {
+                block(database).also { session.setTransactionSuccessful() }
+            } finally {
+                session.endTransaction()
+            }
         }
     }
 
@@ -411,15 +413,17 @@ class SQLDatabase(
         block: SQLDatabase.() -> T
     ): T = pledge {
         val session = session()
-        when (transactionMode) {
-            SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransactionWithListener(listener)
-            SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
-            SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
-        }
-        try {
-            block(this).also { session.setTransactionSuccessful() }
-        } finally {
-            session.endTransaction()
+        sqlite.withScopedArena {
+            when (transactionMode) {
+                SQLiteTransactionMode.DEFERRED -> session.beginDeferredTransaction()
+                SQLiteTransactionMode.EXCLUSIVE -> session.beginExclusiveTransactionWithListener(listener)
+                SQLiteTransactionMode.IMMEDIATE -> session.beginImmediateTransactionWithListener(listener)
+            }
+            try {
+                block(this@SQLDatabase).also { session.setTransactionSuccessful() }
+            } finally {
+                session.endTransaction()
+            }
         }
     }
 

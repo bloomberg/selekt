@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.cache.LruCache
+import com.bloomberg.selekt.commons.forEachByIndexUntil
 import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
@@ -100,7 +101,7 @@ internal class SQLConnection(
         column: String,
         row: Long
     ) = longArrayOf(0L).also {
-        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) 0 else 1, it)
+        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) { 0 } else { 1 }, it)
     }.first().let {
         SQLBlob(it, sqlite, isReadOnly)
     }
@@ -136,36 +137,42 @@ internal class SQLConnection(
         bindArgs: Sequence<Array<out Any?>>
     ) = executeBatchForChangedRowCount(sql, bindArgs.asIterable())
 
+    @Suppress("DuplicatedCode")
     override fun executeBatchForChangedRowCount(
         sql: String,
         bindArgs: List<Array<out Any?>>
     ) = withPreparedStatement(sql) {
-        val changes = sqlite.totalChanges(pointer)
-        for (i in bindArgs.indices) {
-            reset()
-            bindRow(bindArgs[i])
-            if (SQL_DONE != step()) {
-                return@withPreparedStatement -1
+        sqlite.withScopedArena {
+            val changes = sqlite.totalChanges(pointer)
+            bindArgs.forEachByIndexUntil { _, args ->
+                reset()
+                bindRow(args)
+                if (SQL_DONE != step()) {
+                    return@withScopedArena -1
+                }
             }
+            sqlite.totalChanges(pointer) - changes
         }
-        sqlite.totalChanges(pointer) - changes
     }
 
+    @Suppress("DuplicatedCode")
     override fun executeBatchForChangedRowCount(
         sql: String,
         bindArgs: Array<out Array<out Any?>>,
         fromIndex: Int,
         toIndex: Int
     ) = withPreparedStatement(sql) {
-        val changes = sqlite.totalChanges(pointer)
-        for (i in fromIndex until toIndex) {
-            reset()
-            bindRow(bindArgs[i])
-            if (SQL_DONE != step()) {
-                return@withPreparedStatement -1
+        sqlite.withScopedArena {
+            val changes = sqlite.totalChanges(pointer)
+            bindArgs.forEachByIndexUntil { _, args ->
+                reset()
+                bindRow(args)
+                if (SQL_DONE != step()) {
+                    return@withScopedArena -1
+                }
             }
+            sqlite.totalChanges(pointer) - changes
         }
-        sqlite.totalChanges(pointer) - changes
     }
 
     override fun executeForCursorWindow(

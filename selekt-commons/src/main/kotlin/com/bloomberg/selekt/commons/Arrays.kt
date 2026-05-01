@@ -25,6 +25,18 @@ internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
 }
 
 @JvmSynthetic
+inline fun <T> Array<T>.forEachByIndexUntil(
+    from: Int = 0,
+    to: Int = size,
+    block: (Int, T) -> Unit
+) {
+    var i = from
+    while (i < to) {
+        block(i, this[i++])
+    }
+}
+
+@JvmSynthetic
 inline fun <T> Array<T>.forEachByPosition(block: (T, Int) -> Unit) {
     var i = 0
     while (i < size) {
