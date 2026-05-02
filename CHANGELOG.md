@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.30.5
+
+* Zero key material in slab immediately after sqlite3_key.
+* Log exception message at debug when closing JdbcConnection.
+
 ## Version 0.30.4
 
 * Check key length in JDBC.
