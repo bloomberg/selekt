@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.30.4
+
+* Check key length in JDBC.
+* Zero encryption key from all JDBC Properties immediately on extraction.
+* Escape GLOB metacharacters in JdbcDatabaseMetaData.getTables.
+* Honour length parameter and bound stream reads in JdbcPreparedStatement.
+
 ## Version 0.30.3
 
 ### Fixes
