@@ -176,7 +176,7 @@ internal class SelektDriverTest {
     fun connectWithProperties() {
         val url = "jdbc:sqlite:/tmp/test.db"
         val properties = Properties().apply {
-            setProperty("key", "test-key")
+            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
             setProperty("poolSize", "5")
             setProperty("busyTimeout", "2000")
             setProperty("journalMode", "DELETE")
@@ -189,9 +189,9 @@ internal class SelektDriverTest {
 
     @Test
     fun connectWithURLProperties() {
-        val url = "jdbc:sqlite:/tmp/test.db?key=test-key&poolSize=5"
-        val properties = Properties()
-        val connection = driver.connect(url, properties)
+        val url = "jdbc:sqlite:/tmp/test.db" +
+            "?key=0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&poolSize=5"
+        val connection = driver.connect(url, Properties())
         assertNotNull(connection)
         connections.add(connection)
     }
@@ -274,7 +274,7 @@ internal class SelektDriverTest {
     @Test
     fun connectWithHexKey() {
         val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF")
+            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
         }
         val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         assertNotNull(connection)
@@ -284,7 +284,7 @@ internal class SelektDriverTest {
     @Test
     fun connectWithHexKeyUppercasePrefix() {
         val properties = Properties().apply {
-            setProperty("key", "0X0123456789ABCDEF")
+            setProperty("key", "0X0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
         }
         val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         assertNotNull(connection)
@@ -294,7 +294,7 @@ internal class SelektDriverTest {
     @Test
     fun connectWithKey() {
         val properties = Properties().apply {
-            setProperty("key", "some-key")
+            setProperty("key", "exactly-32-bytes-of-key-data!!!!")
         }
         val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         assertNotNull(connection)
@@ -397,7 +397,7 @@ internal class SelektDriverTest {
     @Test
     fun connectWithKeyDoesNotRetainKeyInConnectionProperties() {
         val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF")
+            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
         }
         val connection = driver.connect("jdbc:sqlite:/tmp/test_key_scrub.db", properties)!!.also(connections::add)
         assertNotNull(connection)
@@ -493,6 +493,56 @@ internal class SelektDriverTest {
         }
         assertFailsWith<SQLException> {
             driver.connect("jdbc:sqlite:/tmp/test_invalid_cache.db", properties)
+        }
+    }
+
+    @Test
+    fun connectWithShortKeyFails() {
+        val properties = Properties().apply {
+            setProperty("key", "too-short")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_short_key.db", properties)
+        }
+    }
+
+    @Test
+    fun connectWithLongKeyFails() {
+        val properties = Properties().apply {
+            setProperty("key", "this-key-is-way-too-long-for-aes-256-encryption!!")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_long_key.db", properties)
+        }
+    }
+
+    @Test
+    fun connectWithOddLengthHexKeyFails() {
+        val properties = Properties().apply {
+            setProperty("key", "0xABC")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_odd_hex.db", properties)
+        }
+    }
+
+    @Test
+    fun connectWithInvalidHexCharFails() {
+        val properties = Properties().apply {
+            setProperty("key", "0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_invalid_hex.db", properties)
+        }
+    }
+
+    @Test
+    fun connectWithHexKeyWrongLengthFails() {
+        val properties = Properties().apply {
+            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_hex_wrong_len.db", properties)
         }
     }
 

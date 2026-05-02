@@ -25,6 +25,7 @@ import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import com.bloomberg.selekt.commons.zero
+import java.nio.CharBuffer
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.DriverManager
@@ -73,6 +74,8 @@ class SelektDriver : Driver {
         private const val HEX_PREFIX_LENGTH = 2
         private const val HEX_CHUNK_SIZE = 2
         private const val HEX_RADIX = 16
+        private const val BITS_PER_HEX_DIGIT = 4
+        private const val REQUIRED_KEY_LENGTH_BYTES = 32
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
@@ -110,8 +113,12 @@ class SelektDriver : Driver {
         runCatching {
             val connectionURL = ConnectionURL.parse(url)
             val mergedProperties = mergeProperties(connectionURL.properties, info)
-            val sharedDatabase = getOrCreateDatabase(connectionURL, mergedProperties)
-            mergedProperties.remove(PROPERTY_KEY)
+            val keyChars = removeKey(connectionURL.properties, mergedProperties, info)
+            val sharedDatabase = try {
+                getOrCreateDatabase(connectionURL, mergedProperties, keyChars)
+            } finally {
+                keyChars?.fill('\u0000')
+            }
             JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
         }.getOrElse { e ->
             val safeUrl = runCatching { ConnectionURL.parse(url).toString() }.getOrDefault("<unparseable URL>")
@@ -172,14 +179,15 @@ class SelektDriver : Driver {
 
     private fun getOrCreateDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        keyChars: CharArray?
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
         val requestedMaxCachedDatabases = validateMaxCachedDatabases(
             properties.getProperty(PROPERTY_MAX_CACHED_DATABASES)?.toIntOrNull()
         )
         if (requestedMaxCachedDatabases == 0) {
-            return SharedDatabase(createDatabase(connectionURL, properties))
+            return SharedDatabase(createDatabase(connectionURL, properties, keyChars))
         }
         val evicted = mutableListOf<SharedDatabase>()
         val sharedDatabase = databaseCacheLock.withLock {
@@ -187,7 +195,7 @@ class SelektDriver : Driver {
                 maxCachedDatabases = requestedMaxCachedDatabases
             }
             databaseCache.getOrPut(cacheKey) {
-                SharedDatabase(createDatabase(connectionURL, properties)) {
+                SharedDatabase(createDatabase(connectionURL, properties, keyChars)) {
                     databaseCacheLock.withLock {
                         databaseCache.remove(cacheKey)
                     }
@@ -225,10 +233,11 @@ class SelektDriver : Driver {
 
     private fun createDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        keyChars: CharArray?
     ): SQLDatabase {
         val configuration = buildDatabaseConfiguration(properties)
-        val encryptionKey = getEncryptionKey(properties)
+        val encryptionKey = encodeKeyToBytes(keyChars)
         val sqlite = object : com.bloomberg.selekt.SQLite(
             externalSQLiteSingleton()
         ) {
@@ -269,20 +278,53 @@ class SelektDriver : Driver {
         )
     }
 
-    private fun getEncryptionKey(
-        properties: Properties
-    ): ByteArray? = (properties.getProperty(PROPERTY_KEY) ?: return null).run {
-        when {
-            startsWith("0x") || startsWith("0X") -> parseHexKey(this)
-            else -> toByteArray(Charsets.UTF_8)
+    private fun removeKey(
+        urlProperties: Properties,
+        mergedProperties: Properties,
+        additionalProperties: Properties
+    ): CharArray? = (mergedProperties.getProperty(PROPERTY_KEY) ?: return null).also {
+        urlProperties.remove(PROPERTY_KEY)
+        mergedProperties.remove(PROPERTY_KEY)
+        additionalProperties.remove(PROPERTY_KEY)
+    }.toCharArray()
+
+    @Suppress("Detekt.ComplexCondition")
+    private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? {
+        if (keyChars == null) return null
+        val bytes = if (
+            keyChars.size >= HEX_PREFIX_LENGTH && keyChars[0] == '0' && keyChars[1].let { it == 'x' || it == 'X' }
+        ) {
+            parseHexKey(keyChars)
+        } else {
+            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).let {
+                ByteArray(it.remaining()).also(it::get)
+            }
         }
+        require(bytes.size == REQUIRED_KEY_LENGTH_BYTES) {
+            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was ${bytes.size} bytes"
+        }
+        return bytes
     }
 
-    private fun parseHexKey(keyProperty: String): ByteArray = keyProperty.substring(HEX_PREFIX_LENGTH)
-        .chunked(HEX_CHUNK_SIZE)
-        .map {
-            it.toInt(HEX_RADIX).toByte()
-        }.toByteArray()
+    private fun parseHexKey(keyChars: CharArray): ByteArray {
+        val hexLength = keyChars.size - HEX_PREFIX_LENGTH
+        require(hexLength > 0 && hexLength % HEX_CHUNK_SIZE == 0) {
+            "Hex key must have an even number of hex digits after the '0x' prefix"
+        }
+        val byteArray = ByteArray(hexLength / HEX_CHUNK_SIZE)
+        var i = HEX_PREFIX_LENGTH
+        var j = 0
+        while (i < keyChars.size - 1) {
+            val high = Character.digit(keyChars[i], HEX_RADIX)
+            val low = Character.digit(keyChars[i + 1], HEX_RADIX)
+            require(high != -1 && low != -1) {
+                "Invalid hex character in encryption key"
+            }
+            byteArray[j++] = (high shl BITS_PER_HEX_DIGIT or low).toByte()
+            i += HEX_CHUNK_SIZE
+        }
+        return byteArray
+    }
 
     private fun mergeProperties(
         urlProperties: Properties,
