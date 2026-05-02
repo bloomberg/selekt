@@ -1054,6 +1054,22 @@ internal class JdbcDatabaseMetaDataTest {
     }
 
     @Test
+    fun getTablesEscapesGlobMetacharactersInPattern() {
+        val capturedSql = mutableListOf<String>()
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            capturedSql.add(invocation.getArgument(0))
+            mockCursor
+        }
+        metaData.getTables(null, null, "test[ab]?", null)
+        capturedSql.first { it.contains("GLOB") }.let {
+            assertTrue(it.contains("[[]"), "Open bracket should be escaped")
+            assertTrue(it.contains("[]]"), "Close bracket should be escaped")
+            assertTrue(it.contains("[?]"), "Question mark should be escaped")
+            assertFalse(Regex("""GLOB '[^']*(?<!\[)\?[^']*'""").containsMatchIn(it), "Unescaped ? found in GLOB")
+        }
+    }
+
+    @Test
     fun getPrimaryKeysEscapesQuotesInTableName() {
         val capturedSql = mutableListOf<String>()
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->

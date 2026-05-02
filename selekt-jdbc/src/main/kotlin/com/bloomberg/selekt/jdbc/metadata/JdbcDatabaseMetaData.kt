@@ -31,6 +31,10 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private fun escapeSql(value: String): String = value.replace("'", "''")
 
+private fun escapeGlob(value: String): String = value.replace("[", "[[]")
+    .replace("]", "[]]")
+    .replace("?", "[?]")
+
 @JvmSynthetic
 internal fun String.toJdbcPatternRegex(): Regex = buildString {
     for (c in this@toJdbcPatternRegex) {
@@ -351,7 +355,7 @@ internal class JdbcDatabaseMetaData(
         tableNamePattern: String?,
         types: Array<out String>?
     ): ResultSet {
-        val namePattern = tableNamePattern?.replace("%", "*") ?: "*"
+        val namePattern = tableNamePattern?.let { escapeGlob(it).replace("%", "*") } ?: "*"
         val whereClause = if (tableNamePattern != null) {
             "AND name GLOB '${escapeSql(namePattern)}'"
         } else {
