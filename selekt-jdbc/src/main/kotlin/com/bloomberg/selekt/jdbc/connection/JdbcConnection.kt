@@ -306,7 +306,7 @@ internal class JdbcConnection(
             sharedDatabase.runCatching {
                 release()
             }.onFailure { e ->
-                logger.warn("Error releasing database on connection close: ${e.message}")
+                logger.debug("Error releasing database on connection close: {}", e.message)
             }
         }
     }
