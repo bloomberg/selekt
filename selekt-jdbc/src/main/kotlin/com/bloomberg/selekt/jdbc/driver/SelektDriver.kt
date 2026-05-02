@@ -290,9 +290,13 @@ class SelektDriver : Driver {
 
     @Suppress("Detekt.ComplexCondition")
     private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? {
-        if (keyChars == null) return null
+        if (keyChars == null) {
+            return null
+        }
         val bytes = if (
-            keyChars.size >= HEX_PREFIX_LENGTH && keyChars[0] == '0' && keyChars[1].let { it == 'x' || it == 'X' }
+            keyChars.size >= HEX_PREFIX_LENGTH &&
+            keyChars[0] == '0' &&
+            keyChars[1].let { it == 'x' || it == 'X' }
         ) {
             parseHexKey(keyChars)
         } else {
