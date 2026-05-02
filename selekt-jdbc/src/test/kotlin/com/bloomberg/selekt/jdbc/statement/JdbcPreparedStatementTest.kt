@@ -1021,4 +1021,103 @@ internal class JdbcPreparedStatementTest {
             execute()
         }
     }
+
+    @Test
+    fun setAsciiStreamHonoursLength() {
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            val args = invocation.getArgument<Array<Any?>>(1)
+            assertEquals("hello", args[0])
+            cursor
+        }
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            "hello world".byteInputStream().use {
+                setAsciiStream(1, it, 5)
+            }
+            executeQuery()
+        }
+    }
+
+    @Test
+    fun setBinaryStreamHonoursLength() {
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            val args = invocation.getArgument<Array<Any?>>(1)
+            assertTrue(byteArrayOf(1, 2, 3).contentEquals(args[0] as ByteArray))
+            cursor
+        }
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE data=?").run {
+            byteArrayOf(1, 2, 3, 4, 5, 6).inputStream().use {
+                setBinaryStream(1, it, 3)
+            }
+            executeQuery()
+        }
+    }
+
+    @Test
+    fun setCharacterStreamHonoursLength() {
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            val args = invocation.getArgument<Array<Any?>>(1)
+            assertEquals("hello", args[0])
+            cursor
+        }
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            "hello world".reader().use {
+                setCharacterStream(1, it, 5)
+            }
+            executeQuery()
+        }
+    }
+
+    @Test
+    fun setAsciiStreamNegativeLengthThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            assertFailsWith<SQLException> {
+                setAsciiStream(1, "test".byteInputStream(), -1)
+            }
+        }
+    }
+
+    @Test
+    fun setBinaryStreamNegativeLengthThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE data=?").run {
+            assertFailsWith<SQLException> {
+                setBinaryStream(1, byteArrayOf(1).inputStream(), -1)
+            }
+        }
+    }
+
+    @Test
+    fun setCharacterStreamNegativeLengthThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            assertFailsWith<SQLException> {
+                setCharacterStream(1, "test".reader(), -1)
+            }
+        }
+    }
+
+    @Test
+    fun setAsciiStreamLongOverflowThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            assertFailsWith<SQLException> {
+                setAsciiStream(1, "test".byteInputStream(), Long.MAX_VALUE)
+            }
+        }
+    }
+
+    @Test
+    fun setBinaryStreamLongOverflowThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE data=?").run {
+            assertFailsWith<SQLException> {
+                setBinaryStream(1, byteArrayOf(1).inputStream(), Long.MAX_VALUE)
+            }
+        }
+    }
+
+    @Test
+    fun setCharacterStreamLongOverflowThrowsSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
+            assertFailsWith<SQLException> {
+                setCharacterStream(1, "test".reader(), Long.MAX_VALUE)
+            }
+        }
+    }
 }

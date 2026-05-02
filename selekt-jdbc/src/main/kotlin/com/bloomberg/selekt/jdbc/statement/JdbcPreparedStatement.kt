@@ -49,6 +49,40 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private const val INITIAL_BATCH_CHUNK_SIZE = 1024
 
+private const val MAX_STREAM_LENGTH = 1_000_000_000
+
+private const val READER_BUFFER_SIZE = 8_192
+
+private fun Long.checkedStreamLength(): Int {
+    if (this !in 0L..MAX_STREAM_LENGTH) {
+        throw SQLException("Stream length $this is out of range (0, $MAX_STREAM_LENGTH)")
+    }
+    return toInt()
+}
+
+private fun Int.validatedStreamLength(): Int {
+    if (this < 0) {
+        throw SQLException("Stream length must be non-negative, was $this")
+    }
+    return this
+}
+
+private fun Reader.readBounded(
+    maxChars: Int
+): String = buildString(minOf(maxChars, READER_BUFFER_SIZE)) {
+    val buffer = CharArray(capacity())
+    var remaining = maxChars
+    while (remaining > 0) {
+        val toRead = minOf(remaining, buffer.size)
+        val read = read(buffer, 0, toRead)
+        if (read == -1) {
+            break
+        }
+        appendRange(buffer, 0, read)
+        remaining -= read
+    }
+}
+
 @Suppress("TooGenericExceptionCaught")
 @NotThreadSafe
 internal open class JdbcPreparedStatement(
@@ -361,50 +395,50 @@ internal open class JdbcPreparedStatement(
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readBytes()?.toString(Charsets.US_ASCII)
+        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.US_ASCII)
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        setAsciiStream(parameterIndex, x, length.toInt())
+        setAsciiStream(parameterIndex, x, length.checkedStreamLength())
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readBytes()?.toString(Charsets.US_ASCII)
+        parameters[parameterIndex - 1] = x?.readNBytes(MAX_STREAM_LENGTH)?.toString(Charsets.US_ASCII)
     }
 
     @Deprecated("Deprecated in Java", ReplaceWith("setCharacterStream(parameterIndex, x, length)"))
     override fun setUnicodeStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readBytes()?.toString(Charsets.UTF_16)
+        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.UTF_16)
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readBytes()
+        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        setBinaryStream(parameterIndex, x, length.toInt())
+        setBinaryStream(parameterIndex, x, length.checkedStreamLength())
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readBytes()
+        parameters[parameterIndex - 1] = x?.readNBytes(MAX_STREAM_LENGTH)
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = reader?.readText()
+        parameters[parameterIndex - 1] = reader?.readBounded(length.validatedStreamLength())
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Long) {
-        setCharacterStream(parameterIndex, reader, length.toInt())
+        setCharacterStream(parameterIndex, reader, length.checkedStreamLength())
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = reader?.readText()
+        parameters[parameterIndex - 1] = reader?.readBounded(MAX_STREAM_LENGTH)
     }
 
     override fun setRef(parameterIndex: Int, x: Ref?) {
