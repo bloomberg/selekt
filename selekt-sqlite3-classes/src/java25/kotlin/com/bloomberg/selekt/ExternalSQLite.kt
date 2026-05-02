@@ -499,11 +499,16 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
-        sqlite3_key.invoke(
-            MemorySegment.ofAddress(db),
-            slab.allocateFromBytes(*key),
-            length
-        ) as Int
+        val segment = slab.allocateFromBytes(*key)
+        try {
+            sqlite3_key.invoke(
+                MemorySegment.ofAddress(db),
+                segment,
+                length
+            ) as Int
+        } finally {
+            segment.fill(0)
+        }
     }
 
     override fun keyConventionally(
@@ -591,11 +596,16 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
-        sqlite3_rekey.invoke(
-            MemorySegment.ofAddress(db),
-            slab.allocateFromBytes(*key),
-            length
-        ) as Int
+        val segment = slab.allocateFromBytes(*key)
+        try {
+            sqlite3_rekey.invoke(
+                MemorySegment.ofAddress(db),
+                segment,
+                length
+            ) as Int
+        } finally {
+            segment.fill(0)
+        }
     }
 
     override fun releaseMemory(
