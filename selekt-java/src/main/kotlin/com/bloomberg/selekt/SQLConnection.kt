@@ -121,15 +121,17 @@ internal class SQLConnection(
         sql: String,
         bindArgs: Iterable<Array<out Any?>>
     ) = withPreparedStatement(sql) {
-        val changes = sqlite.totalChanges(pointer)
-        bindArgs.forEach {
-            reset()
-            bindRow(it)
-            if (SQL_DONE != step()) {
-                return@withPreparedStatement -1
+        sqlite.withScopedArena {
+            val changes = sqlite.totalChanges(pointer)
+            bindArgs.forEach {
+                reset()
+                bindRow(it)
+                if (SQL_DONE != step()) {
+                    return@withScopedArena -1
+                }
             }
+            sqlite.totalChanges(pointer) - changes
         }
-        sqlite.totalChanges(pointer) - changes
     }
 
     override fun executeBatchForChangedRowCount(
