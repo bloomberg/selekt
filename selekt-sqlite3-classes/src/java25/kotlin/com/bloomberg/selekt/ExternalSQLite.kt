@@ -616,10 +616,8 @@ internal class ExternalSQLite(
         statement: Long
     ): SQLCode = sqlite3_reset.invoke(MemorySegment.ofAddress(statement)) as Int
 
-    override fun resetAndClearBindings(statement: Long): SQLCode {
-        reset(statement)
-        return clearBindings(statement)
-    }
+    override fun resetAndClearBindings(statement: Long): SQLCode =
+        sqlite3_reset_and_clear_bindings.invoke(MemorySegment.ofAddress(statement)) as Int
 
     external override fun softHeapLimit64(): Long
 
@@ -1041,6 +1039,10 @@ internal class ExternalSQLite(
         )
         private val sqlite3_reset: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_reset").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
+        )
+        private val sqlite3_reset_and_clear_bindings: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_reset_and_clear_bindings").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_rollback_hook: MethodHandle = linker.downcallHandle(
