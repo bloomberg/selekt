@@ -120,6 +120,7 @@ jobs:
 
       - name: 'Checkout'
         run: |
+          git config --global --add safe.directory /__w/selekt/selekt
           git clone --depth 2 --recurse-submodules https://github.com/${{ github.repository }} .
           git checkout ${{ github.sha }}
 
