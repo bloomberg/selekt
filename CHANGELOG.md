@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.31.0
+
+* Use critical(false) for FFM downcalls that don't access JVM heap.
+* Combined native reset and clear.
+* Start using withScopedArena for Iterables and Sequences.
+* Add linux-aarch64 native build support.
+
 ## Version 0.30.5
 
 * Zero key material in slab immediately after sqlite3_key.
