@@ -65,6 +65,18 @@ val cFlags = arrayOf(
     "-DSQLITE_USE_URI=1"
 )
 
+fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
+    when {
+        startsWith("mac") -> "darwin"
+        startsWith("windows") -> "windows"
+        else -> replace("\\s+", "_")
+    }
+}
+
+fun targetIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".let {
+    if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
+}
+
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = File("$projectDir/src/main/external/sqlcipher")
     commandLine("./configure")
@@ -114,7 +126,7 @@ tasks.register<Exec>("cmakeSQLite") {
     args(
         "-DCMAKE_BUILD_TYPE=Release",
         "-DUSE_CCACHE=1",
-        "-DSLKT_TARGET_ABI=${platformIdentifier()}",
+        "-DSLKT_TARGET_ABI=${targetIdentifier()}",
         projectDir
     )
 }
@@ -122,24 +134,16 @@ tasks.register<Exec>("cmakeSQLite") {
 tasks.register<Exec>("makeSQLite") {
     dependsOn("cmakeSQLite")
     workingDir(".cxx-host")
-    commandLine("make", "selekt")
+    commandLine("cmake")
+    args("--build", ".", "--target", "selekt")
 }
 
-fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
-    when {
-        startsWith("mac") -> "darwin"
-        startsWith("windows") -> "windows"
-        else -> replace("\\s+", "_")
-    }
-}
-
-fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
-logger.quiet("Resolved platform identifier: {}", platformIdentifier())
+logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
     from(".cxx-host/sqlite3")
-    into(layout.buildDirectory.dir("intermediates/libs/${platformIdentifier()}"))
+    into(layout.buildDirectory.dir("intermediates/libs/${targetIdentifier()}"))
     include("*.dll", "*.dylib", "*.so")
 }
 

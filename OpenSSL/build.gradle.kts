@@ -127,7 +127,9 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     }
 }
 
-fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}".let {
+    if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
+}
 
 val openSslWorkingDir: Provider<Directory> = openSslWorkingDir(targetIdentifier())
 

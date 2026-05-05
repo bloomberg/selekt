@@ -40,7 +40,9 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
     }
 }
 
-fun platformIdentifier() = "${osName()}-${System.getProperty("os.arch")}"
+fun platformIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".let {
+    if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
+}
 
 tasks.named<Jar>("jar") {
     archiveClassifier.set(platformIdentifier())
@@ -69,7 +71,9 @@ publishing {
         listOf(
             "darwin-aarch64",
             "linux-aarch64",
-            "linux-amd64"
+            "linux-aarch64-musl",
+            "linux-amd64",
+            "linux-amd64-musl"
         ).forEach {
             artifact(file("build/libs/${project.name}-$version-$it.jar")) {
                 classifier = it
