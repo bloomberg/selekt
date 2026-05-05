@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 0.31.1
+
+Replaying release of 0.31.0.
+
 ## Version 0.31.0
 
 * Use critical(false) for FFM downcalls that don't access JVM heap.
