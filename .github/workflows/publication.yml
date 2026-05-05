@@ -123,6 +123,26 @@ jobs:
           name: selekt-sqlcipher-${{ matrix.platform }}
           path: selekt-sqlite3-sqlcipher/build/libs/*.jar
 
+      - name: 'Verify native library'
+        run: |
+          LIB=$(find SQLite3/build/intermediates/libs -name 'libselekt.*' -type f | head -1)
+          if [ -z "$LIB" ]; then
+            echo "ERROR: No native library found in build output."
+            exit 1
+          fi
+          echo "Found native library: $LIB"
+          file "$LIB"
+          ABS_LIB=$(cd "$(dirname "$LIB")" && pwd)/$(basename "$LIB")
+          cat > /tmp/LoadTest.java << 'JAVA'
+          public class LoadTest {
+              public static void main(String[] args) {
+                  System.load(args[0]);
+                  System.out.println("OK: Native library loaded successfully.");
+              }
+          }
+          JAVA
+          java /tmp/LoadTest.java "$ABS_LIB"
+
   publish-native:
     name: Publish to OSSRH
     runs-on: ubuntu-latest
