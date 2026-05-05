@@ -38,9 +38,22 @@ internal fun osNames(systemOsName: String = System.getProperty("os.name")) = sys
 }
 
 @JvmSynthetic
-internal fun platformIdentifiers() = osNames().flatMap {
+internal fun isMusl(): Boolean = runCatching {
+    File("/lib").listFiles()?.any { it.name.startsWith("ld-musl-") } == true
+}.getOrDefault(false)
+
+@JvmSynthetic
+internal fun platformIdentifiers(): List<String> {
     val osArch = System.getProperty("os.arch")
-    listOf('-', File.separatorChar).map { s -> "$it$s$osArch" } + it
+    val musl = osNames().first().let { it == "linux" || it.contains("linux") } && isMusl()
+    return osNames().flatMap { os ->
+        val base = listOf('-', File.separatorChar).map { s -> "$os$s$osArch" }
+        if (musl) {
+            base.map { "$it-musl" } + base
+        } else {
+            base
+        } + os
+    }
 }
 
 @JvmSynthetic
