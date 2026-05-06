@@ -1,1 +1,0 @@
-#define SELEKT_GIT_COMMIT "5f79eb46fba5efd8a0a9f087f1cba19915588aac"
