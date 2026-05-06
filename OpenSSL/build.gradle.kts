@@ -79,10 +79,26 @@ tasks.register<Verify>("verifyOpenSslChecksum") {
 
 tasks.register<Exec>("verifyOpenSslSignature") {
     inputs.files(archivePgp, archive)
+    val gpgHome = layout.buildDirectory.dir("tmp/gpg-home").get().asFile
+    val keyboxSource = file("openssl.gpg")
+    val gpgHomePath = gpgHome.absolutePath.toMsysPath()
+    val pgpPath = archivePgp.get().asFile.absolutePath.toMsysPath()
+    val archivePath = archive.get().asFile.absolutePath.toMsysPath()
+    doFirst {
+        gpgHome.mkdirs()
+        gpgHome.resolve("trustdb.gpg").createNewFile()
+        keyboxSource.copyTo(gpgHome.resolve("pubring.kbx"), overwrite = true)
+    }
     commandLine(
-        "gpg", "--no-default-keyring", "--keyring", "$projectDir/openssl.gpg", "--verify",
-        archivePgp.get().asFile, archive.get().asFile
+        "gpg", "--homedir", gpgHomePath,
+        "--verify", pgpPath, archivePath
     )
+}
+
+fun String.toMsysPath(): String = if (length >= 2 && this[1] == ':') {
+    "/${this[0].lowercaseChar()}${substring(2).replace('\\', '/')}"
+} else {
+    this
 }
 
 fun openSslWorkingDir(target: String): Provider<Directory> = archive.run {
@@ -155,8 +171,7 @@ tasks.register<Exec>("configureHost") {
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
     outputs.cacheIf { false } // TODO Restore me.
-    commandLine("./config")
-    args(
+    val configArgs = listOf(
         "-fPIC",
         "-fstack-protector-all",
         "no-idea", "no-camellia", "no-seed", "no-bf", "no-blake2", "no-cast", "no-rc2", "no-rc4", "no-rc5",
@@ -169,6 +184,15 @@ tasks.register<Exec>("configureHost") {
         "no-sm4", "no-ocsp", "no-cmac", "no-srtp", "no-shared", "no-comp", "no-ct", "no-cms",
         "no-capieng", "no-deprecated", "no-autoerrinit", "no-stdio", "no-ui-console", "no-filenames"
     )
+    if (osName() == "windows") {
+        val msys2Bash = "C:/msys64/usr/bin/bash.exe"
+        val workDir = openSslWorkingDir.absolutePath.replace('\\', '/')
+        commandLine(msys2Bash, "-l", "-c",
+            "cd '$workDir' && perl Configure mingw64 ${configArgs.joinToString(" ")}")
+    } else {
+        commandLine("./config")
+        args(configArgs)
+    }
 }
 
 tasks.register<Exec>("makeHost") {
@@ -184,7 +208,12 @@ tasks.register<Exec>("makeHost") {
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     outputs.cacheIf { false } // TODO Restore me.
-    commandLine("make")
+    if (osName() == "windows") {
+        environment("PATH", "C:\\msys64\\usr\\bin;${System.getenv("PATH")}")
+        commandLine("mingw32-make")
+    } else {
+        commandLine("make")
+    }
     args("build_libs")
     logging.captureStandardOutput(LogLevel.INFO)
 }

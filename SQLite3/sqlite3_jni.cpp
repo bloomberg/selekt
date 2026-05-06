@@ -19,7 +19,12 @@
 #include <cstddef>
 #include <cstring>
 #include <new>
+#ifdef _WIN32
+#include <string.h>
+#define strncasecmp _strnicmp
+#else
 #include <strings.h>
+#endif
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>

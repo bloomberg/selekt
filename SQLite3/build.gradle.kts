@@ -76,12 +76,20 @@ fun osName() = System.getProperty("os.name").lowercase(Locale.US).run {
 fun targetIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".let {
     if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
 }
+logger.quiet("Resolved platform identifier: {}", targetIdentifier())
+
+val isWindows = osName() == "windows"
+val sqlcipherDir = file("src/main/external/sqlcipher")
 
 tasks.register<Exec>("configureSqlCipher") {
-    workingDir = File("$projectDir/src/main/external/sqlcipher")
-    commandLine("./configure")
-    environment("CFLAGS", cFlags.joinToString(" "))
-    args("--with-tempstore=yes")
+    workingDir = sqlcipherDir
+    if (isWindows) {
+        commandLine("cmd", "/c", "echo", "Skipping configure on Windows (using Makefile.msc)")
+    } else {
+        commandLine("./configure")
+        environment("CFLAGS", cFlags.joinToString(" "))
+        args("--with-tempstore=yes")
+    }
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
@@ -91,21 +99,25 @@ tasks.register("amalgamate") {
 
 tasks.register<Exec>("amalgamateSQLite") {
     dependsOn("configureSqlCipher")
-    workingDir = File("$projectDir/src/main/external/sqlcipher")
-    commandLine("make")
-    args("sqlite3.c")
+    workingDir = sqlcipherDir
+    if (isWindows) {
+        commandLine("nmake", "/f", "Makefile.msc", "sqlite3.c", "OPTS=${cFlags.joinToString(" ")}")
+    } else {
+        commandLine("make")
+        args("sqlite3.c")
+    }
 }
 
 tasks.register<Copy>("copySQLiteHeader") {
     mustRunAfter("amalgamateSQLite")
-    from("$projectDir/src/main/external/sqlcipher")
+    from(sqlcipherDir)
     include("sqlite3.h")
     into("$projectDir/sqlite3/generated/include/sqlite3")
 }
 
 tasks.register<Copy>("copySQLiteImplementation") {
     mustRunAfter("amalgamateSQLite")
-    from("$projectDir/src/main/external/sqlcipher")
+    from(sqlcipherDir)
     include("sqlite3.c")
     into("$projectDir/sqlite3/generated/cpp")
 }
@@ -123,22 +135,31 @@ tasks.register<Exec>("cmakeSQLite") {
     }.get()
     environment("JAVA_HOME", javaLauncher.metadata.installationPath.asFile.absolutePath)
     commandLine("cmake")
-    args(
+    val cmakeArgs = mutableListOf(
         "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_VERBOSE_MAKEFILE=ON",
         "-DUSE_CCACHE=1",
-        "-DSLKT_TARGET_ABI=${targetIdentifier()}",
-        projectDir
+        "-DSLKT_TARGET_ABI=${targetIdentifier()}"
     )
+    if (isWindows) {
+        cmakeArgs.addAll(0, listOf("-G", "MinGW Makefiles"))
+        cmakeArgs.add("-DCMAKE_C_COMPILER=gcc")
+        cmakeArgs.add("-DCMAKE_CXX_COMPILER=g++")
+        val prefixPath = System.getenv("CMAKE_PREFIX_PATH")
+        if (!prefixPath.isNullOrBlank()) {
+            cmakeArgs.add("-DCMAKE_PREFIX_PATH=$prefixPath")
+        }
+    }
+    cmakeArgs.add(projectDir.absolutePath)
+    args(cmakeArgs)
 }
 
 tasks.register<Exec>("makeSQLite") {
     dependsOn("cmakeSQLite")
     workingDir(".cxx-host")
-    commandLine("cmake")
-    args("--build", ".", "--target", "selekt")
+    commandLine("cmake", "--build", ".", "--target", "selekt", "--verbose")
 }
 
-logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
@@ -148,7 +169,7 @@ tasks.register<Copy>("buildHost") {
 }
 
 tasks.register<Exec>("cleanSqlCipher") {
-    workingDir = File("$projectDir/src/main/external/sqlcipher")
+    workingDir = sqlcipherDir
     commandLine("git")
     args("clean", "-dfx")
 }
