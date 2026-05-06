@@ -120,7 +120,7 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
             .withPropertyName("headers")
         outputs.dir(layout.buildDirectory.dir("libs/$it")).withPropertyName("lib")
-        outputs.cacheIf { false } // TODO Restore me.
+        outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
@@ -170,7 +170,7 @@ tasks.register<Exec>("configureHost") {
     workingDir(openSslWorkingDir)
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
-    outputs.cacheIf { false } // TODO Restore me.
+    outputs.cacheIf { true }
     val configArgs = listOf(
         "-fPIC",
         "-fstack-protector-all",
@@ -207,7 +207,7 @@ tasks.register<Exec>("makeHost") {
     }
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
-    outputs.cacheIf { false } // TODO Restore me.
+    outputs.cacheIf { true }
     if (osName() == "windows") {
         environment("PATH", "C:\\msys64\\usr\\bin;${System.getenv("PATH")}")
         commandLine("mingw32-make")
@@ -224,7 +224,7 @@ tasks.register<Copy>("assembleHost") {
     inputs.property("version", openSslVersion())
     val outputDir = layout.buildDirectory.dir("libs/${targetIdentifier()}")
     outputs.dir(outputDir).withPropertyName("libs")
-    outputs.cacheIf { false } // TODO Restore me.
+    outputs.cacheIf { true }
     val openSslWorkingDir = openSslWorkingDir.get().asFile
     from(fileTree(openSslWorkingDir) {
         arrayOf(".a").forEach { e ->
