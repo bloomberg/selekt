@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.32.0
+
+* Gradle 9.5.0.
+* Windows (amd64) support.
+
 ## Version 0.31.1
 
 Replaying release of 0.31.0.
