@@ -62,8 +62,19 @@ jobs:
           C:\msys64\usr\bin\bash.exe -lc "echo | cpan Locale::Maketext::Simple Pod::Usage"
           C:\msys64\usr\bin\bash.exe -lc "perl -e 'use Locale::Maketext::Simple; use Pod::Usage; print qq{OK\n}'"
 
-      - name: 'Build mimalloc'
+      - name: 'Cache mimalloc'
+        id: cache-mimalloc
         if: runner.os != 'macOS'
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/local/lib/libmimalloc.a
+            /usr/local/include/mimalloc.h
+            C:/mimalloc
+          key: mimalloc-${{ matrix.platform }}-v3.1.6
+
+      - name: 'Build mimalloc'
+        if: runner.os != 'macOS' && steps.cache-mimalloc.outputs.cache-hit != 'true'
         run: |
           cd /tmp
           curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
@@ -153,7 +164,7 @@ jobs:
         run: |
           git config --global --add safe.directory /__w/selekt/selekt
 
-      - name: 'OpenSSL cache'
+      - name: 'Cache OpenSSL'
         uses: actions/cache@v5
         with:
           path: OpenSSL/build
@@ -339,7 +350,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: 'OpenSSL cache'
+      - name: 'Cache OpenSSL'
         uses: actions/cache@v5
         with:
           path: OpenSSL/build
