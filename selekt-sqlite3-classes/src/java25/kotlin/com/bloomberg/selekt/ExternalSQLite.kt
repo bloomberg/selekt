@@ -296,7 +296,7 @@ internal class ExternalSQLite(
             index
         ) as Int
         if (size == 0) {
-            return ByteArray(0)
+            return EMPTY_BYTE_ARRAY
         }
         return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
     }
@@ -759,6 +759,8 @@ internal class ExternalSQLite(
 
         private val criticalOption = Linker.Option.critical(true)
         private val criticalNoHeapOption = Linker.Option.critical(false)
+
+        private val EMPTY_BYTE_ARRAY = ByteArray(0)
 
         private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
