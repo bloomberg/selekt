@@ -159,11 +159,12 @@ internal class ExternalSQLite(
         index: Int,
         value: String
     ): SQLCode = withSlab { slab ->
+        val textSegment = slab.allocateFrom(value)
         sqlite3_bind_text.invoke(
             MemorySegment.ofAddress(statement),
             index,
-            slab.allocateFrom(value),
-            -1,
+            textSegment,
+            (textSegment.byteSize() - 1).toInt(),
             sqliteTransient
         ) as Int
     }
