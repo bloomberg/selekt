@@ -170,7 +170,7 @@ tasks.register<Exec>("configureHost") {
     workingDir(openSslWorkingDir)
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
         .withPropertyName("configure")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false }
     val configArgs = listOf(
         "-fPIC",
         "-fstack-protector-all",
@@ -207,7 +207,7 @@ tasks.register<Exec>("makeHost") {
     }
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false }
     if (osName() == "windows") {
         environment("PATH", "C:\\msys64\\usr\\bin;${System.getenv("PATH")}")
         commandLine("mingw32-make")
@@ -224,7 +224,7 @@ tasks.register<Copy>("assembleHost") {
     inputs.property("version", openSslVersion())
     val outputDir = layout.buildDirectory.dir("libs/${targetIdentifier()}")
     outputs.dir(outputDir).withPropertyName("libs")
-    outputs.cacheIf { true }
+    outputs.cacheIf { false }
     val openSslWorkingDir = openSslWorkingDir.get().asFile
     from(fileTree(openSslWorkingDir) {
         arrayOf(".a").forEach { e ->
