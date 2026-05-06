@@ -17,6 +17,7 @@
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
 import java.util.Locale
+import java.util.Properties
 
 plugins {
     base
@@ -27,7 +28,11 @@ repositories {
     mavenCentral()
 }
 
-fun Project.openSslVersion() = property("openssl.version").toString()
+val opensslProperties = Properties().apply {
+    file("openssl.properties").inputStream().use(::load)
+}
+
+fun Project.openSslVersion() = opensslProperties.getProperty("openssl.version")
 
 val openSslBaseUrl = "https://www.openssl.org/source"
 fun Project.openSslUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.gz"
@@ -63,13 +68,13 @@ tasks.register<Download>("downloadOpenSsl") {
 tasks.register<Verify>("verifyOpenSslPgpChecksum") {
     src(archivePgp.get().asFile)
     algorithm("SHA-256")
-    checksum("${project.property("openssl.pgp.sha256")}")
+    checksum(opensslProperties.getProperty("openssl.pgp.sha256"))
 }
 
 tasks.register<Verify>("verifyOpenSslChecksum") {
     src(archive.get().asFile)
     algorithm("SHA-256")
-    checksum("${project.property("openssl.sha256")}")
+    checksum(opensslProperties.getProperty("openssl.sha256"))
 }
 
 tasks.register<Exec>("verifyOpenSslSignature") {
