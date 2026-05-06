@@ -170,6 +170,16 @@ jobs:
           path: OpenSSL/build
           key: openssl-${{ matrix.platform }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
+      - name: 'SQLCipher amalgamation cache'
+        uses: actions/cache@v5
+        with:
+          path: |
+            SQLite3/sqlite3/generated/cpp/sqlite3.c
+            SQLite3/sqlite3/generated/include/sqlite3/sqlite3.h
+            SQLite3/src/main/external/sqlcipher/sqlite3.c
+            SQLite3/src/main/external/sqlcipher/sqlite3.h
+          key: sqlcipher-amalgamation-${{ matrix.platform }}-${{ hashFiles('SQLite3/src/main/external/sqlcipher/src/**', 'SQLite3/src/main/external/sqlcipher/VERSION') }}
+
       - name: 'Configure Gradle'
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties

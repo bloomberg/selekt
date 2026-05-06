@@ -80,9 +80,14 @@ logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 val isWindows = osName() == "windows"
 val sqlcipherDir = file("src/main/external/sqlcipher")
+val generatedCppDir = file("sqlite3/generated/cpp")
+val generatedIncludeDir = file("sqlite3/generated/include/sqlite3")
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = sqlcipherDir
+    inputs.files(fileTree(sqlcipherDir) { include("configure", "configure.ac", "Makefile.in") })
+    inputs.property("cFlags", cFlags.joinToString(" "))
+    outputs.files("$sqlcipherDir/Makefile", "$sqlcipherDir/config.status")
     if (isWindows) {
         commandLine("cmd", "/c", "echo", "Skipping configure on Windows (using Makefile.msc)")
     } else {
@@ -100,6 +105,9 @@ tasks.register("amalgamate") {
 tasks.register<Exec>("amalgamateSQLite") {
     dependsOn("configureSqlCipher")
     workingDir = sqlcipherDir
+    inputs.dir("$sqlcipherDir/src")
+    inputs.property("cFlags", cFlags.joinToString(" "))
+    outputs.files("$sqlcipherDir/sqlite3.c", "$sqlcipherDir/sqlite3.h")
     if (isWindows) {
         commandLine("nmake", "/f", "Makefile.msc", "sqlite3.c", "OPTS=${cFlags.joinToString(" ")}")
     } else {
@@ -112,14 +120,14 @@ tasks.register<Copy>("copySQLiteHeader") {
     mustRunAfter("amalgamateSQLite")
     from(sqlcipherDir)
     include("sqlite3.h")
-    into("$projectDir/sqlite3/generated/include/sqlite3")
+    into(generatedIncludeDir)
 }
 
 tasks.register<Copy>("copySQLiteImplementation") {
     mustRunAfter("amalgamateSQLite")
     from(sqlcipherDir)
     include("sqlite3.c")
-    into("$projectDir/sqlite3/generated/cpp")
+    into(generatedCppDir)
 }
 
 tasks.register<Exec>("cmakeSQLite") {
