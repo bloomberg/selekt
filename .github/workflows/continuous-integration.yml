@@ -126,6 +126,12 @@ jobs:
         run: |
           git config --global --add safe.directory /__w/selekt/selekt
 
+      - name: 'OpenSSL cache'
+        uses: actions/cache@v5
+        with:
+          path: OpenSSL/build
+          key: openssl-${{ matrix.platform }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
+
       - name: 'Configure Gradle'
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties
@@ -294,16 +300,21 @@ jobs:
             echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
           fi
 
-      - name: 'Build cache'
+      - name: 'Gradle cache'
         uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            ~/OpenSSL/build
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: 'OpenSSL cache'
+        uses: actions/cache@v5
+        with:
+          path: OpenSSL/build
+          key: openssl-ci-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
       - name: 'ccache'
         uses: hendrikmuhs/ccache-action@v1.2
