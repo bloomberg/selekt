@@ -71,6 +71,7 @@ public class JdbcBatchBenchmark {
     private Connection selektConnection;
     private Connection xerialConnection;
     private PreparedStatement selektReusedStatement;
+    private PreparedStatement xerialReusedStatement;
 
     private String[] names;
     private double[] values;
@@ -82,6 +83,7 @@ public class JdbcBatchBenchmark {
         setupSelekt();
         setupXerial();
         selektReusedStatement = selektConnection.prepareStatement(INSERT_SQL);
+        xerialReusedStatement = xerialConnection.prepareStatement(INSERT_SQL);
     }
 
     @TearDown(Level.Iteration)
@@ -89,6 +91,10 @@ public class JdbcBatchBenchmark {
         if (selektReusedStatement != null && !selektReusedStatement.isClosed()) {
             selektReusedStatement.close();
             selektReusedStatement = null;
+        }
+        if (xerialReusedStatement != null && !xerialReusedStatement.isClosed()) {
+            xerialReusedStatement.close();
+            xerialReusedStatement = null;
         }
         if (selektConnection != null && !selektConnection.isClosed()) {
             selektConnection.close();
@@ -122,6 +128,7 @@ public class JdbcBatchBenchmark {
         final String url = "jdbc:sqlite:" + xerialDatabaseFile.getAbsolutePath();
         xerialConnection = XERIAL_DRIVER.connect(url, new Properties());
         try (Statement statement = xerialConnection.createStatement()) {
+            statement.execute("PRAGMA page_size=16384");
             statement.execute("PRAGMA journal_mode=WAL");
             statement.execute(CREATE_TABLE_SQL);
         }
@@ -180,6 +187,27 @@ public class JdbcBatchBenchmark {
             throw e;
         } finally {
             selektConnection.setAutoCommit(true);
+        }
+    }
+
+    @Benchmark
+    public void xerialReusedBatchInsert(final Blackhole blackhole) throws SQLException {
+        xerialConnection.setAutoCommit(false);
+        try {
+            for (int i = 0; i < batchSize; i++) {
+                xerialReusedStatement.setInt(1, i);
+                xerialReusedStatement.setString(2, names[i]);
+                xerialReusedStatement.setDouble(3, values[i]);
+                xerialReusedStatement.setBytes(4, blobs[i]);
+                xerialReusedStatement.addBatch();
+            }
+            blackhole.consume(xerialReusedStatement.executeBatch());
+            xerialConnection.commit();
+        } catch (final SQLException e) {
+            xerialConnection.rollback();
+            throw e;
+        } finally {
+            xerialConnection.setAutoCommit(true);
         }
     }
 
