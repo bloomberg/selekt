@@ -31,7 +31,6 @@ import android.database.sqlite.SQLiteMisuseException
 import android.database.sqlite.SQLiteOutOfMemoryException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQL_ABORT
 import com.bloomberg.selekt.SQL_AUTH
@@ -66,7 +65,6 @@ object Selekt {
      * @param application with which to register the callback.
      * @since 0.10.0
      */
-    @Experimental
     fun registerComponentCallbackWith(application: Application) =
         application.registerComponentCallbacks(MemoryComponentCallback)
 
@@ -80,7 +78,6 @@ object Selekt {
      * @param application from which to unregister the callback.
      * @since 0.10.0
      */
-    @Experimental
     fun unregisterComponentCallbackFrom(application: Application) =
         application.unregisterComponentCallbacks(MemoryComponentCallback)
 }

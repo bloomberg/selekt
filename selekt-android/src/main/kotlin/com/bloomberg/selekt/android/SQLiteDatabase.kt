@@ -21,7 +21,6 @@ import androidx.annotation.IntRange
 import androidx.annotation.Size
 import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.DatabaseConfiguration
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLProgressHandler
@@ -172,7 +171,6 @@ class SQLiteDatabase private constructor(
      * @param bindArgs sequence of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
@@ -189,7 +187,6 @@ class SQLiteDatabase private constructor(
      * @param bindArgs iterable of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Iterable<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
@@ -206,7 +203,6 @@ class SQLiteDatabase private constructor(
      * @param bindArgs stream of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    @Experimental
     fun batch(@Language("RoomSql") sql: String, bindArgs: Stream<Array<out Any?>>): Int = database.batch(sql, bindArgs)
 
     /**
@@ -415,7 +411,6 @@ class SQLiteDatabase private constructor(
     /**
      * @since 0.7.4
      */
-    @Experimental
     fun readFromBlob(
         table: String,
         column: String,
@@ -428,7 +423,6 @@ class SQLiteDatabase private constructor(
     /**
      * @since 0.7.3
      */
-    @Experimental
     fun readFromBlob(
         name: String,
         table: String,
@@ -483,7 +477,6 @@ class SQLiteDatabase private constructor(
     /**
      * @since 0.7.4
      */
-    @Experimental
     fun sizeOfBlob(
         table: String,
         column: String,
@@ -493,7 +486,6 @@ class SQLiteDatabase private constructor(
     /**
      * @since 0.7.3
      */
-    @Experimental
     fun sizeOfBlob(
         name: String,
         table: String,
@@ -533,7 +525,6 @@ class SQLiteDatabase private constructor(
         conflictAlgorithm
     )
 
-    @Experimental
     fun upsert(
         table: String,
         values: ContentValues,
@@ -562,7 +553,6 @@ class SQLiteDatabase private constructor(
      * @see <a href="https://www.sqlite.org/c3ref/blob_write.html">SQLite's blob_write</a>
      * @since 0.7.4
      */
-    @Experimental
     fun writeToBlob(
         table: String,
         column: String,
@@ -577,7 +567,6 @@ class SQLiteDatabase private constructor(
      * @see <a href="https://www.sqlite.org/c3ref/blob_write.html">SQLite's blob_write</a>
      * @since 0.7.3
      */
-    @Experimental
     fun writeToBlob(
         name: String,
         table: String,

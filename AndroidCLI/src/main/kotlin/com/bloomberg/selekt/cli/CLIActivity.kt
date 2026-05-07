@@ -21,7 +21,6 @@ import android.text.method.ScrollingMovementMethod
 import android.view.KeyEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.android.SQLiteDatabase
@@ -50,7 +49,6 @@ class CLIActivity : AppCompatActivity() {
     }
 
     @Suppress("Detekt.MagicNumber")
-    @OptIn(Experimental::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Selekt.registerComponentCallbackWith(application)
@@ -76,7 +74,6 @@ class CLIActivity : AppCompatActivity() {
         binding.input.requestFocus()
     }
 
-    @OptIn(Experimental::class)
     override fun onDestroy() {
         super.onDestroy()
         Selekt.unregisterComponentCallbackFrom(application)

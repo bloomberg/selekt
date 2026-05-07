@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.android
 
 import android.content.ContentValues
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase
@@ -34,7 +33,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(Experimental::class)
 internal class SQLiteDatabaseBlobTest {
     private val file = createTempFile("test-sql-database-blob", ".db").toFile().apply { deleteOnExit() }
 

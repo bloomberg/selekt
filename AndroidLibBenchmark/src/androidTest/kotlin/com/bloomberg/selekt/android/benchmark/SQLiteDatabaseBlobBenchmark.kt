@@ -21,7 +21,6 @@ import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.android.ISQLiteOpenHelper
@@ -103,7 +102,6 @@ internal class SQLiteDatabaseBlobBenchmark(private val inputs: BlobInputs) {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun readBlob() {
         ByteArray(inputs.numberOfBytes) { 0x42 }.inputStream().use {
@@ -116,7 +114,6 @@ internal class SQLiteDatabaseBlobBenchmark(private val inputs: BlobInputs) {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun writeBlob() {
         val blob = ByteArray(inputs.numberOfBytes) { 0x42 }
