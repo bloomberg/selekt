@@ -491,6 +491,28 @@ internal class SelektDriverTest {
     }
 
     @Test
+    fun differentKeysProduceDifferentCacheEntries() {
+        val dbFile = File.createTempFile("selekt_key_cache_", ".db").also(tempFiles::add)
+        val url = "jdbc:sqlite:${dbFile.absolutePath}"
+        val keyOne = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        val keyTwo = "0xFEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"
+        val propertiesOne = Properties().apply { setProperty("key", keyOne) }
+        val propertiesTwo = Properties().apply { setProperty("key", keyTwo) }
+        assertNotNull(driver.connect(url, propertiesOne)).also(connections::add)
+        assertNotNull(driver.connect(url, propertiesTwo)).also(connections::add)
+    }
+
+    @Test
+    fun sameKeyReusesCacheEntry() {
+        val url = "jdbc:sqlite:/tmp/test_same_key_cache.db"
+        val key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        val propertiesOne = Properties().apply { setProperty("key", key) }
+        val propertiesTwo = Properties().apply { setProperty("key", key) }
+        assertNotNull(driver.connect(url, propertiesOne)).also(connections::add)
+        assertNotNull(driver.connect(url, propertiesTwo)).also(connections::add)
+    }
+
+    @Test
     fun setReadOnlyPreventsWrites() {
         val dbFile = File.createTempFile("selekt_readonly_test_", ".db").also(tempFiles::add)
         driver.connect("jdbc:sqlite:${dbFile.absolutePath}", Properties())!!.use { connection ->

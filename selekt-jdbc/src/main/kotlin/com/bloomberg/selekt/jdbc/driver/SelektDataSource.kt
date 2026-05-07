@@ -310,6 +310,19 @@ class SelektDataSource : DataSource {
         ).mapNotNull { key ->
             properties.getProperty(key)?.let { "$key=$it" }
         }.sorted().joinToString("&")
-        return "${connectionURL.databasePath}?$propString"
+        val keyHash = hashEncryptionKey(encryptionKeySource)
+        return buildString {
+            append(connectionURL.databasePath)
+            append('?')
+            append(propString)
+            keyHash?.let { append("&keyHash=").append(it) }
+        }
+    }
+
+    private fun hashEncryptionKey(
+        source: EncryptionKeySource?
+    ): String? = when (source) {
+        is EncryptionKeySource.Literal -> hashKeyChars(source.key)
+        null -> null
     }
 }

@@ -20,6 +20,7 @@ import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SelektVersion
+import com.bloomberg.selekt.SharedResource
 import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
@@ -179,21 +180,17 @@ class SelektDriver : Driver {
         properties: Properties,
         keyChars: CharArray?
     ): SharedDatabase {
-        val cacheKey = buildCacheKey(connectionURL, properties)
-        val sharedDatabase = databaseCacheLock.withLock {
+        val cacheKey = buildCacheKey(connectionURL, properties, keyChars)
+        return databaseCacheLock.withLock {
             databaseCache.getOrPut(cacheKey) {
                 SharedDatabase(createDatabase(connectionURL, properties, keyChars)) {
                     databaseCacheLock.withLock {
                         databaseCache.remove(cacheKey)
                     }
                 }
-            }.also { db ->
-                db.retain()
-            }
+            }.also(SharedResource::retain)
         }
-        return sharedDatabase
     }
-
 
     private fun createDatabase(
         connectionURL: ConnectionURL,
@@ -304,7 +301,8 @@ class SelektDriver : Driver {
 
     private fun buildCacheKey(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        keyChars: CharArray?
     ): String {
         val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
@@ -314,6 +312,11 @@ class SelektDriver : Driver {
         ).mapNotNull { key ->
             properties.getProperty(key)?.let { "$key=$it" }
         }.joinToString("&")
-        return "${connectionURL.databasePath}?$propertiesString"
+        return buildString {
+            append(connectionURL.databasePath)
+            append('?')
+            append(propertiesString)
+            keyChars?.let { append("&keyHash=").append(hashKeyChars(it)) }
+        }
     }
 }
