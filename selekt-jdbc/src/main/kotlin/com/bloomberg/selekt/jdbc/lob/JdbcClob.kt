@@ -27,6 +27,9 @@ import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.28.0
+ */
 @Suppress("Detekt.StringLiteralDuplication")
 @NotThreadSafe
 internal class JdbcClob : Clob {

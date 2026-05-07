@@ -29,6 +29,9 @@ import com.bloomberg.selekt.android.Selekt
 import com.bloomberg.selekt.cli.databinding.ActivityMainBinding
 import java.lang.StringBuilder
 
+/**
+ * @since 0.12.1
+ */
 class CLIActivity : AppCompatActivity() {
     private lateinit var database: SQLiteDatabase
     private lateinit var binding: ActivityMainBinding

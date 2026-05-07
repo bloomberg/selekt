@@ -19,6 +19,9 @@ package com.bloomberg.selekt.android.support
 import androidx.sqlite.db.SupportSQLiteStatement
 import com.bloomberg.selekt.ISQLStatement
 
+/**
+ * @since 0.12.1
+ */
 @JvmSynthetic
 internal fun ISQLStatement.asSupportSQLiteStatement() = object : SupportSQLiteStatement {
     override fun bindBlob(index: Int, value: ByteArray) = this@asSupportSQLiteStatement.bindBlob(index, value)

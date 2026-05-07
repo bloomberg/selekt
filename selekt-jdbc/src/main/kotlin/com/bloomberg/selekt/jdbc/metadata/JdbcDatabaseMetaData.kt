@@ -47,6 +47,9 @@ internal fun String.toJdbcPatternRegex(): Regex = buildString {
     }
 }.toRegex()
 
+/**
+ * @since 0.28.0
+ */
 @Suppress("Detekt.LargeClass")
 @NotThreadSafe
 internal class JdbcDatabaseMetaData(

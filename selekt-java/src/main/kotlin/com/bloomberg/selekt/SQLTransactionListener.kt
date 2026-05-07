@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 interface SQLTransactionListener {
     /**
      * Called immediately after the transaction begins.

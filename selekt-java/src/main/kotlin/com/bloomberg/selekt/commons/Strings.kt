@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.commons
 
+/**
+ * @since 0.12.1
+ */
 internal inline fun String.trimStartByIndex(predicate: (Char) -> Boolean): String {
     var i = 0
     while (i < length) {

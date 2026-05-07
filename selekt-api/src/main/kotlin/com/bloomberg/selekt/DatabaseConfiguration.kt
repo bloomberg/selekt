@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 data class DatabaseConfiguration(
     val borrowWaitTimeoutMillis: Long = -1L,
     val busyTimeoutMillis: Int = 0,

@@ -19,6 +19,9 @@ package com.bloomberg.selekt
 import java.io.Closeable
 import javax.annotation.concurrent.ThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @ThreadSafe
 abstract class SharedCloseable : SharedResource(), Closeable {
     final override fun close() = release()

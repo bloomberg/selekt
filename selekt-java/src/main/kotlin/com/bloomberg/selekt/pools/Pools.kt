@@ -40,6 +40,9 @@ internal fun <K : Any, T : IPooledObject<K>> createObjectPool(
     }
 }
 
+/**
+ * @since 0.12.1
+ */
 enum class Priority {
     LOW,
     HIGH

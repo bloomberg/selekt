@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 interface SQLCommitListener {
     fun onCommit(): Int = 0
 

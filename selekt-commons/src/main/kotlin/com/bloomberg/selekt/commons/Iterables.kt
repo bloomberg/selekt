@@ -22,6 +22,9 @@ fun <T> emptyIterable() = object : Iterable<T> {
     override fun iterator() = iterator
 }
 
+/**
+ * @since 0.12.1
+ */
 private class EmptyIterator<L, R> : Iterator<Pair<L, R>> {
     override fun hasNext() = false
 

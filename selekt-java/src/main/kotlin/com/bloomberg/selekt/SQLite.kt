@@ -19,6 +19,9 @@ package com.bloomberg.selekt
 import com.bloomberg.selekt.exceptions.SelektSQLException
 import java.sql.SQLException
 
+/**
+ * @since 0.12.1
+ */
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
 open class SQLite(
     private val sqlite: IExternalSQLite

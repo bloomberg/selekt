@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
  * - maxCachedDatabases: Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching, >0 = bounded LRU, default: -1)
+ *
+ * @since 0.28.0
  */
 @Suppress("TooGenericExceptionCaught")
 class SelektDriver : Driver {

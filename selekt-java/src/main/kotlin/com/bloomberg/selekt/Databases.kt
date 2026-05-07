@@ -48,6 +48,9 @@ private fun requireSafePragmaValue(value: Any) {
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
+/**
+ * @since 0.12.1
+ */
 private object SharedSqlBuilder {
     private val threadLocal = object : ThreadLocal<ManagedStringBuilder>() {
         override fun initialValue() = ManagedStringBuilder()

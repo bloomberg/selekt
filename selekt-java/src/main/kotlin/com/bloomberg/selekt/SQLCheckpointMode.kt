@@ -21,6 +21,9 @@ private const val SQL_CHECKPOINT_FULL = 1
 private const val SQL_CHECKPOINT_RESTART = 2
 private const val SQL_CHECKPOINT_TRUNCATE = 3
 
+/**
+ * @since 0.12.1
+ */
 internal enum class SQLCheckpointMode(
     private val value: Int
 ) {

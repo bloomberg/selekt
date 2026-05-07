@@ -19,6 +19,9 @@ package com.bloomberg.selekt
 import java.io.Closeable
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
 interface ICursor : Closeable {
     val columnCount: Int

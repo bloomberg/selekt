@@ -88,6 +88,9 @@ import java.sql.SQLTransactionRollbackException
 import java.sql.SQLTransientConnectionException
 import java.sql.SQLTransientException
 
+/**
+ * @since 0.28.0
+ */
 internal object SQLExceptionMapper {
     private const val SQLSTATE_HY000 = "HY000"
     private const val SQLSTATE_53000 = "53000"

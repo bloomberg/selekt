@@ -22,6 +22,9 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 
+/**
+ * @since 0.13.0
+ */
 internal object SQLiteDatabaseRegistry {
     private val lock = ReentrantLock()
     @GuardedBy("lock")

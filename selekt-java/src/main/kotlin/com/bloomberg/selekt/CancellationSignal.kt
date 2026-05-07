@@ -3,6 +3,9 @@ package com.bloomberg.selekt
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.ThreadSafe
 
+/**
+ * @since 0.30.0
+ */
 @ThreadSafe
 class CancellationSignal(
     internal val instructionCount: Int = DEFAULT_INSTRUCTION_COUNT

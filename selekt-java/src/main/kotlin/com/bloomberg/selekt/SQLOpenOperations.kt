@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 typealias SQLOpenOperation = Int
 
 // https://sqlite.org/c3ref/c_open_autoproxy.html

@@ -23,6 +23,9 @@ import kotlin.math.min
 private const val NANOS_PER_MILLI = 1_000_000L
 private const val MAX_PAUSE_MILLIS = 100L
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 @Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 internal class SQLPreparedStatement(

@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
 
+/**
+ * @since 0.12.1
+ */
 @Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
 internal interface SQLExecutor : BatchSQLExecutor {
     val isAutoCommit: Boolean

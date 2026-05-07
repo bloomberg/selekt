@@ -40,6 +40,9 @@ import javax.sql.DataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * @since 0.28.0
+ */
 sealed interface EncryptionKeySource {
     data class Literal(val key: CharArray) : EncryptionKeySource {
         fun zero() { key.fill('\u0000') }

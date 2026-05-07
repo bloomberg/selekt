@@ -49,6 +49,9 @@ import org.slf4j.LoggerFactory
 
 private const val MAX_POOLED_STATEMENTS = 32
 
+/**
+ * @since 0.28.0
+ */
 @Suppress("MethodOverloading", "TooGenericExceptionCaught", "Detekt.StringLiteralDuplication")
 @NotThreadSafe
 internal class JdbcConnection(

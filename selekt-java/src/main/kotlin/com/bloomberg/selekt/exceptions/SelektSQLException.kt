@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.exceptions
 
+/**
+ * @since 0.12.1
+ */
 interface SelektSQLException {
     val code: Int
 

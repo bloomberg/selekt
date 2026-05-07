@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 typealias SQLCode = Int
 typealias SQLDataType = Int
 

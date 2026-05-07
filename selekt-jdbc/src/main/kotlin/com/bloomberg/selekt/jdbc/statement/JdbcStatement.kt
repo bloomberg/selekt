@@ -39,6 +39,9 @@ internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
 
+/**
+ * @since 0.28.0
+ */
 @NotThreadSafe
 @Suppress("TooGenericExceptionCaught")
 open class JdbcStatement internal constructor(

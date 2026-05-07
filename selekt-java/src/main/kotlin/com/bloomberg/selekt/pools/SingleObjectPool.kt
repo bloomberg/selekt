@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @ThreadSafe
 class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,

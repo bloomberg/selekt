@@ -19,7 +19,7 @@ package com.bloomberg.selekt
 /**
  * An allow-list of SQLite PRAGMA statements that may be used with [SQLDatabase.pragma].
  *
- * @since 0.29.9.
+ * @since 0.29.9
  */
 enum class SQLitePragma(
     @JvmField

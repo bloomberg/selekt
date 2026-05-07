@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.annotations
 
+/**
+ * @since 0.12.1
+ */
 @RequiresOptIn(message = "This API is experimental. It may be changed in the future without notice.")
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)

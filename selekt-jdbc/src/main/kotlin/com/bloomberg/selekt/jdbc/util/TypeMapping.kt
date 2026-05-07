@@ -30,6 +30,9 @@ import java.time.format.DateTimeParseException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * @since 0.28.0
+ */
 @Suppress("TooGenericExceptionCaught")
 internal object TypeMapping {
     private val digitsOnly = Regex("\\d+")

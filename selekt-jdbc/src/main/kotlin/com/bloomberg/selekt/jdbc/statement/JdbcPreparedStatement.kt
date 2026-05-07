@@ -83,6 +83,9 @@ private fun Reader.readBounded(
     }
 }
 
+/**
+ * @since 0.28.0
+ */
 @Suppress("TooGenericExceptionCaught")
 @NotThreadSafe
 internal open class JdbcPreparedStatement(

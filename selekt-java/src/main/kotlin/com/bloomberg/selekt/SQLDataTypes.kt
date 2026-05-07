@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 const val SQL_INTEGER = 1
 const val SQL_FLOAT = 2
 const val SQL_TEXT = 3

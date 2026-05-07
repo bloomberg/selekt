@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 interface ISQLStatement : ISQLProgram {
     /**
      * True if and only if the prepared statement makes no direct changes to the content of the database.

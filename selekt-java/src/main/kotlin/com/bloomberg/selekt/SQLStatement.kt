@@ -22,6 +22,9 @@ import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.streams.asSequence
 
+/**
+ * @since 0.12.1
+ */
 internal enum class SQLStatementType(
     @JvmField
     val isPredictedWrite: Boolean = true,

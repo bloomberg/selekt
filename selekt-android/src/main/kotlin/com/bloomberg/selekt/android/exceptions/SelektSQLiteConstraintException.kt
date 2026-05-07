@@ -19,6 +19,9 @@ package com.bloomberg.selekt.android.exceptions
 import android.database.sqlite.SQLiteConstraintException
 import com.bloomberg.selekt.exceptions.SelektSQLException
 
+/**
+ * @since 0.12.1
+ */
 internal class SelektSQLiteConstraintException(
     error: String,
     override val code: Int,

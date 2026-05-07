@@ -18,6 +18,9 @@ package com.bloomberg.selekt.pools
 
 import java.io.Closeable
 
+/**
+ * @since 0.12.1
+ */
 internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal constructor(
     private val primaryPool: SingleObjectPool<K, T>,
     private val secondaryPool: IObjectPool<K, T>

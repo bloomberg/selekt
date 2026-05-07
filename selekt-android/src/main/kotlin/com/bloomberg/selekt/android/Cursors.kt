@@ -30,6 +30,9 @@ private fun ColumnType.asAndroidCursorFieldType() = when (this) {
     ColumnType.BLOB -> Cursor.FIELD_TYPE_BLOB
 }
 
+/**
+ * @since 0.12.1
+ */
 @JvmSynthetic
 internal fun ICursor.asAndroidCursor(): Cursor = CursorWrapper(this)
 

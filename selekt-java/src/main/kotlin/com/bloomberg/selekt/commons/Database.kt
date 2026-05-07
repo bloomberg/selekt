@@ -18,6 +18,9 @@ package com.bloomberg.selekt.commons
 
 import java.io.File
 
+/**
+ * @since 0.12.1
+ */
 fun deleteDatabase(file: File) = file.run {
     require(isFile)
     var deleted = delete() or

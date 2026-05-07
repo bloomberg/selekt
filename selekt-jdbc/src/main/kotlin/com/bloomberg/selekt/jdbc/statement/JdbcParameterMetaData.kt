@@ -22,6 +22,9 @@ import java.sql.SQLException
 import java.sql.Types
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.28.0
+ */
 @NotThreadSafe
 internal class JdbcParameterMetaData(
     private val parameterCount: Int,

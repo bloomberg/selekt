@@ -47,7 +47,7 @@ import kotlin.jvm.Throws
 /**
  * Mirrors the Android SDK APIs.
  *
- * @since 0.1.0.
+ * @since 0.1.0
  */
 @ThreadSafe
 @Suppress("Detekt.LongParameterList", "Detekt.MethodOverloading", "Detekt.TooManyFunctions")

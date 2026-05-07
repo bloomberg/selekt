@@ -39,6 +39,9 @@ internal fun SQLiteDatabase.asSupportSQLiteDatabase(): SupportSQLiteDatabase = S
 internal fun SQLiteTransactionListener.asSQLTransactionListener(): SQLTransactionListener =
     WrappedSQLiteTransactionListener(this)
 
+/**
+ * @since 0.12.1
+ */
 private class WrappedSQLiteTransactionListener(
     private val listener: SQLiteTransactionListener
 ) : SQLTransactionListener {

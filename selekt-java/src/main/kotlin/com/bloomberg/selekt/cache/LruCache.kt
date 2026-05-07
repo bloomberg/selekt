@@ -20,6 +20,9 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private const val NO_RESIZE_LOAD_FACTOR = 1.1f
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> Unit) {
     @PublishedApi

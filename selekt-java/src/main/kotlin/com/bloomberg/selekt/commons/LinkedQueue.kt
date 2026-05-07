@@ -18,6 +18,9 @@ package com.bloomberg.selekt.commons
 
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 class LinkedQueue<T> {
     @NotThreadSafe

@@ -30,6 +30,8 @@ import java.util.Properties
  * - busyTimeout: SQLite busy timeout in milliseconds (integer)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc.)
  * - foreignKeys: Enable foreign key constraints (true/false)
+ *
+ * @since 0.28.0
  */
 @Suppress("TooGenericExceptionCaught")
 internal class ConnectionURL private constructor(

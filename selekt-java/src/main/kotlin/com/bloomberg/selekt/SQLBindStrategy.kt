@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.25.3
+ */
 internal sealed interface SQLBindStrategy {
     fun bind(
         statement: SQLPreparedStatement,

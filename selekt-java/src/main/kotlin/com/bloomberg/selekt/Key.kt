@@ -21,6 +21,9 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 
+/**
+ * @since 0.12.1
+ */
 internal class Key(value: ByteArray) {
     private val lock = ReentrantLock()
 

@@ -30,6 +30,9 @@ import javax.annotation.concurrent.ThreadSafe
 import kotlin.concurrent.withLock
 import kotlin.jvm.Throws
 
+/**
+ * @since 0.12.1
+ */
 @ThreadSafe
 class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     private val factory: IObjectFactory<T>,

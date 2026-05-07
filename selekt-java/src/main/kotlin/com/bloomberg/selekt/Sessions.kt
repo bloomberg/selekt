@@ -22,6 +22,9 @@ import javax.annotation.concurrent.NotThreadSafe
 
 internal typealias SQLExecutorPool = TieredObjectPool<String, CloseableSQLExecutor>
 
+/**
+ * @since 0.12.1
+ */
 internal class ThreadLocalSession(
     private val pool: SQLExecutorPool,
     private val useNativeListeners: Boolean = false

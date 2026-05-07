@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.commons
 
+/**
+ * @since 0.12.1
+ */
 @JvmSynthetic
 internal inline fun <T> Array<T>.forEachByIndex(block: (Int, T) -> Unit) {
     var i = 0

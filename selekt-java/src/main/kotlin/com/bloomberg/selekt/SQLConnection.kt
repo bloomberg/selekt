@@ -22,6 +22,9 @@ import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 internal class SQLConnection(
     path: String,
