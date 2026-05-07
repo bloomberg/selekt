@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.android
 
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase
@@ -61,7 +60,6 @@ internal class SQLiteDatabaseAttachTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun attachSingle() {
         other.exec("CREATE TABLE 'Files' (identifier TEXT PRIMARY KEY, data BLOB NOT NULL)")

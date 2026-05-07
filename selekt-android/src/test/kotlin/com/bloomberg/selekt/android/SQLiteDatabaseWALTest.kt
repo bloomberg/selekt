@@ -18,7 +18,6 @@ package com.bloomberg.selekt.android
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteException
-import com.bloomberg.selekt.annotations.Experimental
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
@@ -264,7 +263,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyValues(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
@@ -272,7 +270,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertRejectsEmptyColumns(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
@@ -280,7 +277,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertString(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
@@ -294,7 +290,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertAsInsert(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
@@ -311,7 +306,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertWithMultipleConflictColumns(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (a TEXT, b TEXT, count INT DEFAULT 0, PRIMARY KEY (a, b))")
@@ -328,7 +322,6 @@ internal class SQLiteDatabaseWALTest {
         }
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun upsertWithThreeConflictColumns(): Unit = database.run {
         exec("CREATE TABLE 'Bar' (x TEXT, y TEXT, z TEXT, count INT DEFAULT 0, PRIMARY KEY (x, y, z))")

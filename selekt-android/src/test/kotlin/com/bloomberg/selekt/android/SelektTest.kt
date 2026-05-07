@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.android
 
 import android.app.Application
-import com.bloomberg.selekt.annotations.Experimental
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
@@ -43,7 +42,6 @@ internal class SelektTest {
         assertEquals(3_053_000, Selekt.sqliteLibVersionNumber())
     }
 
-    @OptIn(Experimental::class)
     @Test
     fun registerComponentCallback() {
         mock<Application>().apply {
