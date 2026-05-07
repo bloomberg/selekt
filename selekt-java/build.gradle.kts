@@ -144,3 +144,19 @@ tasks.register<Copy>("copyJniLibs") {
 tasks.withType<ProcessResources>().configureEach {
     dependsOn("buildHostSQLite")
 }
+
+val generateVersionProperties by tasks.registering {
+    val version = project.selektVersionName
+    val outputDir = layout.buildDirectory.dir("generated/resources/version")
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+    doLast {
+        outputDir.get().asFile.resolve("com/bloomberg/selekt").also {
+            it.mkdirs()
+        }.resolve("selekt-version.properties").writeText("version=$version\n")
+    }
+}
+
+sourceSets.main {
+    resources.srcDir(generateVersionProperties)
+}

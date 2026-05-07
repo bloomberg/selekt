@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.SelektVersion
 import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
@@ -125,8 +126,9 @@ internal class SelektDriverTest {
 
     @Test
     fun driverVersion(): Unit = driver.run {
-        assertEquals(4, majorVersion)
-        assertEquals(3, minorVersion)
+        assertEquals(SelektVersion.majorVersion, majorVersion)
+        assertEquals(SelektVersion.minorVersion, minorVersion)
+        assertEquals(SelektVersion.patchVersion, SelektDriver.PATCH_VERSION)
     }
 
     @Test
