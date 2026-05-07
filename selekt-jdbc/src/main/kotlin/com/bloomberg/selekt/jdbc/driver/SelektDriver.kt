@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
- * - maxCachedDatabases: Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching, >0 = bounded LRU, default: -1)
  *
  * @since 0.28.0
  */
@@ -78,10 +77,7 @@ class SelektDriver : Driver {
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
-        private const val PROPERTY_MAX_CACHED_DATABASES = "maxCachedDatabases"
-
         private const val DEFAULT_POOL_SIZE = 10
-        private const val DEFAULT_MAX_CACHED_DATABASES = -1
 
         private const val HEX_PREFIX_LENGTH = 2
         private const val HEX_CHUNK_SIZE = 2
@@ -93,10 +89,6 @@ class SelektDriver : Driver {
 
         private val databaseCacheLock = ReentrantLock()
         private val databaseCache = LinkedHashMap<String, SharedDatabase>(16, 0.75f, true)
-        private var maxCachedDatabases: Int = System.getProperty(
-            "selekt.jdbc.maxCachedDatabases",
-            DEFAULT_MAX_CACHED_DATABASES.toString()
-        ).toIntOrNull() ?: DEFAULT_MAX_CACHED_DATABASES
 
         init {
             runCatching {
@@ -170,13 +162,6 @@ class SelektDriver : Driver {
                 description = "Enable foreign key constraints"
                 required = false
                 choices = BOOLEAN_CHOICES
-            },
-            DriverPropertyInfo(
-                PROPERTY_MAX_CACHED_DATABASES,
-                info.getProperty(PROPERTY_MAX_CACHED_DATABASES, DEFAULT_MAX_CACHED_DATABASES.toString())
-            ).apply {
-                description = "Maximum number of databases held in the driver cache (-1 = unlimited, 0 = no caching)"
-                required = false
             }
         )
     }
@@ -195,17 +180,7 @@ class SelektDriver : Driver {
         keyChars: CharArray?
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
-        val requestedMaxCachedDatabases = validateMaxCachedDatabases(
-            properties.getProperty(PROPERTY_MAX_CACHED_DATABASES)?.toIntOrNull()
-        )
-        if (requestedMaxCachedDatabases == 0) {
-            return SharedDatabase(createDatabase(connectionURL, properties, keyChars))
-        }
-        val evicted = mutableListOf<SharedDatabase>()
         val sharedDatabase = databaseCacheLock.withLock {
-            if (requestedMaxCachedDatabases != null && requestedMaxCachedDatabases > 0) {
-                maxCachedDatabases = requestedMaxCachedDatabases
-            }
             databaseCache.getOrPut(cacheKey) {
                 SharedDatabase(createDatabase(connectionURL, properties, keyChars)) {
                     databaseCacheLock.withLock {
@@ -214,34 +189,11 @@ class SelektDriver : Driver {
                 }
             }.also { db ->
                 db.retain()
-                evictExcess(cacheKey, evicted)
             }
         }
-        evicted.forEachCatching(SharedDatabase::release)
         return sharedDatabase
     }
 
-    private fun validateMaxCachedDatabases(value: Int?): Int? {
-        if (value == null) return null
-        require(value >= -1) {
-            "maxCachedDatabases must be -1 (unlimited), 0 (no caching), or a positive integer, was: $value"
-        }
-        return value
-    }
-
-    private fun evictExcess(currentKey: String, evicted: MutableList<SharedDatabase>) {
-        if (maxCachedDatabases < 0) {
-            return
-        }
-        val iterator = databaseCache.iterator()
-        while (databaseCache.size > maxCachedDatabases && iterator.hasNext()) {
-            val entry = iterator.next()
-            if (entry.key != currentKey) {
-                iterator.remove()
-                evicted.add(entry.value)
-            }
-        }
-    }
 
     private fun createDatabase(
         connectionURL: ConnectionURL,
