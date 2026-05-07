@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.driver
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.SelektVersion
 import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
@@ -56,9 +57,18 @@ class SelektDriver : Driver {
         private val logger: Logger = LoggerFactory.getLogger(SelektDriver::class.java)
 
         const val DRIVER_NAME = "Selekt JDBC Driver"
-        const val DRIVER_VERSION = "4.3.0"
-        const val MAJOR_VERSION = 4
-        const val MINOR_VERSION = 3
+
+        @JvmStatic
+        val DRIVER_VERSION: String get() = SelektVersion.version
+
+        @JvmStatic
+        val MAJOR_VERSION: Int get() = SelektVersion.majorVersion
+
+        @JvmStatic
+        val MINOR_VERSION: Int get() = SelektVersion.minorVersion
+
+        @JvmStatic
+        val PATCH_VERSION: Int get() = SelektVersion.patchVersion
 
         private const val PROPERTY_KEY = "key"
         private const val PROPERTY_POOL_SIZE = "poolSize"
