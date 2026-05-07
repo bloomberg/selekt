@@ -66,20 +66,32 @@ tasks.register<Copy>("copyJniLibs") {
     mustRunAfter("buildNativeHost")
 }
 
+val platforms = listOf(
+    "darwin-aarch64",
+    "linux-aarch64",
+    "linux-aarch64-musl",
+    "linux-amd64",
+    "linux-amd64-musl",
+    "windows-amd64"
+)
+
+val uberJar by tasks.registering(Jar::class) {
+    description = "Assembles a JAR bundling native libraries for all supported platforms."
+    archiveClassifier.set("")
+    platforms.forEach {
+        from(zipTree(file("build/libs/${project.name}-$version-$it.jar"))) {
+            include("jni/**")
+        }
+    }
+    metaInf {
+        from("$rootDir/SQLCIPHER_LICENSE")
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 publishing {
     publications.register<MavenPublication>("native") {
-        listOf(
-            "darwin-aarch64",
-            "linux-aarch64",
-            "linux-aarch64-musl",
-            "linux-amd64",
-            "linux-amd64-musl",
-            "windows-amd64"
-        ).forEach {
-            artifact(file("build/libs/${project.name}-$version-$it.jar")) {
-                classifier = it
-            }
-        }
+        artifact(uberJar)
         pom {
             commonInitialisation(project)
             licenses {

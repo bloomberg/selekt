@@ -61,6 +61,7 @@ dependencies {
             requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
         }
     }
+    runtimeOnly(projects.selektSqlite3Sqlcipher)
 }
 
 publishing {
