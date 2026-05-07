@@ -20,6 +20,9 @@ import com.bloomberg.selekt.commons.forEachByPosition
 
 private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
 
+/**
+ * @since 0.27.0
+ */
 data class SQLiteConfiguration(
     val softHeapLimit: Long = DEFAULT_SOFT_HEAP_LIMIT
 )

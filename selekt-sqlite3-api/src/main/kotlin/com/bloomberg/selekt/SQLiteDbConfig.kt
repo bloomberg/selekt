@@ -21,6 +21,7 @@ package com.bloomberg.selekt
  * that use the boolean `(int, int*)` variadic signature.
  *
  * @see <a href="https://www.sqlite.org/c3ref/c_dbconfig_defensive.html">SQLite DBCONFIG constants</a>
+ * @since 0.30.0
  */
 object SQLiteDbConfig {
     const val ENABLE_FKEY = 998

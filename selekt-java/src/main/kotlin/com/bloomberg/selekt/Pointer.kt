@@ -16,5 +16,8 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 typealias Pointer = Long
 const val NULL: Pointer = 0L

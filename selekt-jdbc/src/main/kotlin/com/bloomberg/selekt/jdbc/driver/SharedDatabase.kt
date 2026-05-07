@@ -27,6 +27,8 @@ import com.bloomberg.selekt.SharedResource
  * [JdbcConnection][com.bloomberg.selekt.jdbc.connection.JdbcConnection] obtains an additional
  * reference via [retain], and releases it via [release]. When the last reference is released
  * the underlying [SQLDatabase] is closed and [onClose] is invoked.
+ *
+ * @since 0.29.11
  */
 internal class SharedDatabase(
     val database: SQLDatabase,

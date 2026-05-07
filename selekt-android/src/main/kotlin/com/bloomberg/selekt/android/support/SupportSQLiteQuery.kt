@@ -20,6 +20,9 @@ import androidx.sqlite.db.SupportSQLiteQuery
 import com.bloomberg.selekt.ISQLProgram
 import com.bloomberg.selekt.ISQLQuery
 
+/**
+ * @since 0.12.1
+ */
 @JvmSynthetic
 internal fun SupportSQLiteQuery.asSelektSQLQuery() = object : ISQLQuery {
     override val argCount: Int

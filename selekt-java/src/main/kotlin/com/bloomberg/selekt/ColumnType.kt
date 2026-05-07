@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 enum class ColumnType(val sqlDataType: SQLDataType) {
     INTEGER(SQL_INTEGER),
     FLOAT(SQL_FLOAT),

@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 import java.util.Properties
 
+/**
+ * @since 0.12.1
+ */
 object SelektVersion {
     private val properties = Properties().also { p ->
         SelektVersion::class.java.getResourceAsStream("/com/bloomberg/selekt/selekt-version.properties")

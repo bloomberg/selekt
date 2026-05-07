@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.25.3
+ */
 internal object SQLBindStrategyResolver {
     fun resolveAll(values: Array<out Any?>): Array<SQLBindStrategy> = Array(values.size) {
         resolve(values[it])

@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.commons
 
+/**
+ * @since 0.12.1
+ */
 @JvmSynthetic
 fun Char.isEnglishLetter() = this in 'A'..'Z' || this in 'a'..'z'
 

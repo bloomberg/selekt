@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 enum class SQLiteThreadingMode(private val value: Int) {
     /**
      * This option sets the threading mode to "multi-thread". In other words, it disables mutexing on database connection

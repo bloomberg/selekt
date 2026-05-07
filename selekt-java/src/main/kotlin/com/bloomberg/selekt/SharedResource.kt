@@ -23,6 +23,8 @@ import javax.annotation.concurrent.ThreadSafe
  * A thread-safe reference-counted resource. The resource starts with a retain count of 1.
  * Each call to [retain] increments the count; each call to [release] decrements it.
  * When the count reaches zero, [onReleased] is invoked exactly once.
+ *
+ * @since 0.12.1
  */
 @ThreadSafe
 abstract class SharedResource {

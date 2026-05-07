@@ -20,6 +20,9 @@ import com.android.tools.lint.client.api.IssueRegistry
 import com.android.tools.lint.detector.api.CURRENT_API
 import com.android.tools.lint.detector.api.Issue
 
+/**
+ * @since 0.12.1
+ */
 class SelektIssueRegistry : IssueRegistry() {
     override val issues: List<Issue> = emptyList()
 

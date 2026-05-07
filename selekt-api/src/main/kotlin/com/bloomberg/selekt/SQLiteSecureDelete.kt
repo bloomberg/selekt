@@ -18,6 +18,8 @@ package com.bloomberg.selekt
 
 /**
  * When secure_delete is on, SQLite overwrites deleted content with zeros.
+ *
+ * @since 0.12.1
  */
 enum class SQLiteSecureDelete {
     /** The "fast" setting is an intermediate setting in between "on" and "off".

@@ -21,6 +21,7 @@ package com.bloomberg.selekt
  * statements.
  *
  * @see <a href="https://www.sqlite.org/c3ref/progress_handler.html">sqlite3_progress_handler</a>
+ * @since 0.12.1
  */
 fun interface SQLProgressHandler {
     /**

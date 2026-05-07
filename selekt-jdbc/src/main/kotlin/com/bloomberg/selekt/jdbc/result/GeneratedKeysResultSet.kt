@@ -38,6 +38,9 @@ import java.sql.Time
 import java.sql.Timestamp
 import java.util.Calendar
 
+/**
+ * @since 0.29.1
+ */
 @Suppress("Detekt.MethodOverloading")
 internal class GeneratedKeysResultSet(
     private val generatedKey: Long,

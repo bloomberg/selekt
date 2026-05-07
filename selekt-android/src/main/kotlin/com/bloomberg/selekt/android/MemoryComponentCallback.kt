@@ -24,6 +24,9 @@ import android.util.Log
 import com.bloomberg.selekt.android.Selekt.TAG
 import com.bloomberg.selekt.pools.Priority
 
+/**
+ * @since 0.12.1
+ */
 internal object MemoryComponentCallback : ComponentCallbacks2 {
     override fun onConfigurationChanged(newConfig: Configuration) = Unit
 

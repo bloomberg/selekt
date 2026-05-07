@@ -19,6 +19,9 @@ package com.bloomberg.selekt.android
 import android.content.ContentValues
 import com.bloomberg.selekt.IContentValues
 
+/**
+ * @since 0.12.1
+ */
 private class ContentValuesEntry : Map.Entry<String, Any?> {
     var internalKey: String = ""
     var internalValue: Any? = null

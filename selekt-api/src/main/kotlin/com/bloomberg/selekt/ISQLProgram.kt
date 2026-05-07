@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 import java.io.Closeable
 
+/**
+ * @since 0.12.1
+ */
 @Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
 interface ISQLProgram : Closeable {
     /**

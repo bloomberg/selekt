@@ -21,6 +21,9 @@ import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 @Suppress("Detekt.MethodOverloading")
 internal class SimpleCursorWindow : ICursorWindow {

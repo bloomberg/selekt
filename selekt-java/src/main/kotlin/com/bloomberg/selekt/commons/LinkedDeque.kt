@@ -18,6 +18,9 @@ package com.bloomberg.selekt.commons
 
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 internal class LinkedDeque<T> {
     @NotThreadSafe

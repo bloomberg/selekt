@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.commons
 
+/**
+ * @since 0.12.1
+ */
 inline fun Int.forUntil(other: Int, block: (Int) -> Unit) {
     var i = this
     while (i < other) {

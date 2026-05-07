@@ -19,6 +19,9 @@ package com.bloomberg.selekt.commons
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 
+/**
+ * @since 0.12.1
+ */
 internal inline fun <T> Lock.withTryLock(
     action: () -> T
 ): T? {

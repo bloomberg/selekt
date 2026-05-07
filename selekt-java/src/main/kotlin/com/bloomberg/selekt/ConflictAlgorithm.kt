@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 enum class ConflictAlgorithm(
     override val sql: String
 ) : IConflictAlgorithm {

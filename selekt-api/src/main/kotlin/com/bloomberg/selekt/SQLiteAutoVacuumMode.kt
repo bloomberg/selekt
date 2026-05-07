@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+/**
+ * @since 0.12.1
+ */
 enum class SQLiteAutoVacuumMode(private val value: Int) {
     /**
      * Auto-vacuum is disabled. When auto-vacuum is disabled and data is deleted data from a database, the database file

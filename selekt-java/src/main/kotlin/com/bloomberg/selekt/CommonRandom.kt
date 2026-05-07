@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 import java.util.concurrent.ThreadLocalRandom
 
+/**
+ * @since 0.12.1
+ */
 object CommonThreadLocalRandom : IRandom {
     override fun nextLong(bound: Long) = ThreadLocalRandom.current().nextLong(bound)
 }

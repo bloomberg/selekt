@@ -17,6 +17,9 @@
 package com.bloomberg.selekt
 
 /**
+ * @since 0.28.0
+ */
+/**
  * Parses SQL to extract named parameter positions.
  *
  * SQLite supports these named parameter forms:

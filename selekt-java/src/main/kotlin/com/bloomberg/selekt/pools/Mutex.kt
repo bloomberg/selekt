@@ -22,6 +22,8 @@ import java.util.concurrent.locks.LockSupport
 
 /**
  * A non-fair and non-reentrant lock.
+ *
+ * @since 0.12.1
  */
 internal class Mutex {
     @Suppress("unused")

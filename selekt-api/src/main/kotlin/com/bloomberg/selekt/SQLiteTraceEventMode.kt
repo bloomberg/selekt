@@ -18,6 +18,9 @@ package com.bloomberg.selekt
 
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 class SQLiteTraceEventMode {
     private var flag: Int = 0

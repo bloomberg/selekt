@@ -30,6 +30,9 @@ fun createSupportSQLiteOpenHelperFactory(
     key: ByteArray?
 ): SupportSQLiteOpenHelper.Factory = SupportSQLiteOpenHelperFactory(journalMode, key)
 
+/**
+ * @since 0.12.1
+ */
 private class SupportSQLiteOpenHelperFactory(
     private val journalMode: SQLiteJournalMode,
     private val key: ByteArray?

@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt.pools
 
+/**
+ * @since 0.12.1
+ */
 data class PoolConfiguration(
     val evictionDelayMillis: Long,
     val evictionIntervalMillis: Long,

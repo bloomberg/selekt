@@ -25,6 +25,9 @@ import javax.annotation.concurrent.NotThreadSafe
 private val EMPTY_ARRAY = emptyArray<Any?>()
 private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray())
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 internal class SQLQuery internal constructor(
     private val session: ThreadLocalSession,

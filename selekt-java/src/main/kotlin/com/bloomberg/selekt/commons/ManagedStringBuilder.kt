@@ -19,6 +19,9 @@ package com.bloomberg.selekt.commons
 import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 class ManagedStringBuilder(
     private val defaultLength: Int = 128,

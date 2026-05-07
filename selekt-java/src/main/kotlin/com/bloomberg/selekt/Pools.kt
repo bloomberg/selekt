@@ -64,6 +64,9 @@ internal fun openConnectionPool(
     return pool to factory
 }
 
+/**
+ * @since 0.12.1
+ */
 internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<String> {
     fun interrupt()
 

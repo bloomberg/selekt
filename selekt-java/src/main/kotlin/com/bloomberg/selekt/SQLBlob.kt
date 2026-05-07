@@ -27,6 +27,9 @@ internal fun SQLBlob.inputStream(offset: Int, limit: Int): InputStream = BlobInp
 @JvmSynthetic
 internal fun SQLBlob.outputStream(offset: Int): OutputStream = BlobOutputStream(this, offset)
 
+/**
+ * @since 0.12.1
+ */
 @NotThreadSafe
 internal class SQLBlob(
     private val pointer: Long,

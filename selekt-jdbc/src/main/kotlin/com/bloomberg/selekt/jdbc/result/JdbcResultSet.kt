@@ -49,6 +49,9 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private const val READ_ONLY_ERROR = "ResultSet is read-only"
 
+/**
+ * @since 0.28.0
+ */
 @NotThreadSafe
 @Suppress("MethodOverloading", "LargeClass", "TooGenericExceptionCaught")
 internal class JdbcResultSet(
