@@ -21,6 +21,7 @@ import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
+import com.bloomberg.selekt.commons.zero
 import java.io.Closeable
 import java.io.File
 import javax.annotation.concurrent.NotThreadSafe
@@ -71,9 +72,9 @@ class SQLiteOpenHelper internal constructor(
      * database. (Make sure to call close() when you no longer need the database.) Errors such as bad permissions or a full
      * disk may cause this method to fail, but future attempts may succeed if the problem is fixed.
      */
-    override val writableDatabase: SQLiteDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    private val lazyDatabase = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
-            _key?.fill(0)
+            _key?.zero()
             it.setPageSizeExponent(openParams.pageSizeExponent)
             it.setJournalMode(openParams.journalMode)
             configuration.callback.onConfigure(it)
@@ -100,9 +101,15 @@ class SQLiteOpenHelper internal constructor(
         }
     }
 
+    override val writableDatabase: SQLiteDatabase by lazyDatabase
+
     override val databaseName = configuration.name
 
-    override fun close() = writableDatabase.close()
+    override fun close() {
+        if (lazyDatabase.isInitialized()) {
+            writableDatabase.close()
+        }
+    }
 }
 
 /**
