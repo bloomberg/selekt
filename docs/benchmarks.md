@@ -91,7 +91,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
     return pairs;
   }
 
-  function drawPairs(pairs, containerId) {
+  function drawPairs(pairs, containerId, defaultUnit) {
     var container = document.getElementById(containerId);
     Object.keys(pairs).sort().forEach(function (base) {
       var p = pairs[base];
@@ -99,7 +99,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
       var xerial = p['Xerial'];
       if (!selekt || !xerial) return;
 
-      var unit = selekt.unit || 'ms/op';
+      var unit = selekt.unit || defaultUnit || 'ms/op';
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Driver');
       data.addColumn('number', unit);
@@ -137,7 +137,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
     google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(function () {
       if (allocData) {
-        drawPairs(pairBenches(allocData), 'jdbc_allocation');
+        drawPairs(pairBenches(allocData), 'jdbc_allocation', 'B/op');
       } else {
         document.getElementById('jdbc_allocation').textContent =
           'Allocation data not yet available. Results will appear after the first CI run.';
@@ -149,7 +149,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
         if (el && el.offsetWidth > 0) {
           throughputDrawn = true;
           if (throughputData) {
-            drawPairs(pairBenches(throughputData), 'jdbc_throughput');
+            drawPairs(pairBenches(throughputData), 'jdbc_throughput', 'ms/op');
           } else {
             el.textContent =
               'Benchmark data not yet available. Results will appear after the first CI run.';
