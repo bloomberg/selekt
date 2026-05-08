@@ -300,7 +300,15 @@ class SQLiteDatabase private constructor(
         conflictAlgorithm: ConflictAlgorithm
     ) = database.insert(table, values.asSelektContentValues(), conflictAlgorithm)
 
-    fun integrityCheck(name: String = "main") = "ok".equals(database.pragma("$name.integrity_check(1)"), true)
+    /**
+     * Runs a full integrity check on the named database schema. Returns `true` if the database is intact,
+     * `false` if any corruption is detected.
+     *
+     * @param name the schema name to check; defaults to `"main"`.
+     * @return `true` if the integrity check passes, `false` otherwise.
+     * @see <a href="https://www.sqlite.org/pragma.html#pragma_integrity_check">PRAGMA integrity_check</a>
+     */
+    fun integrityCheck(name: String = "main") = "ok".equals(database.pragma("$name.integrity_check"), true)
 
     /**
      * Interrupts all database connections managed by this database. This causes any pending database operations on those
