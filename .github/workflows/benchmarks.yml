@@ -61,14 +61,14 @@ jobs:
           jq '[.[] | {
             benchmark: .benchmark,
             mode: .mode,
+            threads: .threads,
+            forks: .forks,
+            warmupIterations: .warmupIterations,
+            warmupTime: .warmupTime,
+            measurementIterations: .measurementIterations,
+            measurementTime: .measurementTime,
             params: .params,
-            primaryMetric: {
-              score: .secondaryMetrics["gc.alloc.rate.norm"].score,
-              scoreUnit: .secondaryMetrics["gc.alloc.rate.norm"].scoreUnit,
-              scoreError: .secondaryMetrics["gc.alloc.rate.norm"].scoreError,
-              scoreConfidence: .secondaryMetrics["gc.alloc.rate.norm"].scoreConfidence,
-              rawData: .secondaryMetrics["gc.alloc.rate.norm"].rawData
-            },
+            primaryMetric: (.secondaryMetrics | to_entries[] | select(.key | endswith("gc.alloc.rate.norm")) | .value),
             secondaryMetrics: {}
           }]' combined-results.json > combined-alloc-results.json
 
