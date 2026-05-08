@@ -143,6 +143,24 @@ internal class SQLConnection(
     ) = executeBatchForChangedRowCount(sql, bindArgs.asIterable())
 
     @Suppress("DuplicatedCode")
+    override fun executeBatchForChangedRowCountRows(
+        sql: String,
+        bindArgs: Iterable<ParameterRow>
+    ) = withPreparedStatement(sql) {
+        sqlite.withScopedArena {
+            val changes = sqlite.totalChanges(pointer)
+            bindArgs.forEach {
+                reset()
+                bindRow(it)
+                if (SQL_DONE != step()) {
+                    return@withScopedArena -1
+                }
+            }
+            sqlite.totalChanges(pointer) - changes
+        }
+    }
+
+    @Suppress("DuplicatedCode")
     override fun executeBatchForChangedRowCount(
         sql: String,
         bindArgs: List<Array<out Any?>>

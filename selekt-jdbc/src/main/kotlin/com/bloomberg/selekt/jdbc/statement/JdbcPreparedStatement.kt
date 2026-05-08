@@ -17,8 +17,8 @@
 package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
-import com.bloomberg.selekt.commons.forUntil
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
@@ -97,23 +97,20 @@ internal open class JdbcPreparedStatement(
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
     @Suppress("Detekt.UseDataClass")
-    private class BatchChunk(val capacity: Int) : Iterable<Array<out Any?>> {
-        val data = arrayOfNulls<Array<Any?>>(capacity)
+    private class BatchChunk(val capacity: Int, val parameterCount: Int) : Iterable<ParameterRow> {
+        val data = Array(capacity) { ParameterRow(parameterCount) }
         var count = 0
         var next: BatchChunk? = null
 
-        override fun iterator() = object : Iterator<Array<out Any?>> {
+        override fun iterator() = object : Iterator<ParameterRow> {
             private var chunk: BatchChunk? = this@BatchChunk
             private var index = 0
-            private var previous: Array<Any?>? = null
 
             override fun hasNext() = chunk != null && index < chunk!!.count
 
-            override fun next(): Array<out Any?> {
-                previous?.fill(null)
+            override fun next(): ParameterRow {
                 val current = chunk ?: throw NoSuchElementException()
-                val row = current.data[index]!!
-                previous = row
+                val row = current.data[index]
                 if (++index >= current.count) {
                     chunk = current.next
                     index = 0
@@ -124,7 +121,8 @@ internal open class JdbcPreparedStatement(
     }
 
     private val parameterCount = sql.count { it == '?' }
-    private val parameters = arrayOfNulls<Any?>(parameterCount)
+    private val parameterRow = ParameterRow(parameterCount)
+    private val materializedArgs = arrayOfNulls<Any>(parameterCount)
     private var firstChunk: BatchChunk? = null
     private var currentChunk: BatchChunk? = null
     private var totalBatchCount = 0
@@ -141,10 +139,11 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return runCatching {
             closeCurrentResultSet()
+            parameterRow.materializeTo(materializedArgs)
             val cursor = if (getResultSetType() == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
-                database.queryForwardOnly(applyMaxRows(sql), parameters)
+                database.queryForwardOnly(applyMaxRows(sql), materializedArgs)
             } else {
-                database.query(applyMaxRows(sql), parameters)
+                database.query(applyMaxRows(sql), materializedArgs)
             }
             JdbcResultSet(
                 cursor,
@@ -163,7 +162,8 @@ internal open class JdbcPreparedStatement(
         connection.checkWritable()
         return try {
             connection.ensureTransaction()
-            executeUpdate(database.compileStatement(sql, parameters))
+            parameterRow.materializeTo(materializedArgs)
+            executeUpdate(database.compileStatement(sql, materializedArgs))
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
@@ -175,7 +175,8 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return try {
             closeCurrentResultSet()
-            val statement = database.compileStatement(sql, parameters)
+            parameterRow.materializeTo(materializedArgs)
+            val statement = database.compileStatement(sql, materializedArgs)
             if (statement.isReadOnly) {
                 executeQuery()
                 true
@@ -225,27 +226,24 @@ internal open class JdbcPreparedStatement(
 
     override fun clearParameters() {
         checkClosed()
-        parameters.fill(null)
+        parameterRow.clear()
     }
 
     override fun addBatch() {
         checkClosed()
         if (firstChunk == null) {
-            firstChunk = BatchChunk(INITIAL_BATCH_CHUNK_SIZE)
+            firstChunk = BatchChunk(INITIAL_BATCH_CHUNK_SIZE, parameterCount)
             currentChunk = firstChunk
         }
         currentChunk!!.run {
             if (count == capacity) {
-                currentChunk = BatchChunk(totalBatchCount).also {
+                currentChunk = BatchChunk(totalBatchCount, parameterCount).also {
                     next = it
                 }
             }
         }
         currentChunk!!.run {
-            val row = data[count] ?: Array<Any?>(parameterCount) { null }.also { data[count] = it }
-            0.forUntil(parameterCount) {
-                row[it] = parameters[it]
-            }
+            data[count].copyFrom(parameterRow)
             ++count
         }
         ++totalBatchCount
@@ -255,7 +253,7 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         currentChunk?.let {
             for (i in 0 until it.count) {
-                it.data[i]?.fill(null)
+                it.data[i].clear()
             }
             it.count = 0
             it.next = null
@@ -273,7 +271,7 @@ internal open class JdbcPreparedStatement(
             if (database.compileStatement(sql).isReadOnly) {
                 throw SQLException("Read-only statements are not allowed in batch execution")
             }
-            database.batch(sql, firstChunk!!)
+            database.batchRows(sql, firstChunk!!)
             val result = successArray?.takeIf { it.size == totalBatchCount }
                 ?: IntArray(totalBatchCount).also { successArray = it }
             result.fill(Statement.SUCCESS_NO_INFO)
@@ -297,7 +295,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setNull(parameterIndex: Int, sqlType: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = null
+        parameterRow.setNull(parameterIndex - 1)
     }
 
     override fun setNull(parameterIndex: Int, sqlType: Int, typeName: String?) {
@@ -306,57 +304,57 @@ internal open class JdbcPreparedStatement(
 
     override fun setBoolean(parameterIndex: Int, x: Boolean) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = if (x) { 1 } else { 0 }
+        parameterRow.setInt(parameterIndex - 1, if (x) { 1 } else { 0 })
     }
 
     override fun setByte(parameterIndex: Int, x: Byte) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x.toInt()
+        parameterRow.setInt(parameterIndex - 1, x.toInt())
     }
 
     override fun setShort(parameterIndex: Int, x: Short) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x.toInt()
+        parameterRow.setInt(parameterIndex - 1, x.toInt())
     }
 
     override fun setInt(parameterIndex: Int, x: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameterRow.setInt(parameterIndex - 1, x)
     }
 
     override fun setLong(parameterIndex: Int, x: Long) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameterRow.setLong(parameterIndex - 1, x)
     }
 
     override fun setFloat(parameterIndex: Int, x: Float) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x.toDouble()
+        parameterRow.setDouble(parameterIndex - 1, x.toDouble())
     }
 
     override fun setDouble(parameterIndex: Int, x: Double) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameterRow.setDouble(parameterIndex - 1, x)
     }
 
     override fun setBigDecimal(parameterIndex: Int, x: BigDecimal?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.toPlainString()
+        parameterRow.setObject(parameterIndex - 1, x?.toPlainString())
     }
 
     override fun setString(parameterIndex: Int, x: String?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameterRow.setObject(parameterIndex - 1, x)
     }
 
     override fun setBytes(parameterIndex: Int, x: ByteArray?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x
+        parameterRow.setObject(parameterIndex - 1, x)
     }
 
     override fun setDate(parameterIndex: Int, x: Date?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.toString()
+        parameterRow.setObject(parameterIndex - 1, x?.toString())
     }
 
     override fun setDate(parameterIndex: Int, x: Date?, cal: Calendar?) {
@@ -365,7 +363,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setTime(parameterIndex: Int, x: Time?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.toString()
+        parameterRow.setObject(parameterIndex - 1, x?.toString())
     }
 
     override fun setTime(parameterIndex: Int, x: Time?, cal: Calendar?) {
@@ -374,7 +372,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setTimestamp(parameterIndex: Int, x: Timestamp?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.toString()
+        parameterRow.setObject(parameterIndex - 1, x?.toString())
     }
 
     override fun setTimestamp(parameterIndex: Int, x: Timestamp?, cal: Calendar?) {
@@ -383,22 +381,25 @@ internal open class JdbcPreparedStatement(
 
     override fun setObject(parameterIndex: Int, x: Any?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
+        parameterRow.setAny(parameterIndex - 1, TypeMapping.convertToSQLite(x))
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
+        parameterRow.setAny(parameterIndex - 1, TypeMapping.convertToSQLite(x))
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int, scaleOrLength: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = TypeMapping.convertToSQLite(x)
+        parameterRow.setAny(parameterIndex - 1, TypeMapping.convertToSQLite(x))
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.US_ASCII)
+        parameterRow.setObject(
+            parameterIndex - 1,
+            x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.US_ASCII)
+        )
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Long) {
@@ -407,18 +408,18 @@ internal open class JdbcPreparedStatement(
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readNBytes(MAX_STREAM_LENGTH)?.toString(Charsets.US_ASCII)
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(MAX_STREAM_LENGTH)?.toString(Charsets.US_ASCII))
     }
 
     @Deprecated("Deprecated in Java", ReplaceWith("setCharacterStream(parameterIndex, x, length)"))
     override fun setUnicodeStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.UTF_16)
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.UTF_16))
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readNBytes(length.validatedStreamLength())
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(length.validatedStreamLength()))
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Long) {
@@ -427,12 +428,12 @@ internal open class JdbcPreparedStatement(
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = x?.readNBytes(MAX_STREAM_LENGTH)
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(MAX_STREAM_LENGTH))
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = reader?.readBounded(length.validatedStreamLength())
+        parameterRow.setObject(parameterIndex - 1, reader?.readBounded(length.validatedStreamLength()))
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Long) {
@@ -441,7 +442,7 @@ internal open class JdbcPreparedStatement(
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?) {
         validateParameterIndex(parameterIndex)
-        parameters[parameterIndex - 1] = reader?.readBounded(MAX_STREAM_LENGTH)
+        parameterRow.setObject(parameterIndex - 1, reader?.readBounded(MAX_STREAM_LENGTH))
     }
 
     override fun setRef(parameterIndex: Int, x: Ref?) {
@@ -467,17 +468,17 @@ internal open class JdbcPreparedStatement(
     override fun setClob(parameterIndex: Int, x: Clob?) {
         validateParameterIndex(parameterIndex)
         if (x == null) {
-            parameters[parameterIndex - 1] = null
+            parameterRow.setNull(parameterIndex - 1)
         } else {
             val content = x.getSubString(1, x.length().toInt())
-            parameters[parameterIndex - 1] = content
+            parameterRow.setObject(parameterIndex - 1, content)
         }
     }
 
     override fun setClob(parameterIndex: Int, reader: Reader?, length: Long) {
         validateParameterIndex(parameterIndex)
         if (reader == null) {
-            parameters[parameterIndex - 1] = null
+            parameterRow.setNull(parameterIndex - 1)
         } else {
             val content = CharArray(length.toInt())
             var totalRead = 0
@@ -488,16 +489,16 @@ internal open class JdbcPreparedStatement(
                 }
                 totalRead += count
             }
-            parameters[parameterIndex - 1] = String(content, 0, totalRead)
+            parameterRow.setObject(parameterIndex - 1, String(content, 0, totalRead))
         }
     }
 
     override fun setClob(parameterIndex: Int, reader: Reader?) {
         validateParameterIndex(parameterIndex)
         if (reader == null) {
-            parameters[parameterIndex - 1] = null
+            parameterRow.setNull(parameterIndex - 1)
         } else {
-            parameters[parameterIndex - 1] = reader.readText()
+            parameterRow.setObject(parameterIndex - 1, reader.readText())
         }
     }
 
@@ -559,5 +560,8 @@ internal open class JdbcPreparedStatement(
         throw SQLFeatureNotSupportedException("Metadata not available for prepared statements")
     }
 
-    override fun getParameterMetaData(): ParameterMetaData = JdbcParameterMetaData(parameterCount, parameters)
+    override fun getParameterMetaData(): ParameterMetaData {
+        parameterRow.materializeTo(materializedArgs)
+        return JdbcParameterMetaData(parameterCount, materializedArgs)
+    }
 }

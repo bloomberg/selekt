@@ -179,6 +179,55 @@ internal class ExternalSQLite(
         length
     ) as Int
 
+    @Suppress("Detekt.CognitiveComplexMethod")
+    override fun bindRowTyped(
+        statement: Long,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int
+    ): SQLCode {
+        val segment = MemorySegment.ofAddress(statement)
+        for (i in 0 until size) {
+            val position = i + 1
+            val result = when (tags[i]) {
+                1.toByte() -> sqlite3_bind_int.invoke(segment, position, ints[i]) as Int
+                2.toByte() -> sqlite3_bind_int64.invoke(segment, position, longs[i]) as Int
+                3.toByte() -> sqlite3_bind_double.invoke(segment, position, doubles[i]) as Int
+                4.toByte() -> {
+                    val obj = objects[i]
+                    when (obj) {
+                        is String -> withSlab { slab ->
+                            val textSegment = slab.allocateFrom(obj)
+                            sqlite3_bind_text.invoke(
+                                segment,
+                                position,
+                                textSegment,
+                                (textSegment.byteSize() - 1).toInt(),
+                                sqliteTransient
+                            ) as Int
+                        }
+                        is ByteArray -> sqlite3_bind_blob.invoke(
+                            segment,
+                            position,
+                            MemorySegment.ofArray(obj),
+                            obj.size,
+                            sqliteTransient
+                        ) as Int
+                        else -> sqlite3_bind_null.invoke(segment, position) as Int
+                    }
+                }
+                else -> sqlite3_bind_null.invoke(segment, position) as Int
+            }
+            if (result != SQL_OK) {
+                return result
+            }
+        }
+        return SQL_OK
+    }
+
     override fun blobBytes(
         blob: Long
     ): Int = sqlite3_blob_bytes.invoke(MemorySegment.ofAddress(blob)) as Int

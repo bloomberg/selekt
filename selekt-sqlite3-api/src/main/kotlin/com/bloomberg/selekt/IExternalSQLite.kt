@@ -72,6 +72,38 @@ interface IExternalSQLite {
         return SQL_OK
     }
 
+    fun bindRowTyped(
+        statement: Long,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int
+    ): SQLCode {
+        for (i in 0 until size) {
+            val position = i + 1
+            val result = when (tags[i]) {
+                1.toByte() -> bindInt(statement, position, ints[i])
+                2.toByte() -> bindInt64(statement, position, longs[i])
+                3.toByte() -> bindDouble(statement, position, doubles[i])
+                4.toByte() -> {
+                    val obj = objects[i]
+                    when (obj) {
+                        is String -> bindText(statement, position, obj)
+                        is ByteArray -> bindBlob(statement, position, obj, obj.size)
+                        else -> bindNull(statement, position)
+                    }
+                }
+                else -> bindNull(statement, position)
+            }
+            if (result != SQL_OK) {
+                return result
+            }
+        }
+        return SQL_OK
+    }
+
     fun blobBytes(blob: Long): Int
 
     fun blobClose(blob: Long): SQLCode

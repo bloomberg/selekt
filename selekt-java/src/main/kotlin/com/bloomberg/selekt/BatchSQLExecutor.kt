@@ -38,4 +38,6 @@ internal interface BatchSQLExecutor {
 
     fun executeBatchForChangedRowCount(sql: String, bindArgs: Stream<Array<out Any?>>): Int =
         executeBatchForChangedRowCount(sql, bindArgs.asSequence())
+
+    fun executeBatchForChangedRowCountRows(sql: String, bindArgs: Iterable<ParameterRow>): Int
 }

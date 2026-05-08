@@ -170,6 +170,17 @@ internal class SQLStatement private constructor(
             }
         }
 
+        fun executeRows(
+            session: ThreadLocalSession,
+            sql: String,
+            bindArgs: Iterable<ParameterRow>
+        ): Int {
+            require(SQLStatementType.UPDATE === sql.resolvedSqlStatementType()) { ONLY_BATCH_UPDATES }
+            return session().execute(true, sql) {
+                it.executeBatchForChangedRowCountRows(sql, bindArgs)
+            }
+        }
+
         fun execute(
             session: ThreadLocalSession,
             sql: String,
