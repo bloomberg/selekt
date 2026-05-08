@@ -80,7 +80,7 @@ jobs:
         run: git checkout -- .
 
       - name: 'Store benchmark results'
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.20.4
         with:
           name: 'JDBC Benchmarks'
           tool: 'jmh'
@@ -93,7 +93,7 @@ jobs:
           fail-on-alert: false
 
       - name: 'Store allocation results'
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.20.4
         with:
           name: 'JDBC Allocations'
           tool: 'jmh'
