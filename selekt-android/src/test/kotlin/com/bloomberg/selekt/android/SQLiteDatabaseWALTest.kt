@@ -154,6 +154,7 @@ internal class SQLiteDatabaseWALTest {
         val result = setMaximumSize(alignedSize)
         assertEquals(alignedSize, result)
     }
+
     @Test
     fun integrityCheckMain(): Unit = database.run {
         assertTrue(integrityCheck("main"))
@@ -430,6 +431,37 @@ internal class SQLiteDatabaseWALTest {
         exec("INSERT INTO 'Foo' VALUES ('hello', 0)")
         assertFailsWith<SQLiteException> {
             exec("INSERT INTO 'Foo' VALUES ('hello', 0) ON CONFLICT DO UPDATE SET ?", arrayOf("count=count+1"))
+        }
+    }
+
+    @Test
+    fun openOrCreateDatabaseDoesNotZeroCallersKey() {
+        val key = ByteArray(32) { 0x42 }
+        val keySnapshot = key.copyOf()
+        val dbFile = createTempFile("test-key-not-zeroed", ".db").toFile().apply { deleteOnExit() }
+        val db = SQLiteDatabase.openOrCreateDatabase(dbFile, SQLiteJournalMode.WAL.databaseConfiguration, key)
+        try {
+            assertTrue(key.contentEquals(keySnapshot), "Caller's key array must not be modified")
+            assertTrue(db.isOpen)
+        } finally {
+            db.close()
+            deleteDatabase(dbFile)
+        }
+    }
+
+    @Test
+    fun openOrCreateDatabaseUsesDefensiveCopyOfKey() {
+        val key = ByteArray(32) { 0x42 }
+        val dbFile = createTempFile("test-key-defensive-copy", ".db").toFile().apply { deleteOnExit() }
+        val db = SQLiteDatabase.openOrCreateDatabase(dbFile, SQLiteJournalMode.WAL.databaseConfiguration, key)
+        try {
+            key.fill(0)
+            db.exec("CREATE TABLE 'KeyTest' (id INTEGER PRIMARY KEY)")
+            db.exec("INSERT INTO 'KeyTest' VALUES (1)")
+            assertTrue(db.isOpen)
+        } finally {
+            db.close()
+            deleteDatabase(dbFile)
         }
     }
 }
