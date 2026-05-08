@@ -23,6 +23,7 @@ import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.SQLiteDbConfig
 import com.bloomberg.selekt.SQLProgressHandler
 import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.OperationCancelledException
@@ -252,12 +253,12 @@ class SQLiteDatabase private constructor(
 
     /**
      * Configures a database connection using [sqlite3_db_config](https://www.sqlite.org/c3ref/db_config.html).
-     * This is intended for boolean-style configuration options such as `SQLITE_DBCONFIG_DEFENSIVE` (1010).
      *
      * @param op the configuration option.
-     * @param value the value to set (typically 0 or 1).
+     * @param value 1 to enable, 0 to disable.
+     * @see <a href="https://www.sqlite.org/c3ref/db_config.html">sqlite3_db_config</a>
      */
-    fun databaseConfig(op: Int, value: Int) = database.databaseConfig(op, value)
+    fun databaseConfig(op: SQLiteDbConfig, value: Int) = database.databaseConfig(op.code, value)
 
     fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
         database.delete(
