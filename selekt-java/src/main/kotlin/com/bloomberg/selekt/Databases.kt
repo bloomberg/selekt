@@ -167,6 +167,8 @@ class SQLDatabase(
 
     override fun endTransaction(): Unit = pledge { session().endTransaction() }
 
+    fun databaseConfig(op: SQLiteDbConfig, value: Int): Unit = databaseConfig(op.code, value)
+
     fun databaseConfig(op: Int, value: Int): Unit = pledge {
         session().execute(false) { executor ->
             executor.databaseConfig(op, value)

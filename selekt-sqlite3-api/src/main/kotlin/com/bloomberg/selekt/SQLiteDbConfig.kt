@@ -23,23 +23,23 @@ package com.bloomberg.selekt
  * @see <a href="https://www.sqlite.org/c3ref/c_dbconfig_defensive.html">SQLite DBCONFIG constants</a>
  * @since 0.30.0
  */
-object SQLiteDbConfig {
-    const val ENABLE_FKEY = 998
-    const val ENABLE_TRIGGER = 999
-    const val ENABLE_FTS3_TOKENIZER = 1002
-    const val ENABLE_LOAD_EXTENSION = 1004
-    const val NO_CKPT_ON_CLOSE = 1005
-    const val ENABLE_QPSG = 1006
-    const val TRIGGER_EQP = 1007
-    const val RESET_DATABASE = 1008
-    const val DEFENSIVE = 1010
-    const val WRITABLE_SCHEMA = 1011
-    const val LEGACY_ALTER_TABLE = 1012
-    const val DQS_DML = 1013
-    const val DQS_DDL = 1014
-    const val ENABLE_VIEW = 1015
-    const val LEGACY_FILE_FORMAT = 1016
-    const val TRUSTED_SCHEMA = 1017
-    const val STMT_SCANSTATUS = 1018
-    const val REVERSE_SCANORDER = 1019
+enum class SQLiteDbConfig(val code: Int) {
+    DEFENSIVE(code = 1010),
+    DQS_DDL(code = 1014),
+    DQS_DML(code = 1013),
+    ENABLE_FKEY(code = 998),
+    ENABLE_FTS3_TOKENIZER(code = 1002),
+    ENABLE_LOAD_EXTENSION(code = 1004),
+    ENABLE_QPSG(code = 1006),
+    ENABLE_TRIGGER(code = 999),
+    ENABLE_VIEW(code = 1015),
+    LEGACY_ALTER_TABLE(code = 1012),
+    LEGACY_FILE_FORMAT(code = 1016),
+    NO_CKPT_ON_CLOSE(code = 1005),
+    RESET_DATABASE(code = 1008),
+    REVERSE_SCANORDER(code = 1019),
+    STMT_SCANSTATUS(code = 1018),
+    TRIGGER_EQP(code = 1007),
+    TRUSTED_SCHEMA(code = 1017),
+    WRITABLE_SCHEMA(code = 1011)
 }
