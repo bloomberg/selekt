@@ -53,81 +53,127 @@ function drawChart() {
 
 Latest JMH batch-insert results across drivers. Updated periodically from CI.
 
+=== "Allocation"
+
+    <div id="jdbc_allocation"></div>
+
+=== "Throughput"
+
+    <div id="jdbc_throughput"></div>
+
 <script type="text/javascript">
 (function () {
-  var script = document.createElement('script');
-  script.src = 'jmh/data.js';
-  script.onload = function () {
-    if (typeof window.BENCHMARK_DATA === 'undefined') return;
+  function loadScript(src, cb) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = cb;
+    s.onerror = function () { cb(null); };
+    document.head.appendChild(s);
+  }
 
-    var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
-    if (!group || group.length === 0) return;
-
-    // Use the latest run
-    var latest = group[group.length - 1];
-    var benches = latest.benches;
-
-    // Group by base name (strip "selekt"/"xerial" prefix from method name)
+  function pairBenches(benches) {
     var pairs = {};
     benches.forEach(function (b) {
       var method = b.name.replace(/^.*\./, '');
       var driver, base;
       if (method.startsWith('selekt')) {
         driver = 'Selekt';
-        base = method.substring(6); // strip "selekt"
+        base = method.substring(6);
       } else if (method.startsWith('xerial')) {
         driver = 'Xerial';
-        base = method.substring(6); // strip "xerial"
+        base = method.substring(6);
       } else {
         return;
       }
       if (!pairs[base]) pairs[base] = {};
       pairs[base][driver] = b;
     });
+    return pairs;
+  }
 
+  function drawPairs(pairs, containerId) {
+    var container = document.getElementById(containerId);
+    Object.keys(pairs).sort().forEach(function (base) {
+      var p = pairs[base];
+      var selekt = p['Selekt'];
+      var xerial = p['Xerial'];
+      if (!selekt || !xerial) return;
+
+      var unit = selekt.unit || 'ms/op';
+      var data = google.visualization.arrayToDataTable([
+        ['Driver', base + ' (' + unit + ')', { role: 'style' }],
+        ['Selekt', selekt.value, '#4285F4'],
+        ['Xerial', xerial.value, '#EA4335']
+      ]);
+
+      var div = document.createElement('div');
+      div.style.width = '100%';
+      div.style.maxWidth = '700px';
+      div.style.height = '200px';
+      div.style.marginBottom = '24px';
+      container.appendChild(div);
+
+      new google.visualization.BarChart(div).draw(data, {
+        title: base,
+        legend: 'none',
+        hAxis: { title: unit, minValue: 0 },
+        chartArea: { width: '60%' }
+      });
+    });
+
+    if (container.children.length === 0) {
+      container.textContent =
+        'No benchmark data available yet. Results will appear after the next CI run.';
+    }
+  }
+
+  var throughputData = null;
+  var allocData = null;
+  var loaded = 0;
+
+  function onAllLoaded() {
     google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(function () {
-      Object.keys(pairs).sort().forEach(function (base) {
-        var p = pairs[base];
-        var selekt = p['Selekt'];
-        var xerial = p['Xerial'];
-        if (!selekt || !xerial) return;
-
-        var unit = selekt.unit || 'ms/op';
-        var data = google.visualization.arrayToDataTable([
-          ['Driver', base + ' (' + unit + ')', { role: 'style' }],
-          ['Selekt', selekt.value, '#4285F4'],
-          ['Xerial', xerial.value, '#EA4335']
-        ]);
-
-        var container = document.createElement('div');
-        container.style.width = '100%';
-        container.style.maxWidth = '700px';
-        container.style.height = '200px';
-        container.style.marginBottom = '24px';
-        document.getElementById('jdbc_comparison').appendChild(container);
-
-        new google.visualization.BarChart(container).draw(data, {
-          title: base,
-          legend: 'none',
-          hAxis: { title: unit, minValue: 0 },
-          chartArea: { width: '60%' }
-        });
-      });
-
-      if (document.getElementById('jdbc_comparison').children.length === 0) {
-        document.getElementById('jdbc_comparison').textContent =
-          'No benchmark data available yet. Results will appear after the next CI run.';
+      if (throughputData) {
+        drawPairs(pairBenches(throughputData), 'jdbc_throughput');
+      } else {
+        document.getElementById('jdbc_throughput').textContent =
+          'Benchmark data not yet available. Results will appear after the first CI run.';
+      }
+      if (allocData) {
+        drawPairs(pairBenches(allocData), 'jdbc_allocation');
+      } else {
+        document.getElementById('jdbc_allocation').textContent =
+          'Allocation data not yet available. Results will appear after the first CI run.';
       }
     });
-  };
-  script.onerror = function () {
-    document.getElementById('jdbc_comparison').textContent =
-      'Benchmark data not yet available. Results will appear after the first CI run.';
-  };
-  document.head.appendChild(script);
+  }
+
+  function check() {
+    loaded++;
+    if (loaded === 2) onAllLoaded();
+  }
+
+  loadScript('jmh/data.js', function () {
+    if (window.BENCHMARK_DATA) {
+      var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
+      if (group && group.length > 0) {
+        throughputData = group[group.length - 1].benches;
+      }
+      window._THROUGHPUT_DATA = window.BENCHMARK_DATA;
+      delete window.BENCHMARK_DATA;
+    }
+    loadScript('jmh-alloc/data.js', function () {
+      if (window.BENCHMARK_DATA) {
+        var group = window.BENCHMARK_DATA.entries['JDBC Allocations'];
+        if (group && group.length > 0) {
+          allocData = group[group.length - 1].benches;
+        }
+      }
+      check(); check();
+    });
+  });
 })();
 </script>
-<div id="jdbc_comparison"></div>
 
-For full time-series history, see the [benchmark dashboard](jmh/index.html).
+For full time-series history, see the throughput [benchmark dashboard](jmh/index.html) and [allocation dashboard](jmh-alloc/index.html).

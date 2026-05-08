@@ -56,6 +56,22 @@ jobs:
             selekt-jdbc/build/results/jmh/results.json \
             > combined-results.json
 
+      - name: 'Extract GC allocation metrics'
+        run: |
+          jq '[.[] | {
+            benchmark: .benchmark,
+            mode: .mode,
+            params: .params,
+            primaryMetric: {
+              score: .secondaryMetrics["gc.alloc.rate.norm"].score,
+              scoreUnit: .secondaryMetrics["gc.alloc.rate.norm"].scoreUnit,
+              scoreError: .secondaryMetrics["gc.alloc.rate.norm"].scoreError,
+              scoreConfidence: .secondaryMetrics["gc.alloc.rate.norm"].scoreConfidence,
+              rawData: .secondaryMetrics["gc.alloc.rate.norm"].rawData
+            },
+            secondaryMetrics: {}
+          }]' combined-results.json > combined-alloc-results.json
+
       - name: 'Restore working tree'
         run: git checkout -- .
 
@@ -69,6 +85,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+
+      - name: 'Store allocation results'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'JDBC Allocations'
+          tool: 'jmh'
+          output-file-path: combined-alloc-results.json
+          benchmark-data-dir-path: benchmarks/jmh-alloc
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: false
 
