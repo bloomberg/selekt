@@ -37,6 +37,10 @@ internal class SelektDataSourceTest {
 
     private lateinit var dataSource: SelektDataSource
 
+    private companion object {
+        const val VALID_KEY = "exactly-32-bytes-of-key-data!!!!"
+    }
+
     @BeforeEach
     fun setUp() {
         dataSource = SelektDataSource()
@@ -54,7 +58,7 @@ internal class SelektDataSourceTest {
         busyTimeout = 5_000
         journalMode = "WAL"
         foreignKeys = true
-        setEncryption(EncryptionKeySource.Literal("test-key".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
 
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
@@ -62,7 +66,7 @@ internal class SelektDataSourceTest {
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal("test-key".toCharArray()), encryptionKeySource)
+        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -165,7 +169,7 @@ internal class SelektDataSourceTest {
         busyTimeout = 2_000
         journalMode = "DELETE"
         foreignKeys = false
-        setEncryption(EncryptionKeySource.Literal("secret123".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
 
         assertEquals("/path/to/test.db", databasePath)
         assertEquals(5, maxPoolSize)
@@ -173,7 +177,7 @@ internal class SelektDataSourceTest {
         assertEquals("DELETE", journalMode)
         assertFalse(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal("secret123".toCharArray()), encryptionKeySource)
+        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -181,9 +185,9 @@ internal class SelektDataSourceTest {
         setEncryption(null)
         assertFalse(encryptionEnabled)
         assertNull(encryptionKeySource)
-        setEncryption(EncryptionKeySource.Literal("somekey".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal("somekey".toCharArray()), encryptionKeySource)
+        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -247,7 +251,8 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithEncryption(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted.db").absolutePath
-        setEncryption(EncryptionKeySource.Literal("0x0123456789ABCDEF".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(
+            "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".toCharArray()))
         getConnection().close()
     }
 
@@ -255,7 +260,7 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithStringKey(): Unit = dataSource.run {
         databasePath = File(tempDir, "encrypted3.db").absolutePath
-        setEncryption(EncryptionKeySource.Literal("my-secret-key".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         getConnection().close()
     }
 
@@ -310,22 +315,23 @@ internal class SelektDataSourceTest {
         busyTimeout = 3000
         journalMode = "DELETE"
         foreignKeys = false
-        setEncryption(EncryptionKeySource.Literal("test-key-123".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun setEncryptionWithKey(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.Literal("my-key".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal("my-key".toCharArray()), encryptionKeySource)
+        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
     fun setEncryptionLiteralReplacesLiteral(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.Literal("first".toCharArray()))
-        setEncryption(EncryptionKeySource.Literal("second".toCharArray()))
-        assertEquals(EncryptionKeySource.Literal("second".toCharArray()), encryptionKeySource)
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+        val secondKey = "REPLACEMENT-KEY-exactly-32bytes!"
+        setEncryption(EncryptionKeySource.Literal(secondKey.toCharArray()))
+        assertEquals(EncryptionKeySource.Literal(secondKey.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -337,7 +343,7 @@ internal class SelektDataSourceTest {
 
     @Test
     fun clearEncryption(): Unit = dataSource.run {
-        setEncryption(EncryptionKeySource.Literal("key".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertTrue(encryptionEnabled)
         setEncryption(null)
         assertFalse(encryptionEnabled)
@@ -367,14 +373,16 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithHexKeyUppercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-upper.db").absolutePath
-        setEncryption(EncryptionKeySource.Literal("0X123456".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(
+            "0X0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".toCharArray()))
         getConnection().close()
     }
 
     @Test
     fun getConnectionWithHexKeyLowercaseX(): Unit = dataSource.run {
         databasePath = File(tempDir, "hex-lower.db").absolutePath
-        setEncryption(EncryptionKeySource.Literal("0x123456".toCharArray()))
+        setEncryption(EncryptionKeySource.Literal(
+            "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF".toCharArray()))
         getConnection().close()
     }
 
@@ -511,6 +519,28 @@ internal class SelektDataSourceTest {
     fun unwrapToInvalidType() {
         assertFailsWith<SQLException> {
             dataSource.unwrap(List::class.java)
+        }
+    }
+
+    @Test
+    fun setEncryptionRejectsShortKey() {
+        assertFailsWith<IllegalArgumentException> {
+            dataSource.setEncryption(EncryptionKeySource.Literal("too-short".toCharArray()))
+        }
+    }
+
+    @Test
+    fun setEncryptionRejectsLongKey() {
+        assertFailsWith<IllegalArgumentException> {
+            dataSource.setEncryption(EncryptionKeySource.Literal(
+                "this-key-is-way-too-long-for-aes-256-encryption!!".toCharArray()))
+        }
+    }
+
+    @Test
+    fun directEncryptionKeySourceRejectsShortKey() {
+        assertFailsWith<IllegalArgumentException> {
+            dataSource.encryptionKeySource = EncryptionKeySource.Literal("short".toCharArray())
         }
     }
 }

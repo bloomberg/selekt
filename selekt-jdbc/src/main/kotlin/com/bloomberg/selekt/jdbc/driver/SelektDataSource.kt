@@ -47,8 +47,7 @@ sealed interface EncryptionKeySource {
     data class Literal(val key: CharArray) : EncryptionKeySource {
         fun zero() { key.fill('\u0000') }
 
-        override fun equals(other: Any?): Boolean =
-            other is Literal && key.contentEquals(other.key)
+        override fun equals(other: Any?): Boolean = other is Literal && key.contentEquals(other.key)
 
         override fun hashCode(): Int = key.contentHashCode()
     }
@@ -57,11 +56,12 @@ sealed interface EncryptionKeySource {
 @Suppress("TooGenericExceptionCaught")
 class SelektDataSource : DataSource {
     companion object {
-        private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
-        private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
+        private const val PROPERTY_JOURNAL_MODE = "journalMode"
+        private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val DEFAULT_POOL_SIZE = 10
+        private const val REQUIRED_KEY_LENGTH_BYTES = 32
 
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(SelektDataSource::class.java, "closed", Boolean::class.javaPrimitiveType)
@@ -116,6 +116,9 @@ class SelektDataSource : DataSource {
     @Volatile
     var encryptionKeySource: EncryptionKeySource? = null
         set(value) {
+            if (value is EncryptionKeySource.Literal) {
+                validateKeyLength(value.key)
+            }
             (field as? EncryptionKeySource.Literal)?.zero()
             field = value
         }
@@ -209,17 +212,16 @@ class SelektDataSource : DataSource {
         } else {
             throw SQLException("No database path or URL specified")
         }
-
         return ConnectionURL.parse(effectiveUrl)
     }
 
     private fun buildUrlFromProperties(): String {
         val baseUrl = "jdbc:sqlite:$databasePath"
         return mutableListOf<String>().apply {
-            add("poolSize=$maxPoolSize")
             add("busyTimeout=$busyTimeout")
-            add("journalMode=$journalMode")
             add("foreignKeys=$foreignKeys")
+            add("journalMode=$journalMode")
+            add("poolSize=$maxPoolSize")
         }.run {
             if (isEmpty()) {
                 baseUrl
@@ -301,22 +303,13 @@ class SelektDataSource : DataSource {
     private fun buildCacheKey(
         connectionURL: ConnectionURL,
         properties: Properties
-    ): String {
-        val propString = listOf(
-            PROPERTY_POOL_SIZE,
-            PROPERTY_BUSY_TIMEOUT,
-            PROPERTY_JOURNAL_MODE,
-            PROPERTY_FOREIGN_KEYS
-        ).mapNotNull { key ->
-            properties.getProperty(key)?.let { "$key=$it" }
-        }.sorted().joinToString("&")
-        val keyHash = hashEncryptionKey(encryptionKeySource)
-        return buildString {
-            append(connectionURL.databasePath)
-            append('?')
-            append(propString)
-            keyHash?.let { append("&keyHash=").append(it) }
-        }
+    ): String = buildString {
+        append(connectionURL.databasePath)
+        append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
+        append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))
+        append("&journalMode=").append(properties.getProperty(PROPERTY_JOURNAL_MODE))
+        append("&poolSize=").append(properties.getProperty(PROPERTY_POOL_SIZE))
+        hashEncryptionKey(encryptionKeySource)?.let { append("&keyHash=").append(it) }
     }
 
     private fun hashEncryptionKey(
@@ -324,5 +317,19 @@ class SelektDataSource : DataSource {
     ): String? = when (source) {
         is EncryptionKeySource.Literal -> hashKeyChars(source.key)
         null -> null
+    }
+
+    private fun CharArray.isHexPrefixed(): Boolean =
+        size >= 2 && this[0] == '0' && this[1].equals('x', ignoreCase = true)
+
+    private fun validateKeyLength(keyChars: CharArray) {
+        val encodedLength = if (keyChars.isHexPrefixed()) {
+            (keyChars.size - 2) / 2
+        } else {
+            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).remaining()
+        }
+        require(encodedLength == REQUIRED_KEY_LENGTH_BYTES) {
+            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was $encodedLength bytes"
+        }
     }
 }
