@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+## Version 0.32.1
+
+* Add Xerial reused statement benchmarks.
+* Save an SQLite strlen scan when binding text.
+* Return empty byte array from columnBlob when length is zero.
+* Fix JDBC driver version so that it matches Selekt's.
+* Remove use of Experimental annotation.
+* Remove maxCachedDatabases.
+* JDBC shared key hashing.
+* Defensive-copy encryption key in openOrCreateDatabase.
+* Validate encryption key length eagerly in SelektDataSource.
+* Prevent SQLiteOpenHelper.close() from opening the database.
+* Add SQLiteDbConfig enum for typed databaseConfig calls.
+* Publish single uber SQLCipher .jar.
+* Add ISQLiteOpenHelper.readableDatabase.
+
 ## Version 0.32.0
 
 * Gradle 9.5.0.
