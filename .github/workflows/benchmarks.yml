@@ -62,7 +62,7 @@ jobs:
       - name: 'Store benchmark results'
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Selekt JMH Benchmarks'
+          name: 'JDBC Benchmarks'
           tool: 'jmh'
           output-file-path: combined-results.json
           benchmark-data-dir-path: benchmarks/jmh

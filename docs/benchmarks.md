@@ -48,3 +48,86 @@ function drawChart() {
 }
 </script>
 <div id="pool_chart_div"></div>
+
+## JDBC Batch Insert
+
+Latest JMH batch-insert results across drivers. Updated periodically from CI.
+
+<script type="text/javascript">
+(function () {
+  var script = document.createElement('script');
+  script.src = '../benchmarks/jmh/data.js';
+  script.onload = function () {
+    if (typeof window.BENCHMARK_DATA === 'undefined') return;
+
+    var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
+    if (!group || group.length === 0) return;
+
+    // Use the latest run
+    var latest = group[group.length - 1];
+    var benches = latest.benches;
+
+    // Group by base name (strip "selekt"/"xerial" prefix from method name)
+    var pairs = {};
+    benches.forEach(function (b) {
+      var method = b.name.replace(/^.*\./, '');
+      var driver, base;
+      if (method.startsWith('selekt')) {
+        driver = 'Selekt';
+        base = method.substring(6); // strip "selekt"
+      } else if (method.startsWith('xerial')) {
+        driver = 'Xerial';
+        base = method.substring(6); // strip "xerial"
+      } else {
+        return;
+      }
+      if (!pairs[base]) pairs[base] = {};
+      pairs[base][driver] = b;
+    });
+
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(function () {
+      Object.keys(pairs).sort().forEach(function (base) {
+        var p = pairs[base];
+        var selekt = p['Selekt'];
+        var xerial = p['Xerial'];
+        if (!selekt || !xerial) return;
+
+        var unit = selekt.unit || 'ms/op';
+        var data = google.visualization.arrayToDataTable([
+          ['Driver', base + ' (' + unit + ')', { role: 'style' }],
+          ['Selekt', selekt.value, '#4285F4'],
+          ['Xerial', xerial.value, '#EA4335']
+        ]);
+
+        var container = document.createElement('div');
+        container.style.width = '100%';
+        container.style.maxWidth = '700px';
+        container.style.height = '200px';
+        container.style.marginBottom = '24px';
+        document.getElementById('jdbc_comparison').appendChild(container);
+
+        new google.visualization.BarChart(container).draw(data, {
+          title: base,
+          legend: 'none',
+          hAxis: { title: unit, minValue: 0 },
+          chartArea: { width: '60%' }
+        });
+      });
+
+      if (document.getElementById('jdbc_comparison').children.length === 0) {
+        document.getElementById('jdbc_comparison').textContent =
+          'No benchmark data available yet. Results will appear after the next CI run.';
+      }
+    });
+  };
+  script.onerror = function () {
+    document.getElementById('jdbc_comparison').textContent =
+      'Benchmark data not yet available. Results will appear after the first CI run.';
+  };
+  document.head.appendChild(script);
+})();
+</script>
+<div id="jdbc_comparison"></div>
+
+For full time-series history, see the [benchmark dashboard](benchmarks/jmh/index.html).
