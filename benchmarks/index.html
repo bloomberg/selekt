@@ -708,15 +708,17 @@ function drawChart() {
       if (!selekt || !xerial) return;
 
       var unit = selekt.unit || 'ms/op';
-      var data = google.visualization.arrayToDataTable([
-        ['Driver', base + ' (' + unit + ')', { role: 'style' }],
-        ['Selekt', selekt.value, '#4285F4'],
-        ['Xerial', xerial.value, '#EA4335']
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Driver');
+      data.addColumn('number', unit);
+      data.addColumn({ type: 'string', role: 'style' });
+      data.addRows([
+        ['Selekt', Number(selekt.value), '#4285F4'],
+        ['Xerial', Number(xerial.value), '#EA4335']
       ]);
 
       var div = document.createElement('div');
       div.style.width = '100%';
-      div.style.maxWidth = '700px';
       div.style.height = '200px';
       div.style.marginBottom = '24px';
       container.appendChild(div);
@@ -725,7 +727,7 @@ function drawChart() {
         title: base,
         legend: 'none',
         hAxis: { title: unit, minValue: 0 },
-        chartArea: { width: '60%' }
+        chartArea: { width: '70%' }
       });
     });
 
@@ -742,18 +744,31 @@ function drawChart() {
   function onAllLoaded() {
     google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(function () {
-      if (throughputData) {
-        drawPairs(pairBenches(throughputData), 'jdbc_throughput');
-      } else {
-        document.getElementById('jdbc_throughput').textContent =
-          'Benchmark data not yet available. Results will appear after the first CI run.';
-      }
       if (allocData) {
         drawPairs(pairBenches(allocData), 'jdbc_allocation');
       } else {
         document.getElementById('jdbc_allocation').textContent =
           'Allocation data not yet available. Results will appear after the first CI run.';
       }
+      var throughputDrawn = false;
+      function drawThroughputIfNeeded() {
+        if (throughputDrawn) return;
+        var el = document.getElementById('jdbc_throughput');
+        if (el && el.offsetWidth > 0) {
+          throughputDrawn = true;
+          if (throughputData) {
+            drawPairs(pairBenches(throughputData), 'jdbc_throughput');
+          } else {
+            el.textContent =
+              'Benchmark data not yet available. Results will appear after the first CI run.';
+          }
+        }
+      }
+      document.querySelectorAll('input[name^="__tabbed_"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          setTimeout(drawThroughputIfNeeded, 50);
+        });
+      });
     });
   }
 
