@@ -214,4 +214,21 @@ internal class SQLiteOpenHelperTest {
         openParams = openParams,
         version = version
     )
+
+    @Test
+    fun readableDatabaseReturnsSameInstanceAsWritableDatabase() {
+        val callback = mock<ISQLiteOpenHelper.Callback>()
+        databaseHelper = createHelper(1, callback)
+        databaseHelper!!.let {
+            assertSame(it.writableDatabase, it.readableDatabase)
+        }
+    }
+
+    @Test
+    fun closeOnNeverOpenedHelperDoesNotCreateDatabase() {
+        val callback = mock<ISQLiteOpenHelper.Callback>()
+        createHelper(1, callback).apply(SQLiteOpenHelper::close)
+        verify(callback, never()).onCreate(any())
+        verify(callback, never()).onOpen(any())
+    }
 }
