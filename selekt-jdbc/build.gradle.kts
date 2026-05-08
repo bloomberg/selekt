@@ -58,7 +58,7 @@ sourceSets {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektCommons)
-    implementation(projects.selektJava)
+    implementation(projects.selektJvm)
     implementation(projects.selektSqlite3Api)
     implementation(projects.selektSqlite3Classes) {
         capabilities {

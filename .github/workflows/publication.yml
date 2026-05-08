@@ -338,6 +338,16 @@ jobs:
           echo "JARs ready for publication:"
           ls -la selekt-sqlite3-sqlcipher/build/libs/
 
+      - name: 'Build uber JAR'
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            ./gradlew :selekt-sqlite3-sqlcipher:uberJar
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            ./gradlew -Prelease :selekt-sqlite3-sqlcipher:uberJar
+          fi
+          echo "Uber JAR contents:"
+          jar tf selekt-sqlite3-sqlcipher/build/libs/selekt-sqlite3-sqlcipher-*.jar | grep jni/ | head -20
+
       - name: 'Publish to OSSRH'
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
