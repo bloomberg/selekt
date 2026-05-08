@@ -12,8 +12,6 @@ local.properties
 .externalNativeBuild
 
 **/generated
-!SQLite3/sqlite3/generated/
-!SQLite3/sqlite3/generated/**
 **/.cxx
 **/.cxx-host
 
