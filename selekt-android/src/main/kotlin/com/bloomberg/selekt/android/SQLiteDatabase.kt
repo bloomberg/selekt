@@ -58,15 +58,22 @@ class SQLiteDatabase private constructor(
             file: File?,
             configuration: DatabaseConfiguration,
             key: ByteArray?
-        ) = SQLiteDatabase(
-            SQLDatabase(
-                file.let { if (it != null) it.path else "file::memory:" },
-                SQLite,
-                configuration,
-                key,
-                CommonThreadLocalRandom
-            )
-        )
+        ): SQLiteDatabase {
+            val keyCopy = key?.copyOf()
+            return try {
+                SQLiteDatabase(
+                    SQLDatabase(
+                        file.let { if (it != null) it.path else "file::memory:" },
+                        SQLite,
+                        configuration,
+                        keyCopy,
+                        CommonThreadLocalRandom
+                    )
+                )
+            } finally {
+                keyCopy?.fill(0)
+            }
+        }
 
         @JvmStatic
         fun openOrCreateDatabase(
