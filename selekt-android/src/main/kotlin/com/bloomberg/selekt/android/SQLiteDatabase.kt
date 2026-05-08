@@ -533,16 +533,17 @@ class SQLiteDatabase private constructor(
         conflictAlgorithm
     )
 
+
     fun upsert(
         table: String,
-        values: ContentValues,
+        insertValues: ContentValues,
         columns: Array<out String>,
-        update: String
+        updateValues: ContentValues
     ) = database.upsert(
         table,
-        values.asSelektContentValues(),
+        insertValues.asSelektContentValues(),
         columns,
-        update
+        updateValues.asSelektContentValues()
     )
 
     /**

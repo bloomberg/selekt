@@ -756,7 +756,8 @@ internal class SQLDatabaseTest {
         it.exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         val values = ContentValues().apply { put("bar", "hello") }
         val id = it.insert("Foo", values, ConflictAlgorithm.REPLACE)
-        assertEquals(id, it.upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        val updateValues = ContentValues().apply { put("count", 1) }
+        assertEquals(id, it.upsert("Foo", values, arrayOf("bar"), updateValues))
         it.query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use { cursor ->
             assertEquals(1, cursor.count)
             assertTrue(cursor.moveToFirst())
