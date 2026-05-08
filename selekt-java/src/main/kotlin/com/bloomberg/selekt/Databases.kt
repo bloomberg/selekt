@@ -465,40 +465,54 @@ class SQLDatabase(
         }
     }
 
+
     override fun upsert(
         table: String,
-        values: IContentValues,
+        insertValues: IContentValues,
         columns: Array<out String>,
-        update: String
+        updateValues: IContentValues
     ) = pledge {
-        require(!values.isEmpty) { "Empty initial values." }
+        require(!insertValues.isEmpty) { "Empty initial values." }
         require(columns.isNotEmpty()) { "Empty conflicting columns." }
-        val bindArgs = arrayOfNulls<Any?>(values.size)
+        require(!updateValues.isEmpty) { "Empty update values." }
+        val updateSize = updateValues.size
+        val bindArgs = arrayOfNulls<Any?>(insertValues.size + updateSize)
         SharedSqlBuilder.use {
             append("INSERT INTO ")
                 .append(table)
                 .append('(')
-            val iterator = values.entrySet.iterator()
-            iterator.next().apply {
+            val insertIterator = insertValues.entrySet.iterator()
+            insertIterator.next().apply {
                 append(key)
                 bindArgs[0] = value
             }
-            1.forUntil(values.size) {
+            1.forUntil(insertValues.size) {
                 append(',')
-                iterator.next().run {
+                insertIterator.next().run {
                     append(key)
                     bindArgs[it] = value
                 }
             }
             append(") VALUES (?")
-                .apply { repeat(bindArgs.size - 1) { append(",?") } }
+                .apply { repeat(insertValues.size - 1) { append(",?") } }
                 .append(") ON CONFLICT (")
                 .append(columns.first())
             1.forUntil(columns.size) {
                 append(',').append(columns[it])
             }
             append(") DO UPDATE SET ")
-                .append(update)
+            val updateIterator = updateValues.entrySet.iterator()
+            updateIterator.next().run {
+                append(key).append("=?")
+                bindArgs[insertValues.size] = value
+            }
+            1.forUntil(updateSize) {
+                append(',')
+                updateIterator.next().run {
+                    append(key).append("=?")
+                    bindArgs[insertValues.size + it] = value
+                }
+            }
             SQLStatement.executeInsert(session, toString(), bindArgs)
         }
     }
@@ -638,11 +652,12 @@ interface IDatabase : IReadableDatabase, ISQLTransactor {
         conflictAlgorithm: IConflictAlgorithm
     ): Int
 
+
     fun upsert(
         table: String,
-        values: IContentValues,
+        insertValues: IContentValues,
         columns: Array<out String>,
-        update: String
+        updateValues: IContentValues
     ): Long
 
     var version: Int

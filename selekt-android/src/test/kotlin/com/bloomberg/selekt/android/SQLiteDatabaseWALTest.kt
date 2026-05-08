@@ -267,23 +267,29 @@ internal class SQLiteDatabaseWALTest {
     @Test
     fun upsertRejectsEmptyValues(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
-            upsert("Foo", ContentValues(), arrayOf("bar"), "")
+            upsert("Foo", ContentValues(), arrayOf("bar"), ContentValues().apply { put("x", 1) })
         }
     }
 
     @Test
     fun upsertRejectsEmptyColumns(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
-            upsert("Foo", ContentValues().apply { put("bar", "hello") }, emptyArray(), "")
+            upsert(
+                "Foo",
+                ContentValues().apply { put("bar", "hello") },
+                emptyArray(),
+                ContentValues().apply { put("x", 1) }
+            )
         }
     }
 
     @Test
-    fun upsertString(): Unit = database.run {
+    fun upsertUpdatesOnConflict(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
         val values = ContentValues().apply { put("bar", "hello") }
         val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
-        assertEquals(id, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        val updateValues = ContentValues().apply { put("count", 1) }
+        assertEquals(id, upsert("Foo", values, arrayOf("bar"), updateValues))
         query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
@@ -298,7 +304,8 @@ internal class SQLiteDatabaseWALTest {
             put("bar", "hello")
             put("count", 42)
         }
-        assertEquals(1L, upsert("Foo", values, arrayOf("bar"), "count=count+1"))
+        val updateValues = ContentValues().apply { put("count", 99) }
+        assertEquals(1L, upsert("Foo", values, arrayOf("bar"), updateValues))
         query(false, "Foo", null, null, emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
@@ -315,7 +322,8 @@ internal class SQLiteDatabaseWALTest {
             put("b", "world")
         }
         val id = insert("Foo", values, ConflictAlgorithm.REPLACE)
-        assertEquals(id, upsert("Foo", values, arrayOf("a", "b"), "count=count+1"))
+        val updateValues = ContentValues().apply { put("count", 1) }
+        assertEquals(id, upsert("Foo", values, arrayOf("a", "b"), updateValues))
         query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
@@ -332,11 +340,67 @@ internal class SQLiteDatabaseWALTest {
             put("z", "c")
         }
         insert("Bar", values, ConflictAlgorithm.REPLACE)
-        assertEquals(1L, upsert("Bar", values, arrayOf("x", "y", "z"), "count=count+1"))
+        val updateValues = ContentValues().apply { put("count", 1) }
+        assertEquals(1L, upsert("Bar", values, arrayOf("x", "y", "z"), updateValues))
         query(false, "Bar", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
             assertEquals(1, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun upsertWithContentValues(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+        val values = ContentValues().apply { put("bar", "hello") }
+        insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val updateValues = ContentValues().apply { put("count", 42) }
+        upsert("Foo", values, arrayOf("bar"), updateValues)
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(42, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun upsertWithContentValuesAsInsert(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, count INT DEFAULT 0)")
+        val values = ContentValues().apply {
+            put("bar", "hello")
+            put("count", 10)
+        }
+        val updateValues = ContentValues().apply { put("count", 99) }
+        upsert("Foo", values, arrayOf("bar"), updateValues)
+        query(false, "Foo", arrayOf("count"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(10, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun upsertWithContentValuesRejectsEmptyUpdateValues(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> {
+            upsert("Foo", ContentValues().apply { put("bar", "hello") }, arrayOf("bar"), ContentValues())
+        }
+    }
+
+    @Test
+    fun upsertWithContentValuesMultipleColumns(): Unit = database.run {
+        exec("CREATE TABLE 'Foo' (bar TEXT PRIMARY KEY, a INT DEFAULT 0, b TEXT DEFAULT 'x')")
+        val values = ContentValues().apply { put("bar", "hello") }
+        insert("Foo", values, ConflictAlgorithm.REPLACE)
+        val updateValues = ContentValues().apply {
+            put("a", 7)
+            put("b", "updated")
+        }
+        upsert("Foo", values, arrayOf("bar"), updateValues)
+        query(false, "Foo", arrayOf("a", "b"), "", emptyArray(), null, null, null, null).use {
+            assertEquals(1, it.count)
+            assertTrue(it.moveToFirst())
+            assertEquals(7, it.getInt(0))
+            assertEquals("updated", it.getString(1))
         }
     }
 
