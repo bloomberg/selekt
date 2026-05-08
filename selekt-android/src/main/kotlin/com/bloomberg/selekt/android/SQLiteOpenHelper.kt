@@ -164,6 +164,9 @@ data class SQLiteOpenParams(
 interface ISQLiteOpenHelper : Closeable {
     val writableDatabase: SQLiteDatabase
 
+    val readableDatabase: SQLiteDatabase
+        get() = writableDatabase
+
     val databaseName: String
 
     interface Callback {
