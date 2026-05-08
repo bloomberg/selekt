@@ -58,19 +58,12 @@ jobs:
 
       - name: 'Extract GC allocation metrics'
         run: |
-          jq '[.[] | {
-            benchmark: .benchmark,
-            mode: .mode,
-            threads: .threads,
-            forks: .forks,
-            warmupIterations: .warmupIterations,
-            warmupTime: .warmupTime,
-            measurementIterations: .measurementIterations,
-            measurementTime: .measurementTime,
-            params: .params,
-            primaryMetric: (.secondaryMetrics | to_entries[] | select(.key | endswith("gc.alloc.rate.norm")) | .value),
-            secondaryMetrics: {}
-          }]' combined-results.json > combined-alloc-results.json
+          jq '[.[] | . as $orig |
+            ($orig.secondaryMetrics | to_entries[] | select(.key | endswith("gc.alloc.rate.norm")) | .value) as $alloc |
+            ($orig | del(.secondaryMetrics) | .primaryMetric = $alloc | .secondaryMetrics = {})
+          ]' combined-results.json > combined-alloc-results.json
+          echo "Allocation entries: $(jq length combined-alloc-results.json)"
+          jq '.[0] | {benchmark, mode, forks, scoreUnit: .primaryMetric.scoreUnit, score: .primaryMetric.score}' combined-alloc-results.json
 
       - name: 'Restore working tree'
         run: git checkout -- .
