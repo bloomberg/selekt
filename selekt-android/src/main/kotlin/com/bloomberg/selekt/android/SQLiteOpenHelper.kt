@@ -62,6 +62,39 @@ class SQLiteOpenHelper internal constructor(
 
     private val _key: ByteArray? = key?.copyOf()
 
+    private val lazyDatabase = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        try {
+            SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
+                _key?.zero()
+                it.setPageSizeExponent(openParams.pageSizeExponent)
+                it.setJournalMode(openParams.journalMode)
+                configuration.callback.onConfigure(it)
+                val currentVersion = it.version
+                if (currentVersion != version) {
+                    it.transact {
+                        when {
+                            currentVersion == 0 -> configuration.callback.onCreate(it)
+                            currentVersion > version -> configuration.callback.onDowngrade(
+                                it,
+                                oldVersion = currentVersion,
+                                newVersion = version
+                            )
+                            else -> configuration.callback.onUpgrade(
+                                it,
+                                oldVersion = currentVersion,
+                                newVersion = version
+                            )
+                        }
+                    }
+                    it.version = version
+                }
+                configuration.callback.onOpen(it)
+            }
+        } finally {
+            _key?.zero()
+        }
+    }
+
     /**
      * Create and/or open a database that will be used for reading and writing. The first time this is called, the database
      * will be opened and [onCreate(SQLiteDatabase)] and [onUpgrade(SQLiteDatabase, int, int)] or
@@ -72,35 +105,6 @@ class SQLiteOpenHelper internal constructor(
      * database. (Make sure to call close() when you no longer need the database.) Errors such as bad permissions or a full
      * disk may cause this method to fail, but future attempts may succeed if the problem is fixed.
      */
-    private val lazyDatabase = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
-            _key?.zero()
-            it.setPageSizeExponent(openParams.pageSizeExponent)
-            it.setJournalMode(openParams.journalMode)
-            configuration.callback.onConfigure(it)
-            val currentVersion = it.version
-            if (currentVersion != version) {
-                it.transact {
-                    when {
-                        currentVersion == 0 -> configuration.callback.onCreate(it)
-                        currentVersion > version -> configuration.callback.onDowngrade(
-                            it,
-                            oldVersion = currentVersion,
-                            newVersion = version
-                        )
-                        else -> configuration.callback.onUpgrade(
-                            it,
-                            oldVersion = currentVersion,
-                            newVersion = version
-                        )
-                    }
-                }
-                it.version = version
-            }
-            configuration.callback.onOpen(it)
-        }
-    }
-
     override val writableDatabase: SQLiteDatabase by lazyDatabase
 
     override val databaseName = configuration.name
