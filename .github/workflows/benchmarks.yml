@@ -54,16 +54,27 @@ jobs:
         run: |
           jq -s 'add' \
             selekt-jdbc/build/results/jmh/results.json \
-            > combined-results.json
+            > /tmp/combined-results.json
 
       - name: 'Extract GC allocation metrics'
         run: |
           jq '[.[] | . as $orig |
             ($orig.secondaryMetrics | to_entries[] | select(.key | endswith("gc.alloc.rate.norm")) | .value) as $alloc |
             ($orig | del(.secondaryMetrics) | .primaryMetric = $alloc | .secondaryMetrics = {})
-          ]' combined-results.json > combined-alloc-results.json
-          echo "Allocation entries: $(jq length combined-alloc-results.json)"
-          jq '.[0] | {benchmark, mode, forks, scoreUnit: .primaryMetric.scoreUnit, score: .primaryMetric.score}' combined-alloc-results.json
+          ]' /tmp/combined-results.json > /tmp/combined-alloc-results.json
+          echo "Allocation entries: $(jq length /tmp/combined-alloc-results.json)"
+          jq '.[0] | {benchmark, mode, forks, scoreUnit: .primaryMetric.scoreUnit, score: .primaryMetric.score}' /tmp/combined-alloc-results.json
+
+      - name: 'Validate results'
+        run: |
+          for f in /tmp/combined-results.json /tmp/combined-alloc-results.json; do
+            jq 'length' "$f"
+            if jq -e '[.[] | select(.benchmark == null)] | length > 0' "$f" > /dev/null 2>&1; then
+              echo "::error::Found entries with null benchmark field in $f"
+              jq '[.[] | select(.benchmark == null)]' "$f"
+              exit 1
+            fi
+          done
 
       - name: 'Restore working tree'
         run: git checkout -- .
@@ -73,7 +84,7 @@ jobs:
         with:
           name: 'JDBC Benchmarks'
           tool: 'jmh'
-          output-file-path: combined-results.json
+          output-file-path: /tmp/combined-results.json
           benchmark-data-dir-path: benchmarks/jmh
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -86,7 +97,7 @@ jobs:
         with:
           name: 'JDBC Allocations'
           tool: 'jmh'
-          output-file-path: combined-alloc-results.json
+          output-file-path: /tmp/combined-alloc-results.json
           benchmark-data-dir-path: benchmarks/jmh-alloc
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
