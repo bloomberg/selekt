@@ -56,7 +56,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
 <script type="text/javascript">
 (function () {
   var script = document.createElement('script');
-  script.src = '../benchmarks/jmh/data.js';
+  script.src = 'jmh/data.js';
   script.onload = function () {
     if (typeof window.BENCHMARK_DATA === 'undefined') return;
 
@@ -130,4 +130,4 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
 </script>
 <div id="jdbc_comparison"></div>
 
-For full time-series history, see the [benchmark dashboard](benchmarks/jmh/index.html).
+For full time-series history, see the [benchmark dashboard](jmh/index.html).
