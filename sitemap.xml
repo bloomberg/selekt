@@ -5,7 +5,11 @@
          <lastmod>2026-05-09</lastmod>
     </url>
     <url>
-         <loc>https://bloomberg.github.io/selekt/benchmarks/</loc>
+         <loc>https://bloomberg.github.io/selekt/benchmarks_android/</loc>
+         <lastmod>2026-05-09</lastmod>
+    </url>
+    <url>
+         <loc>https://bloomberg.github.io/selekt/benchmarks_jdbc/</loc>
          <lastmod>2026-05-09</lastmod>
     </url>
     <url>
