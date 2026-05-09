@@ -63,6 +63,30 @@ internal class SlabArena(
     }
 
     fun allocateFrom(value: String): MemorySegment {
+        val length = value.length
+        for (i in 0 until length) {
+            if (value[i].code >= 0x80) {
+                return allocateFromNonAscii(value)
+            }
+        }
+        return allocateFromAscii(value, length)
+    }
+
+    private fun allocateFromAscii(value: String, length: Int): MemorySegment {
+        val needed = length + 1L
+        if (offset + needed > slab.byteSize()) {
+            grow(needed)
+        }
+        return slab.asSlice(offset, needed).also { segment ->
+            for (i in 0 until length) {
+                segment.set(JAVA_BYTE, i.toLong(), value[i].code.toByte())
+            }
+            segment.set(JAVA_BYTE, length.toLong(), 0)
+            offset += needed
+        }
+    }
+
+    private fun allocateFromNonAscii(value: String): MemorySegment {
         val bytes = value.toByteArray(StandardCharsets.UTF_8)
         val needed = bytes.size + 1L
         if (offset + needed > slab.byteSize()) {
