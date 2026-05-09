@@ -1,0 +1,354 @@
+## Integration
+
+Selekt requires **Java 25** or later.
+
+### Gradle
+
+=== "Kotlin"
+    ``` kotlin
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation(platform("com.bloomberg.selekt:selekt-bom:<version>"))
+        implementation("com.bloomberg.selekt:selekt-jdbc")
+    }
+    ```
+
+=== "Groovy"
+    ``` groovy
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation platform('com.bloomberg.selekt:selekt-bom:<version>')
+        implementation 'com.bloomberg.selekt:selekt-jdbc'
+    }
+    ```
+
+### Maven
+
+``` xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>com.bloomberg.selekt</groupId>
+            <artifactId>selekt-bom</artifactId>
+            <version>${selekt.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>com.bloomberg.selekt</groupId>
+        <artifactId>selekt-jdbc</artifactId>
+    </dependency>
+</dependencies>
+```
+
+## Getting a connection
+
+### Using a DataSource
+
+=== "Kotlin"
+    ``` kotlin
+    val dataSource = SelektDataSource().apply {
+        databasePath = "/path/to/database.db"
+        journalMode = "WAL" // WAL is the default journal mode, but can be overridden if desired
+        busyTimeout = 2_500 // 2_500 milliseconds is the default busy timeout, but can be overridden if desired
+        maxPoolSize = 5 // 1 connection for writing and 4 for reading
+        foreignKeys = true
+    }
+
+    dataSource.connection.use { connection ->
+        // Use connection
+    }
+    ```
+
+=== "Java"
+    ``` java
+    final SelektDataSource dataSource = new SelektDataSource();
+    dataSource.setDatabasePath("/path/to/database.db");
+    dataSource.setJournalMode("WAL"); // WAL is the default journal mode, but can be overridden
+    dataSource.setBusyTimeout(2500); // 2_500 milliseconds is the default busy timeout, but can be overridden
+    dataSource.setMaxPoolSize(5); // 1 connection for writing and 4 for reading
+    dataSource.setForeignKeys(true);
+
+    try (Connection connection = dataSource.getConnection()) {
+        // Use connection
+    }
+    ```
+
+### Using DriverManager
+
+=== "Kotlin"
+    ``` kotlin
+    val url = "jdbc:sqlite:/path/to/database.db"
+    val connection = DriverManager.getConnection(url)
+    ```
+
+=== "Java"
+    ``` java
+    final String url = "jdbc:sqlite:/path/to/database.db";
+    final Connection connection = DriverManager.getConnection(url);
+    ```
+
+Connection properties can be passed via the URL query string or a `Properties` object:
+
+=== "Kotlin"
+    ``` kotlin
+    val url = "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=5&foreignKeys=true"
+    val connection = DriverManager.getConnection(url)
+    ```
+
+=== "Java"
+    ``` java
+    final Properties properties = new Properties();
+    properties.setProperty("journalMode", "WAL");
+    properties.setProperty("busyTimeout", "2500");
+    properties.setProperty("poolSize", "5");
+    properties.setProperty("foreignKeys", "true");
+
+    final Connection connection = DriverManager.getConnection(
+        "jdbc:sqlite:/path/to/database.db",
+        properties
+    );
+    ```
+
+## Encryption
+
+Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, databases are unencrypted by default. To enable encryption, provide a key that is exactly **32 bytes**.
+
+### With a DataSource
+
+=== "Kotlin"
+    ``` kotlin
+    private fun deriveKey(): CharArray = TODO(
+        "Derive a 32-byte encryption key.")
+
+    val dataSource = SelektDataSource().apply {
+        databasePath = "/path/to/encrypted.db"
+        setEncryption(EncryptionKeySource.Literal(deriveKey()))
+    }
+    ```
+
+=== "Java"
+    ``` java
+    private char[] deriveKey() {
+        // TODO Derive a 32-byte encryption key.
+    }
+
+    final SelektDataSource dataSource = new SelektDataSource();
+    dataSource.setDatabasePath("/path/to/encrypted.db");
+    dataSource.setEncryption(
+        new EncryptionKeySource.Literal(deriveKey()));
+    ```
+
+### With a hex key
+
+=== "Kotlin"
+    ``` kotlin
+    val hexKey = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+    dataSource.setEncryption(
+        EncryptionKeySource.Literal(hexKey.toCharArray())
+    )
+    ```
+
+=== "Java"
+    ``` java
+    final String hexKey = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+    dataSource.setEncryption(
+        new EncryptionKeySource.Literal(hexKey.toCharArray()));
+    ```
+
+### Disabling encryption
+
+Unless a key is provided, the database will be created without encryption. To disable encryption on an existing database, set the encryption key to `null`:
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.setEncryption(null)
+    ```
+
+=== "Java"
+    ``` java
+    dataSource.setEncryption(null);
+    ```
+
+## Interaction
+
+### Querying with a PreparedStatement
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.connection.use { connection ->
+        connection.prepareStatement("SELECT id, name FROM users WHERE id = ?").use { statement ->
+            statement.setInt(1, 42)
+            statement.executeQuery().use { resultSet ->
+                while (resultSet.next()) {
+                    println("${resultSet.getInt("id")}: ${resultSet.getString("name")}")
+                }
+            }
+        }
+    }
+    ```
+
+=== "Java"
+    ``` java
+    try (Connection connection = dataSource.getConnection();
+         PreparedStatement statement = connection.prepareStatement(
+             "SELECT id, name FROM users WHERE id = ?")) {
+        statement.setInt(1, 42);
+        try (ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                System.out.println(resultSet.getInt("id") + ": " + resultSet.getString("name"));
+            }
+        }
+    }
+    ```
+
+### Inserting data
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.connection.use { connection ->
+        connection.prepareStatement("INSERT INTO users (id, name) VALUES (?, ?)").use { statement ->
+            statement.setInt(1, 1)
+            statement.setString(2, "Alice")
+            statement.executeUpdate()
+        }
+    }
+    ```
+
+=== "Java"
+    ``` java
+    try (Connection connection = dataSource.getConnection();
+         PreparedStatement statement = connection.prepareStatement(
+             "INSERT INTO users (id, name) VALUES (?, ?)")) {
+        statement.setInt(1, 1);
+        statement.setString(2, "Alice");
+        statement.executeUpdate();
+    }
+    ```
+
+### Batch inserts
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.connection.use { connection ->
+        connection.autoCommit = false
+        try {
+            connection.prepareStatement("INSERT INTO users (id, name) VALUES (?, ?)").use { statement ->
+                for (i in 1..1000) {
+                    statement.setInt(1, i)
+                    statement.setString(2, "User $i")
+                    statement.addBatch()
+                }
+                statement.executeBatch()
+            }
+            connection.commit()
+        } catch (e: SQLException) {
+            connection.rollback()
+            throw e
+        }
+    }
+    ```
+
+=== "Java"
+    ``` java
+    try (Connection connection = dataSource.getConnection()) {
+        connection.setAutoCommit(false);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO users (id, name) VALUES (?, ?)")) {
+            for (int i = 1; i <= 1000; i++) {
+                statement.setInt(1, i);
+                statement.setString(2, "User " + i);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+            connection.commit();
+        } catch (final SQLException e) {
+            connection.rollback();
+            throw e;
+        }
+    }
+    ```
+
+### Transactions
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.connection.use { connection ->
+        connection.autoCommit = false
+        try {
+            connection.prepareStatement("UPDATE accounts SET balance = balance - ? WHERE id = ?").use { statement ->
+                statement.setDouble(1, 100.0)
+                statement.setInt(2, 1)
+                statement.executeUpdate()
+            }
+            connection.prepareStatement("UPDATE accounts SET balance = balance + ? WHERE id = ?").use { statement ->
+                statement.setDouble(1, 100.0)
+                statement.setInt(2, 2)
+                statement.executeUpdate()
+            }
+            connection.commit()
+        } catch (e: SQLException) {
+            connection.rollback()
+            throw e
+        }
+    }
+    ```
+
+=== "Java"
+    ``` java
+    try (Connection connection = dataSource.getConnection()) {
+        connection.setAutoCommit(false);
+        try {
+            try (final PreparedStatement debit = connection.prepareStatement(
+                    "UPDATE accounts SET balance = balance - ? WHERE id = ?")) {
+                debit.setDouble(1, 100.0);
+                debit.setInt(2, 1);
+                debit.executeUpdate();
+            }
+            try (final PreparedStatement credit = connection.prepareStatement(
+                    "UPDATE accounts SET balance = balance + ? WHERE id = ?")) {
+                credit.setDouble(1, 100.0);
+                credit.setInt(2, 2);
+                credit.executeUpdate();
+            }
+            connection.commit();
+        } catch (final SQLException e) {
+            connection.rollback();
+            throw e;
+        }
+    }
+    ```
+
+## Connection properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `journalMode` | String | `WAL` | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
+| `busyTimeout` | int | `2500` | SQLite busy timeout in milliseconds |
+| `poolSize` | int | `10` | Maximum connection pool size |
+| `foreignKeys` | boolean | `true` | Enable foreign key constraints |
+| `key` | String | `null` | Encryption key (hex string, via `DriverManager` only) |
+
+## Closing the DataSource
+
+=== "Kotlin"
+    ``` kotlin
+    dataSource.close()
+    ```
+
+=== "Java"
+    ``` java
+    dataSource.close();
+    ```
+
+Calling `close()` releases all pooled connections and zeroes any encryption key material. The method is idempotent.
