@@ -39,11 +39,11 @@ fun externalSQLiteSingleton(
     configuration: SQLiteConfiguration = SQLiteConfiguration()
 ) = ExternalSQLite.Singleton(configuration) {}
 
+private val NATIVE_READER: MemorySegment = MemorySegment.ofAddress(0L).reinterpret(Long.MAX_VALUE)
+
 @Suppress("NOTHING_TO_INLINE")
-private inline fun MemorySegment.getConfinedString(): String = if (address() == 0L) {
-    ""
-} else {
-    reinterpret(Long.MAX_VALUE).getString(0)
+private inline fun MemorySegment.getConfinedString(): String = address().let {
+    if (it == 0L) { "" } else { NATIVE_READER.getString(it) }
 }
 
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
