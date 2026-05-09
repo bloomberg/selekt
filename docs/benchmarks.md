@@ -91,9 +91,19 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
     return pairs;
   }
 
+  var BENCH_ORDER = ['BatchInsertSIMPLE', 'BatchInsertMIXED', 'BatchInsertBLOB'];
+
   function drawPairs(pairs, containerId, defaultUnit) {
     var container = document.getElementById(containerId);
-    Object.keys(pairs).sort().forEach(function (base) {
+    var keys = Object.keys(pairs);
+    keys.sort(function (a, b) {
+      var ai = BENCH_ORDER.indexOf(a);
+      var bi = BENCH_ORDER.indexOf(b);
+      if (ai === -1) ai = BENCH_ORDER.length;
+      if (bi === -1) bi = BENCH_ORDER.length;
+      return ai - bi;
+    });
+    keys.forEach(function (base) {
       var p = pairs[base];
       var selekt = p['Selekt'];
       var xerial = p['Xerial'];
@@ -116,7 +126,7 @@ Latest JMH batch-insert results across drivers. Updated periodically from CI.
       container.appendChild(div);
 
       new google.visualization.BarChart(div).draw(data, {
-        title: base,
+        title: base + ' (lower is better)',
         legend: 'none',
         hAxis: { title: unit, minValue: 0 },
         chartArea: { width: '70%' }

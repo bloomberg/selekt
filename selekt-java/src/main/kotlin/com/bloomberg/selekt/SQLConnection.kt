@@ -294,10 +294,12 @@ internal class SQLConnection(
     private inline fun <R> withPreparedStatement(
         sql: String,
         bindArgs: Array<out Any?>,
-        block: SQLPreparedStatement.() -> R
+        crossinline block: SQLPreparedStatement.() -> R
     ) = withPreparedStatement(sql) {
-        bindArguments(bindArgs)
-        block()
+        sqlite.withScopedArena {
+            bindArguments(bindArgs)
+            block()
+        }
     }
 
     private fun acquirePreparedStatement(sql: String) = preparedStatements[
