@@ -717,7 +717,7 @@
     if (loaded === 2) onAllLoaded();
   }
 
-  loadScript('jmh/data.js', function () {
+  loadScript('../benchmarks/jmh/data.js', function () {
     if (window.BENCHMARK_DATA) {
       var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
       if (group && group.length > 0) {
@@ -726,7 +726,7 @@
       window._THROUGHPUT_DATA = window.BENCHMARK_DATA;
       delete window.BENCHMARK_DATA;
     }
-    loadScript('jmh-alloc/data.js', function () {
+    loadScript('../benchmarks/jmh-alloc/data.js', function () {
       if (window.BENCHMARK_DATA) {
         var group = window.BENCHMARK_DATA.entries['JDBC Allocations'];
         if (group && group.length > 0) {
@@ -739,7 +739,7 @@
 })();
 </script>
 
-<p>For full time-series history, see the throughput <a href="jmh/index.html">benchmark dashboard</a> and <a href="jmh-alloc/index.html">allocation dashboard</a>.</p>
+<p>For full time-series history, see the throughput <a href="../benchmarks/jmh/index.html">benchmark dashboard</a> and <a href="../benchmarks/jmh-alloc/index.html">allocation dashboard</a>.</p>
 
 
 
