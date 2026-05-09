@@ -84,9 +84,9 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
       container.appendChild(div);
 
       new google.visualization.BarChart(div).draw(data, {
-        title: base + '  ↓ Lower is better',
+        title: base,
         legend: 'none',
-        hAxis: { title: unit + '  (lower is better)', minValue: 0 },
+        hAxis: { title: unit, minValue: 0 },
         chartArea: { width: '70%' }
       });
     });
