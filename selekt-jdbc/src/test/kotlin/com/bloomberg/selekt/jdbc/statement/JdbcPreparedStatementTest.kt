@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
@@ -277,15 +278,15 @@ internal class JdbcPreparedStatementTest {
             addBatch()
         }
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Iterable<Array<Any?>>>(1).count()
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<ParameterRow>>(1).count()
         }
         batchStatement.executeBatch().run {
             assertEquals(2, size)
             assertEquals(-2, first())
             assertEquals(-2, this[1])
         }
-        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
+        verify(database).batchRows(any<String>(), any<Iterable<ParameterRow>>())
     }
 
     @Test
@@ -299,12 +300,12 @@ internal class JdbcPreparedStatementTest {
             }
         }
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Iterable<Array<Any?>>>(1).count()
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<ParameterRow>>(1).count()
         }
         val updateCounts = batchStatement.executeBatch()
         assertEquals(150, updateCounts.size)
-        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
+        verify(database).batchRows(any<String>(), any<Iterable<ParameterRow>>())
     }
 
     @Test
@@ -522,7 +523,7 @@ internal class JdbcPreparedStatementTest {
     @Test
     fun addBatchWithoutParameters() {
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 2
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 2
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -537,12 +538,12 @@ internal class JdbcPreparedStatementTest {
             executeBatch()
         }
         assertEquals(2, results.size)
-        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
+        verify(database).batchRows(any<String>(), any<Iterable<ParameterRow>>())
     }
 
     @Test
     fun clearBatch() {
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 0
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 0
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -559,13 +560,13 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun addBatchAfterClearBatchWritesFreshParameters() {
-        val capturedParams = mutableListOf<Array<out Any?>>()
+        val capturedInts = mutableListOf<Int>()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doAnswer { invocation ->
-            invocation.getArgument<Iterable<Array<out Any?>>>(1).forEach {
-                capturedParams.add(it.copyOf())
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doAnswer { invocation ->
+            invocation.getArgument<Iterable<ParameterRow>>(1).forEach {
+                capturedInts.add(it.ints[0])
             }
-            capturedParams.size
+            capturedInts.size
         }
         JdbcPreparedStatement(connection, database, "INSERT INTO t VALUES(?)").run {
             setInt(1, 111)
@@ -575,8 +576,8 @@ internal class JdbcPreparedStatementTest {
             addBatch()
             executeBatch()
         }
-        assertEquals(1, capturedParams.size)
-        assertEquals(222, capturedParams[0][0])
+        assertEquals(1, capturedInts.size)
+        assertEquals(222, capturedInts[0])
     }
 
     @Test
@@ -887,7 +888,7 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun executeBatchWithException() {
-        whenever(database.batch(any<String>(), any<Iterable<Array<out Any?>>>())) doThrow SQLException("Batch failed")
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doThrow SQLException("Batch failed")
         JdbcPreparedStatement(connection, database, "UPDATE test SET value=? WHERE id=?").run {
             setInt(1, 100)
             setInt(2, 1)
@@ -901,7 +902,7 @@ internal class JdbcPreparedStatementTest {
     @Test
     fun largeBatch() {
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
-        whenever(database.batch(any<String>(), any<Iterable<Array<Any?>>>())) doReturn 50
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 50
         val results = JdbcPreparedStatement(
             connection,
             database,
@@ -918,7 +919,7 @@ internal class JdbcPreparedStatementTest {
             executeBatch()
         }
         assertEquals(50, results.size)
-        verify(database).batch(any<String>(), any<Iterable<Array<Any?>>>())
+        verify(database).batchRows(any<String>(), any<Iterable<ParameterRow>>())
     }
 
     @Test

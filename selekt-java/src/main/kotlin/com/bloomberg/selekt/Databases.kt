@@ -117,6 +117,10 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
+    fun batchRows(sql: String, bindArgs: Iterable<ParameterRow>): Int = transact {
+        SQLStatement.executeRows(session, sql, bindArgs)
+    }
+
     fun batch(sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }

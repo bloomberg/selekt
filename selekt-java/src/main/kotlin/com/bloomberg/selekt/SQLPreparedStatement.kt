@@ -108,6 +108,10 @@ internal class SQLPreparedStatement(
         sqlite.bindRow(pointer, args)
     }
 
+    fun bindRow(row: ParameterRow) {
+        sqlite.bindRow(pointer, row)
+    }
+
     fun clearBindings() {
         sqlite.clearBindings(pointer)
     }
