@@ -11,7 +11,7 @@ Selekt requires **Java 25** or later.
     }
 
     dependencies {
-        implementation(platform("com.bloomberg.selekt:selekt-bom:<version>"))
+        implementation(platform("com.bloomberg.selekt:selekt-bom:{selektVersion}"))
         implementation("com.bloomberg.selekt:selekt-jdbc")
     }
     ```
@@ -23,7 +23,7 @@ Selekt requires **Java 25** or later.
     }
 
     dependencies {
-        implementation platform('com.bloomberg.selekt:selekt-bom:<version>')
+        implementation platform('com.bloomberg.selekt:selekt-bom:{selektVersion}')
         implementation 'com.bloomberg.selekt:selekt-jdbc'
     }
     ```
@@ -36,7 +36,7 @@ Selekt requires **Java 25** or later.
         <dependency>
             <groupId>com.bloomberg.selekt</groupId>
             <artifactId>selekt-bom</artifactId>
-            <version>${selekt.version}</version>
+            <version>{selektVersion}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
