@@ -132,7 +132,7 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
     if (loaded === 2) onAllLoaded();
   }
 
-  loadScript('jmh/data.js', function () {
+  loadScript('../benchmarks/jmh/data.js', function () {
     if (window.BENCHMARK_DATA) {
       var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
       if (group && group.length > 0) {
@@ -141,7 +141,7 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
       window._THROUGHPUT_DATA = window.BENCHMARK_DATA;
       delete window.BENCHMARK_DATA;
     }
-    loadScript('jmh-alloc/data.js', function () {
+    loadScript('../benchmarks/jmh-alloc/data.js', function () {
       if (window.BENCHMARK_DATA) {
         var group = window.BENCHMARK_DATA.entries['JDBC Allocations'];
         if (group && group.length > 0) {
@@ -154,5 +154,4 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
 })();
 </script>
 
-For full time-series history, see the throughput [benchmark dashboard](jmh/index.html) and [allocation dashboard](jmh-alloc/index.html).
-
+For full time-series history, see the throughput [benchmark dashboard](../benchmarks/jmh/index.html) and [allocation dashboard](../benchmarks/jmh-alloc/index.html).
