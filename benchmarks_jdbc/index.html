@@ -586,7 +586,9 @@
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
 <h3 id="batch-insert">Batch Insert</h3>
-<p>Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both allocation and throughput.</p>
+<p>Latest JMH batch-insert results across drivers, updated periodically from CI.</p>
+<p>!!! info "Reading the charts"
+    <strong>Lower is better</strong> for every chart on this page — both allocation (fewer bytes) and throughput (less time per operation). The <span style="color:#34A853">green</span> bar is the winner.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Allocation</label><label for="__tabbed_1_2">Throughput</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -648,25 +650,30 @@
       if (!selekt || !xerial) return;
 
       var unit = selekt.unit || defaultUnit || 'ms/op';
+      var sv = Number(selekt.value);
+      var xv = Number(xerial.value);
+      var selektColor = sv <= xv ? '#34A853' : '#EA4335';
+      var xerialColor = xv <= sv ? '#34A853' : '#EA4335';
+
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Driver');
       data.addColumn('number', unit);
       data.addColumn({ type: 'string', role: 'style' });
       data.addRows([
-        ['Selekt', Number(selekt.value), '#4285F4'],
-        ['Xerial', Number(xerial.value), '#EA4335']
+        ['Selekt', sv, selektColor],
+        ['Xerial', xv, xerialColor]
       ]);
 
       var div = document.createElement('div');
       div.style.width = '100%';
-      div.style.height = '200px';
+      div.style.height = '220px';
       div.style.marginBottom = '24px';
       container.appendChild(div);
 
       new google.visualization.BarChart(div).draw(data, {
-        title: base,
+        title: base + '  ↓ Lower is better',
         legend: 'none',
-        hAxis: { title: unit, minValue: 0 },
+        hAxis: { title: unit + '  (lower is better)', minValue: 0 },
         chartArea: { width: '70%' }
       });
     });
