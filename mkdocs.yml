@@ -35,6 +35,7 @@ nav:
   - 'Overview': index.md
   - 'Getting started':
     - 'Android': getting_started_android.md
+    - 'JDBC': getting_started_jdbc.md
   - 'Native libraries': native_libraries.md
   - 'Benchmarks':
     - 'Android': benchmarks_android.md
