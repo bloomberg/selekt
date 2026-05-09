@@ -2,10 +2,7 @@
 
 ### Batch Insert
 
-Latest JMH batch-insert results across drivers, updated periodically from CI.
-
-!!! info "Reading the charts"
-    **Lower is better** for every chart on this page — both allocation (fewer bytes) and throughput (less time per operation). The <span style="color:#34A853">green</span> bar is the winner.
+Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both metrics.
 
 === "Allocation"
 
