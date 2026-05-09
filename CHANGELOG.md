@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.33.0
+
+* Replace raw SQL upsert with parameterised ContentValues API.
+* Perform a full integrity check.
+* Allocate from slab arena if text is ASCII.
+* Bind as primitives to save boxing.
+
 ## Version 0.32.1
 
 * Add Xerial reused statement benchmarks.
