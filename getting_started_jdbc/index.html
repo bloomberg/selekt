@@ -1069,8 +1069,8 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">().</span><span class="na">apply</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">databasePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/path/to/database.db&quot;</span>
-<span class="w">    </span><span class="n">journalMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="w"> </span><span class="c1">// WAL is the default journal mode, but can be overridden if desired</span>
-<span class="w">    </span><span class="n">busyTimeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="n">_500</span><span class="w"> </span><span class="c1">// 2_500 milliseconds is the default busy timeout, but can be overridden if desired</span>
+<span class="w">    </span><span class="n">journalMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="w"> </span><span class="c1">// WAL is the default journal mode</span>
+<span class="w">    </span><span class="n">busyTimeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="n">_500</span><span class="w"> </span><span class="c1">// 2_500 milliseconds is the default busy timeout</span>
 <span class="w">    </span><span class="n">maxPoolSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="c1">// 1 connection for writing and 4 for reading</span>
 <span class="w">    </span><span class="n">foreignKeys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">}</span>
@@ -1083,8 +1083,8 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="w"> </span><span class="n">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">();</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setDatabasePath</span><span class="p">(</span><span class="s">&quot;/path/to/database.db&quot;</span><span class="p">);</span>
-<span class="n">dataSource</span><span class="p">.</span><span class="na">setJournalMode</span><span class="p">(</span><span class="s">&quot;WAL&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// WAL is the default journal mode, but can be overridden</span>
-<span class="n">dataSource</span><span class="p">.</span><span class="na">setBusyTimeout</span><span class="p">(</span><span class="mi">2500</span><span class="p">);</span><span class="w"> </span><span class="c1">// 2_500 milliseconds is the default busy timeout, but can be overridden</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setJournalMode</span><span class="p">(</span><span class="s">&quot;WAL&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// WAL is the default journal mode</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setBusyTimeout</span><span class="p">(</span><span class="mi">2500</span><span class="p">);</span><span class="w"> </span><span class="c1">// 2_500 milliseconds is the default busy timeout</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setMaxPoolSize</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span><span class="w"> </span><span class="c1">// 1 connection for writing and 4 for reading</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setForeignKeys</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
 
@@ -1165,16 +1165,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">hexKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&quot;</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span>
-<span class="w">    </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">hexKey</span><span class="p">.</span><span class="na">toCharArray</span><span class="p">())</span>
+<span class="w">    </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="na">toCharArray</span><span class="p">())</span>
 <span class="p">)</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">hexKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&quot;</span><span class="p">;</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span>
-<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">hexKey</span><span class="p">.</span><span class="na">toCharArray</span><span class="p">()));</span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">.</span><span class="na">toCharArray</span><span class="p">()));</span>
 </code></pre></div>
 </div>
 </div>
@@ -1199,7 +1199,9 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
-<span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="s">&quot;SELECT id, name FROM users WHERE id = ?&quot;</span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span>
+<span class="w">        </span><span class="s">&quot;SELECT id, name FROM users WHERE id = ?&quot;</span>
+<span class="w">    </span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">        </span><span class="n">statement</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">42</span><span class="p">)</span>
 <span class="w">        </span><span class="n">statement</span><span class="p">.</span><span class="na">executeQuery</span><span class="p">().</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">resultSet</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">resultSet</span><span class="p">.</span><span class="na">next</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -1230,7 +1232,9 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
-<span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="s">&quot;INSERT INTO users (id, name) VALUES (?, ?)&quot;</span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span>
+<span class="w">        </span><span class="s">&quot;INSERT INTO users (id, name) VALUES (?, ?)&quot;</span>
+<span class="w">    </span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">        </span><span class="n">statement</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
 <span class="w">        </span><span class="n">statement</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">)</span>
 <span class="w">        </span><span class="n">statement</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">()</span>
@@ -1257,7 +1261,9 @@
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">autoCommit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="s">&quot;INSERT INTO users (id, name) VALUES (?, ?)&quot;</span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span>
+<span class="w">        </span><span class="s">&quot;INSERT INTO users (id, name) VALUES (?, ?)&quot;</span>
+<span class="w">    </span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1.</span><span class="p">.</span><span class="m">1000</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">statement</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
 <span class="w">                </span><span class="n">statement</span><span class="p">.</span><span class="na">setString</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;User </span><span class="si">$</span><span class="n">i</span><span class="s">&quot;</span><span class="p">)</span>
@@ -1301,12 +1307,16 @@
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">    </span><span class="n">connection</span><span class="p">.</span><span class="na">autoCommit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="s">&quot;UPDATE accounts SET balance = balance - ? WHERE id = ?&quot;</span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span>
+<span class="w">            </span><span class="s">&quot;UPDATE accounts SET balance = balance - ? WHERE id = ?&quot;</span>
+<span class="w">        </span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">setDouble</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">100.0</span><span class="p">)</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">()</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span><span class="s">&quot;UPDATE accounts SET balance = balance + ? WHERE id = ?&quot;</span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="n">connection</span><span class="p">.</span><span class="na">prepareStatement</span><span class="p">(</span>
+<span class="w">            </span><span class="s">&quot;UPDATE accounts SET balance = balance + ? WHERE id = ?&quot;</span>
+<span class="w">        </span><span class="p">).</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">statement</span><span class="w"> </span><span class="o">-&gt;</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">setDouble</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">100.0</span><span class="p">)</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">setInt</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span>
 <span class="w">            </span><span class="n">statement</span><span class="p">.</span><span class="na">executeUpdate</span><span class="p">()</span>
