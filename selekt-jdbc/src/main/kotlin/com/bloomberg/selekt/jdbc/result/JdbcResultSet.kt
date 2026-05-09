@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.result
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
+import com.bloomberg.selekt.jdbc.lob.JdbcBlob
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
 import com.bloomberg.selekt.jdbc.util.TypeMapping
 import java.io.InputStream
@@ -662,9 +663,27 @@ internal class JdbcResultSet(
 
     override fun getArray(columnLabel: String): java.sql.Array = throw SQLFeatureNotSupportedException()
 
-    override fun getBlob(columnIndex: Int): Blob = throw SQLFeatureNotSupportedException()
+    override fun getBlob(columnIndex: Int): Blob? {
+        checkClosed()
+        val bytes = getBytes(columnIndex)
+        wasNull = bytes == null
+        return if (bytes != null) {
+            JdbcBlob(bytes)
+        } else {
+            null
+        }
+    }
 
-    override fun getBlob(columnLabel: String): Blob = throw SQLFeatureNotSupportedException()
+    override fun getBlob(columnLabel: String): Blob? {
+        checkClosed()
+        val bytes = getBytes(columnLabel)
+        wasNull = bytes == null
+        return if (bytes != null) {
+            JdbcBlob(bytes)
+        } else {
+            null
+        }
+    }
 
     override fun getClob(columnIndex: Int): Clob? {
         checkClosed()

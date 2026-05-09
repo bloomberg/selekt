@@ -22,6 +22,7 @@ import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
+import com.bloomberg.selekt.jdbc.lob.JdbcBlob
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import java.io.InputStream
@@ -332,9 +333,6 @@ internal class JdbcPreparedStatementTest {
     fun unsupportedMethods(): Unit = preparedStatement.run {
         assertFailsWith<SQLException> {
             setRef(1, mock<Ref>())
-        }
-        assertFailsWith<SQLException> {
-            setBlob(1, mock<Blob>())
         }
         assertFailsWith<SQLException> {
             setArray(1, mock<java.sql.Array>())
@@ -923,17 +921,65 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun unsupportedBlobMethods(): Unit = JdbcPreparedStatement(
+    fun setBlobWithNullValue(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        setBlob(1, null as java.sql.Blob?)
+        clearParameters()
+    }
+
+    @Test
+    fun setBlobWithBlobObject(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        val blob = JdbcBlob(byteArrayOf(0x01, 0x02, 0x03, 0x04))
+        setBlob(1, blob)
+        clearParameters()
+    }
+
+    @Test
+    fun setBlobWithInputStream(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        setBlob(1, "data".byteInputStream(), 4L)
+        clearParameters()
+    }
+
+    @Test
+    fun setBlobWithInputStreamNoLength(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        setBlob(1, "data".byteInputStream())
+        clearParameters()
+    }
+
+    @Test
+    fun setBlobWithInputStreamLengthOutOfRange(): Unit = JdbcPreparedStatement(
         connection,
         database,
         "SELECT * FROM test WHERE blob=?"
     ).run {
         assertFailsWith<SQLException> {
-            setBlob(1, "data".byteInputStream(), 4L)
+            setBlob(1, "data".byteInputStream(), 1_000_000_001L)
         }
-        assertFailsWith<SQLException> {
-            setBlob(1, "data".byteInputStream())
-        }
+    }
+
+    @Test
+    fun setBlobWithNullInputStream(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        setBlob(1, null as java.io.InputStream?, 0L)
+        clearParameters()
     }
 
     @Test
