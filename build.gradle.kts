@@ -70,6 +70,7 @@ dependencies {
     dokka(projects.selektJdbc)
     dokka(projects.selektJvm)
     dokka(projects.selektSqlite3Api)
+    dokka(projects.selektSqlite3Ext)
     kover(projects.selektAndroid)
     kover(projects.selektApi)
     kover(projects.selektCommons)
@@ -78,6 +79,7 @@ dependencies {
     kover(projects.selektJvm)
     kover(projects.selektSqlite3Api)
     kover(projects.selektSqlite3Classes)
+    kover(projects.selektSqlite3Ext)
 }
 
 subprojects {

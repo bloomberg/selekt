@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.util.concurrent.CountDownLatch
+import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -108,6 +109,118 @@ internal class ExternalSQLiteTest {
             try {
                 assertEquals(SQL_ROW, sqlite.step(statement))
                 assertEquals(42, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `vec1 extension is available`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT vec1_info()"
+            sqlite.prepareV2(db, sql, sql.length, statementHolder)
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertTrue(sqlite.columnText(statement, 0).startsWith("version "))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `vec1 computes l2 squared distance on real database`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT vec1_l2_distance(vec1_from_json('[1,2]'), vec1_from_json('[4,6]'))"
+            sqlite.prepareV2(db, sql, sql.length, statementHolder)
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                val distance = sqlite.columnDouble(statement, 0)
+                assertTrue(abs(distance - 25.0) < 1e-9, "Expected squared distance 25.0, got $distance")
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `vec1 vector json round trip works on real database`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = """
+                SELECT
+                    json_array_length(vec1_to_json(vec1_from_json('[1,2,3]'))),
+                    json_extract(vec1_to_json(vec1_from_json('[1,2,3]')), '$[1]')
+            """.trimIndent()
+            sqlite.prepareV2(db, sql, sql.length, statementHolder)
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(3, sqlite.columnInt(statement, 0))
+                val element = sqlite.columnDouble(statement, 1)
+                assertTrue(abs(element - 2.0) < 1e-9, "Expected element 2.0, got $element")
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `vec1 virtual table returns nearest neighbors in distance order`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.run {
+                assertEquals(SQL_OK, exec(db, "CREATE VIRTUAL TABLE vnn USING vec1(embedding)"))
+                assertEquals(SQL_OK, exec(db, "INSERT INTO vnn(embedding) VALUES(vec1_from_json('[0,0]'))"))
+                assertEquals(SQL_OK, exec(db, "INSERT INTO vnn(embedding) VALUES(vec1_from_json('[1,0]'))"))
+                assertEquals(SQL_OK, exec(db, "INSERT INTO vnn(embedding) VALUES(vec1_from_json('[2,0]'))"))
+                assertEquals(SQL_OK, exec(db, "INSERT INTO vnn(embedding) VALUES(vec1_from_json('[5,0]'))"))
+            }
+            val statementHolder = LongArray(1)
+            val sql = """
+                SELECT rowid, vec1_l2_distance(vec1_from_json('[0,0]'), embedding) AS d
+                FROM vnn
+                WHERE cmd = vec1_from_json('[0,0]') AND arg = 3
+                ORDER BY d
+            """.trimIndent()
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                sqlite.run {
+                    assertEquals(SQL_ROW, step(statement))
+                    assertEquals(1L, columnInt64(statement, 0))
+                    assertTrue(abs(columnDouble(statement, 1) - 0.0) < 1e-9)
+                    assertEquals(SQL_ROW, step(statement))
+                    assertEquals(2L, columnInt64(statement, 0))
+                    assertTrue(abs(columnDouble(statement, 1) - 1.0) < 1e-9)
+                    assertEquals(SQL_ROW, step(statement))
+                    assertEquals(3L, columnInt64(statement, 0))
+                    assertTrue(abs(columnDouble(statement, 1) - 4.0) < 1e-9)
+                }
             } finally {
                 sqlite.finalize(statement)
             }

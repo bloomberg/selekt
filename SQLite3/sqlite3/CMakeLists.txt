@@ -24,7 +24,17 @@ configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/generated/include/SelektConfig.h"
 )
 
-add_library(selekt SHARED generated/cpp/sqlite3.c)
+option(SELEKT_ENABLE_VEC1 "Build with embedded vec1 extension" ON)
+
+set(SELEKT_VEC1_SOURCE extensions/vec1/vec1.c)
+set(SELEKT_SOURCES generated/cpp/sqlite3.c)
+if(SELEKT_ENABLE_VEC1)
+  list(APPEND SELEKT_SOURCES ${SELEKT_VEC1_SOURCE})
+endif()
+
+add_library(selekt SHARED
+  ${SELEKT_SOURCES}
+)
 
 set_property(TARGET selekt PROPERTY C_STANDARD 99)
 set_property(TARGET selekt PROPERTY C_STANDARD_REQUIRED ON)
@@ -68,6 +78,21 @@ target_compile_definitions(selekt PUBLIC
   SQLITE_USE_URI=1
 )
 
+if(SELEKT_ENABLE_VEC1)
+  target_compile_definitions(selekt PUBLIC VEC1_STATIC)
+endif()
+
+option(SELEKT_VEC1_ENABLE_X86_AVX2 "Build vec1 with -mavx2 -mfma on x86_64" OFF)
+if(SELEKT_ENABLE_VEC1 AND SELEKT_VEC1_ENABLE_X86_AVX2 AND NOT MSVC AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+  set_source_files_properties(${SELEKT_VEC1_SOURCE} PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
+endif()
+
+if(SELEKT_ENABLE_VEC1
+   AND CMAKE_C_COMPILER_ID STREQUAL "GNU"
+   AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+  set_property(SOURCE ${SELEKT_VEC1_SOURCE} APPEND PROPERTY COMPILE_OPTIONS -flax-vector-conversions)
+endif()
+
 if(NOT WIN32)
   target_compile_definitions(selekt PUBLIC
     _GNU_SOURCE
@@ -78,7 +103,7 @@ if(NOT WIN32)
   )
 endif()
 
-target_include_directories(selekt SYSTEM PUBLIC include generated/include)
+target_include_directories(selekt SYSTEM PUBLIC include generated/include generated/include/sqlite3)
 
 find_library(log-lib log)
 if(log-lib)

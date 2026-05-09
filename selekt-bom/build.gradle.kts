@@ -36,6 +36,7 @@ dependencies {
                 selektJvm,
                 selektSqlite3Api,
                 selektSqlite3Classes,
+                selektSqlite3Ext,
                 selektSqlite3Sqlcipher
             )
         }.forEach(::api)
