@@ -2,7 +2,10 @@
 
 ### Batch Insert
 
-Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both allocation and throughput.
+Latest JMH batch-insert results across drivers, updated periodically from CI.
+
+!!! info "Reading the charts"
+    **Lower is better** for every chart on this page — both allocation (fewer bytes) and throughput (less time per operation). The <span style="color:#34A853">green</span> bar is the winner.
 
 === "Allocation"
 
@@ -63,25 +66,30 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
       if (!selekt || !xerial) return;
 
       var unit = selekt.unit || defaultUnit || 'ms/op';
+      var sv = Number(selekt.value);
+      var xv = Number(xerial.value);
+      var selektColor = sv <= xv ? '#34A853' : '#EA4335';
+      var xerialColor = xv <= sv ? '#34A853' : '#EA4335';
+
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Driver');
       data.addColumn('number', unit);
       data.addColumn({ type: 'string', role: 'style' });
       data.addRows([
-        ['Selekt', Number(selekt.value), '#4285F4'],
-        ['Xerial', Number(xerial.value), '#EA4335']
+        ['Selekt', sv, selektColor],
+        ['Xerial', xv, xerialColor]
       ]);
 
       var div = document.createElement('div');
       div.style.width = '100%';
-      div.style.height = '200px';
+      div.style.height = '220px';
       div.style.marginBottom = '24px';
       container.appendChild(div);
 
       new google.visualization.BarChart(div).draw(data, {
-        title: base,
+        title: base + '  ↓ Lower is better',
         legend: 'none',
-        hAxis: { title: unit, minValue: 0 },
+        hAxis: { title: unit + '  (lower is better)', minValue: 0 },
         chartArea: { width: '70%' }
       });
     });
