@@ -59,8 +59,8 @@ Selekt requires **Java 25** or later.
     ``` kotlin
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/database.db"
-        journalMode = "WAL" // WAL is the default journal mode, but can be overridden if desired
-        busyTimeout = 2_500 // 2_500 milliseconds is the default busy timeout, but can be overridden if desired
+        journalMode = "WAL" // WAL is the default journal mode
+        busyTimeout = 2_500 // 2_500 milliseconds is the default busy timeout
         maxPoolSize = 5 // 1 connection for writing and 4 for reading
         foreignKeys = true
     }
@@ -74,8 +74,8 @@ Selekt requires **Java 25** or later.
     ``` java
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/database.db");
-    dataSource.setJournalMode("WAL"); // WAL is the default journal mode, but can be overridden
-    dataSource.setBusyTimeout(2500); // 2_500 milliseconds is the default busy timeout, but can be overridden
+    dataSource.setJournalMode("WAL"); // WAL is the default journal mode
+    dataSource.setBusyTimeout(2500); // 2_500 milliseconds is the default busy timeout
     dataSource.setMaxPoolSize(5); // 1 connection for writing and 4 for reading
     dataSource.setForeignKeys(true);
 
@@ -153,17 +153,17 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
 
 === "Kotlin"
     ``` kotlin
-    val hexKey = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+    val key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
     dataSource.setEncryption(
-        EncryptionKeySource.Literal(hexKey.toCharArray())
+        EncryptionKeySource.Literal(key.toCharArray())
     )
     ```
 
 === "Java"
     ``` java
-    final String hexKey = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+    final String key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
     dataSource.setEncryption(
-        new EncryptionKeySource.Literal(hexKey.toCharArray()));
+        new EncryptionKeySource.Literal(key.toCharArray()));
     ```
 
 ### Disabling encryption
@@ -187,7 +187,9 @@ Unless a key is provided, the database will be created without encryption. To di
 === "Kotlin"
     ``` kotlin
     dataSource.connection.use { connection ->
-        connection.prepareStatement("SELECT id, name FROM users WHERE id = ?").use { statement ->
+        connection.prepareStatement(
+            "SELECT id, name FROM users WHERE id = ?"
+        ).use { statement ->
             statement.setInt(1, 42)
             statement.executeQuery().use { resultSet ->
                 while (resultSet.next()) {
@@ -217,7 +219,9 @@ Unless a key is provided, the database will be created without encryption. To di
 === "Kotlin"
     ``` kotlin
     dataSource.connection.use { connection ->
-        connection.prepareStatement("INSERT INTO users (id, name) VALUES (?, ?)").use { statement ->
+        connection.prepareStatement(
+            "INSERT INTO users (id, name) VALUES (?, ?)"
+        ).use { statement ->
             statement.setInt(1, 1)
             statement.setString(2, "Alice")
             statement.executeUpdate()
@@ -243,7 +247,9 @@ Unless a key is provided, the database will be created without encryption. To di
     dataSource.connection.use { connection ->
         connection.autoCommit = false
         try {
-            connection.prepareStatement("INSERT INTO users (id, name) VALUES (?, ?)").use { statement ->
+            connection.prepareStatement(
+            "INSERT INTO users (id, name) VALUES (?, ?)"
+        ).use { statement ->
                 for (i in 1..1000) {
                     statement.setInt(1, i)
                     statement.setString(2, "User $i")
@@ -286,12 +292,16 @@ Unless a key is provided, the database will be created without encryption. To di
     dataSource.connection.use { connection ->
         connection.autoCommit = false
         try {
-            connection.prepareStatement("UPDATE accounts SET balance = balance - ? WHERE id = ?").use { statement ->
+            connection.prepareStatement(
+                "UPDATE accounts SET balance = balance - ? WHERE id = ?"
+            ).use { statement ->
                 statement.setDouble(1, 100.0)
                 statement.setInt(2, 1)
                 statement.executeUpdate()
             }
-            connection.prepareStatement("UPDATE accounts SET balance = balance + ? WHERE id = ?").use { statement ->
+            connection.prepareStatement(
+                "UPDATE accounts SET balance = balance + ? WHERE id = ?"
+            ).use { statement ->
                 statement.setDouble(1, 100.0)
                 statement.setInt(2, 2)
                 statement.executeUpdate()
@@ -331,13 +341,13 @@ Unless a key is provided, the database will be created without encryption. To di
 
 ## Connection properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `journalMode` | String | `WAL` | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
-| `busyTimeout` | int | `2500` | SQLite busy timeout in milliseconds |
-| `poolSize` | int | `10` | Maximum connection pool size |
-| `foreignKeys` | boolean | `true` | Enable foreign key constraints |
-| `key` | String | `null` | Encryption key (hex string, via `DriverManager` only) |
+| Property        | Type    | Default  | Description                                                                   |
+|-----------------|---------|----------|-------------------------------------------------------------------------------|
+| `journalMode`   | String  | `WAL`    | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
+| `busyTimeout`   | int     | `2500`   | SQLite busy timeout in milliseconds                                           |
+| `poolSize`      | int     | `10`     | Maximum connection pool size                                                  |
+| `foreignKeys`   | boolean | `true`   | Enable foreign key constraints                                                |
+| `key`           | String  | `null`   | Encryption key (hex string, via `DriverManager` only)                         |
 
 ## Closing the DataSource
 
