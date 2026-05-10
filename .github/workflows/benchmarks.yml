@@ -60,7 +60,7 @@ jobs:
         run: |
           jq '[.[] | . as $orig |
             ($orig.secondaryMetrics | to_entries[] | select(.key | endswith("gc.alloc.rate.norm")) | .value) as $alloc |
-            ($orig | del(.secondaryMetrics) | .primaryMetric = $alloc | .secondaryMetrics = {})
+            ($orig | del(.secondaryMetrics) | .primaryMetric = ($alloc + {scoreUnit: "B/op"}) | .secondaryMetrics = {})
           ]' /tmp/combined-results.json > /tmp/combined-alloc-results.json
           echo "Allocation entries: $(jq length /tmp/combined-alloc-results.json)"
           jq '.[0] | {benchmark, mode, forks, scoreUnit: .primaryMetric.scoreUnit, score: .primaryMetric.score}' /tmp/combined-alloc-results.json
