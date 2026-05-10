@@ -162,7 +162,8 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
 
 === "Java"
     ``` java
-    final String key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+    final String key =
+        "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
     dataSource.setEncryption(
         new EncryptionKeySource.Literal(key.toCharArray()));
     ```
