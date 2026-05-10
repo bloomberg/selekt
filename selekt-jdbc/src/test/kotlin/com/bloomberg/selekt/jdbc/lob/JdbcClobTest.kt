@@ -19,7 +19,6 @@ package com.bloomberg.selekt.jdbc.lob
 import java.sql.SQLException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class JdbcClobTest {
@@ -148,8 +147,8 @@ internal class JdbcClobTest {
 
     @Test
     fun setStringExtend(): Unit = JdbcClob("Hello").run {
-        setString(7, "World")
-        assertEquals("Hello World", getSubString(1, 11))
+        setString(6, "World")
+        assertEquals("HelloWorld", getSubString(1, 10))
     }
 
     @Test
@@ -312,8 +311,8 @@ internal class JdbcClobTest {
 
     @Test
     fun asStringAfterModification(): Unit = JdbcClob("Hello").run {
-        setString(7, "World")
-        assertEquals("Hello World", asString())
+        setString(6, "World")
+        assertEquals("HelloWorld", asString())
     }
 
     @Test
@@ -378,13 +377,26 @@ internal class JdbcClobTest {
     }
 
     @Test
-    fun setStringWithGap(): Unit = JdbcClob("Hi").apply {
-        setString(5, "There")
-    }.asString().run {
-        assertEquals(9, length)
-        assertTrue(startsWith("Hi"))
-        assertTrue(endsWith("There"))
-        assertEquals(' ', this[2])
-        assertEquals(' ', this[3])
+    fun setStringWithGap() {
+        val clob = JdbcClob("Hi")
+        assertFailsWith<SQLException> {
+            clob.setString(5, "There")
+        }
+    }
+
+    @Test
+    fun setCharacterStreamWithGap() {
+        val clob = JdbcClob("Hi")
+        assertFailsWith<SQLException> {
+            clob.setCharacterStream(5)
+        }
+    }
+
+    @Test
+    fun setAsciiStreamWithGap() {
+        val clob = JdbcClob("Hi")
+        assertFailsWith<SQLException> {
+            clob.setAsciiStream(5)
+        }
     }
 }

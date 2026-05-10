@@ -23,6 +23,7 @@ import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.util.TypeMapping
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.Reader
 import java.math.BigDecimal
@@ -53,18 +54,18 @@ private const val MAX_STREAM_LENGTH = 1_000_000_000
 
 private const val READER_BUFFER_SIZE = 8_192
 
-private fun Long.checkedStreamLength(): Int {
-    if (this !in 0L..MAX_STREAM_LENGTH) {
-        throw SQLException("Stream length $this is out of range (0, $MAX_STREAM_LENGTH)")
+private fun validatedStreamLength(length: Long): Int {
+    if (length !in 0L..MAX_STREAM_LENGTH) {
+        throw SQLException("Stream length $length is out of range (0, $MAX_STREAM_LENGTH)")
     }
-    return toInt()
+    return length.toInt()
 }
 
-private fun Int.validatedStreamLength(): Int {
-    if (this < 0) {
-        throw SQLException("Stream length must be non-negative, was $this")
+private fun validatedStreamLength(length: Int): Int {
+    if (length < 0) {
+        throw SQLException("Stream length must be non-negative, was $length")
     }
-    return this
+    return length
 }
 
 private fun Reader.readBounded(
@@ -81,6 +82,23 @@ private fun Reader.readBounded(
         appendRange(buffer, 0, read)
         remaining -= read
     }
+}
+
+private fun InputStream.readBounded(
+    maxBytes: Int
+): ByteArray {
+    val buffer = ByteArray(READER_BUFFER_SIZE)
+    val output = ByteArrayOutputStream(minOf(maxBytes, READER_BUFFER_SIZE))
+    var remaining = maxBytes
+    while (remaining > 0) {
+        val count = read(buffer, 0, minOf(remaining, buffer.size))
+        if (count == -1) {
+            break
+        }
+        output.write(buffer, 0, count)
+        remaining -= count
+    }
+    return output.toByteArray()
 }
 
 /**
@@ -398,12 +416,12 @@ internal open class JdbcPreparedStatement(
         validateParameterIndex(parameterIndex)
         parameterRow.setObject(
             parameterIndex - 1,
-            x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.US_ASCII)
+            x?.readNBytes(validatedStreamLength(length))?.toString(Charsets.US_ASCII)
         )
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        setAsciiStream(parameterIndex, x, length.checkedStreamLength())
+        setAsciiStream(parameterIndex, x, validatedStreamLength(length))
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?) {
@@ -414,16 +432,16 @@ internal open class JdbcPreparedStatement(
     @Deprecated("Deprecated in Java", ReplaceWith("setCharacterStream(parameterIndex, x, length)"))
     override fun setUnicodeStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(length.validatedStreamLength())?.toString(Charsets.UTF_16))
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(validatedStreamLength(length))?.toString(Charsets.UTF_16))
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(length.validatedStreamLength()))
+        parameterRow.setObject(parameterIndex - 1, x?.readNBytes(validatedStreamLength(length)))
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        setBinaryStream(parameterIndex, x, length.checkedStreamLength())
+        setBinaryStream(parameterIndex, x, validatedStreamLength(length))
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?) {
@@ -433,11 +451,11 @@ internal open class JdbcPreparedStatement(
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Int) {
         validateParameterIndex(parameterIndex)
-        parameterRow.setObject(parameterIndex - 1, reader?.readBounded(length.validatedStreamLength()))
+        parameterRow.setObject(parameterIndex - 1, reader?.readBounded(validatedStreamLength(length)))
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Long) {
-        setCharacterStream(parameterIndex, reader, length.checkedStreamLength())
+        setCharacterStream(parameterIndex, reader, validatedStreamLength(length))
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?) {
@@ -452,17 +470,29 @@ internal open class JdbcPreparedStatement(
 
     override fun setBlob(parameterIndex: Int, x: Blob?) {
         validateParameterIndex(parameterIndex)
-        throw SQLFeatureNotSupportedException()
+        if (x == null) {
+            parameterRow.setNull(parameterIndex - 1)
+        } else {
+            x.binaryStream.use { setBlob(parameterIndex, it, x.length()) }
+        }
     }
 
     override fun setBlob(parameterIndex: Int, inputStream: InputStream?, length: Long) {
         validateParameterIndex(parameterIndex)
-        throw SQLFeatureNotSupportedException()
+        if (inputStream == null) {
+            parameterRow.setNull(parameterIndex - 1)
+        } else {
+            parameterRow.setObject(parameterIndex - 1, inputStream.readBounded(validatedStreamLength(length)))
+        }
     }
 
     override fun setBlob(parameterIndex: Int, inputStream: InputStream?) {
         validateParameterIndex(parameterIndex)
-        throw SQLFeatureNotSupportedException()
+        if (inputStream == null) {
+            parameterRow.setNull(parameterIndex - 1)
+        } else {
+            parameterRow.setObject(parameterIndex - 1, inputStream.readBounded(MAX_STREAM_LENGTH))
+        }
     }
 
     override fun setClob(parameterIndex: Int, x: Clob?) {
@@ -470,7 +500,7 @@ internal open class JdbcPreparedStatement(
         if (x == null) {
             parameterRow.setNull(parameterIndex - 1)
         } else {
-            val content = x.getSubString(1, x.length().toInt())
+            val content = x.getSubString(1, validatedStreamLength(x.length()))
             parameterRow.setObject(parameterIndex - 1, content)
         }
     }
@@ -480,16 +510,7 @@ internal open class JdbcPreparedStatement(
         if (reader == null) {
             parameterRow.setNull(parameterIndex - 1)
         } else {
-            val content = CharArray(length.toInt())
-            var totalRead = 0
-            while (totalRead < length) {
-                val count = reader.read(content, totalRead, (length - totalRead).toInt())
-                if (count == -1) {
-                    break
-                }
-                totalRead += count
-            }
-            parameterRow.setObject(parameterIndex - 1, String(content, 0, totalRead))
+            parameterRow.setObject(parameterIndex - 1, reader.readBounded(validatedStreamLength(length)))
         }
     }
 
@@ -498,7 +519,7 @@ internal open class JdbcPreparedStatement(
         if (reader == null) {
             parameterRow.setNull(parameterIndex - 1)
         } else {
-            parameterRow.setObject(parameterIndex - 1, reader.readText())
+            parameterRow.setObject(parameterIndex - 1, reader.readBounded(MAX_STREAM_LENGTH))
         }
     }
 

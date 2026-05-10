@@ -923,8 +923,6 @@ internal class JdbcResultSetTest {
         assertFailsWith<SQLException> { getURL("name") }
         assertFailsWith<SQLException> { getArray(1) }
         assertFailsWith<SQLException> { getArray("name") }
-        assertFailsWith<SQLException> { getBlob(1) }
-        assertFailsWith<SQLException> { getBlob("name") }
         assertFailsWith<SQLException> { getRef(1) }
         assertFailsWith<SQLException> { getRef("name") }
         assertFailsWith<SQLException> { getRowId(1) }
@@ -1174,13 +1172,38 @@ internal class JdbcResultSetTest {
     }
 
     @Test
-    fun getBlobThrows(): Unit = resultSet.run {
-        assertFailsWith<SQLException> {
-            getBlob(1)
+    fun getBlob() {
+        val blobData = "blob".toByteArray()
+        mockCursor.run {
+            whenever(isNull(1)) doReturn false
+            whenever(getBlob(1)) doReturn blobData
         }
-        assertFailsWith<SQLException> {
-            getBlob("name")
+        assertNotNull(resultSet.getBlob(2)).let {
+            assertEquals(blobData.size.toLong(), it.length())
+            assertEquals(blobData[0], it.getBytes(1, 1)?.get(0))
         }
+    }
+
+    @Test
+    fun getBlobByName() {
+        val blobData = "name".toByteArray()
+        mockCursor.run {
+            whenever(isNull(1)) doReturn false
+            whenever(getBlob(1)) doReturn blobData
+        }
+        assertNotNull(resultSet.getBlob("name")).let {
+            assertEquals(blobData.size.toLong(), it.length())
+            assertEquals(blobData[0], it.getBytes(1, 1)?.get(0))
+        }
+    }
+
+    @Test
+    fun getBlobNull(): Unit = resultSet.run {
+        whenever(mockCursor.isNull(1)) doReturn true
+        assertNull(getBlob(2))
+        assertTrue(wasNull())
+        assertNull(getBlob("name"))
+        assertTrue(wasNull())
     }
 
     @Test

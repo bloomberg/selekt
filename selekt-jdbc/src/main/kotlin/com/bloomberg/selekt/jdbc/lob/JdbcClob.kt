@@ -24,7 +24,7 @@ import java.io.StringReader
 import java.io.Writer
 import java.sql.Clob
 import java.sql.SQLException
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.NotThreadSafe
 
 /**
@@ -32,13 +32,19 @@ import javax.annotation.concurrent.NotThreadSafe
  */
 @Suppress("Detekt.StringLiteralDuplication")
 @NotThreadSafe
-internal class JdbcClob : Clob {
+internal class JdbcClob(initialContent: String = "") : Clob {
     private val content = StringBuilder()
-    private val freed = AtomicBoolean(false)
+    @Volatile
+    private var freed = 0
 
-    constructor()
+    private companion object {
+        val FREED_UPDATER: AtomicIntegerFieldUpdater<JdbcClob> = AtomicIntegerFieldUpdater.newUpdater(
+            JdbcClob::class.java,
+            "freed"
+        )
+    }
 
-    constructor(initialContent: String) {
+    init {
         content.append(initialContent)
     }
 
@@ -50,9 +56,9 @@ internal class JdbcClob : Clob {
     override fun getSubString(pos: Long, length: Int): String {
         checkNotFreed()
         if (pos < 1) {
-            throw SQLException("Position must be >= 1 (got $pos)")
+            throw SQLException("Position must be >= 1 (received $pos)")
         } else if (length < 0) {
-            throw SQLException("Length must be non-negative (got $length)")
+            throw SQLException("Length must be non-negative (received $length)")
         }
         val startIndex = (pos - 1).toInt()
         if (startIndex < 0 || startIndex > content.length) {
@@ -81,7 +87,7 @@ internal class JdbcClob : Clob {
     override fun position(searchstr: String, start: Long): Long {
         checkNotFreed()
         if (start < 1) {
-            throw SQLException("Start position must be >= 1 (got $start)")
+            throw SQLException("Start position must be >= 1 (received $start)")
         }
         val startIndex = (start - 1).toInt()
         if (startIndex >= content.length) {
@@ -108,18 +114,15 @@ internal class JdbcClob : Clob {
 
     override fun setString(pos: Long, str: String, offset: Int, len: Int): Int {
         checkNotFreed()
-        if (pos < 1) {
-            throw SQLException("Position must be >= 1 (got $pos)")
-        } else if (offset < 0 || offset > str.length) {
-            throw SQLException("Offset $offset is out of bounds for string of length ${str.length}")
-        } else if (len < 0 || offset + len > str.length) {
-            throw SQLException("Length $len with offset $offset exceeds string length ${str.length}")
+        when {
+            offset < 0 || offset > str.length -> throw SQLException(
+                "Offset $offset is out of bounds for string of length ${str.length}")
+            len < 0 || offset + len > str.length -> throw SQLException(
+                "Length $len with offset $offset exceeds string length ${str.length}")
         }
+        validateWritePosition(pos)
         val startIndex = (pos - 1).toInt()
         val substring = str.substring(offset, offset + len)
-        while (content.length < startIndex) {
-            content.append(' ')
-        }
         if (startIndex < content.length) {
             val endIndex = minOf(startIndex + len, content.length)
             content.replace(startIndex, endIndex, substring)
@@ -131,16 +134,11 @@ internal class JdbcClob : Clob {
 
     override fun setCharacterStream(pos: Long): Writer {
         checkNotFreed()
-        if (pos < 1) {
-            throw SQLException("Position must be >= 1 (got $pos)")
-        }
+        validateWritePosition(pos)
         val startIndex = (pos - 1).toInt()
         return object : Writer() {
             override fun write(cbuf: CharArray, off: Int, len: Int) {
                 checkNotFreed()
-                while (content.length < startIndex) {
-                    content.append(' ')
-                }
                 val str = String(cbuf, off, len)
                 if (content.length == startIndex) {
                     content.append(str)
@@ -158,18 +156,13 @@ internal class JdbcClob : Clob {
 
     override fun setAsciiStream(pos: Long): OutputStream {
         checkNotFreed()
-        if (pos < 1) {
-            throw SQLException("Position must be >= 1 (got $pos)")
-        }
+        validateWritePosition(pos)
         val startIndex = (pos - 1).toInt()
         return object : OutputStream() {
             private var currentPos = startIndex
 
             override fun write(b: Int) {
                 checkNotFreed()
-                while (content.length < currentPos) {
-                    content.append(' ')
-                }
                 val char = b.toChar()
                 if (currentPos < content.length) {
                     content.setCharAt(currentPos, char)
@@ -182,9 +175,6 @@ internal class JdbcClob : Clob {
             override fun write(b: ByteArray, off: Int, len: Int) {
                 checkNotFreed()
                 val str = String(b, off, len, Charsets.US_ASCII)
-                while (content.length < currentPos) {
-                    content.append(' ')
-                }
                 if (currentPos < content.length) {
                     val endIndex = minOf(currentPos + len, content.length)
                     content.replace(currentPos, endIndex, str)
@@ -203,7 +193,7 @@ internal class JdbcClob : Clob {
     override fun truncate(len: Long) {
         checkNotFreed()
         if (len < 0) {
-            throw SQLException("Length must be non-negative (got $len)")
+            throw SQLException("Length must be non-negative (received $len)")
         } else if (len >= content.length) {
             return
         }
@@ -211,17 +201,26 @@ internal class JdbcClob : Clob {
     }
 
     override fun free() {
-        if (freed.compareAndSet(false, true)) {
+        if (FREED_UPDATER.compareAndSet(this, 0, 1)) {
             content.clear()
             content.trimToSize()
         }
     }
 
     private fun checkNotFreed() {
-        if (freed.get()) {
+        if (freed != 0) {
             throw SQLException("Clob has been freed")
         }
     }
+
+    private fun validateWritePosition(pos: Long) {
+        if (pos < 1) {
+            throw SQLException("Position must be >= 1 (received $pos)")
+        } else if (pos > content.length + 1L) {
+            throw SQLException("Position $pos is out of bounds (length=${content.length})")
+        }
+    }
+
 
     internal fun asString(): String {
         checkNotFreed()
