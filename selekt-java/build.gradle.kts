@@ -81,12 +81,21 @@ dependencies {
 }
 
 jmh {
+    val jmhReportsDir = layout.buildDirectory.dir("reports/jmh").get().asFile.absolutePath
     resultFormat.set("JSON")
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())
     }
     if (hasProperty("jmh.profilers")) {
-        profilers.add(property("jmh.profilers").toString())
+        property("jmh.profilers").toString().split(',').forEach {
+            val profiler = it.trim()
+            val resolved = when {
+                profiler == "jfr" -> "jfr:dir=$jmhReportsDir"
+                profiler.startsWith("jfr:") && !profiler.contains("dir=") -> "$profiler,dir=$jmhReportsDir"
+                else -> profiler
+            }
+            profilers.add(resolved)
+        }
     }
     if (hasProperty("jmh.params")) {
         property("jmh.params").toString().split(";").forEach { entry ->
@@ -129,6 +138,9 @@ tasks.register<Test>("integrationTest") {
 tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
     shouldRunAfter("integrationTest")
+    doFirst {
+        layout.buildDirectory.dir("reports/jmh").get().asFile.mkdirs()
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {
