@@ -76,6 +76,7 @@ dependencies {
     kover(projects.selektJava)
     kover(projects.selektJdbc)
     kover(projects.selektJvm)
+    kover(projects.selektSqlite3Api)
     kover(projects.selektSqlite3Classes)
 }
 
@@ -215,7 +216,7 @@ koverReport {
     defaults {
         filters {
             excludes {
-                classes("*Test*", "com.bloomberg.selekt.jvm.*")
+                classes("*Test*", "*\$DefaultImpls", "com.bloomberg.selekt.jvm.*")
                 packages(listOf(
                     "*.benchmarks",
                     "*_generated"

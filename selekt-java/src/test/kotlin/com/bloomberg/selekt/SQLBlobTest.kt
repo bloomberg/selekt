@@ -34,86 +34,91 @@ internal class SQLBlobTest {
     @Test
     fun verifiesPointer() {
         assertFailsWith<IllegalStateException> {
-            SQLBlob(0L, mock(), false)
+            SQLBlob(BlobHandle(0L), mock(), false)
         }
     }
 
     @Test
     fun close() {
         val pointer = 42L
+        val blob = BlobHandle(pointer)
         mock<SQLite>().let {
-            SQLBlob(pointer, it, false).close()
-            verify(it, times(1)).blobClose(eq(pointer))
+            SQLBlob(blob, it, false).close()
+            verify(it, times(1)).blobClose(eq(blob))
         }
     }
 
     @Test
     fun read() {
         val pointer = 42L
+        val blobHandle = BlobHandle(pointer)
         val destination = ByteArray(0)
         val offset = 5
         val destinationOffset = 6
         val length = 60
         mock<SQLite>().let {
-            val blob = SQLBlob(pointer, it, false)
+            val blob = SQLBlob(blobHandle, it, false)
             blob.read(
                 offset,
                 destination,
                 destinationOffset,
                 length
             )
-            verify(it, times(1)).blobRead(eq(pointer), eq(offset), same(destination), eq(destinationOffset), eq(length))
+            verify(it, times(1)).blobRead(eq(blobHandle), eq(offset), same(destination), eq(destinationOffset), eq(length))
         }
     }
 
     @Test
     fun readOnlyTrue() {
-        assertTrue(SQLBlob(42L, mock(), true).readOnly)
+        assertTrue(SQLBlob(BlobHandle(42L), mock(), true).readOnly)
     }
 
     @Test
     fun readOnlyFalse() {
-        assertFalse(SQLBlob(42L, mock(), false).readOnly)
+        assertFalse(SQLBlob(BlobHandle(42L), mock(), false).readOnly)
     }
 
     @Test
     fun reopen() {
         val pointer = 42L
+        val blob = BlobHandle(pointer)
         val row = 2L
         mock<SQLite>().let {
-            SQLBlob(pointer, it, false).reopen(row)
-            verify(it, times(1)).blobReopen(eq(pointer), eq(row))
+            SQLBlob(blob, it, false).reopen(row)
+            verify(it, times(1)).blobReopen(eq(blob), eq(row))
         }
     }
 
     @Test
     fun size() {
         val pointer = 1L
+        val blob = BlobHandle(pointer)
         val expectedSize = 42
         mock<SQLite>().apply {
-            whenever(blobBytes(any())) doReturn expectedSize
+            whenever(blobBytes(any<BlobHandle>())) doReturn expectedSize
         }.let {
-            assertEquals(expectedSize, SQLBlob(pointer, it, false).size)
-            verify(it, times(1)).blobBytes(eq(pointer))
+            assertEquals(expectedSize, SQLBlob(blob, it, false).size)
+            verify(it, times(1)).blobBytes(eq(blob))
         }
     }
 
     @Test
     fun write() {
         val pointer = 42L
+        val blobHandle = BlobHandle(pointer)
         val source = ByteArray(0)
         val offset = 5
         val sourceOffset = 6
         val length = 60
         mock<SQLite>().let {
-            val blob = SQLBlob(pointer, it, false)
+            val blob = SQLBlob(blobHandle, it, false)
             blob.write(
                 offset,
                 source,
                 sourceOffset,
                 length
             )
-            verify(it, times(1)).blobWrite(eq(pointer), eq(offset), same(source), eq(sourceOffset), eq(length))
+            verify(it, times(1)).blobWrite(eq(blobHandle), eq(offset), same(source), eq(sourceOffset), eq(length))
         }
     }
 }

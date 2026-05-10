@@ -34,14 +34,14 @@ internal class SQLConnection(
     private val random: IRandom,
     key: Key?
 ) : CloseableSQLExecutor {
-    private val pointer = sqlite.open(path, flags)
+    private val databaseHandle = sqlite.open(path, flags)
     private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
         it.close()
     }
     private var commitListener: SQLTransactionListener? = null
 
     override val isAutoCommit: Boolean
-        get() = sqlite.getAutocommit(pointer) != 0
+        get() = sqlite.getAutocommit(databaseHandle) != 0
 
     override val isReadOnly = SQL_OPEN_READONLY and flags != 0
 
@@ -63,11 +63,11 @@ internal class SQLConnection(
 
     init {
         runCatching {
-            key?.use { sqlite.keyConventionally(pointer, it) }
-            sqlite.extendedResultCodes(pointer, 0)
-            configuration.trace?.let { sqlite.traceV2(pointer, it()) }
-            sqlite.busyTimeout(pointer, configuration.busyTimeoutMillis)
-            sqlite.exec(pointer, "PRAGMA secure_delete=${configuration.secureDelete.name}")
+            key?.use { sqlite.keyConventionally(databaseHandle, it) }
+            sqlite.extendedResultCodes(databaseHandle, 0)
+            configuration.trace?.let { sqlite.traceV2(databaseHandle, it()) }
+            sqlite.busyTimeout(databaseHandle, configuration.busyTimeoutMillis)
+            sqlite.exec(databaseHandle, "PRAGMA secure_delete=${configuration.secureDelete.name}")
         }.exceptionOrNull()?.let {
             close()
             throw it
@@ -75,19 +75,19 @@ internal class SQLConnection(
     }
 
     override fun checkpoint(name: String?, mode: SQLCheckpointMode) {
-        sqlite.walCheckpointV2(pointer, name, mode())
+        sqlite.walCheckpointV2(databaseHandle, name, mode())
     }
 
     override fun databaseConfig(op: Int, value: Int) {
-        sqlite.databaseConfig(pointer, op, value)
+        sqlite.databaseConfig(databaseHandle, op, value)
     }
 
     override fun close() {
         try {
             optimiseQuietly()
-            sqlite.progressHandler(pointer, 0, null)
-            sqlite.commitHook(pointer, false, null)
-            sqlite.closeV2(pointer)
+            sqlite.progressHandler(databaseHandle, 0, null)
+            sqlite.commitHook(databaseHandle, false, null)
+            sqlite.closeV2(databaseHandle)
         } finally {
             preparedStatements.evictAll()
         }
@@ -104,9 +104,9 @@ internal class SQLConnection(
         column: String,
         row: Long
     ) = longArrayOf(0L).also {
-        sqlite.blobOpen(pointer, name, table, column, row, if (isReadOnly) { 0 } else { 1 }, it)
+        sqlite.blobOpen(databaseHandle, name, table, column, row, if (isReadOnly) { 0 } else { 1 }, it)
     }.first().let {
-        SQLBlob(it, sqlite, isReadOnly)
+        SQLBlob(sqlite.newBlobHandle(it), sqlite, isReadOnly)
     }
 
     override fun executeForChangedRowCount(
@@ -114,7 +114,7 @@ internal class SQLConnection(
         bindArgs: Array<out Any?>
     ) = withPreparedStatement(sql, bindArgs) {
         if (SQL_DONE == step()) {
-            sqlite.changes(pointer)
+            sqlite.changes(databaseHandle)
         } else {
             -1
         }
@@ -125,7 +125,7 @@ internal class SQLConnection(
         bindArgs: Iterable<Array<out Any?>>
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
-            val changes = sqlite.totalChanges(pointer)
+            val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEach {
                 reset()
                 bindRow(it)
@@ -133,7 +133,7 @@ internal class SQLConnection(
                     return@withScopedArena -1
                 }
             }
-            sqlite.totalChanges(pointer) - changes
+            sqlite.totalChanges(databaseHandle) - changes
         }
     }
 
@@ -148,7 +148,7 @@ internal class SQLConnection(
         bindArgs: Iterable<ParameterRow>
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
-            val changes = sqlite.totalChanges(pointer)
+            val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEach {
                 reset()
                 bindRow(it)
@@ -156,7 +156,7 @@ internal class SQLConnection(
                     return@withScopedArena -1
                 }
             }
-            sqlite.totalChanges(pointer) - changes
+            sqlite.totalChanges(databaseHandle) - changes
         }
     }
 
@@ -166,7 +166,7 @@ internal class SQLConnection(
         bindArgs: List<Array<out Any?>>
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
-            val changes = sqlite.totalChanges(pointer)
+            val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEachByIndexUntil { _, args ->
                 reset()
                 bindRow(args)
@@ -174,7 +174,7 @@ internal class SQLConnection(
                     return@withScopedArena -1
                 }
             }
-            sqlite.totalChanges(pointer) - changes
+            sqlite.totalChanges(databaseHandle) - changes
         }
     }
 
@@ -186,7 +186,7 @@ internal class SQLConnection(
         toIndex: Int
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
-            val changes = sqlite.totalChanges(pointer)
+            val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEachByIndexUntil { _, args ->
                 reset()
                 bindRow(args)
@@ -194,7 +194,7 @@ internal class SQLConnection(
                     return@withScopedArena -1
                 }
             }
-            sqlite.totalChanges(pointer) - changes
+            sqlite.totalChanges(databaseHandle) - changes
         }
     }
 
@@ -243,8 +243,8 @@ internal class SQLConnection(
     }
 
     override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
-        if (SQL_DONE == step() && sqlite.changes(pointer) > 0) {
-            sqlite.lastInsertRowId(pointer)
+        if (SQL_DONE == step() && sqlite.changes(databaseHandle) > 0) {
+            sqlite.lastInsertRowId(databaseHandle)
         } else {
             -1L
         }
@@ -270,14 +270,14 @@ internal class SQLConnection(
     }
 
     override fun interrupt() {
-        sqlite.interrupt(pointer)
+        sqlite.interrupt(databaseHandle)
     }
 
     override val isInterrupted: Boolean
-        get() = sqlite.isInterrupted(pointer)
+        get() = sqlite.isInterrupted(databaseHandle)
 
     override fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
-        sqlite.progressHandler(pointer, instructionCount, handler)
+        sqlite.progressHandler(databaseHandle, instructionCount, handler)
     }
 
     override fun matches(key: String) = preparedStatements.containsKey(key)
@@ -288,12 +288,12 @@ internal class SQLConnection(
 
     override fun releaseMemory() {
         preparedStatements.evictAll()
-        sqlite.databaseReleaseMemory(pointer)
+        sqlite.databaseReleaseMemory(databaseHandle)
     }
 
     override fun setTransactionListener(listener: SQLTransactionListener?) {
         (listener != null).let { enabled ->
-            sqlite.commitHook(pointer, enabled, if (enabled) { nativeCommitListener } else { null })
+            sqlite.commitHook(databaseHandle, enabled, if (enabled) { nativeCommitListener } else { null })
         }
         commitListener = listener
     }
@@ -322,8 +322,8 @@ internal class SQLConnection(
 
     private fun acquirePreparedStatement(sql: String) = preparedStatements[
         sql, {
-            val pointer = sqlite.prepare(pointer, sql)
-            SQLPreparedStatement(pointer, sql, sqlite, random)
+            val statement = sqlite.prepare(databaseHandle, sql)
+            SQLPreparedStatement(statement, sql, sqlite, random)
         }
     ]
 
@@ -351,8 +351,8 @@ internal class SQLConnection(
             // optimize pragma runs so that it does not consume too many CPU cycles. The constant "400" can be adjusted as
             // needed. Values between 100 and 1000 work well for most applications.
             // See: https://www.sqlite.org/lang_analyze.html
-            sqlite.exec(pointer, "PRAGMA analysis_limit=100")
-            sqlite.exec(pointer, "PRAGMA optimize")
+            sqlite.exec(databaseHandle, "PRAGMA analysis_limit=100")
+            sqlite.exec(databaseHandle, "PRAGMA optimize")
         }
     }
 }
@@ -361,13 +361,13 @@ private fun SQLite.open(path: String, flags: Int) = LongArray(1).apply {
     openV2(path, flags, this)
 }.first().also {
     check(it != NULL)
-}
+}.let(::newDatabaseHandle)
 
-private fun SQLite.prepare(db: Long, sql: String) = LongArray(1).apply {
+private fun SQLite.prepare(db: DatabaseHandle, sql: String) = LongArray(1).apply {
     prepareV2(db, sql, this)
 }.first().also {
     check(it != NULL)
-}
+}.let(::newStatementHandle)
 
 private fun SQLPreparedStatement.bindArguments(args: Array<out Any?>) {
     require(parameterCount == args.size) {

@@ -1335,4 +1335,554 @@ internal class ExternalSQLiteTest {
             sqlite.closeV2(db)
         }
     }
+
+    @Test
+    fun `newDatabaseHandle returns handle with correct pointer`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val handle = sqlite.newDatabaseHandle(db)
+            assertEquals(db, handle.pointer)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `newStatementHandle returns handle with correct pointer`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val ptr = statementHolder[0]
+            try {
+                val handle = sqlite.newStatementHandle(ptr)
+                assertEquals(ptr, handle.pointer)
+            } finally {
+                sqlite.finalize(ptr)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `newBlobHandle returns handle with correct pointer`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(4))")
+            val blobHolder = LongArray(1)
+            sqlite.blobOpen(db, "main", "t", "data", 1, 1, blobHolder)
+            val ptr = blobHolder[0]
+            try {
+                val handle = sqlite.newBlobHandle(ptr)
+                assertEquals(ptr, handle.pointer)
+            } finally {
+                sqlite.blobClose(ptr)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `prepareV2 with DatabaseHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val dbHandle = sqlite.newDatabaseHandle(db)
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 1"
+            assertEquals(SQL_OK, sqlite.prepareV2(dbHandle, sql, sql.length, statementHolder))
+            assertTrue(statementHolder[0] > 0L)
+            sqlite.finalize(statementHolder[0])
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `step and finalize with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val dbHandle = sqlite.newDatabaseHandle(db)
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 42"
+            sqlite.prepareV2(dbHandle, sql, sql.length, statementHolder)
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(42, sqlite.columnInt(stmtHandle, 0))
+            } finally {
+                assertEquals(SQL_OK, sqlite.finalize(stmtHandle))
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindText with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindText(stmtHandle, 1, "hello"))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals("hello", sqlite.columnText(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindInt with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindInt(stmtHandle, 1, 99))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(99, sqlite.columnInt(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindInt64 with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindInt64(stmtHandle, 1, Long.MAX_VALUE))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(Long.MAX_VALUE, sqlite.columnInt64(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindDouble with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindDouble(stmtHandle, 1, 2.718))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(2.718, sqlite.columnDouble(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindNull with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindNull(stmtHandle, 1))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(SQL_NULL, sqlite.columnType(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindBlob with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                val data = byteArrayOf(1, 2, 3)
+                assertEquals(SQL_OK, sqlite.bindBlob(stmtHandle, 1, data, data.size))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(SQL_BLOB, sqlite.columnType(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindZeroBlob with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.bindZeroBlob(stmtHandle, 1, 8))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(SQL_BLOB, sqlite.columnType(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindParameterCount with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?, ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(2, sqlite.bindParameterCount(stmtHandle))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindParameterIndex with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT :val".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(1, sqlite.bindParameterIndex(stmtHandle, ":val"))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `clearBindings with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                sqlite.bindInt(stmtHandle, 1, 7)
+                assertEquals(SQL_OK, sqlite.clearBindings(stmtHandle))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(SQL_NULL, sqlite.columnType(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `reset with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                sqlite.step(stmtHandle)
+                assertEquals(SQL_OK, sqlite.reset(stmtHandle))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `resetAndClearBindings with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                sqlite.bindInt(stmtHandle, 1, 5)
+                sqlite.step(stmtHandle)
+                assertEquals(SQL_OK, sqlite.resetAndClearBindings(stmtHandle))
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(SQL_NULL, sqlite.columnType(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `columnCount with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1 AS a, 2 AS b, 3 AS c".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(3, sqlite.columnCount(stmtHandle))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `columnName with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1 AS myCol".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals("myCol", sqlite.columnName(stmtHandle, 0))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `columnBlob with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                val data = byteArrayOf(7, 8, 9)
+                sqlite.bindBlob(stmtHandle, 1, data, data.size)
+                assertEquals(SQL_ROW, sqlite.step(stmtHandle))
+                assertEquals(data.toList(), sqlite.columnBlob(stmtHandle, 0)!!.toList())
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `statementBusy and statementReadOnly with StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(0, sqlite.statementBusy(stmtHandle))
+                assertTrue(sqlite.statementReadOnly(stmtHandle) != 0)
+                sqlite.step(stmtHandle)
+                assertTrue(sqlite.statementBusy(stmtHandle) != 0)
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `databaseHandle from StatementHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT 1".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
+            try {
+                assertEquals(db, sqlite.databaseHandle(stmtHandle))
+            } finally {
+                sqlite.finalize(stmtHandle)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobOpen with DatabaseHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val dbHandle = sqlite.newDatabaseHandle(db)
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(8))")
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(dbHandle, "main", "t", "data", 1, 1, blobHolder))
+            assertTrue(blobHolder[0] > 0L)
+            sqlite.blobClose(blobHolder[0])
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobBytes with BlobHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(12))")
+            val blobHolder = LongArray(1)
+            sqlite.blobOpen(db, "main", "t", "data", 1, 0, blobHolder)
+            val blobHandle = sqlite.newBlobHandle(blobHolder[0])
+            try {
+                assertEquals(12, sqlite.blobBytes(blobHandle))
+            } finally {
+                sqlite.blobClose(blobHandle.pointer)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobWrite and blobRead with BlobHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(5))")
+            val blobHolder = LongArray(1)
+            sqlite.blobOpen(db, "main", "t", "data", 1, 1, blobHolder)
+            val blobHandle = sqlite.newBlobHandle(blobHolder[0])
+            try {
+                val src = byteArrayOf(10, 20, 30, 40, 50)
+                assertEquals(SQL_OK, sqlite.blobWrite(blobHandle, 0, src, 0, src.size))
+                val dst = ByteArray(5)
+                assertEquals(SQL_OK, sqlite.blobRead(blobHandle, 0, dst, 0, dst.size))
+                assertEquals(src.toList(), dst.toList())
+            } finally {
+                sqlite.blobClose(blobHandle.pointer)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobReopen with BlobHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(4))")
+            sqlite.exec(db, "INSERT INTO t VALUES (2, zeroblob(4))")
+            val blobHolder = LongArray(1)
+            sqlite.blobOpen(db, "main", "t", "data", 1, 1, blobHolder)
+            val blobHandle = sqlite.newBlobHandle(blobHolder[0])
+            try {
+                assertEquals(SQL_OK, sqlite.blobReopen(blobHandle, 2))
+            } finally {
+                sqlite.blobClose(blobHandle.pointer)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `blobClose with BlobHandle`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1, zeroblob(4))")
+            val blobHolder = LongArray(1)
+            sqlite.blobOpen(db, "main", "t", "data", 1, 0, blobHolder)
+            val blobHandle = sqlite.newBlobHandle(blobHolder[0])
+            assertEquals(SQL_OK, sqlite.blobClose(blobHandle))
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
 }

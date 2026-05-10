@@ -89,6 +89,182 @@ internal class ExternalSQLite(
         SlabArena().use { block(it) }
     }
 
+    private fun databaseSegment(db: DatabaseHandle): MemorySegment =
+        (db.attachment as? MemorySegment) ?: MemorySegment.ofAddress(db.pointer)
+
+    private fun statementSegment(statement: StatementHandle): MemorySegment = (statement.attachment as? MemorySegment)
+        ?: MemorySegment.ofAddress(statement.pointer)
+
+    private fun blobSegment(blob: BlobHandle): MemorySegment =
+        (blob.attachment as? MemorySegment) ?: MemorySegment.ofAddress(blob.pointer)
+
+    override fun newDatabaseHandle(pointer: Long): DatabaseHandle =
+        DatabaseHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+
+    override fun newStatementHandle(pointer: Long): StatementHandle =
+        StatementHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+
+    override fun newBlobHandle(pointer: Long): BlobHandle =
+        BlobHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+
+    override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode =
+        sqlite3_bind_blob.invoke(statementSegment(statement), index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
+
+    override fun bindDouble(statement: StatementHandle, index: Int, value: Double): SQLCode =
+        sqlite3_bind_double.invoke(statementSegment(statement), index, value) as Int
+
+    override fun bindInt(statement: StatementHandle, index: Int, value: Int): SQLCode =
+        sqlite3_bind_int.invoke(statementSegment(statement), index, value) as Int
+
+    override fun bindInt64(statement: StatementHandle, index: Int, value: Long): SQLCode =
+        sqlite3_bind_int64.invoke(statementSegment(statement), index, value) as Int
+
+    override fun bindNull(statement: StatementHandle, index: Int): SQLCode =
+        sqlite3_bind_null.invoke(statementSegment(statement), index) as Int
+
+    override fun bindParameterCount(statement: StatementHandle): Int =
+        sqlite3_bind_parameter_count.invoke(statementSegment(statement)) as Int
+
+    override fun bindParameterIndex(statement: StatementHandle, name: String): Int = withSlab { slab ->
+        sqlite3_bind_parameter_index.invoke(statementSegment(statement), slab.allocateFrom(name)) as Int
+    }
+
+    override fun bindText(statement: StatementHandle, index: Int, value: String): SQLCode = withSlab { slab ->
+        val textSegment = slab.allocateFrom(value)
+        sqlite3_bind_text.invoke(
+            statementSegment(statement),
+            index,
+            textSegment,
+            (textSegment.byteSize() - 1).toInt(),
+            sqliteTransient
+        ) as Int
+    }
+
+    override fun bindZeroBlob(
+        statement: StatementHandle,
+        index: Int,
+        length: Int
+    ): SQLCode = sqlite3_bind_zeroblob.invoke(statementSegment(statement), index, length) as Int
+
+    override fun clearBindings(statement: StatementHandle): SQLCode =
+        sqlite3_clear_bindings.invoke(statementSegment(statement)) as Int
+
+    override fun finalize(statement: StatementHandle): SQLCode =
+        sqlite3_finalize.invoke(statementSegment(statement)) as Int
+
+    override fun columnBlob(statement: StatementHandle, index: Int): ByteArray? {
+        val blob = sqlite3_column_blob.invoke(statementSegment(statement), index) as MemorySegment
+        if (blob.address() == 0L) {
+            return null
+        }
+        val size = sqlite3_column_bytes.invoke(statementSegment(statement), index) as Int
+        if (size == 0) {
+            return EMPTY_BYTE_ARRAY
+        }
+        return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+    }
+
+    override fun columnCount(statement: StatementHandle): Int =
+        sqlite3_column_count.invoke(statementSegment(statement)) as Int
+
+    override fun columnDouble(statement: StatementHandle, index: Int): Double =
+        sqlite3_column_double.invoke(statementSegment(statement), index) as Double
+
+    override fun columnInt(statement: StatementHandle, index: Int): Int =
+        sqlite3_column_int.invoke(statementSegment(statement), index) as Int
+
+    override fun columnInt64(statement: StatementHandle, index: Int): Long =
+        sqlite3_column_int64.invoke(statementSegment(statement), index) as Long
+
+    override fun columnName(statement: StatementHandle, index: Int): String =
+        (sqlite3_column_name.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
+
+    override fun columnText(statement: StatementHandle, index: Int): String =
+        (sqlite3_column_text.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
+
+    override fun columnType(statement: StatementHandle, index: Int): SQLDataType =
+        sqlite3_column_type.invoke(statementSegment(statement), index) as Int
+
+    override fun statementBusy(statement: StatementHandle): Int =
+        sqlite3_stmt_busy.invoke(statementSegment(statement)) as Int
+
+    override fun statementReadOnly(statement: StatementHandle): Int =
+        sqlite3_stmt_readonly.invoke(statementSegment(statement)) as Int
+
+    override fun reset(statement: StatementHandle): SQLCode =
+        sqlite3_reset.invoke(statementSegment(statement)) as Int
+
+    override fun resetAndClearBindings(statement: StatementHandle): SQLCode =
+        sqlite3_reset_and_clear_bindings.invoke(statementSegment(statement)) as Int
+
+    override fun step(statement: StatementHandle): SQLCode =
+        sqlite3_step.invoke(statementSegment(statement)) as Int
+
+    override fun databaseHandle(statement: StatementHandle): Long =
+        (sqlite3_db_handle.invoke(statementSegment(statement)) as MemorySegment).address()
+
+    override fun blobBytes(blob: BlobHandle): Int = sqlite3_blob_bytes.invoke(blobSegment(blob)) as Int
+
+    override fun blobClose(blob: BlobHandle): SQLCode = sqlite3_blob_close.invoke(blobSegment(blob)) as Int
+
+    override fun blobRead(
+        blob: BlobHandle,
+        offset: Int,
+        destination: ByteArray,
+        destinationOffset: Int,
+        length: Int
+    ): SQLCode = withSlab { slab ->
+        val buffer = slab.allocate(length.toLong())
+        val result = sqlite3_blob_read.invoke(blobSegment(blob), buffer, length, offset) as Int
+        if (result == 0) {
+            MemorySegment.copy(buffer, JAVA_BYTE, 0, destination, destinationOffset, length)
+        }
+        result
+    }
+
+    override fun blobReopen(blob: BlobHandle, row: Long): SQLCode =
+        sqlite3_blob_reopen.invoke(blobSegment(blob), row) as Int
+
+    override fun blobWrite(
+        blob: BlobHandle,
+        offset: Int,
+        source: ByteArray,
+        sourceOffset: Int,
+        length: Int
+    ): SQLCode = withSlab { slab ->
+        val buffer = slab.allocate(length.toLong())
+        MemorySegment.copy(source, sourceOffset, buffer, JAVA_BYTE, 0, length)
+        sqlite3_blob_write.invoke(blobSegment(blob), buffer, length, offset) as Int
+    }
+
+    override fun blobOpen(
+        db: DatabaseHandle,
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        flags: Int,
+        holder: LongArray
+    ): SQLCode = withSlab { slab ->
+        val nameSegment = slab.allocateFrom(name)
+        val tableSegment = slab.allocateFrom(table)
+        val columnSegment = slab.allocateFrom(column)
+        val blobPointer = slab.allocate(ADDRESS)
+        val result = sqlite3_blob_open.invoke(
+            databaseSegment(db),
+            nameSegment,
+            tableSegment,
+            columnSegment,
+            row,
+            flags,
+            blobPointer
+        ) as Int
+        if (result == 0) {
+            holder[0] = blobPointer.get(ADDRESS, 0).address()
+        }
+        result
+    }
+
     override fun bindBlob(
         statement: Long,
         index: Int,
@@ -197,8 +373,7 @@ internal class ExternalSQLite(
                 2.toByte() -> sqlite3_bind_int64.invoke(segment, position, longs[i]) as Int
                 3.toByte() -> sqlite3_bind_double.invoke(segment, position, doubles[i]) as Int
                 4.toByte() -> {
-                    val obj = objects[i]
-                    when (obj) {
+                    when (val obj = objects[i]) {
                         is String -> withSlab { slab ->
                             val textSegment = slab.allocateFrom(obj)
                             sqlite3_bind_text.invoke(
@@ -608,6 +783,26 @@ internal class ExternalSQLite(
         val statement = slab.allocate(ADDRESS)
         val result = sqlite3_prepare_v2.invoke(
             MemorySegment.ofAddress(db),
+            slab.allocateFrom(sql),
+            length,
+            statement,
+            MemorySegment.NULL
+        ) as Int
+        if (result == 0) {
+            statementHolder[0] = statement.get(ADDRESS, 0).address()
+        }
+        result
+    }
+
+    override fun prepareV2(
+        db: DatabaseHandle,
+        sql: String,
+        length: Int,
+        statementHolder: LongArray
+    ): SQLCode = withSlab { slab ->
+        val statement = slab.allocate(ADDRESS)
+        val result = sqlite3_prepare_v2.invoke(
+            databaseSegment(db),
             slab.allocateFrom(sql),
             length,
             statement,

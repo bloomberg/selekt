@@ -35,39 +35,40 @@ import kotlin.test.assertTrue
 private const val POINTER = 42L
 private const val DB = 43L
 private const val INTERVAL_MILLIS = 2_000L
+private val STATEMENT = StatementHandle(POINTER)
 
 internal class SQLPreparedStatementTest {
     @Test
     fun clearBindings(): Unit = mock<SQLite>().run {
-        SQLPreparedStatement(POINTER, "SELECT * FROM Foo", this, CommonThreadLocalRandom).clearBindings()
-        verify(this, times(1)).clearBindings(eq(POINTER))
+        SQLPreparedStatement(STATEMENT, "SELECT * FROM Foo", this, CommonThreadLocalRandom).clearBindings()
+        verify(this, times(1)).clearBindings(eq(STATEMENT))
     }
 
     @Test
     fun stepWithRetryDone() {
         val sqlite = mock<SQLite> {
-            whenever(it.stepWithoutThrowing(any())) doReturn SQL_DONE
+            whenever(it.stepWithoutThrowing(any<StatementHandle>())) doReturn SQL_DONE
         }
-        val statement = SQLPreparedStatement(POINTER, "BEGIN IMMEDIATE TRANSACTION", sqlite, CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "BEGIN IMMEDIATE TRANSACTION", sqlite, CommonThreadLocalRandom)
         assertEquals(SQL_DONE, statement.step(INTERVAL_MILLIS))
     }
 
     @Test
     fun stepWithRetryRow() {
         val sqlite = mock<SQLite> {
-            whenever(it.stepWithoutThrowing(any())) doReturn SQL_ROW
+            whenever(it.stepWithoutThrowing(any<StatementHandle>())) doReturn SQL_ROW
         }
-        val statement = SQLPreparedStatement(POINTER, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom)
         assertEquals(SQL_ROW, statement.step(INTERVAL_MILLIS))
     }
 
     @Test
     fun stepWithRetryExpires() {
         val sqlite = mock<SQLite> {
-            whenever(it.databaseHandle(any())) doReturn DB
-            whenever(it.step(any())) doReturn SQL_BUSY
+            whenever(it.databaseHandle(any<StatementHandle>())) doReturn DB
+            whenever(it.step(any<StatementHandle>())) doReturn SQL_BUSY
         }
-        val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
         assertFailsWith<Exception> {
             statement.step(0L)
         }
@@ -76,7 +77,7 @@ internal class SQLPreparedStatementTest {
     @Test
     fun stepWithRetryCanUltimatelySucceed() {
         val sqlite = mock<SQLite> {
-            whenever(it.stepWithoutThrowing(any())) doAnswer object : Answer<SQLCode> {
+            whenever(it.stepWithoutThrowing(any<StatementHandle>())) doAnswer object : Answer<SQLCode> {
                 private var count = 0
 
                 override fun answer(invocation: InvocationOnMock) = when (count++) {
@@ -85,17 +86,17 @@ internal class SQLPreparedStatementTest {
                 }
             }
         }
-        val statement = SQLPreparedStatement(POINTER, "BEGIN IMMEDIATE TRANSACTION", sqlite, CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "BEGIN IMMEDIATE TRANSACTION", sqlite, CommonThreadLocalRandom)
         assertEquals(SQL_DONE, statement.step(500L))
     }
 
     @Test
     fun stepRetryDoesNotStackOverflow() {
         val sqlite = mock<SQLite> {
-            whenever(it.databaseHandle(any())) doReturn DB
-            whenever(it.stepWithoutThrowing(any())) doReturn SQL_BUSY
+            whenever(it.databaseHandle(any<StatementHandle>())) doReturn DB
+            whenever(it.stepWithoutThrowing(any<StatementHandle>())) doReturn SQL_BUSY
         }
-        val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "BEGIN BLAH", sqlite, CommonThreadLocalRandom)
         assertFailsWith<Exception> {
             statement.step(2_000L)
         }
@@ -103,7 +104,7 @@ internal class SQLPreparedStatementTest {
 
     @Test
     fun stepRejectsNegativeInterval() {
-        val statement = SQLPreparedStatement(POINTER, "BEGIN BLAH", mock(), CommonThreadLocalRandom)
+        val statement = SQLPreparedStatement(STATEMENT, "BEGIN BLAH", mock(), CommonThreadLocalRandom)
         assertFailsWith<IllegalArgumentException> {
             statement.step(-1L)
         }
@@ -112,105 +113,105 @@ internal class SQLPreparedStatementTest {
     @Test
     fun isBusyTrue() {
         val sqlite = mock<SQLite> {
-            whenever(it.databaseHandle(any())) doReturn DB
-            whenever(it.statementBusy(any())) doReturn 1
+            whenever(it.databaseHandle(any<StatementHandle>())) doReturn DB
+            whenever(it.statementBusy(any<StatementHandle>())) doReturn 1
         }
-        assertTrue(SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
+        assertTrue(SQLPreparedStatement(STATEMENT, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
     }
 
     @Test
     fun isBusyFalse() {
         val sqlite = mock<SQLite> {
-            whenever(it.databaseHandle(any())) doReturn DB
-            whenever(it.statementBusy(any())) doReturn 0
+            whenever(it.databaseHandle(any<StatementHandle>())) doReturn DB
+            whenever(it.statementBusy(any<StatementHandle>())) doReturn 0
         }
-        assertFalse(SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
+        assertFalse(SQLPreparedStatement(STATEMENT, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).isBusy())
     }
 
     @Test
     fun columnName() {
         val sqlite = mock<SQLite> {
-            whenever(it.databaseHandle(any())) doReturn DB
-            whenever(it.columnName(any(), any())) doReturn "foo"
+            whenever(it.databaseHandle(any<StatementHandle>())) doReturn DB
+            whenever(it.columnName(any<StatementHandle>(), any())) doReturn "foo"
         }
-        assertEquals("foo", SQLPreparedStatement(POINTER, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).columnName(0))
-        verify(sqlite, times(1)).columnName(eq(POINTER), eq(0))
+        assertEquals("foo", SQLPreparedStatement(STATEMENT, "BEGIN BLAH", sqlite, CommonThreadLocalRandom).columnName(0))
+        verify(sqlite, times(1)).columnName(eq(STATEMENT), eq(0))
     }
 
     @Test
     fun bindBlobByName() {
         val blob = byteArrayOf(1, 2, 3)
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq(":data"))) doReturn 1
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq(":data"))) doReturn 1
         }
-        SQLPreparedStatement(POINTER, "INSERT INTO t VALUES (:data)", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (:data)", sqlite, CommonThreadLocalRandom)
             .bind(":data", blob)
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq(":data"))
-        verify(sqlite, times(1)).bindBlob(eq(POINTER), eq(1), eq(blob))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":data"))
+        verify(sqlite, times(1)).bindBlob(eq(STATEMENT), eq(1), eq(blob))
     }
 
     @Test
     fun bindDoubleByName() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq(":value"))) doReturn 1
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq(":value"))) doReturn 1
         }
-        SQLPreparedStatement(POINTER, "INSERT INTO t VALUES (:value)", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (:value)", sqlite, CommonThreadLocalRandom)
             .bind(":value", 3.14)
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq(":value"))
-        verify(sqlite, times(1)).bindDouble(eq(POINTER), eq(1), eq(3.14))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":value"))
+        verify(sqlite, times(1)).bindDouble(eq(STATEMENT), eq(1), eq(3.14))
     }
 
     @Test
     fun bindIntByName() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq("@count"))) doReturn 2
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq("@count"))) doReturn 2
         }
-        SQLPreparedStatement(POINTER, "INSERT INTO t VALUES (?, @count)", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (?, @count)", sqlite, CommonThreadLocalRandom)
             .bind("@count", 42)
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq("@count"))
-        verify(sqlite, times(1)).bindInt(eq(POINTER), eq(2), eq(42))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq("@count"))
+        verify(sqlite, times(1)).bindInt(eq(STATEMENT), eq(2), eq(42))
     }
 
     @Test
     fun bindLongByName() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq($$"$id"))) doReturn 1
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq($$"$id"))) doReturn 1
         }
-        SQLPreparedStatement(POINTER, $$"SELECT * FROM t WHERE id = $id", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, $$"SELECT * FROM t WHERE id = $id", sqlite, CommonThreadLocalRandom)
             .bind($$"$id", 123_456_789L)
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq($$"$id"))
-        verify(sqlite, times(1)).bindInt64(eq(POINTER), eq(1), eq(123_456_789L))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq($$"$id"))
+        verify(sqlite, times(1)).bindInt64(eq(STATEMENT), eq(1), eq(123_456_789L))
     }
 
     @Test
     fun bindStringByName() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq(":name"))) doReturn 1
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq(":name"))) doReturn 1
         }
-        SQLPreparedStatement(POINTER, "INSERT INTO t VALUES (:name)", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (:name)", sqlite, CommonThreadLocalRandom)
             .bind(":name", "test")
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq(":name"))
-        verify(sqlite, times(1)).bindText(eq(POINTER), eq(1), eq("test"))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":name"))
+        verify(sqlite, times(1)).bindText(eq(STATEMENT), eq(1), eq("test"))
     }
 
     @Test
     fun bindNullByName() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq(":nullable"))) doReturn 1
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq(":nullable"))) doReturn 1
         }
-        SQLPreparedStatement(POINTER, "INSERT INTO t VALUES (:nullable)", sqlite, CommonThreadLocalRandom)
+        SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (:nullable)", sqlite, CommonThreadLocalRandom)
             .bindNull(":nullable")
-        verify(sqlite, times(1)).bindParameterIndex(eq(POINTER), eq(":nullable"))
-        verify(sqlite, times(1)).bindNull(eq(POINTER), eq(1))
+        verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":nullable"))
+        verify(sqlite, times(1)).bindNull(eq(STATEMENT), eq(1))
     }
 
     @Test
     fun bindByNameThrowsForUnknownParameter() {
         val sqlite = mock<SQLite> {
-            whenever(it.bindParameterIndex(any(), eq(":unknown"))) doReturn 0
+            whenever(it.bindParameterIndex(any<StatementHandle>(), eq(":unknown"))) doReturn 0
         }
         val statement = SQLPreparedStatement(
-            POINTER,
+            STATEMENT,
             "INSERT INTO t VALUES (:known)",
             sqlite,
             CommonThreadLocalRandom
