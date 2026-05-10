@@ -103,7 +103,7 @@ Connection properties can be passed via the URL query string or a `Properties` o
 === "Kotlin"
     ``` kotlin
     val url = "jdbc:sqlite:/path/to/database.db" +
-        "?journalMode=WAL&busyTimeout=2500&poolSize=5&foreignKeys=true"
+        "?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
     val connection = DriverManager.getConnection(url)
     ```
 
@@ -194,7 +194,9 @@ Unless a key is provided, the database will be created without encryption. To di
             statement.setInt(1, 42)
             statement.executeQuery().use { resultSet ->
                 while (resultSet.next()) {
-                    println("${resultSet.getInt("id")}: ${resultSet.getString("name")}")
+                    println(
+                        "${resultSet.getInt("id")}: ${resultSet.getString("name")}"
+                    )
                 }
             }
         }
@@ -209,7 +211,9 @@ Unless a key is provided, the database will be created without encryption. To di
         statement.setInt(1, 42);
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                System.out.println(resultSet.getInt("id") + ": " + resultSet.getString("name"));
+                System.out.println(
+                    resultSet.getInt("id") + ": " + resultSet.getString("name")
+                );
             }
         }
     }
