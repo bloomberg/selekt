@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.33.1
+
+* Use static memory segment when getting confined Strings.
+* Simple JDBC blobs support.
+* Use native handles with SQLite overloads, save creating MemorySegments.
+
 ## Version 0.33.0
 
 * Replace raw SQL upsert with parameterised ContentValues API.
