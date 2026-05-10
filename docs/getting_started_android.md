@@ -163,3 +163,60 @@
         System.out.println(it.getInt(0));
     }
     ```
+
+## Native ABI compatibility
+
+Selekt's packaged native libraries target the following Android ABIs:
+
+* armeabi-v7a
+* arm64-v8a
+* x86
+* x86_64
+
+If your app only supports a subset of these architectures, configure ABI filtering to reduce APK size and avoid installs on unsupported devices.
+
+### Restricting native libraries
+
+To support only 64-bit ABIs:
+
+=== "Kotlin"
+    ``` kotlin
+    android {
+        ndk {
+            abiFilters.addAll(arrayOf("arm64-v8a", "x86_64"))
+        }
+    }
+    ```
+
+=== "Groovy"
+    ``` groovy
+    android {
+        ndk {
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+    }
+    ```
+
+### Excluding native libraries
+
+Alternatively, exclude ABIs while packaging. For example, for an APK that only supports ARM architectures:
+
+=== "Kotlin"
+    ``` kotlin
+    android {
+        packagingOptions {
+            exclude("/lib/x86/*")
+            exclude("/lib/x86_64/*")
+        }
+    }
+    ```
+
+=== "Groovy"
+    ``` groovy
+    android {
+        packagingOptions {
+            exclude '/lib/x86/*'
+            exclude '/lib/x86_64/*'
+        }
+    }
+    ```
