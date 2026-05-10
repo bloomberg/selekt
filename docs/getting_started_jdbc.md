@@ -59,9 +59,9 @@ Selekt requires **Java 25** or later.
     ``` kotlin
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/database.db"
-        journalMode = "WAL" // WAL is the default journal mode
-        busyTimeout = 2_500 // 2_500 milliseconds is the default busy timeout
-        maxPoolSize = 5 // 1 connection for writing and 4 for reading
+        journalMode = "WAL" // is the default journal mode
+        busyTimeout = 2_500 // milliseconds is the default busy timeout
+        maxPoolSize = 4 // is the default, 3 read-only connections
         foreignKeys = true
     }
 
@@ -74,9 +74,9 @@ Selekt requires **Java 25** or later.
     ``` java
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/database.db");
-    dataSource.setJournalMode("WAL"); // WAL is the default journal mode
-    dataSource.setBusyTimeout(2500); // 2_500 milliseconds is the default busy timeout
-    dataSource.setMaxPoolSize(5); // 1 connection for writing and 4 for reading
+    dataSource.setJournalMode("WAL"); // is the default journal mode
+    dataSource.setBusyTimeout(2500); // milliseconds is the default busy timeout
+    dataSource.setMaxPoolSize(4); // is the default, 3 read-only connections
     dataSource.setForeignKeys(true);
 
     try (Connection connection = dataSource.getConnection()) {
@@ -102,7 +102,8 @@ Connection properties can be passed via the URL query string or a `Properties` o
 
 === "Kotlin"
     ``` kotlin
-    val url = "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=5&foreignKeys=true"
+    val url = "jdbc:sqlite:/path/to/database.db" +
+        "?journalMode=WAL&busyTimeout=2500&poolSize=5&foreignKeys=true"
     val connection = DriverManager.getConnection(url)
     ```
 
@@ -111,7 +112,7 @@ Connection properties can be passed via the URL query string or a `Properties` o
     final Properties properties = new Properties();
     properties.setProperty("journalMode", "WAL");
     properties.setProperty("busyTimeout", "2500");
-    properties.setProperty("poolSize", "5");
+    properties.setProperty("poolSize", "4");
     properties.setProperty("foreignKeys", "true");
 
     final Connection connection = DriverManager.getConnection(
@@ -248,8 +249,8 @@ Unless a key is provided, the database will be created without encryption. To di
         connection.autoCommit = false
         try {
             connection.prepareStatement(
-            "INSERT INTO users (id, name) VALUES (?, ?)"
-        ).use { statement ->
+                "INSERT INTO users (id, name) VALUES (?, ?)"
+            ).use { statement ->
                 for (i in 1..1000) {
                     statement.setInt(1, i)
                     statement.setString(2, "User $i")
@@ -270,7 +271,8 @@ Unless a key is provided, the database will be created without encryption. To di
     try (Connection connection = dataSource.getConnection()) {
         connection.setAutoCommit(false);
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO users (id, name) VALUES (?, ?)")) {
+            "INSERT INTO users (id, name) VALUES (?, ?)"
+        )) {
             for (int i = 1; i <= 1000; i++) {
                 statement.setInt(1, i);
                 statement.setString(2, "User " + i);
@@ -320,13 +322,15 @@ Unless a key is provided, the database will be created without encryption. To di
         connection.setAutoCommit(false);
         try {
             try (final PreparedStatement debit = connection.prepareStatement(
-                    "UPDATE accounts SET balance = balance - ? WHERE id = ?")) {
+                "UPDATE accounts SET balance = balance - ? WHERE id = ?"
+            )) {
                 debit.setDouble(1, 100.0);
                 debit.setInt(2, 1);
                 debit.executeUpdate();
             }
             try (final PreparedStatement credit = connection.prepareStatement(
-                    "UPDATE accounts SET balance = balance + ? WHERE id = ?")) {
+                "UPDATE accounts SET balance = balance + ? WHERE id = ?"
+            )) {
                 credit.setDouble(1, 100.0);
                 credit.setInt(2, 2);
                 credit.executeUpdate();
@@ -341,13 +345,13 @@ Unless a key is provided, the database will be created without encryption. To di
 
 ## Connection properties
 
-| Property        | Type    | Default  | Description                                                                   |
-|-----------------|---------|----------|-------------------------------------------------------------------------------|
-| `journalMode`   | String  | `WAL`    | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
-| `busyTimeout`   | int     | `2500`   | SQLite busy timeout in milliseconds                                           |
-| `poolSize`      | int     | `10`     | Maximum connection pool size                                                  |
-| `foreignKeys`   | boolean | `true`   | Enable foreign key constraints                                                |
-| `key`           | String  | `null`   | Encryption key (hex string, via `DriverManager` only)                         |
+| Property        | Type    | Default | Description                                                                   |
+|-----------------|---------|---------|-------------------------------------------------------------------------------|
+| `journalMode`   | String  | `WAL`   | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
+| `busyTimeout`   | int     | `2500`  | SQLite busy timeout in milliseconds                                           |
+| `poolSize`      | int     | `4`     | Maximum connection pool size                                                  |
+| `foreignKeys`   | boolean | `true`  | Enable foreign key constraints                                                |
+| `key`           | String  | `null`  | Encryption key (hex string, via `DriverManager` only)                         |
 
 ## Closing the DataSource
 
