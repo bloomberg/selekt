@@ -32,18 +32,18 @@ internal fun SQLBlob.outputStream(offset: Int): OutputStream = BlobOutputStream(
  */
 @NotThreadSafe
 internal class SQLBlob(
-    private val pointer: Long,
+    private val blob: BlobHandle,
     private val sqlite: SQLite,
     val readOnly: Boolean
 ) : Closeable {
     init {
-        check(pointer != NULL)
+        check(blob.pointer != NULL)
     }
 
-    val size: Int by lazy(LazyThreadSafetyMode.NONE) { sqlite.blobBytes(pointer) }
+    val size: Int by lazy(LazyThreadSafetyMode.NONE) { sqlite.blobBytes(blob) }
 
     override fun close() {
-        sqlite.blobClose(pointer)
+        sqlite.blobClose(blob)
     }
 
     fun read(
@@ -52,11 +52,11 @@ internal class SQLBlob(
         destinationOffset: Int,
         length: Int
     ) {
-        sqlite.blobRead(pointer, offset, destination, destinationOffset, length)
+        sqlite.blobRead(blob, offset, destination, destinationOffset, length)
     }
 
     fun reopen(row: Long) {
-        sqlite.blobReopen(pointer, row)
+        sqlite.blobReopen(blob, row)
     }
 
     fun write(
@@ -65,7 +65,7 @@ internal class SQLBlob(
         sourceOffset: Int,
         length: Int
     ) {
-        sqlite.blobWrite(pointer, offset, source, sourceOffset, length)
+        sqlite.blobWrite(blob, offset, source, sourceOffset, length)
     }
 }
 

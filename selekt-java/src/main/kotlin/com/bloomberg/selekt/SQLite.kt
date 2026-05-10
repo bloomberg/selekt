@@ -26,7 +26,18 @@ import java.sql.SQLException
 open class SQLite(
     private val sqlite: IExternalSQLite
 ) {
+    fun newDatabaseHandle(pointer: Long): DatabaseHandle = sqlite.newDatabaseHandle(pointer)
+
+    fun newStatementHandle(pointer: Long): StatementHandle = sqlite.newStatementHandle(pointer)
+
+    fun newBlobHandle(pointer: Long): BlobHandle = sqlite.newBlobHandle(pointer)
+
     fun bindBlob(statement: Long, index: Int, blob: ByteArray) = checkBindSQLCode(
+        statement,
+        sqlite.bindBlob(statement, index, blob, blob.size)
+    )
+
+    fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray) = checkBindSQLCode(
         statement,
         sqlite.bindBlob(statement, index, blob, blob.size)
     )
@@ -36,12 +47,22 @@ open class SQLite(
         sqlite.bindDouble(statement, index, value)
     )
 
+    fun bindDouble(statement: StatementHandle, index: Int, value: Double) = checkBindSQLCode(
+        statement,
+        sqlite.bindDouble(statement, index, value)
+    )
+
     fun bindInt(statement: Long, index: Int, value: Int) = checkBindSQLCode(
         statement,
         sqlite.bindInt(statement, index, value)
     )
 
-    fun bindInt64(statement: Long, index: Int, value: Long) = checkBindSQLCode(
+    fun bindInt(statement: StatementHandle, index: Int, value: Int) = checkBindSQLCode(
+        statement,
+        sqlite.bindInt(statement, index, value)
+    )
+
+    fun bindInt64(statement: StatementHandle, index: Int, value: Long) = checkBindSQLCode(
         statement,
         sqlite.bindInt64(statement, index, value)
     )
@@ -51,11 +72,23 @@ open class SQLite(
         sqlite.bindNull(statement, index)
     )
 
+    fun bindNull(statement: StatementHandle, index: Int) = checkBindSQLCode(
+        statement,
+        sqlite.bindNull(statement, index)
+    )
+
     fun bindParameterCount(statement: Long) = sqlite.bindParameterCount(statement)
 
-    fun bindParameterIndex(statement: Long, name: String) = sqlite.bindParameterIndex(statement, name)
+    fun bindParameterCount(statement: StatementHandle) = sqlite.bindParameterCount(statement)
+
+    fun bindParameterIndex(statement: StatementHandle, name: String) = sqlite.bindParameterIndex(statement, name)
 
     fun bindText(statement: Long, index: Int, value: String) = checkBindSQLCode(
+        statement,
+        sqlite.bindText(statement, index, value)
+    )
+
+    fun bindText(statement: StatementHandle, index: Int, value: String) = checkBindSQLCode(
         statement,
         sqlite.bindText(statement, index, value)
     )
@@ -69,12 +102,17 @@ open class SQLite(
         sqlite.bindZeroBlob(statement, index, length)
     )
 
-    fun bindRow(statement: Long, args: Array<out Any?>) = checkBindSQLCode(
+    fun bindZeroBlob(statement: StatementHandle, index: Int, length: Int) = checkBindSQLCode(
+        statement,
+        sqlite.bindZeroBlob(statement, index, length)
+    )
+
+    fun bindRow(statement: StatementHandle, args: Array<out Any?>) = checkBindSQLCode(
         statement,
         sqlite.bindRow(statement, args)
     )
 
-    fun bindRow(statement: Long, row: ParameterRow) = checkBindSQLCode(
+    fun bindRow(statement: StatementHandle, row: ParameterRow) = checkBindSQLCode(
         statement,
         sqlite.bindRowTyped(statement, row.tags, row.ints, row.longs, row.doubles, row.objects, row.size)
     )
@@ -83,10 +121,35 @@ open class SQLite(
 
     fun blobBytes(blob: Long) = sqlite.blobBytes(blob)
 
+    fun blobBytes(blob: BlobHandle) = sqlite.blobBytes(blob)
+
     fun blobClose(blob: Long) = checkSQLCode(sqlite.blobClose(blob))
+
+    fun blobClose(blob: BlobHandle) = checkSQLCode(sqlite.blobClose(blob))
 
     fun blobOpen(
         db: Long,
+        name: String,
+        table: String,
+        column: String,
+        row: Long,
+        flags: Int,
+        holder: LongArray
+    ) = checkConnectionSQLCode(
+        db,
+        sqlite.blobOpen(
+            db,
+            name,
+            table,
+            column,
+            row,
+            flags,
+            holder
+        )
+    )
+
+    fun blobOpen(
+        db: DatabaseHandle,
         name: String,
         table: String,
         column: String,
@@ -120,10 +183,20 @@ open class SQLite(
         length
     ))
 
+    fun blobRead(
+        blob: BlobHandle,
+        offset: Int,
+        destination: ByteArray,
+        destinationOffset: Int,
+        length: Int
+    ) = checkSQLCode(sqlite.blobRead(blob, offset, destination, destinationOffset, length))
+
     fun blobReopen(
         blob: Long,
         row: Long
     ) = checkSQLCode(sqlite.blobReopen(blob, row))
+
+    fun blobReopen(blob: BlobHandle, row: Long) = checkSQLCode(sqlite.blobReopen(blob, row))
 
     fun blobWrite(
         blob: Long,
@@ -139,29 +212,61 @@ open class SQLite(
         length
     ))
 
+    fun blobWrite(
+        blob: BlobHandle,
+        offset: Int,
+        source: ByteArray,
+        sourceOffset: Int,
+        length: Int
+    ) = checkSQLCode(sqlite.blobWrite(blob, offset, source, sourceOffset, length))
+
     fun busyTimeout(db: Long, millis: Int) = checkConnectionSQLCode(db, sqlite.busyTimeout(db, millis))
+
+    fun busyTimeout(db: DatabaseHandle, millis: Int) = checkConnectionSQLCode(db, sqlite.busyTimeout(db, millis))
 
     fun changes(db: Long) = sqlite.changes(db)
 
+    fun changes(db: DatabaseHandle) = sqlite.changes(db)
+
     fun clearBindings(statement: Long) = checkSQLCode(sqlite.clearBindings(statement))
+
+    fun clearBindings(statement: StatementHandle) = checkSQLCode(sqlite.clearBindings(statement))
 
     fun closeV2(db: Long) = checkConnectionSQLCode(db, sqlite.closeV2(db))
 
+    fun closeV2(db: DatabaseHandle) = checkConnectionSQLCode(db, sqlite.closeV2(db))
+
     fun columnBlob(statement: Long, index: Int) = sqlite.columnBlob(statement, index)
+
+    fun columnBlob(statement: StatementHandle, index: Int) = sqlite.columnBlob(statement, index)
 
     fun columnCount(statement: Long) = sqlite.columnCount(statement)
 
+    fun columnCount(statement: StatementHandle) = sqlite.columnCount(statement)
+
     fun columnDouble(statement: Long, index: Int) = sqlite.columnDouble(statement, index)
+
+    fun columnDouble(statement: StatementHandle, index: Int) = sqlite.columnDouble(statement, index)
 
     fun columnInt(statement: Long, index: Int) = sqlite.columnInt(statement, index)
 
+    fun columnInt(statement: StatementHandle, index: Int) = sqlite.columnInt(statement, index)
+
     fun columnInt64(statement: Long, index: Int) = sqlite.columnInt64(statement, index)
+
+    fun columnInt64(statement: StatementHandle, index: Int) = sqlite.columnInt64(statement, index)
 
     fun columnName(statement: Long, index: Int) = sqlite.columnName(statement, index)
 
+    fun columnName(statement: StatementHandle, index: Int) = sqlite.columnName(statement, index)
+
     fun columnText(statement: Long, index: Int) = sqlite.columnText(statement, index)
 
+    fun columnText(statement: StatementHandle, index: Int) = sqlite.columnText(statement, index)
+
     fun columnType(statement: Long, index: Int) = sqlite.columnType(statement, index)
+
+    fun columnType(statement: StatementHandle, index: Int) = sqlite.columnType(statement, index)
 
     fun columnValue(statement: Long, index: Int) = sqlite.columnValue(statement, index)
 
@@ -171,11 +276,21 @@ open class SQLite(
         listener: SQLCommitListener?
     ) = checkConnectionSQLCode(db, sqlite.commitHook(db, enabled, listener))
 
+    fun commitHook(
+        db: DatabaseHandle,
+        enabled: Boolean,
+        listener: SQLCommitListener?
+    ) = checkConnectionSQLCode(db, sqlite.commitHook(db, enabled, listener))
+
     fun databaseHandle(statement: Long) = sqlite.databaseHandle(statement)
+
+    fun databaseHandle(statement: StatementHandle) = sqlite.databaseHandle(statement)
 
     fun databaseReadOnly(db: Long, name: String) = sqlite.databaseReadOnly(db, name)
 
     fun databaseReleaseMemory(db: Long) = sqlite.databaseReleaseMemory(db)
+
+    fun databaseReleaseMemory(db: DatabaseHandle) = sqlite.databaseReleaseMemory(db)
 
     fun databaseStatus(
         db: Long,
@@ -186,13 +301,23 @@ open class SQLite(
 
     fun errorCode(db: Long) = sqlite.errorCode(db)
 
+    fun errorCode(db: DatabaseHandle) = sqlite.errorCode(db)
+
     fun errorMessage(db: Long) = sqlite.errorMessage(db)
+
+    fun errorMessage(db: DatabaseHandle) = sqlite.errorMessage(db)
 
     fun exec(db: Long, query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
 
+    fun exec(db: DatabaseHandle, query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
+
     fun expandedSql(statement: Long) = sqlite.expandedSql(statement)
 
+    fun expandedSql(statement: StatementHandle) = sqlite.expandedSql(statement)
+
     fun extendedErrorCode(db: Long) = sqlite.extendedErrorCode(db)
+
+    fun extendedErrorCode(db: DatabaseHandle) = sqlite.extendedErrorCode(db)
 
     fun databaseConfig(
         db: Long,
@@ -200,25 +325,46 @@ open class SQLite(
         value: Int
     ) = checkConnectionSQLCode(db, sqlite.databaseConfig(db, op, value))
 
+    fun databaseConfig(
+        db: DatabaseHandle,
+        op: Int,
+        value: Int
+    ) = checkConnectionSQLCode(db, sqlite.databaseConfig(db, op, value))
+
     fun extendedResultCodes(db: Long, onOff: Int) = sqlite.extendedResultCodes(db, onOff)
+
+    fun extendedResultCodes(db: DatabaseHandle, onOff: Int) = sqlite.extendedResultCodes(db, onOff)
 
     fun finalize(statement: Long) = checkStatementSQLCode(statement, sqlite.finalize(statement))
 
+    fun finalize(statement: StatementHandle) = checkStatementSQLCode(statement, sqlite.finalize(statement))
+
     fun getAutocommit(db: Long) = sqlite.getAutocommit(db)
+
+    fun getAutocommit(db: DatabaseHandle) = sqlite.getAutocommit(db)
 
     fun hardHeapLimit64() = sqlite.hardHeapLimit64()
 
     fun interrupt(db: Long) = sqlite.interrupt(db)
 
+    fun interrupt(db: DatabaseHandle) = sqlite.interrupt(db)
+
     fun isInterrupted(db: Long) = sqlite.isInterrupted(db) != 0
+
+    fun isInterrupted(db: DatabaseHandle) = sqlite.isInterrupted(db) != 0
 
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
-    fun keyConventionally(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))
+    fun keyConventionally(
+        db: DatabaseHandle,
+        key: ByteArray
+    ) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))
 
     fun keywordCount() = sqlite.keywordCount()
 
     fun lastInsertRowId(db: Long) = sqlite.lastInsertRowId(db)
+
+    fun lastInsertRowId(db: DatabaseHandle) = sqlite.lastInsertRowId(db)
 
     fun memoryUsed() = sqlite.memoryUsed()
 
@@ -234,8 +380,20 @@ open class SQLite(
         statementHolder: LongArray
     ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
 
+    fun prepareV2(
+        db: DatabaseHandle,
+        sql: String,
+        statementHolder: LongArray
+    ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+
     fun progressHandler(
         db: Long,
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) = sqlite.progressHandler(db, instructionCount, handler)
+
+    fun progressHandler(
+        db: DatabaseHandle,
         instructionCount: Int,
         handler: SQLProgressHandler?
     ) = sqlite.progressHandler(db, instructionCount, handler)
@@ -248,15 +406,26 @@ open class SQLite(
 
     fun reset(statement: Long) = checkStatementSQLCode(statement, sqlite.reset(statement))
 
+    fun reset(statement: StatementHandle) = checkStatementSQLCode(statement, sqlite.reset(statement))
+
     fun resetAndClearBindings(statement: Long) = checkStatementSQLCode(statement, sqlite.resetAndClearBindings(statement))
+
+    fun resetAndClearBindings(statement: StatementHandle) =
+        checkStatementSQLCode(statement, sqlite.resetAndClearBindings(statement))
 
     fun softHeapLimit64() = sqlite.softHeapLimit64()
 
     fun sql(statement: Long) = sqlite.sql(statement)
 
+    fun sql(statement: StatementHandle) = sqlite.sql(statement)
+
     fun statementBusy(statement: Long) = sqlite.statementBusy(statement)
 
+    fun statementBusy(statement: StatementHandle) = sqlite.statementBusy(statement)
+
     fun statementReadOnly(statement: Long) = sqlite.statementReadOnly(statement)
+
+    fun statementReadOnly(statement: StatementHandle) = sqlite.statementReadOnly(statement)
 
     fun statementStatus(
         statement: Long,
@@ -264,15 +433,26 @@ open class SQLite(
         reset: Boolean
     ) = sqlite.statementStatus(statement, options, reset)
 
+    fun statementStatus(statement: StatementHandle, options: Int, reset: Boolean) =
+        sqlite.statementStatus(statement, options, reset)
+
     fun step(statement: Long) = checkStepSQLCode(statement, sqlite.step(statement))
 
+    fun step(statement: StatementHandle) = checkStepSQLCode(statement, sqlite.step(statement))
+
     fun stepWithoutThrowing(statement: Long) = sqlite.step(statement)
+
+    fun stepWithoutThrowing(statement: StatementHandle) = sqlite.step(statement)
 
     fun threadsafe() = sqlite.threadsafe()
 
     fun totalChanges(db: Long) = sqlite.totalChanges(db)
 
+    fun totalChanges(db: DatabaseHandle) = sqlite.totalChanges(db)
+
     fun traceV2(db: Long, flag: Int) = sqlite.traceV2(db, flag)
+
+    fun traceV2(db: DatabaseHandle, flag: Int) = sqlite.traceV2(db, flag)
 
     fun transactionState(db: Long) = sqlite.transactionState(db)
 
@@ -284,8 +464,17 @@ open class SQLite(
 
     fun walAutoCheckpoint(db: Long, pages: Int) = checkConnectionSQLCode(db, sqlite.walAutoCheckpoint(db, pages))
 
+    fun walAutoCheckpoint(db: DatabaseHandle, pages: Int) =
+        checkConnectionSQLCode(db, sqlite.walAutoCheckpoint(db, pages))
+
     fun walCheckpointV2(
         db: Long,
+        name: String?,
+        mode: Int
+    ) = checkConnectionSQLCode(db, sqlite.walCheckpointV2(db, name, mode))
+
+    fun walCheckpointV2(
+        db: DatabaseHandle,
         name: String?,
         mode: Int
     ) = checkConnectionSQLCode(db, sqlite.walCheckpointV2(db, name, mode))
@@ -308,6 +497,9 @@ open class SQLite(
     fun throwSQLException(db: Long, context: String? = null): Nothing =
         throwSQLException(errorCode(db), extendedErrorCode(db), errorMessage(db), context)
 
+    fun throwSQLException(db: DatabaseHandle, context: String? = null): Nothing =
+        throwSQLException(errorCode(db), extendedErrorCode(db), errorMessage(db), context)
+
     private fun checkSQLCode(code: SQLCode): SQLCode = when (code) {
         SQL_OK -> SQL_OK
         else -> throwSQLException(code, -1, "Error information not accessible.")
@@ -320,7 +512,20 @@ open class SQLite(
         throwSQLException(db)
     }
 
+    private fun checkConnectionSQLCode(db: DatabaseHandle, code: SQLCode): SQLCode {
+        if (SQL_OK == code) {
+            return SQL_OK
+        }
+        throwSQLException(db)
+    }
+
     private fun checkStatementSQLCode(statement: Long, code: SQLCode): SQLCode = if (SQL_OK == code) {
+        SQL_OK
+    } else {
+        throwSQLException(databaseHandle(statement))
+    }
+
+    private fun checkStatementSQLCode(statement: StatementHandle, code: SQLCode): SQLCode = if (SQL_OK == code) {
         SQL_OK
     } else {
         throwSQLException(databaseHandle(statement))
@@ -333,7 +538,21 @@ open class SQLite(
         throwSQLException(databaseHandle(statement))
     }
 
+    private fun checkBindSQLCode(statement: StatementHandle, code: SQLCode): SQLCode {
+        if (SQL_OK == code) {
+            return SQL_OK
+        }
+        throwSQLException(databaseHandle(statement))
+    }
+
     private fun checkStepSQLCode(statement: Long, code: SQLCode): SQLCode {
+        if (SQL_ROW == code || SQL_DONE == code) {
+            return code
+        }
+        throwSQLException(databaseHandle(statement))
+    }
+
+    private fun checkStepSQLCode(statement: StatementHandle, code: SQLCode): SQLCode {
         if (SQL_ROW == code || SQL_DONE == code) {
             return code
         }

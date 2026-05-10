@@ -67,11 +67,7 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun interruptCallsInterruptOnAllConnections() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
+        val sqlite = mockSqliteForFactory()
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         factory.makePrimaryObject().use {
             factory.interrupt()
@@ -81,16 +77,12 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun interruptDoesNotCallDestroyedConnections() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
+        val sqlite = mockSqliteForFactory()
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         val connection = factory.makePrimaryObject()
         factory.destroyObject(connection)
         factory.interrupt()
-        verify(sqlite, times(0)).interrupt(any())
+        verify(sqlite, times(0)).interrupt(any<Long>())
     }
 
     @Test
@@ -100,12 +92,8 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun isInterruptedReturnsTrueWhenConnectionIsInterrupted() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
-        whenever(sqlite.isInterrupted(any())) doReturn true
+        val sqlite = mockSqliteForFactory()
+        whenever(sqlite.isInterrupted(any<Long>())) doReturn true
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         factory.makePrimaryObject().use {
             assertTrue(factory.isInterrupted)
@@ -114,12 +102,8 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun isInterruptedReturnsFalseWhenConnectionIsNotInterrupted() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
-        whenever(sqlite.isInterrupted(any())) doReturn false
+        val sqlite = mockSqliteForFactory()
+        whenever(sqlite.isInterrupted(any<Long>())) doReturn false
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         factory.makePrimaryObject().use {
             assertFalse(factory.isInterrupted)
@@ -133,11 +117,7 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun setProgressHandlerCallsAllConnections() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
+        val sqlite = mockSqliteForFactory()
         val handler = SQLProgressHandler { 0 }
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         factory.makePrimaryObject().use {
@@ -148,29 +128,55 @@ internal class SQLConnectionFactoryTest {
 
     @Test
     fun clearProgressHandlerCallsAllConnections() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
+        val sqlite = mockSqliteForFactory()
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         factory.makePrimaryObject().use {
             factory.setProgressHandler(0, null)
-            verify(sqlite, times(1)).progressHandler(eq(DB), eq(0), isNull())
+            verify(sqlite, times(1)).progressHandler(eq(DB), eq(0), isNull<SQLProgressHandler>())
         }
     }
 
     @Test
     fun setProgressHandlerDoesNotCallDestroyedConnections() {
-        val sqlite: SQLite = mock()
-        whenever(sqlite.openV2(any(), any(), any())).doAnswer {
-            (it.arguments[2] as LongArray)[0] = DB
-            0
-        }
+        val sqlite = mockSqliteForFactory()
         val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
         val connection = factory.makePrimaryObject()
         factory.destroyObject(connection)
         factory.setProgressHandler(100, SQLProgressHandler { 0 })
-        verify(sqlite, times(0)).progressHandler(any(), any(), any())
+        verify(sqlite, times(0)).progressHandler(any<Long>(), any<Int>(), any<SQLProgressHandler>())
+    }
+
+    private fun mockSqliteForFactory(): SQLite = mock<SQLite>().apply {
+        whenever(newDatabaseHandle(any<Long>())) doAnswer { DatabaseHandle(it.getArgument(0)) }
+        whenever(openV2(any<String>(), any<Int>(), any<LongArray>())).doAnswer {
+            (it.arguments[2] as LongArray)[0] = DB
+            0
+        }
+        whenever(interrupt(any<DatabaseHandle>())) doAnswer {
+            interrupt((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(isInterrupted(any<DatabaseHandle>())) doAnswer {
+            isInterrupted((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(progressHandler(any<DatabaseHandle>(), any<Int>(), any<SQLProgressHandler>())) doAnswer {
+            progressHandler(
+                (it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, it.arguments[2] as SQLProgressHandler?
+            )
+        }
+        whenever(progressHandler(any<DatabaseHandle>(), any<Int>(), isNull())) doAnswer {
+            progressHandler((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, null)
+        }
+        whenever(extendedResultCodes(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            extendedResultCodes((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(busyTimeout(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            busyTimeout((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(exec(any<DatabaseHandle>(), any<String>())) doAnswer {
+            exec((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String)
+        }
+        whenever(closeV2(any<DatabaseHandle>())) doAnswer {
+            closeV2((it.arguments[0] as DatabaseHandle).pointer)
+        }
     }
 }

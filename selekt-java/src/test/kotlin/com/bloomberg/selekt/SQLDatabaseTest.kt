@@ -47,6 +47,7 @@ internal class SQLDatabaseTest {
 
     private lateinit var database: SQLDatabase
 
+    @Suppress("Detekt.LongMethod")
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
@@ -54,16 +55,68 @@ internal class SQLDatabaseTest {
             @Suppress("UNCHECKED_CAST")
             (it.arguments[0] as () -> Any?).invoke()
         }
+        whenever(sqlite.newDatabaseHandle(any<Long>())) doAnswer { DatabaseHandle(it.getArgument(0)) }
+        whenever(sqlite.newStatementHandle(any<Long>())) doAnswer { StatementHandle(it.getArgument(0)) }
+        whenever(sqlite.prepareV2(any<DatabaseHandle>(), any<String>(), any<LongArray>())) doAnswer {
+            sqlite.prepareV2((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String, it.arguments[2] as LongArray)
+        }
+        whenever(sqlite.step(any<StatementHandle>())) doAnswer {
+            sqlite.step((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.stepWithoutThrowing(any<StatementHandle>())) doAnswer {
+            sqlite.stepWithoutThrowing((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.columnText(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnText((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.columnCount(any<StatementHandle>())) doAnswer {
+            sqlite.columnCount((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.statementReadOnly(any<StatementHandle>())) doAnswer {
+            sqlite.statementReadOnly((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.resetAndClearBindings(any<StatementHandle>())) doAnswer {
+            sqlite.resetAndClearBindings((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.getAutocommit(any<DatabaseHandle>())) doAnswer { sqlite.getAutocommit((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.interrupt(any<DatabaseHandle>())) doAnswer {
+            sqlite.interrupt((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(sqlite.isInterrupted(any<DatabaseHandle>())) doAnswer { sqlite.isInterrupted((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.progressHandler(any<DatabaseHandle>(), any<Int>(), any<SQLProgressHandler>())) doAnswer {
+            sqlite.progressHandler((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, it.arguments[2] as SQLProgressHandler?)
+        }
+        whenever(sqlite.progressHandler(any<DatabaseHandle>(), any<Int>(), isNull())) doAnswer {
+            sqlite.progressHandler((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, null)
+        }
+        whenever(sqlite.commitHook(any<DatabaseHandle>(), any<Boolean>(), any<SQLCommitListener>())) doAnswer {
+            sqlite.commitHook((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Boolean, it.arguments[2] as SQLCommitListener?)
+        }
+        whenever(sqlite.commitHook(any<DatabaseHandle>(), any<Boolean>(), isNull())) doAnswer {
+            sqlite.commitHook((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Boolean, null)
+        }
+        whenever(sqlite.extendedResultCodes(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            sqlite.extendedResultCodes((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.busyTimeout(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            sqlite.busyTimeout((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.exec(any<DatabaseHandle>(), any<String>())) doAnswer {
+            sqlite.exec((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String)
+        }
+        whenever(sqlite.closeV2(any<DatabaseHandle>())) doAnswer {
+            sqlite.closeV2((it.arguments[0] as DatabaseHandle).pointer)
+        }
         whenever(sqlite.openV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
         }
-        whenever(sqlite.prepareV2(any(), any(), any())) doAnswer {
+        whenever(sqlite.prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = STMT
             0
         }
-        whenever(sqlite.stepWithoutThrowing(any())) doReturn SQL_DONE
-        whenever(sqlite.getAutocommit(any())) doReturn 1
+        whenever(sqlite.stepWithoutThrowing(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.getAutocommit(any<Long>())) doReturn 1
         database = SQLDatabase("file::memory:", sqlite, databaseConfiguration, null)
     }
 
@@ -129,14 +182,14 @@ internal class SQLDatabaseTest {
     @Test
     fun isInterruptedFalse() {
         database.transact { }
-        whenever(sqlite.isInterrupted(any())) doReturn false
+        whenever(sqlite.isInterrupted(any<Long>())) doReturn false
         assertFalse(database.isInterrupted)
     }
 
     @Test
     fun isInterruptedTrue() {
         database.transact { }
-        whenever(sqlite.isInterrupted(any())) doReturn true
+        whenever(sqlite.isInterrupted(any<Long>())) doReturn true
         assertTrue(database.isInterrupted)
     }
 
@@ -185,25 +238,25 @@ internal class SQLDatabaseTest {
 
     @Test
     fun pragmaAcceptsAllowListedKey(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn ""
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn ""
         SQLitePragma.entries.forEach { pragma(it) }
     }
 
     @Test
     fun pragmaAcceptsEnumKey(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn "wal"
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "wal"
         pragma(SQLitePragma.JOURNAL_MODE)
     }
 
     @Test
     fun pragmaAcceptsIncrementalVacuumWithArgument(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn ""
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn ""
         pragma("incremental_vacuum(100)")
     }
 
     @Test
     fun pragmaAcceptsSchemaPrefixedKey(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn "ok"
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "ok"
         pragma("main.integrity_check")
     }
 
@@ -230,29 +283,29 @@ internal class SQLDatabaseTest {
 
     @Test
     fun pragmaValueAcceptsAlphanumeric(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn "wal"
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "wal"
         pragma(SQLitePragma.JOURNAL_MODE, "wal")
     }
 
     @Test
     fun pragmaValueAcceptsInteger(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn "1"
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "1"
         pragma(SQLitePragma.JOURNAL_MODE, 1)
     }
 
     @Test
     fun pragmaValueAcceptsNegativeInteger(): Unit = database.run {
-        whenever(sqlite.columnText(any(), any())) doReturn "-1"
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "-1"
         pragma(SQLitePragma.SOFT_HEAP_LIMIT, -1)
     }
 
     private fun verifyCommit(): Unit = inOrder(sqlite).run {
-        verify(sqlite, times(1)).prepareV2(eq(DB), eq("END"), any())
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("END"), any<LongArray>())
         verify(sqlite, times(1)).stepWithoutThrowing(eq(STMT))
     }
 
     private fun verifyRollback(): Unit = inOrder(sqlite) {
-        verify(sqlite, times(1)).prepareV2(eq(DB), eq("ROLLBACK"), any())
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("ROLLBACK"), any<LongArray>())
         verify(sqlite, times(1)).step(eq(STMT))
     }
 
@@ -269,20 +322,20 @@ internal class SQLDatabaseTest {
     fun queryWithCancellationSignalSetsProgressHandler() {
         database.transact { }
         val signal = CancellationSignal(500)
-        whenever(sqlite.columnCount(any())) doReturn 0
-        whenever(sqlite.step(any())) doReturn SQL_DONE
-        whenever(sqlite.statementReadOnly(any())) doReturn 1
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
         database.query("SELECT 1", emptyArray(), signal)
-        verify(sqlite, times(1)).progressHandler(eq(DB), eq(500), any())
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(500), any<SQLProgressHandler>())
     }
 
     @Test
     fun queryWithCancellationSignalClearsProgressHandler() {
         database.transact { }
         val signal = CancellationSignal(500)
-        whenever(sqlite.columnCount(any())) doReturn 0
-        whenever(sqlite.step(any())) doReturn SQL_DONE
-        whenever(sqlite.statementReadOnly(any())) doReturn 1
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
         database.query("SELECT 1", emptyArray(), signal)
         verify(sqlite).progressHandler(eq(DB), eq(0), isNull())
     }

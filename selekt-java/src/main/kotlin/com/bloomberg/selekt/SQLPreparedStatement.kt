@@ -29,15 +29,15 @@ private const val MAX_PAUSE_MILLIS = 100L
 @NotThreadSafe
 @Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 internal class SQLPreparedStatement(
-    private val pointer: Pointer,
+    private val statement: StatementHandle,
     val sql: String,
     private val sqlite: SQLite,
     private val random: IRandom
 ) : Closeable {
-    val columnCount = sqlite.columnCount(pointer)
+    val columnCount = sqlite.columnCount(statement)
 
     val columnNames: Array<out String> = sqlite.run {
-        Array(columnCount) { columnName(pointer, it) }
+        Array(columnCount) { columnName(statement, it) }
     }
 
     /**
@@ -48,123 +48,123 @@ internal class SQLPreparedStatement(
      *
      * @see <a href="https://www.sqlite.org/c3ref/stmt_readonly.html">SQLite's stmt_readonly</a>
      */
-    val isReadOnly = sqlite.statementReadOnly(pointer) != 0
+    val isReadOnly = sqlite.statementReadOnly(statement) != 0
 
-    val parameterCount = sqlite.bindParameterCount(pointer)
+    val parameterCount = sqlite.bindParameterCount(statement)
 
     fun bind(index: Int, value: ByteArray) {
-        sqlite.bindBlob(pointer, index, value)
+        sqlite.bindBlob(statement, index, value)
     }
 
     fun bind(name: String, value: ByteArray) {
-        sqlite.bindBlob(pointer, resolveParameterIndex(name), value)
+        sqlite.bindBlob(statement, resolveParameterIndex(name), value)
     }
 
     fun bind(index: Int, value: Double) {
-        sqlite.bindDouble(pointer, index, value)
+        sqlite.bindDouble(statement, index, value)
     }
 
     fun bind(name: String, value: Double) {
-        sqlite.bindDouble(pointer, resolveParameterIndex(name), value)
+        sqlite.bindDouble(statement, resolveParameterIndex(name), value)
     }
 
     fun bind(index: Int, value: Int) {
-        sqlite.bindInt(pointer, index, value)
+        sqlite.bindInt(statement, index, value)
     }
 
     fun bind(name: String, value: Int) {
-        sqlite.bindInt(pointer, resolveParameterIndex(name), value)
+        sqlite.bindInt(statement, resolveParameterIndex(name), value)
     }
 
     fun bind(index: Int, value: Long) {
-        sqlite.bindInt64(pointer, index, value)
+        sqlite.bindInt64(statement, index, value)
     }
 
     fun bind(name: String, value: Long) {
-        sqlite.bindInt64(pointer, resolveParameterIndex(name), value)
+        sqlite.bindInt64(statement, resolveParameterIndex(name), value)
     }
 
     fun bind(index: Int, value: String) {
-        sqlite.bindText(pointer, index, value)
+        sqlite.bindText(statement, index, value)
     }
 
     fun bind(name: String, value: String) {
-        sqlite.bindText(pointer, resolveParameterIndex(name), value)
+        sqlite.bindText(statement, resolveParameterIndex(name), value)
     }
 
     fun bindNull(index: Int) {
-        sqlite.bindNull(pointer, index)
+        sqlite.bindNull(statement, index)
     }
 
     fun bindNull(name: String) {
-        sqlite.bindNull(pointer, resolveParameterIndex(name))
+        sqlite.bindNull(statement, resolveParameterIndex(name))
     }
 
     fun bindZeroBlob(index: Int, length: Int) {
-        sqlite.bindZeroBlob(pointer, index, length)
+        sqlite.bindZeroBlob(statement, index, length)
     }
 
     fun bindRow(args: Array<out Any?>) {
-        sqlite.bindRow(pointer, args)
+        sqlite.bindRow(statement, args)
     }
 
     fun bindRow(row: ParameterRow) {
-        sqlite.bindRow(pointer, row)
+        sqlite.bindRow(statement, row)
     }
 
     fun clearBindings() {
-        sqlite.clearBindings(pointer)
+        sqlite.clearBindings(statement)
     }
 
     override fun close() {
-        sqlite.finalize(pointer)
+        sqlite.finalize(statement)
     }
 
-    fun columnBlob(index: Int) = sqlite.columnBlob(pointer, index)
+    fun columnBlob(index: Int) = sqlite.columnBlob(statement, index)
 
-    fun columnDouble(index: Int) = sqlite.columnDouble(pointer, index)
+    fun columnDouble(index: Int) = sqlite.columnDouble(statement, index)
 
-    fun columnInt(index: Int) = sqlite.columnInt(pointer, index)
+    fun columnInt(index: Int) = sqlite.columnInt(statement, index)
 
-    fun columnLong(index: Int) = sqlite.columnInt64(pointer, index)
+    fun columnLong(index: Int) = sqlite.columnInt64(statement, index)
 
-    fun columnName(index: Int) = sqlite.columnName(pointer, index)
+    fun columnName(index: Int) = sqlite.columnName(statement, index)
 
-    fun columnString(index: Int) = sqlite.columnText(pointer, index)
+    fun columnString(index: Int) = sqlite.columnText(statement, index)
 
-    fun columnType(index: Int) = sqlite.columnType(pointer, index)
+    fun columnType(index: Int) = sqlite.columnType(statement, index)
 
-    fun isBusy() = sqlite.statementBusy(pointer) != 0
+    fun isBusy() = sqlite.statementBusy(statement) != 0
 
     fun reset() {
-        sqlite.reset(pointer)
+        sqlite.reset(statement)
     }
 
     fun resetAndClearBindings() {
-        sqlite.resetAndClearBindings(pointer)
+        sqlite.resetAndClearBindings(statement)
     }
 
-    fun step() = sqlite.step(pointer)
+    fun step() = sqlite.step(statement)
 
     fun step(intervalMillis: Long): SQLCode {
         require(intervalMillis > -1L) { "Interval must be non-negative." }
         return stepUntil(deadlineNanos = System.nanoTime() + intervalMillis * NANOS_PER_MILLI)
     }
 
-    private tailrec fun stepUntil(deadlineNanos: Long): SQLCode = when (sqlite.stepWithoutThrowing(pointer)) {
+    private tailrec fun stepUntil(deadlineNanos: Long): SQLCode = when (sqlite.stepWithoutThrowing(statement)) {
         SQL_ROW -> SQL_ROW
         SQL_DONE -> SQL_DONE
         SQL_BUSY -> {
             pauseElseExpire(deadlineNanos)
             stepUntil(deadlineNanos)
         }
-        else -> sqlite.throwSQLException(sqlite.databaseHandle(pointer))
+        else -> sqlite.throwSQLException(sqlite.databaseHandle(statement))
     }
 
     private fun pauseElseExpire(deadlineNanos: Long) {
         val remainingNanos = (deadlineNanos - System.nanoTime()).also {
             if (it < NANOS_PER_MILLI) {
-                sqlite.throwSQLException(sqlite.databaseHandle(pointer), "${sql.resolvedSqlStatementType()}")
+                sqlite.throwSQLException(sqlite.databaseHandle(statement), "${sql.resolvedSqlStatementType()}")
             }
         }
         Thread.sleep(1L + min(MAX_PAUSE_MILLIS, remainingNanos / NANOS_PER_MILLI).nextRandom())
@@ -172,7 +172,7 @@ internal class SQLPreparedStatement(
 
     private fun Long.nextRandom() = random.nextLong(this)
 
-    private fun resolveParameterIndex(name: String): Int = sqlite.bindParameterIndex(pointer, name).also {
+    private fun resolveParameterIndex(name: String): Int = sqlite.bindParameterIndex(statement, name).also {
         require(it > 0) { "Named parameter '$name' not found in SQL statement." }
     }
 }

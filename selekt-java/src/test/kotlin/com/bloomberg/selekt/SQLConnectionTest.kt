@@ -48,12 +48,117 @@ private val databaseConfiguration = DatabaseConfiguration(
 internal class SQLConnectionTest {
     @Mock lateinit var sqlite: SQLite
 
+    @Suppress("Detekt.LongMethod")
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
         whenever(sqlite.withScopedArena(any<() -> Any?>())) doAnswer {
             @Suppress("UNCHECKED_CAST")
             (it.arguments[0] as () -> Any?).invoke()
+        }
+        whenever(sqlite.newDatabaseHandle(any<Long>())) doAnswer { DatabaseHandle(it.getArgument(0)) }
+        whenever(sqlite.newStatementHandle(any<Long>())) doAnswer { StatementHandle(it.getArgument(0)) }
+        whenever(sqlite.newBlobHandle(any<Long>())) doAnswer { BlobHandle(it.getArgument(0)) }
+        whenever(sqlite.prepareV2(any<DatabaseHandle>(), any<String>(), any<LongArray>())) doAnswer {
+            sqlite.prepareV2((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String, it.arguments[2] as LongArray)
+        }
+        whenever(sqlite.blobOpen(
+            any<DatabaseHandle>(),
+            any<String>(),
+            any<String>(),
+            any<String>(),
+            any<Long>(),
+            any<Int>(),
+            any<LongArray>()
+        )) doAnswer {
+            sqlite.blobOpen(
+                (it.arguments[0] as DatabaseHandle).pointer,
+                it.arguments[1] as String,
+                it.arguments[2] as String,
+                it.arguments[3] as String,
+                it.arguments[4] as Long,
+                it.arguments[5] as Int,
+                it.arguments[6] as LongArray
+            )
+        }
+        whenever(sqlite.getAutocommit(any<DatabaseHandle>())) doAnswer { sqlite.getAutocommit((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.interrupt(any<DatabaseHandle>())) doAnswer {
+            sqlite.interrupt((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(sqlite.isInterrupted(any<DatabaseHandle>())) doAnswer { sqlite.isInterrupted((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.progressHandler(any<DatabaseHandle>(), any<Int>(), any<SQLProgressHandler>())) doAnswer {
+            sqlite.progressHandler((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, it.arguments[2] as SQLProgressHandler?)
+        }
+        whenever(sqlite.progressHandler(any<DatabaseHandle>(), any<Int>(), isNull())) doAnswer {
+            sqlite.progressHandler((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, null)
+        }
+        whenever(sqlite.walCheckpointV2(any<DatabaseHandle>(), any<String>(), any<Int>())) doAnswer {
+            sqlite.walCheckpointV2((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String?, it.arguments[2] as Int)
+        }
+        whenever(sqlite.walCheckpointV2(any<DatabaseHandle>(), isNull(), any<Int>())) doAnswer {
+            sqlite.walCheckpointV2((it.arguments[0] as DatabaseHandle).pointer, null, it.arguments[2] as Int)
+        }
+        whenever(sqlite.databaseConfig(any<DatabaseHandle>(), any<Int>(), any<Int>())) doAnswer {
+            sqlite.databaseConfig((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, it.arguments[2] as Int)
+        }
+        whenever(sqlite.databaseReleaseMemory(any<DatabaseHandle>())) doAnswer {
+            sqlite.databaseReleaseMemory((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(sqlite.commitHook(any<DatabaseHandle>(), any<Boolean>(), any<SQLCommitListener>())) doAnswer {
+            sqlite.commitHook((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Boolean, it.arguments[2] as SQLCommitListener?)
+        }
+        whenever(sqlite.commitHook(any<DatabaseHandle>(), any<Boolean>(), isNull())) doAnswer {
+            sqlite.commitHook((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Boolean, null)
+        }
+        whenever(sqlite.extendedResultCodes(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            sqlite.extendedResultCodes((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.busyTimeout(any<DatabaseHandle>(), any<Int>())) doAnswer {
+            sqlite.busyTimeout((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.exec(any<DatabaseHandle>(), any<String>())) doAnswer {
+            sqlite.exec((it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as String)
+        }
+        whenever(sqlite.closeV2(any<DatabaseHandle>())) doAnswer {
+            sqlite.closeV2((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(sqlite.changes(any<DatabaseHandle>())) doAnswer { sqlite.changes((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.totalChanges(any<DatabaseHandle>())) doAnswer { sqlite.totalChanges((it.arguments[0] as DatabaseHandle).pointer) }
+        whenever(sqlite.lastInsertRowId(any<DatabaseHandle>())) doAnswer {
+            sqlite.lastInsertRowId((it.arguments[0] as DatabaseHandle).pointer)
+        }
+        whenever(sqlite.bindParameterCount(any<StatementHandle>())) doAnswer {
+            sqlite.bindParameterCount((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.columnCount(any<StatementHandle>())) doAnswer {
+            sqlite.columnCount((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.columnType(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnType((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.columnName(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnName((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.columnInt(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnInt((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.columnInt64(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnInt64((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.columnText(any<StatementHandle>(), any<Int>())) doAnswer {
+            sqlite.columnText((it.arguments[0] as StatementHandle).pointer, it.arguments[1] as Int)
+        }
+        whenever(sqlite.step(any<StatementHandle>())) doAnswer {
+            sqlite.step((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.stepWithoutThrowing(any<StatementHandle>())) doAnswer {
+            sqlite.stepWithoutThrowing((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.resetAndClearBindings(any<StatementHandle>())) doAnswer {
+            sqlite.resetAndClearBindings((it.arguments[0] as StatementHandle).pointer)
+        }
+        whenever(sqlite.statementReadOnly(any<StatementHandle>())) doAnswer {
+            sqlite.statementReadOnly((it.arguments[0] as StatementHandle).pointer)
         }
         whenever(sqlite.openV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
@@ -63,7 +168,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun exceptionInConstruction(): Unit = sqlite.run {
-        whenever(busyTimeout(any(), any())) doThrow IllegalStateException()
+        whenever(busyTimeout(any<Long>(), any<Int>())) doThrow IllegalStateException()
         assertFailsWith<IllegalStateException> {
             SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null)
         }
@@ -86,7 +191,7 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 0L
             0
         }
@@ -99,7 +204,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun isAutoCommit1(): Unit = sqlite.run {
-        whenever(getAutocommit(any())) doReturn 1
+        whenever(getAutocommit(any<Long>())) doReturn 1
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertTrue(it.isAutoCommit)
         }
@@ -107,7 +212,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun isAutoCommit2(): Unit = sqlite.run {
-        whenever(getAutocommit(any())) doReturn 2
+        whenever(getAutocommit(any<Long>())) doReturn 2
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertTrue(it.isAutoCommit)
         }
@@ -115,7 +220,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun isAutoCommitFalse(): Unit = sqlite.run {
-        whenever(getAutocommit(any())) doReturn 0
+        whenever(getAutocommit(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFalse(it.isAutoCommit)
         }
@@ -131,7 +236,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun isInterruptedFalse(): Unit = sqlite.run {
-        whenever(isInterrupted(any())) doReturn false
+        whenever(isInterrupted(any<Long>())) doReturn false
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFalse(it.isInterrupted)
         }
@@ -139,7 +244,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun isInterruptedTrue(): Unit = sqlite.run {
-        whenever(isInterrupted(any())) doReturn true
+        whenever(isInterrupted(any<Long>())) doReturn true
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertTrue(it.isInterrupted)
         }
@@ -178,11 +283,11 @@ internal class SQLConnectionTest {
 
     @Test
     fun prepareChecksArgumentCount(): Unit = sqlite.run {
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
             SQL_OK
         }
-        whenever(bindParameterCount(any())) doReturn 1
+        whenever(bindParameterCount(any<Long>())) doReturn 1
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalArgumentException> {
                 it.executeForChangedRowCount("SELECT * FROM 'Foo' WHERE bar=?", emptyArray<Any>())
@@ -192,7 +297,7 @@ internal class SQLConnectionTest {
 
     @Test
     fun connectionRejectsUnrecognisedColumnType(): Unit = sqlite.run {
-        whenever(columnType(any(), any())) doReturn -1
+        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalStateException> {
                 it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
@@ -206,11 +311,11 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
+        whenever(step(any<Long>())) doReturn SQL_ROW
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
         }
@@ -222,12 +327,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_DONE
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1L, it.executeForLastInsertedRowId("INSERT INTO Foo VALUES (42)"))
         }
@@ -239,12 +344,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)"))
         }
@@ -258,12 +363,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(columnInt(any(), any())) doReturn value
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(columnInt(any<Long>(), any<Int>())) doReturn value
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(value, it.executeForInt("SELECT * FROM Foo LIMIT 1"))
         }
@@ -278,12 +383,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(columnInt64(any(), any())) doReturn value
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(columnInt64(any<Long>(), any<Int>())) doReturn value
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(value, it.executeForLong("SELECT * FROM Foo LIMIT 1"))
         }
@@ -298,12 +403,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = statement
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(columnText(any(), any())) doReturn text
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(columnText(any<Long>(), any<Int>())) doReturn text
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(text, it.executeForString("SELECT * FROM Foo LIMIT 1"))
         }
@@ -316,11 +421,13 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(blobOpen(any(), any(), any(), any(), any(), any(), any())) doAnswer {
+        whenever(blobOpen(
+            any<Long>(), any<String>(), any<String>(), any<String>(), any<Long>(), any<Int>(), any<LongArray>())
+        ) doAnswer {
             (it.arguments[6] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
+        whenever(step(any<Long>())) doReturn SQL_ROW
         SQLConnection("file::memory:", this, databaseConfiguration, SQL_OPEN_READONLY, CommonThreadLocalRandom, null).use {
             assertTrue(it.executeForBlob("main", "Foo", "bar", 42L).readOnly)
         }
@@ -332,12 +439,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", sequenceOf(emptyArray())))
         }
@@ -349,12 +456,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(0, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", emptyArray()))
         }
@@ -366,13 +473,13 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(bindParameterCount(any())) doReturn 1
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(bindParameterCount(any<Long>())) doReturn 1
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         val bindArgs = (1..4).map { i -> arrayOf<Any?>(i) }.toTypedArray()
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (?)", bindArgs, 1, 3))
@@ -385,13 +492,13 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(bindParameterCount(any())) doReturn 1
-        whenever(step(any())) doReturn SQL_DONE
-        whenever(totalChanges(any())) doReturn 10 doReturn 12
+        whenever(bindParameterCount(any<Long>())) doReturn 1
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        whenever(totalChanges(any<Long>())) doReturn 10 doReturn 12
         val bindArgs = (1..4).map { i -> arrayOf<Any?>(i) }.toTypedArray()
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(2, it.executeBatchForChangedRowCount(
@@ -409,12 +516,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeBatchForChangedRowCount("INSERT INTO Foo VALUES (42)", listOf(emptyArray())))
         }
@@ -426,12 +533,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(changes(any())) doReturn 0
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(changes(any<Long>())) doReturn 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(
                 -1,
@@ -449,13 +556,13 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnType(any(), any())) doReturn -1
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertFailsWith<IllegalStateException>("Failed to allocate a window row.") {
                 it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
@@ -469,13 +576,13 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(step(any())) doReturn SQL_ROW
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnType(any(), any())) doReturn -1
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
         val cursorWindow = mock<ICursorWindow> {
             whenever(it.allocateRow()) doReturn true
         }
@@ -490,7 +597,7 @@ internal class SQLConnectionTest {
     fun releaseMemory(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.releaseMemory()
-            verify(this@run, times(1)).databaseReleaseMemory(any())
+            verify(this@run, times(1)).databaseReleaseMemory(any<Long>())
         }
     }
 
@@ -536,7 +643,7 @@ internal class SQLConnectionTest {
     @Test
     fun closeDoesNotUnregisterHooksWhenNoListenerSet(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {}
-        verify(this, never()).commitHook(any(), eq(false), any())
+        verify(this, never()).commitHook(any<Long>(), eq(false), any<SQLCommitListener>())
     }
 
     @Test
@@ -594,16 +701,16 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
         var stepCount = 0
-        whenever(step(any())) doAnswer { if (stepCount++ < 2) SQL_ROW else SQL_DONE }
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnType(any(), any())) doReturn ColumnType.INTEGER.sqlDataType
-        whenever(columnName(any(), any())) doReturn "id"
-        whenever(columnInt64(any(), any())) doReturn 99L
+        whenever(step(any<Long>())) doAnswer { if (stepCount++ < 2) { SQL_ROW } else { SQL_DONE } }
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnType(any<Long>(), any<Int>())) doReturn ColumnType.INTEGER.sqlDataType
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
+        whenever(columnInt64(any<Long>(), any<Int>())) doReturn 99L
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
             val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
             assertTrue(cursor.moveToNext())
@@ -620,12 +727,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnName(any(), any())) doReturn "id"
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
             val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
             cursor.close()
@@ -639,12 +746,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnName(any(), any())) doReturn "id"
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         var additionalClosed = false
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
             val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
@@ -662,12 +769,12 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 42L
             0
         }
-        whenever(prepareV2(any(), any(), any())) doAnswer {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(columnCount(any())) doReturn 1
-        whenever(columnName(any(), any())) doReturn "id"
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         var closeCount = 0
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
             val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
