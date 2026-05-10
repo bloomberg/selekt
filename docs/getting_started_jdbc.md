@@ -167,20 +167,6 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
         new EncryptionKeySource.Literal(key.toCharArray()));
     ```
 
-### Disabling encryption
-
-Unless a key is provided, the database will be created without encryption. To disable encryption on an existing database, set the encryption key to `null`:
-
-=== "Kotlin"
-    ``` kotlin
-    dataSource.setEncryption(null)
-    ```
-
-=== "Java"
-    ``` java
-    dataSource.setEncryption(null);
-    ```
-
 ## Interaction
 
 ### Querying with a PreparedStatement
