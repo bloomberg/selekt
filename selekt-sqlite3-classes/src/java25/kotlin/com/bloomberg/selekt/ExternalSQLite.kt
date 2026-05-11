@@ -31,6 +31,7 @@ import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
 import java.util.concurrent.locks.ReentrantLock
+import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
@@ -52,7 +53,10 @@ internal class ExternalSQLite(
     loader: () -> Unit
 ) : IExternalSQLite {
     private val callbackArena = Arena.ofShared()
+    private val callbackRegistryLock = ReentrantLock()
+    @GuardedBy("callbackRegistryLock")
     private val activeListeners = mutableMapOf<Long, Pair<MemorySegment, MemorySegment>>()
+    @GuardedBy("callbackRegistryLock")
     private val activeProgressHandlers = mutableMapOf<Long, MemorySegment>()
 
     init {
@@ -590,17 +594,19 @@ internal class ExternalSQLite(
         enabled: Boolean,
         listener: SQLCommitListener?
     ): SQLCode {
-        val segment = MemorySegment.ofAddress(db)
-        if (enabled && listener != null) {
-            val commitStub = createCommitHookStub(listener)
-            val rollbackStub = createRollbackHookStub(listener)
-            sqlite3_commit_hook.invoke(segment, commitStub, MemorySegment.NULL)
-            sqlite3_rollback_hook.invoke(segment, rollbackStub, MemorySegment.NULL)
-            activeListeners[db] = Pair(commitStub, rollbackStub)
-        } else {
-            sqlite3_commit_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
-            sqlite3_rollback_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
-            activeListeners.remove(db)
+        callbackRegistryLock.withLock {
+            val segment = MemorySegment.ofAddress(db)
+            if (enabled && listener != null) {
+                val commitStub = createCommitHookStub(listener)
+                val rollbackStub = createRollbackHookStub(listener)
+                sqlite3_commit_hook.invoke(segment, commitStub, MemorySegment.NULL)
+                sqlite3_rollback_hook.invoke(segment, rollbackStub, MemorySegment.NULL)
+                activeListeners[db] = Pair(commitStub, rollbackStub)
+            } else {
+                sqlite3_commit_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
+                sqlite3_rollback_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
+                activeListeners.remove(db)
+            }
         }
         return SQL_OK
     }
@@ -819,14 +825,16 @@ internal class ExternalSQLite(
         instructionCount: Int,
         handler: SQLProgressHandler?
     ) {
-        val segment = MemorySegment.ofAddress(db)
-        if (handler != null) {
-            val stub = createProgressHandlerStub(handler)
-            sqlite3_progress_handler.invoke(segment, instructionCount, stub, MemorySegment.NULL)
-            activeProgressHandlers[db] = stub
-        } else {
-            sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
-            activeProgressHandlers.remove(db)
+        callbackRegistryLock.withLock {
+            val segment = MemorySegment.ofAddress(db)
+            if (handler != null) {
+                val stub = createProgressHandlerStub(handler)
+                sqlite3_progress_handler.invoke(segment, instructionCount, stub, MemorySegment.NULL)
+                activeProgressHandlers[db] = stub
+            } else {
+                sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
+                activeProgressHandlers.remove(db)
+            }
         }
     }
 
