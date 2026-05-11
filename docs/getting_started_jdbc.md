@@ -312,19 +312,19 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
     try (Connection connection = dataSource.getConnection()) {
         connection.setAutoCommit(false);
         try {
-            try (final PreparedStatement debit = connection.prepareStatement(
+            try (final PreparedStatement statement = connection.prepareStatement(
                 "UPDATE accounts SET balance = balance - ? WHERE id = ?"
             )) {
-                debit.setDouble(1, 100.0);
-                debit.setInt(2, 1);
-                debit.executeUpdate();
+                statement.setDouble(1, 100.0);
+                statement.setInt(2, 1);
+                statement.executeUpdate();
             }
-            try (final PreparedStatement credit = connection.prepareStatement(
+            try (final PreparedStatement statement = connection.prepareStatement(
                 "UPDATE accounts SET balance = balance + ? WHERE id = ?"
             )) {
-                credit.setDouble(1, 100.0);
-                credit.setInt(2, 2);
-                credit.executeUpdate();
+                statement.setDouble(1, 100.0);
+                statement.setInt(2, 2);
+                statement.executeUpdate();
             }
             connection.commit();
         } catch (final SQLException e) {
