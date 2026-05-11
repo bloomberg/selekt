@@ -9,7 +9,7 @@
     }
 
     dependencies {
-        implementation(platform("com.bloomberg.selekt:selekt-bom:<version>"))
+        implementation(platform("com.bloomberg.selekt:selekt-bom:{selektVersion}"))
         implementation("com.bloomberg.selekt:selekt-android")
         runtimeOnly("com.bloomberg.selekt:selekt-android-sqlcipher")
     }
@@ -22,7 +22,7 @@
     }
 
     dependencies {
-        implementation platform('com.bloomberg.selekt:selekt-bom:<version>')
+        implementation platform('com.bloomberg.selekt:selekt-bom:{selektVersion}')
         implementation 'com.bloomberg.selekt:selekt-android'
         runtimeOnly 'com.bloomberg.selekt:selekt-android-sqlcipher'
     }
