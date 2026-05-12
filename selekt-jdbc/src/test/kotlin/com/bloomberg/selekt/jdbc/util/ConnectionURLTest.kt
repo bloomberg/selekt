@@ -73,6 +73,15 @@ internal class ConnectionURLTest {
     }
 
     @Test
+    fun malformedUrlErrorRedactsKey() {
+        val exception = assertFailsWith<SQLException> {
+            ConnectionURL.parse("jdbc:sqlite:/test.db?key=supersecret%2")
+        }
+        assertFalse(exception.message.orEmpty().contains("supersecret"))
+        assertTrue(exception.message.orEmpty().contains("key=***"))
+    }
+
+    @Test
     fun urlValidation() {
         listOf(
             "jdbc:sqlite:/test.db",

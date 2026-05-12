@@ -42,6 +42,7 @@ internal class ConnectionURL private constructor(
         private const val JDBC_PREFIX = "jdbc:"
         private const val SELEKT_SUBPROTOCOL = "sqlite:"
         private const val FULL_PREFIX = "$JDBC_PREFIX$SELEKT_SUBPROTOCOL"
+        private val KEY_PROPERTY_PATTERN = Regex("([?&])key=[^&]*", RegexOption.IGNORE_CASE)
 
         @JvmStatic
         fun parse(url: String): ConnectionURL {
@@ -55,8 +56,12 @@ internal class ConnectionURL private constructor(
                     ConnectionURL(first, second)
                 }
             }.getOrElse {
-                throw SQLException("Failed to parse JDBC URL: $url", it)
+                throw SQLException("Failed to parse JDBC URL: ${redactSensitiveProperties(url)}", it)
             }
+        }
+
+        private fun redactSensitiveProperties(url: String) = KEY_PROPERTY_PATTERN.replace(url) {
+            "${it.groupValues[1]}key=***"
         }
 
         @JvmStatic
