@@ -66,6 +66,7 @@ listOf(
             }
         }
     }
+    configurations["${variantName}CompileOnly"].extendsFrom(configurations.compileOnly.get())
     configurations["${variantName}Implementation"].extendsFrom(configurations.implementation.get())
     java {
         registerFeature(variantName) {
@@ -100,6 +101,7 @@ sourceSets {
 }
 
 dependencies {
+    compileOnly(libs.findbugs.jsr305)
     implementation(projects.selektCommons)
     implementation(projects.selektSqlite3Api)
     jmhImplementation(projects.selektCommons)
