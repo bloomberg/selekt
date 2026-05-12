@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 0.33.2
+
+* Synchronize callback registries in ExternalSQLite.
+* Fix callback stub lifecycle with per-registration arenas.
+* Redact JDBC key from malformed URL parse error.
+
 ## Version 0.33.1
 
 * Use static memory segment when getting confined Strings.
