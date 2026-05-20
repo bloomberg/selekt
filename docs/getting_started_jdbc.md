@@ -1,6 +1,6 @@
 ## Integration
 
-Selekt requires **Java 25** or later.
+Selekt JBDC requires **Java 25** or later.
 
 ### Gradle
 
@@ -59,9 +59,9 @@ Selekt requires **Java 25** or later.
     ``` kotlin
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/database.db"
-        journalMode = "WAL" // is the default journal mode
-        busyTimeout = 2_500 // milliseconds is the default busy timeout
-        maxPoolSize = 4 // is the default, 3 read-only connections
+        journalMode = "WAL" // is the default
+        busyTimeout = 2_500 // milliseconds is the default
+        maxPoolSize = 4 // is the default, with 3 read-only connections
         foreignKeys = true
     }
 
@@ -74,9 +74,9 @@ Selekt requires **Java 25** or later.
     ``` java
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/database.db");
-    dataSource.setJournalMode("WAL"); // is the default journal mode
-    dataSource.setBusyTimeout(2500); // milliseconds is the default busy timeout
-    dataSource.setMaxPoolSize(4); // is the default, 3 read-only connections
+    dataSource.setJournalMode("WAL"); // is the default
+    dataSource.setBusyTimeout(2500); // milliseconds is the default
+    dataSource.setMaxPoolSize(4); // is the default, with 3 read-only connections
     dataSource.setForeignKeys(true);
 
     try (Connection connection = dataSource.getConnection()) {
