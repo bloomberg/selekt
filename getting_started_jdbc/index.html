@@ -965,7 +965,7 @@
   <h1>JDBC</h1>
 
 <h2 id="integration">Integration</h2>
-<p>Selekt requires <strong>Java 25</strong> or later.</p>
+<p>Selekt JBDC requires <strong>Java 25</strong> or later.</p>
 <h3 id="gradle">Gradle</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Kotlin</label><label for="__tabbed_1_2">Groovy</label></div>
 <div class="tabbed-content">
@@ -1020,9 +1020,9 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">().</span><span class="na">apply</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">databasePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/path/to/database.db&quot;</span>
-<span class="w">    </span><span class="n">journalMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="w"> </span><span class="c1">// is the default journal mode</span>
-<span class="w">    </span><span class="n">busyTimeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="n">_500</span><span class="w"> </span><span class="c1">// milliseconds is the default busy timeout</span>
-<span class="w">    </span><span class="n">maxPoolSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="c1">// is the default, 3 read-only connections</span>
+<span class="w">    </span><span class="n">journalMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="w"> </span><span class="c1">// is the default</span>
+<span class="w">    </span><span class="n">busyTimeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="n">_500</span><span class="w"> </span><span class="c1">// milliseconds is the default</span>
+<span class="w">    </span><span class="n">maxPoolSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="c1">// is the default, with 3 read-only connections</span>
 <span class="w">    </span><span class="n">foreignKeys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">}</span>
 
@@ -1034,9 +1034,9 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="w"> </span><span class="n">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">();</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setDatabasePath</span><span class="p">(</span><span class="s">&quot;/path/to/database.db&quot;</span><span class="p">);</span>
-<span class="n">dataSource</span><span class="p">.</span><span class="na">setJournalMode</span><span class="p">(</span><span class="s">&quot;WAL&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default journal mode</span>
-<span class="n">dataSource</span><span class="p">.</span><span class="na">setBusyTimeout</span><span class="p">(</span><span class="mi">2500</span><span class="p">);</span><span class="w"> </span><span class="c1">// milliseconds is the default busy timeout</span>
-<span class="n">dataSource</span><span class="p">.</span><span class="na">setMaxPoolSize</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default, 3 read-only connections</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setJournalMode</span><span class="p">(</span><span class="s">&quot;WAL&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setBusyTimeout</span><span class="p">(</span><span class="mi">2500</span><span class="p">);</span><span class="w"> </span><span class="c1">// milliseconds is the default</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setMaxPoolSize</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default, with 3 read-only connections</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setForeignKeys</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
 
 <span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dataSource</span><span class="p">.</span><span class="na">getConnection</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
