@@ -1,5 +1,7 @@
 ## Integration
 
+Selekt Android requires Java 17.
+
 ### Gradle
 
 === "Kotlin"
