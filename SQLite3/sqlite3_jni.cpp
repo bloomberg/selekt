@@ -31,6 +31,10 @@
 #include <unordered_map>
 #include <mutex>
 
+#ifdef VEC1_STATIC
+extern "C" int sqlite3_vec1_extra_init(const char* z);
+#endif
+
 namespace {
     struct ThrowableClasses {
         jclass illegalArgumentException = nullptr;
@@ -43,6 +47,11 @@ namespace {
         static ThrowableClasses instance;
         return instance;
     }
+
+#ifdef VEC1_STATIC
+    std::once_flag vec1AutoExtensionOnce;
+    int vec1AutoExtensionResult = SQLITE_OK;
+#endif
 }
 
 bool initThrowableClasses(JNIEnv* env) {
@@ -1490,6 +1499,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
         throwIllegalStateException(env, "sqlite3_initialize failed");
         return;
     }
+#ifdef VEC1_STATIC
+    std::call_once(vec1AutoExtensionOnce, [] {
+        vec1AutoExtensionResult = sqlite3_vec1_extra_init(nullptr);
+    });
+    if (vec1AutoExtensionResult != SQLITE_OK) {
+        throwIllegalStateException(env, "sqlite3_vec1_extra_init failed");
+        return;
+    }
+#endif
     sqlite3_soft_heap_limit64(jSoftHeapLimit);
     LOG_D("SQLite3 has soft heap limit %llu bytes.", sqlite3_soft_heap_limit64(-1));
     LOG_D("SQLite3 has hard heap limit %llu bytes.", sqlite3_hard_heap_limit64(-1));

@@ -79,6 +79,16 @@ fun targetIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".
 logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 val isWindows = osName() == "windows"
+
+val vec1Enabled: String = providers.gradleProperty("selekt.vec1.enabled")
+    .orElse(providers.environmentVariable("SELEKT_ENABLE_VEC1"))
+    .orElse("ON")
+    .get()
+val vec1EnableX86Avx2: String = providers.gradleProperty("selekt.vec1.enableX86Avx2")
+    .orElse(providers.environmentVariable("SELEKT_VEC1_ENABLE_X86_AVX2"))
+    .orElse("OFF")
+    .get()
+
 val sqlcipherDir = file("src/main/external/sqlcipher")
 val generatedCppDir = file("sqlite3/generated/cpp")
 val generatedIncludeDir = file("sqlite3/generated/include/sqlite3")
@@ -147,7 +157,9 @@ tasks.register<Exec>("cmakeSQLite") {
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_VERBOSE_MAKEFILE=ON",
         "-DUSE_CCACHE=1",
-        "-DSLKT_TARGET_ABI=${targetIdentifier()}"
+        "-DSLKT_TARGET_ABI=${targetIdentifier()}",
+        "-DSELEKT_ENABLE_VEC1=$vec1Enabled",
+        "-DSELEKT_VEC1_ENABLE_X86_AVX2=$vec1EnableX86Avx2"
     )
     if (isWindows) {
         cmakeArgs.addAll(0, listOf("-G", "MinGW Makefiles"))

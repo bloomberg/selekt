@@ -32,6 +32,7 @@ include(":selekt-jdbc")
 include(":selekt-jvm")
 include(":selekt-sqlite3-api")
 include(":selekt-sqlite3-classes")
+include(":selekt-sqlite3-ext")
 include(":selekt-sqlite3-sqlcipher")
 
 pluginManagement {
