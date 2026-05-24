@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.34.0
+
+* SQLCipher 4.16.0.
+* Prepare SQLite3 extensions support, start with vec1.
+
 ## Version 0.33.2
 
 * Synchronize callback registries in ExternalSQLite.
