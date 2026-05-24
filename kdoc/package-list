@@ -20,3 +20,5 @@ com.bloomberg.selekt.jdbc.driver
 com.bloomberg.selekt.jdbc.statement
 module:selekt-sqlite3-api
 com.bloomberg.selekt
+module:selekt-sqlite3-ext
+com.bloomberg.selekt.ext
