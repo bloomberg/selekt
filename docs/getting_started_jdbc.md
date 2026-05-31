@@ -1,6 +1,6 @@
 ## Integration
 
-Selekt JBDC requires **Java 25** or later.
+Selekt JBDC requires Java 25 or later.
 
 ### Gradle
 
@@ -98,13 +98,21 @@ Selekt JBDC requires **Java 25** or later.
     final Connection connection = DriverManager.getConnection(url);
     ```
 
-Connection properties can be passed via the URL query string or a `Properties` object:
+Connection properties can be passed via a `Properties` object:
 
 === "Kotlin"
     ``` kotlin
-    val url = "jdbc:sqlite:/path/to/database.db" +
-        "?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
-    val connection = DriverManager.getConnection(url)
+    val properties = Properties().apply {
+        setProperty("journalMode", "WAL")
+        setProperty("busyTimeout", "2500")
+        setProperty("poolSize", "4")
+        setProperty("foreignKeys", "true")
+    }
+
+    val connection = DriverManager.getConnection(
+        "jdbc:sqlite:/path/to/database.db",
+        properties
+    )
     ```
 
 === "Java"
@@ -118,6 +126,22 @@ Connection properties can be passed via the URL query string or a `Properties` o
     final Connection connection = DriverManager.getConnection(
         "jdbc:sqlite:/path/to/database.db",
         properties
+    );
+    ```
+
+Properties can also be inlined in the URL query string:
+
+=== "Kotlin"
+    ``` kotlin
+    val connection = DriverManager.getConnection(
+        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
+    )
+    ```
+
+=== "Java"
+    ``` java
+    final Connection connection = DriverManager.getConnection(
+        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
     );
     ```
 
