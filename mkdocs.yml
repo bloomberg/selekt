@@ -20,6 +20,8 @@ theme:
   font:
     text: Roboto
     code: Roboto Mono
+  features:
+    - content.tabs.link
 
 extra_css:
   - stylesheets/extra.css
