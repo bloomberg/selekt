@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger as JulLogger
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
-import java.nio.CharBuffer
 import javax.sql.DataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -61,7 +60,6 @@ class SelektDataSource : DataSource {
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val DEFAULT_POOL_SIZE = 10
-        private const val REQUIRED_KEY_LENGTH_BYTES = 32
 
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(SelektDataSource::class.java, "closed", Boolean::class.javaPrimitiveType)
@@ -117,7 +115,7 @@ class SelektDataSource : DataSource {
     var encryptionKeySource: EncryptionKeySource? = null
         set(value) {
             if (value is EncryptionKeySource.Literal) {
-                validateKeyLength(value.key)
+                KeyEncoding.validateLength(value.key)
             }
             (field as? EncryptionKeySource.Literal)?.zero()
             field = value
@@ -267,10 +265,7 @@ class SelektDataSource : DataSource {
             }
         }
         val encryptionKeyBytes = when (val source = encryptionKeySource) {
-            is EncryptionKeySource.Literal -> {
-                val buffer = Charsets.UTF_8.encode(CharBuffer.wrap(source.key))
-                ByteArray(buffer.remaining()).also(buffer::get)
-            }
+            is EncryptionKeySource.Literal -> KeyEncoding.encode(source.key)
             null -> null
         }
         return try {
@@ -317,19 +312,5 @@ class SelektDataSource : DataSource {
     ): String? = when (source) {
         is EncryptionKeySource.Literal -> hashKeyChars(source.key)
         null -> null
-    }
-
-    private fun CharArray.isHexPrefixed(): Boolean =
-        size >= 2 && this[0] == '0' && this[1].equals('x', ignoreCase = true)
-
-    private fun validateKeyLength(keyChars: CharArray) {
-        val encodedLength = if (keyChars.isHexPrefixed()) {
-            (keyChars.size - 2) / 2
-        } else {
-            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).remaining()
-        }
-        require(encodedLength == REQUIRED_KEY_LENGTH_BYTES) {
-            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was $encodedLength bytes"
-        }
     }
 }

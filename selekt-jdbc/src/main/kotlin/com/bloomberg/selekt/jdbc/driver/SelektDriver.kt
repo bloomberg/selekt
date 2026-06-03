@@ -27,7 +27,6 @@ import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import com.bloomberg.selekt.commons.zero
-import java.nio.CharBuffer
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.DriverManager
@@ -79,12 +78,6 @@ class SelektDriver : Driver {
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
         private const val DEFAULT_POOL_SIZE = 10
-
-        private const val HEX_PREFIX_LENGTH = 2
-        private const val HEX_CHUNK_SIZE = 2
-        private const val HEX_RADIX = 16
-        private const val BITS_PER_HEX_DIGIT = 4
-        private const val REQUIRED_KEY_LENGTH_BYTES = 32
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
@@ -249,47 +242,7 @@ class SelektDriver : Driver {
         additionalProperties.remove(PROPERTY_KEY)
     }.toCharArray()
 
-    @Suppress("Detekt.ComplexCondition")
-    private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? {
-        if (keyChars == null) {
-            return null
-        }
-        val bytes = if (
-            keyChars.size >= HEX_PREFIX_LENGTH &&
-            keyChars[0] == '0' &&
-            keyChars[1].let { it == 'x' || it == 'X' }
-        ) {
-            parseHexKey(keyChars)
-        } else {
-            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).let {
-                ByteArray(it.remaining()).also(it::get)
-            }
-        }
-        require(bytes.size == REQUIRED_KEY_LENGTH_BYTES) {
-            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was ${bytes.size} bytes"
-        }
-        return bytes
-    }
-
-    private fun parseHexKey(keyChars: CharArray): ByteArray {
-        val hexLength = keyChars.size - HEX_PREFIX_LENGTH
-        require(hexLength > 0 && hexLength % HEX_CHUNK_SIZE == 0) {
-            "Hex key must have an even number of hex digits after the '0x' prefix"
-        }
-        val byteArray = ByteArray(hexLength / HEX_CHUNK_SIZE)
-        var i = HEX_PREFIX_LENGTH
-        var j = 0
-        while (i < keyChars.size - 1) {
-            val high = Character.digit(keyChars[i], HEX_RADIX)
-            val low = Character.digit(keyChars[i + 1], HEX_RADIX)
-            require(high != -1 && low != -1) {
-                "Invalid hex character in encryption key"
-            }
-            byteArray[j++] = (high shl BITS_PER_HEX_DIGIT or low).toByte()
-            i += HEX_CHUNK_SIZE
-        }
-        return byteArray
-    }
+    private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? = keyChars?.let(KeyEncoding::encode)
 
     private fun mergeProperties(
         urlProperties: Properties,

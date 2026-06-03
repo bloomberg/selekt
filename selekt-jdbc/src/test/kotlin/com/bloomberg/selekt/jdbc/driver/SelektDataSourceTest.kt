@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.sql.DriverManager
+import java.util.Properties
 
 internal class SelektDataSourceTest {
     @TempDir
@@ -59,7 +61,6 @@ internal class SelektDataSourceTest {
         journalMode = "WAL"
         foreignKeys = true
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
-
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
         assertEquals(5_000, busyTimeout)
@@ -269,6 +270,32 @@ internal class SelektDataSourceTest {
         databasePath = File(tempDir, "plain.db").absolutePath
         setEncryption(null)
         getConnection().close()
+    }
+
+    @Test
+    fun dataSourceAndDriverAgreeOnHexKey() {
+        val hexKey = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        val dbPath = File(tempDir, "cross-api.db").absolutePath
+        dataSource.apply {
+            databasePath = dbPath
+            setEncryption(EncryptionKeySource.Literal(hexKey.toCharArray()))
+        }
+        dataSource.getConnection().use { connection ->
+            connection.createStatement().use { statement ->
+                statement.execute("CREATE TABLE t(x INTEGER NOT NULL)")
+                statement.execute("INSERT INTO t(x) VALUES (42)")
+            }
+        }
+        dataSource.close()
+        val properties = Properties().apply { setProperty("key", hexKey) }
+        DriverManager.getConnection("jdbc:sqlite:$dbPath", properties).use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT x FROM t").use { resultSet ->
+                    assertTrue(resultSet.next(), "Expected at least one row when re-opening via DriverManager")
+                    assertEquals(42, resultSet.getInt(1))
+                }
+            }
+        }
     }
 
     @Test
