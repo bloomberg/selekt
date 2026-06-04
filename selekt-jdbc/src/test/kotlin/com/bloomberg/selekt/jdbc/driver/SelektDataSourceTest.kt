@@ -299,6 +299,40 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun concurrentGetConnectionDoesNotRaceCacheEviction() {
+        dataSource.databasePath = File(tempDir, "n2-race.db").absolutePath
+        val threadCount = 32
+        val iterations = 50
+        val barrier = java.util.concurrent.CyclicBarrier(threadCount)
+        val latch = java.util.concurrent.CountDownLatch(threadCount)
+        val failures = java.util.concurrent.atomic.AtomicInteger(0)
+        repeat(threadCount) {
+            Thread {
+                try {
+                    barrier.await()
+                    repeat(iterations) {
+                        dataSource.getConnection().use { conn ->
+                            conn.createStatement().use { st ->
+                                st.executeQuery("SELECT 1").use { rs ->
+                                    rs.next()
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    failures.incrementAndGet()
+                    e.printStackTrace()
+                } finally {
+                    latch.countDown()
+                }
+            }.start()
+        }
+        latch.await()
+        assertEquals(0, failures.get(),
+            "Cache eviction race caused $failures/${threadCount * iterations} failures")
+    }
+
+    @Test
     fun getConnectionWithCustomPoolSize(): Unit = dataSource.run {
         databasePath = File(tempDir, "pooled.db").absolutePath
         maxPoolSize = 20

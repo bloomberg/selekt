@@ -125,4 +125,55 @@ internal class SharedResourceTest {
         assertFalse(isOpen())
         assertEquals(1, releaseCount.get())
     }
+
+    @Test
+    fun tryRetainSucceedsWhileOpen(): Unit = TestResource().run {
+        assertTrue(tryRetain())
+        assertTrue(isOpen())
+        release()
+        assertTrue(isOpen())
+    }
+
+    @Test
+    fun tryRetainReturnsFalseAfterRelease(): Unit = TestResource().run {
+        release()
+        assertFalse(isOpen())
+        assertFalse(tryRetain())
+        assertEquals(1, releaseCount.get(), "tryRetain must not resurrect a released resource")
+    }
+
+    @Test
+    fun tryRetainDoesNotThrowAfterRelease(): Unit = TestResource().run {
+        release()
+        repeat(10) { assertFalse(tryRetain()) }
+    }
+
+    @Test
+    fun tryRetainConcurrentWithRelease() {
+        repeat(50) {
+            val resource = TestResource()
+            val threadCount = 32
+            val barrier = CyclicBarrier(threadCount + 1)
+            val latch = CountDownLatch(threadCount + 1)
+            val successes = AtomicInteger(0)
+            repeat(threadCount) {
+                Thread {
+                    barrier.await()
+                    if (resource.tryRetain()) {
+                        successes.incrementAndGet()
+                        resource.release()
+                    }
+                    latch.countDown()
+                }.start()
+            }
+            Thread {
+                barrier.await()
+                resource.release()
+                latch.countDown()
+            }.start()
+            latch.await()
+            assertFalse(resource.isOpen(), "Resource must end closed after the initial release drains")
+            assertEquals(1, resource.releaseCount.get(), "onReleased must fire exactly once")
+        }
+    }
 }

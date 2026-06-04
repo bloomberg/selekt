@@ -35,11 +35,20 @@ abstract class SharedResource {
     protected abstract fun onReleased()
 
     fun retain() {
+        check(tryRetain()) { "Attempting to retain an already released resource: $this." }
+    }
+
+    /**
+     * @since 0.34.1
+     */
+    fun tryRetain(): Boolean {
         while (true) {
             val current = retainCountUpdater[this]
-            check(current > 0) { "Attempting to retain an already released resource: $this." }
+            if (current <= 0) {
+                return false
+            }
             if (retainCountUpdater.compareAndSet(this, current, current + 1)) {
-                return
+                return true
             }
         }
     }
@@ -75,4 +84,3 @@ abstract class SharedResource {
         )
     }
 }
-
