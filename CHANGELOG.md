@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 0.34.1
+
+* Fix hex-prefixed JDBC encryption keys decoding inconsistently between `SelektDriver` and `SelektDataSource`.
+
 ## Version 0.34.0
 
 * SQLCipher 4.16.0.
