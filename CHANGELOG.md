@@ -4,6 +4,7 @@ Change Log
 ## Version 0.34.1
 
 * Fix hex-prefixed JDBC encryption keys decoding inconsistently between `SelektDriver` and `SelektDataSource`.
+* Fix lock-free cache race in `SelektDataSource.getOrCreateDatabase`.
 
 ## Version 0.34.0
 

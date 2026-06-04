@@ -241,12 +241,16 @@ class SelektDataSource : DataSource {
         properties: Properties
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
-        return databaseCache.computeIfAbsent(cacheKey) {
-            SharedDatabase(createDatabase(connectionURL, properties)) {
-                databaseCache.remove(cacheKey)
+        while (true) {
+            val cached = databaseCache.computeIfAbsent(cacheKey) {
+                SharedDatabase(createDatabase(connectionURL, properties)) {
+                    databaseCache.remove(cacheKey)
+                }
             }
-        }.apply {
-            retain()
+            if (cached.tryRetain()) {
+                return cached
+            }
+            databaseCache.remove(cacheKey, cached)
         }
     }
 
