@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.34.2
+
+* Throw SQLException for out-of-range JDBC Blob positions.
+* Route all JdbcConnection.prepareStatement overloads through the pool.
+
 ## Version 0.34.1
 
 * Fix hex-prefixed JDBC encryption keys decoding inconsistently between `SelektDriver` and `SelektDataSource`.
