@@ -1370,6 +1370,42 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun preparedStatementPoolReturnRejectedAfterCloseDoesNotLeak() {
+        val sql = "SELECT 1"
+        val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
+        connection.close()
+        assertFalse(connection.returnPreparedStatement(preparedStatement))
+        assertFailsWith<SQLException> { connection.prepareStatement(sql) }
+    }
+
+    @Test
+    fun preparedStatementPoolSurvivesConcurrentReturnsAndClose() {
+        repeat(8) {
+            val freshConnection = JdbcConnection(SharedDatabase(mock()), connectionURL, properties)
+            val statements = (0 until 64).map { i ->
+                freshConnection.prepareStatement("SELECT $i") as JdbcPreparedStatement
+            }
+            val startLatch = CountDownLatch(1)
+            val doneLatch = CountDownLatch(statements.size + 1)
+            statements.forEach { stmt ->
+                thread(start = true, name = "stmt-return") {
+                    startLatch.await(2, TimeUnit.SECONDS)
+                    runCatching { stmt.close() }
+                    doneLatch.countDown()
+                }
+            }
+            thread(start = true, name = "conn-close") {
+                startLatch.await(2, TimeUnit.SECONDS)
+                runCatching { freshConnection.close() }
+                doneLatch.countDown()
+            }
+            startLatch.countDown()
+            assertTrue(doneLatch.await(5, TimeUnit.SECONDS))
+            assertTrue(freshConnection.isClosed)
+        }
+    }
+
+    @Test
     fun executeQueryOnReadOnlyConnectionDoesNotBeginTransaction() {
         val database = mock<SQLDatabase> {
             whenever(it.inTransaction) doReturn false

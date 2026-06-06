@@ -43,9 +43,12 @@ import java.sql.Struct
 import java.lang.invoke.MethodHandles
 import java.util.Properties
 import java.util.concurrent.Executor
+import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.NotThreadSafe
+import kotlin.concurrent.withLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import javax.annotation.concurrent.GuardedBy
 
 private const val MAX_POOLED_STATEMENTS = 32
 
@@ -79,7 +82,9 @@ internal class JdbcConnection(
     private var networkTimeout = 0
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
+    @GuardedBy("poolLock")
     private val preparedStatementPool = LinkedHashMap<String, JdbcPreparedStatement>()
+    private val poolLock = ReentrantLock()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
 
@@ -132,11 +137,15 @@ internal class JdbcConnection(
         checkClosed()
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
-        preparedStatementPool.remove(sql)?.let {
-            it.reopen()
-            return it
+        val pooled = poolLock.withLock {
+            if (closed) { null } else { preparedStatementPool.remove(sql) }
         }
-        return JdbcPreparedStatement(this, database, sql, resultSetType, resultSetConcurrency, resultSetHoldability)
+        return if (pooled != null) {
+            pooled.reopen()
+            pooled
+        } else {
+            JdbcPreparedStatement(this, database, sql, resultSetType, resultSetConcurrency, resultSetHoldability)
+        }
     }
 
     override fun prepareStatement(
@@ -317,23 +326,34 @@ internal class JdbcConnection(
     }
 
     private fun closePreparedStatementPool() {
-        preparedStatementPool.run {
-            values.forEachCatching(JdbcPreparedStatement::closePooled)
-            clear()
+        val snapshot = poolLock.withLock {
+            if (preparedStatementPool.isEmpty()) {
+                return
+            }
+            ArrayList(preparedStatementPool.values).also { preparedStatementPool.clear() }
         }
+        snapshot.forEachCatching(JdbcPreparedStatement::closePooled)
     }
 
     internal fun returnPreparedStatement(statement: JdbcPreparedStatement): Boolean {
-        if (closed) {
-            return false
+        var accepted = false
+        var evicted: JdbcPreparedStatement? = null
+        if (!closed) {
+            poolLock.withLock {
+                if (!closed) {
+                    accepted = true
+                    val containsKey = preparedStatementPool.containsKey(statement.sql)
+                    if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !containsKey) {
+                        evicted = preparedStatementPool.entries.iterator().next().also {
+                            preparedStatementPool.remove(it.key)
+                        }.value
+                    }
+                    preparedStatementPool[statement.sql] = statement
+                }
+            }
         }
-        if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !preparedStatementPool.containsKey(statement.sql)) {
-            val eldest = preparedStatementPool.entries.iterator().next()
-            preparedStatementPool.remove(eldest.key)
-            runCatching { eldest.value.closePooled() }
-        }
-        preparedStatementPool[statement.sql] = statement
-        return true
+        evicted?.let { runCatching(it::closePooled) }
+        return accepted
     }
 
     override fun isClosed(): Boolean = closed
