@@ -122,14 +122,17 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
     override fun setBytes(pos: Long, bytes: ByteArray, offset: Int, len: Int): Int {
         checkNotFreed()
+        val startIndex = validatedStartIndex(pos)
         when {
-            pos < 1 -> throw SQLException("Position must be >= 1 (received $pos)")
             offset < 0 || offset > bytes.size -> throw SQLException(
                 "Offset $offset is out of bounds for byte array of size ${bytes.size}")
             len < 0 || offset + len > bytes.size -> throw SQLException(
                 "Length $len with offset $offset exceeds byte array size ${bytes.size}")
         }
-        val startIndex = (pos - 1).toInt()
+        if (startIndex.toLong() + len.toLong() > Int.MAX_VALUE.toLong()) {
+            throw SQLException(
+                "Resulting blob size (position=$pos, length=$len) exceeds maximum supported size ${Int.MAX_VALUE}")
+        }
         val currentData = data.toByteArray()
         if (startIndex > currentData.size) {
             data.reset()
@@ -152,10 +155,7 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
     override fun setBinaryStream(pos: Long): OutputStream {
         checkNotFreed()
-        if (pos < 1) {
-            throw SQLException("Position must be >= 1 (received $pos)")
-        }
-        val startIndex = (pos - 1).toInt()
+        val startIndex = validatedStartIndex(pos)
         return object : OutputStream() {
             private var currentPos = startIndex
             private var initialized = false
@@ -217,6 +217,18 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
         if (freed != 0) {
             throw SQLException("Blob has been freed")
         }
+    }
+
+    private fun validatedStartIndex(pos: Long): Int {
+        if (pos < 1L) {
+            throw SQLException("Position must be >= 1 (received $pos)")
+        }
+        return (pos - 1L).also {
+            if (it > Int.MAX_VALUE.toLong()) {
+                throw SQLException(
+                    "Position $pos exceeds maximum supported blob index ${Int.MAX_VALUE.toLong() + 1L}")
+            }
+        }.toInt()
     }
 
     private fun writeZeroPadding(count: Int) {

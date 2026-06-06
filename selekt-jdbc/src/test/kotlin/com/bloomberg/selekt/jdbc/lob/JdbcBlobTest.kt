@@ -347,5 +347,27 @@ internal class JdbcBlobTest {
             assertContentEquals("There".toByteArray(), copyOfRange(4, 9))
         }
     }
-}
 
+    @Test
+    fun setBytesRejectsPositionExceedingIntMax() {
+        val blob = JdbcBlob(testData)
+        val overflow = Int.MAX_VALUE.toLong() + 2L
+        assertFailsWith<SQLException> { blob.setBytes(overflow, "x".toByteArray()) }
+        assertFailsWith<SQLException> { blob.setBytes(Long.MAX_VALUE, "x".toByteArray()) }
+        assertEquals(testData.size.toLong(), blob.length())
+    }
+
+    @Test
+    fun setBytesRejectsPositionPlusLengthExceedingIntMax() {
+        assertFailsWith<SQLException> {
+            JdbcBlob().setBytes(Int.MAX_VALUE.toLong(), ByteArray(16))
+        }
+    }
+
+    @Test
+    fun setBinaryStreamRejectsPositionExceedingIntMax() {
+        val blob = JdbcBlob(testData)
+        assertFailsWith<SQLException> { blob.setBinaryStream(Int.MAX_VALUE.toLong() + 2L) }
+        assertFailsWith<SQLException> { blob.setBinaryStream(Long.MAX_VALUE) }
+    }
+}
