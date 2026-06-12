@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.34.3
+
+* Fix close pool race between JdbcConnection.close() and statement return.
+* OpenSSL 3.5.7.
+
 ## Version 0.34.2
 
 * Throw SQLException for out-of-range JDBC Blob positions.
