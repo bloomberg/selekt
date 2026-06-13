@@ -117,7 +117,12 @@ class SelektDriver : Driver {
             } finally {
                 keyChars?.fill('\u0000')
             }
-            JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
+            runCatching {
+                JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
+            }.getOrElse {
+                runCatching(sharedDatabase::release)
+                throw it
+            }
         }.getOrElse { e ->
             val safeUrl = runCatching { ConnectionURL.parse(url).toString() }.getOrDefault("<unparseable URL>")
             throw SQLExceptionMapper.mapException(
