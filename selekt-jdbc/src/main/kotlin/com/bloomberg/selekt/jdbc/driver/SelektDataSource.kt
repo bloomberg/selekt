@@ -144,7 +144,12 @@ class SelektDataSource : DataSource {
             val mergedProperties = buildConnectionProperties()
 
             val database = getOrCreateDatabase(connectionURL, mergedProperties)
-            JdbcConnection(database, connectionURL, mergedProperties)
+            runCatching {
+                JdbcConnection(database, connectionURL, mergedProperties)
+            }.getOrElse {
+                runCatching(database::release)
+                throw it
+            }
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(
                 "Failed to create connection: ${e.message}",
