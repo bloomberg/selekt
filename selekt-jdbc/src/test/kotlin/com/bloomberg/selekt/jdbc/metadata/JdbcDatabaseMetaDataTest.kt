@@ -42,6 +42,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import kotlin.test.assertNull
 
 internal class JdbcDatabaseMetaDataTest {
     private lateinit var mockDatabase: SQLDatabase
@@ -1092,5 +1093,87 @@ internal class JdbcDatabaseMetaDataTest {
             !sql.contains("'it's'")
         }, "Unescaped quote should not appear")
         assertTrue(capturedSql.any { it.contains("it''s") }, "Single quote should be escaped")
+    }
+
+    @Test
+    fun sanitiseDeclaredTypeNameAcceptsKnownTypes() {
+        assertEquals("INTEGER", sanitiseDeclaredTypeName("integer"))
+        assertEquals("VARCHAR", sanitiseDeclaredTypeName("VarChar"))
+        assertEquals("DOUBLE PRECISION", sanitiseDeclaredTypeName("double precision"))
+        assertEquals("MY_CUSTOM_TYPE", sanitiseDeclaredTypeName("my_custom_type"))
+    }
+
+    @Test
+    fun sanitiseDeclaredTypeNameRejectsInjectionAttempts() {
+        listOf(
+            "'); DROP TABLE users;--",
+            "INT'; --",
+            "foo'bar",
+            "foo;bar",
+            "foo--bar",
+            "foo\nbar",
+            " leading",
+            "trailing ",
+            "two  spaces",
+            "",
+            "A".repeat(65),
+            "1INT"
+        ).forEach {
+            assertEquals(FALLBACK_JDBC_TYPE_NAME, sanitiseDeclaredTypeName(it), "Unexpected acceptance of '$it'")
+        }
+    }
+
+    @Test
+    fun getColumnsEscapesQuotesInDeclaredTypeName() {
+        val capturedSql = mutableListOf<String>()
+        val tablesCursor = mock<ICursor> {
+            var index = 0
+            whenever(it.moveToNext()) doAnswer { index++ == 0 }
+            whenever(it.columnIndex("TABLE_NAME")).doReturn(0)
+            whenever(it.isNull(any())).doReturn(false)
+            whenever(it.getString(0)).doReturn("victim")
+            whenever(it.columnCount).doReturn(1)
+            whenever(it.isClosed()).doReturn(false)
+            whenever(it.isBeforeFirst()).doReturn(false)
+            whenever(it.isAfterLast()).doReturn(false)
+            whenever(it.position()).doReturn(0)
+        }
+        val malicious = "'); DROP TABLE secrets;--"
+        val pragmaCursor = mock<ICursor> {
+            var index = 0
+            whenever(it.moveToNext()) doAnswer { index++ == 0 }
+            whenever(it.columnIndex("name")).doReturn(0)
+            whenever(it.columnIndex("type")).doReturn(1)
+            whenever(it.columnIndex("notnull")).doReturn(2)
+            whenever(it.columnIndex("dflt_value")).doReturn(3)
+            whenever(it.columnIndex("pk")).doReturn(4)
+            whenever(it.isNull(any())).doReturn(false)
+            whenever(it.isNull(3)).doReturn(true)  // dflt_value is NULL
+            whenever(it.type(any())).doReturn(ColumnType.INTEGER)
+            whenever(it.getString(0)).doReturn("c")
+            whenever(it.getString(1)).doReturn(malicious)
+            whenever(it.getInt(2)).doReturn(0)
+            whenever(it.getString(3)).doReturn(null)
+            whenever(it.getInt(4)).doReturn(0)
+            whenever(it.columnCount).doReturn(5)
+            whenever(it.isClosed()).doReturn(false)
+            whenever(it.isBeforeFirst()).doReturn(false)
+            whenever(it.isAfterLast()).doReturn(false)
+            whenever(it.position()).doReturn(0)
+        }
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+            val sql = invocation.getArgument<String>(0)
+            capturedSql.add(sql)
+            if (sql.contains("PRAGMA table_info")) { pragmaCursor } else { tablesCursor }
+        }
+        metaData.getColumns(null, null, "victim", "%")
+        val offending = capturedSql.firstOrNull { it.contains(malicious) }
+        assertNull(offending, "Unescaped malicious type leaked into emitted SQL:\n$offending")
+        val dropLeak = capturedSql.firstOrNull { it.contains("DROP TABLE secrets") }
+        assertNull(dropLeak, "Dangerous SQL fragment survived sanitisation:\n$dropLeak")
+        assertTrue(
+            capturedSql.any { it.contains("'$FALLBACK_JDBC_TYPE_NAME' as TYPE_NAME") },
+            "Expected fallback TYPE_NAME='$FALLBACK_JDBC_TYPE_NAME' in emitted SQL"
+        )
     }
 }
