@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.35.0
+
+* Sanitise declared column type in DatabaseMetaData.getColumns.
+* Release SharedDatabase if JdbcConnection construction fails.
+* Implement JdbcStatement.cancel() and setQueryTimeout.
+* Reject explicit credentials in Jdbc.SelektDataSource.
+
 ## Version 0.34.3
 
 * Fix close pool race between JdbcConnection.close() and statement return.
