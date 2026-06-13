@@ -18,9 +18,11 @@ package com.bloomberg.selekt.jdbc.result
 
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcBlob
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
+import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import com.bloomberg.selekt.jdbc.util.TypeMapping
 import java.io.InputStream
 import java.io.Reader
@@ -68,14 +70,27 @@ internal class JdbcResultSet(
 
     override fun next(): Boolean {
         checkClosed()
-        val result = cursor.moveToNext()
-        return result
+        return try {
+            cursor.moveToNext()
+        } catch (e: OperationCancelledException) {
+            throw SQLExceptionMapper.mapCancellation(e)
+        } catch (e: SQLException) {
+            throw SQLExceptionMapper.mapException(e)
+        } catch (e: RuntimeException) {
+            if (e.message?.contains("interrupt", ignoreCase = true) == true) {
+                throw SQLExceptionMapper.mapCancellation(e)
+            }
+            throw SQLExceptionMapper.mapException(
+                "Error advancing cursor: ${e.message}", -1, -1, e
+            )
+        }
     }
 
     override fun close() {
         if (!cursor.isClosed()) {
             cursor.close()
         }
+        (statement as? JdbcStatement)?.deactivateCancellationSignal()
     }
 
     override fun wasNull(): Boolean = wasNull

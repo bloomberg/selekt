@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.exceptions.SelektSQLException
 import com.bloomberg.selekt.pools.IPooledObject
 import com.bloomberg.selekt.pools.TieredObjectPool
 import javax.annotation.concurrent.NotThreadSafe
@@ -122,6 +123,34 @@ internal class SQLSession(
             }
         }.getOrElse {
             release()
+            throw it
+        }
+    }
+
+    /**
+     * Counterpart of [executeForForwardCursor] that installs a per-connection progress handler driven by
+     * [signal] for the cursor's lifetime.
+     */
+    fun executeForForwardCursorWithSignal(
+        sql: String,
+        bindArgs: Array<out Any?>,
+        signal: CancellationSignal
+    ): ForwardCursor {
+        val executor = retain(false, sql)
+        return runCatching {
+            executor.setProgressHandler(signal.instructionCount) {
+                if (signal.isCancelled) { 1 } else { 0 }
+            }
+            executor.executeForForwardCursor(sql, bindArgs) {
+                runCatching { executor.setProgressHandler(0, null) }
+                release()
+            }
+        }.getOrElse {
+            runCatching { executor.setProgressHandler(0, null) }
+            release()
+            if (signal.isCancelled && (it as? SelektSQLException)?.code == SQL_INTERRUPT) {
+                throw OperationCancelledException("Operation was cancelled.")
+            }
             throw it
         }
     }

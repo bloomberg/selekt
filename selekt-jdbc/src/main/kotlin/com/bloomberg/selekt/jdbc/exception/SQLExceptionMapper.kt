@@ -26,6 +26,7 @@ import com.bloomberg.selekt.SQL_CORRUPT
 import com.bloomberg.selekt.SQL_DONE
 import com.bloomberg.selekt.SQL_ERROR
 import com.bloomberg.selekt.SQL_FULL
+import com.bloomberg.selekt.SQL_INTERRUPT
 import com.bloomberg.selekt.SQL_IO_ERROR
 import com.bloomberg.selekt.SQL_IO_ERROR_ACCESS
 import com.bloomberg.selekt.SQL_IO_ERROR_BLOCKED
@@ -106,6 +107,12 @@ internal object SQLExceptionMapper {
     )
 
     @JvmStatic
+    fun mapCancellation(
+        cause: Throwable,
+        message: String = "Query was cancelled"
+    ): SQLException = mapException(cause.message ?: message, SQL_INTERRUPT, -1, cause)
+
+    @JvmStatic
     fun mapException(
         message: String,
         sqlCode: SQLCode,
@@ -167,6 +174,7 @@ internal object SQLExceptionMapper {
             isTimeoutRelated(extendedSQLCode) -> ExceptionType.TIMEOUT to "HYT00"
             else -> ExceptionType.TRANSIENT to SQLSTATE_40001
         }
+        SQL_INTERRUPT -> ExceptionType.TIMEOUT to "HYT00"
         SQL_LOCKED, SQL_LOCKED_SHARED_CACHE, SQL_LOCKED_VTAB ->
             ExceptionType.TRANSIENT to SQLSTATE_40001
 
@@ -233,6 +241,7 @@ internal object SQLExceptionMapper {
         SQL_AUTH -> "SQLITE_AUTH"
         SQL_RANGE -> "SQLITE_RANGE"
         SQL_NOT_A_DATABASE -> "SQLITE_NOTADB"
+        SQL_INTERRUPT -> "SQLITE_INTERRUPT"
         SQL_ROW -> "SQLITE_ROW"
         SQL_DONE -> "SQLITE_DONE"
         else -> "SQLITE_UNKNOWN($sqlCode)"

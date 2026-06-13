@@ -16,7 +16,10 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -31,6 +34,12 @@ import java.sql.SQLWarning
 import java.sql.Statement
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.concurrent.NotThreadSafe
 
 private val emptyIntArray = IntArray(0)
@@ -56,6 +65,17 @@ open class JdbcStatement internal constructor(
             .findVarHandle(JdbcStatement::class.java, "closed", Boolean::class.javaPrimitiveType)
 
         private val limitPattern = Regex("""\bLIMIT\s+\d+""", RegexOption.IGNORE_CASE)
+
+        private val TIMEOUT_SCHEDULER: ScheduledExecutorService = Executors.newScheduledThreadPool(
+            1,
+            object : ThreadFactory {
+                private val counter = AtomicInteger(0)
+                override fun newThread(r: Runnable): Thread = Thread(
+                    r,
+                    "selekt-jdbc-timeout-${counter.incrementAndGet()}"
+                ).apply { isDaemon = true }
+            }
+        )
     }
 
     @Volatile
@@ -65,7 +85,12 @@ open class JdbcStatement internal constructor(
     protected var lastGeneratedKey = -1L
     private var fetchSize = 0
     private var maxRows = 0
+    @Volatile
     private var queryTimeout = 0
+    @Volatile
+    private var currentSignal: CancellationSignal? = null
+    @Volatile
+    private var currentWatchdog: ScheduledFuture<*>? = null
     private var maxFieldSize = 0
     private var poolable = false
     private var closeOnCompletion = false
@@ -78,14 +103,17 @@ open class JdbcStatement internal constructor(
         checkClosed()
         try {
             closeCurrentResultSet()
-            val cursor = if (resultSetType == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
-                database.queryForwardOnly(applyMaxRows(sql), emptyArray())
-            } else {
-                database.query(applyMaxRows(sql), emptyArray())
+            val signal = activateCancellationSignalOrNull()
+            val cursor = runCatching {
+                queryWithSignal(applyMaxRows(sql), emptyArray(), signal)
+            }.getOrElse {
+                deactivateCancellationSignal()
+                throw it.translateCancellation()
             }
-            currentResultSet = JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability)
-            updateCount = -1
-            return currentResultSet!!
+            return JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability).also {
+                updateCount = -1
+                currentResultSet = it
+            }
         } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -96,7 +124,16 @@ open class JdbcStatement internal constructor(
         connection.checkWritable()
         return try {
             closeCurrentResultSet()
-            database.compileStatement(sql).use { executeUpdate(sql, it) }
+            val signal = activateCancellationSignalOrNull()
+            try {
+                withCancellation(signal, primary = true) {
+                    database.compileStatement(sql).use { executeUpdate(sql, it) }
+                }
+            } catch (e: OperationCancelledException) {
+                throw SQLExceptionMapper.mapCancellation(e)
+            } finally {
+                deactivateCancellationSignal()
+            }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
@@ -107,21 +144,68 @@ open class JdbcStatement internal constructor(
     override fun execute(sql: String): Boolean {
         checkClosed()
         closeCurrentResultSet()
-        val statement = runCatching {
-            database.compileStatement(sql)
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
-        }
-        return statement.use {
-            if (it.isReadOnly) {
-                executeQuery(sql)
+        val signal = activateCancellationSignalOrNull()
+        var signalHandedOff = false
+        try {
+            val isReadOnly = runCatching {
+                database.compileStatement(sql).use { it.isReadOnly }
+            }.getOrElse { e ->
+                throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+            }
+            return if (isReadOnly) {
+                executeQueryInternal(sql, signal)
+                signalHandedOff = true
                 true
             } else {
                 connection.checkWritable()
-                executeUpdate(sql, it)
+                try {
+                    withCancellation(signal, primary = true) {
+                        database.compileStatement(sql).use { executeUpdate(sql, it) }
+                    }
+                } catch (e: OperationCancelledException) {
+                    throw SQLExceptionMapper.mapCancellation(e)
+                }
                 false
             }
+        } finally {
+            if (!signalHandedOff) {
+                deactivateCancellationSignal()
+            }
         }
+    }
+
+    private fun executeQueryInternal(sql: String, signal: CancellationSignal?) {
+        val cursor = queryWithSignal(applyMaxRows(sql), emptyArray(), signal)
+        currentResultSet = JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability)
+        updateCount = -1
+    }
+
+    protected fun queryWithSignal(
+        sql: String,
+        args: Array<Any?>,
+        signal: CancellationSignal?
+    ): ICursor = if (resultSetType == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
+        if (signal != null) {
+            database.queryForwardOnly(sql, args, signal)
+        } else {
+            database.queryForwardOnly(sql, args)
+        }
+    } else {
+        if (signal != null) {
+            database.query(sql, args, signal)
+        } else {
+            database.query(sql, args)
+        }
+    }
+
+    internal fun <T> withCancellation(
+        signal: CancellationSignal?,
+        primary: Boolean,
+        block: SQLDatabase.() -> T
+    ): T = if (signal != null) {
+        database.withCancellationSignal(signal, primary = primary, block = block)
+    } else {
+        block(database)
     }
 
     private fun executeUpdate(sql: String, statement: ISQLStatement): Int {
@@ -151,6 +235,7 @@ open class JdbcStatement internal constructor(
 
     override fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
+            deactivateCancellationSignal()
             currentResultSet?.close()
             currentResultSet = null
         }
@@ -199,7 +284,37 @@ open class JdbcStatement internal constructor(
 
     override fun getQueryTimeout(): Int = queryTimeout
 
-    override fun cancel() = Unit
+    override fun cancel() {
+        currentSignal?.cancel()
+    }
+
+    internal fun activateCancellationSignalOrNull(): CancellationSignal? {
+        deactivateCancellationSignal()
+        val seconds = queryTimeout
+        if (seconds <= 0) {
+            return null
+        }
+        val signal = CancellationSignal()
+        currentSignal = signal
+        currentWatchdog = TIMEOUT_SCHEDULER.schedule(
+            signal::cancel,
+            seconds.toLong(),
+            TimeUnit.SECONDS
+        )
+        return signal
+    }
+
+    internal fun deactivateCancellationSignal() {
+        currentWatchdog?.cancel(false)
+        currentWatchdog = null
+        currentSignal = null
+    }
+
+    private fun Throwable.translateCancellation(): Throwable = when {
+        this is OperationCancelledException -> SQLExceptionMapper.mapCancellation(this)
+        cause is OperationCancelledException -> SQLExceptionMapper.mapCancellation(cause!!, message ?: "Query was cancelled")
+        else -> this
+    }
 
     override fun setFetchDirection(direction: Int) {
         if (direction != ResultSet.FETCH_FORWARD) {
@@ -261,9 +376,15 @@ open class JdbcStatement internal constructor(
         return if (batchedSqlStatements.isEmpty()) {
             emptyIntArray
         } else {
+            val signal = activateCancellationSignalOrNull()
             try {
-                executeBatchStatements()
+                withCancellation(signal, primary = true) {
+                    executeBatchStatements()
+                }
+            } catch (e: OperationCancelledException) {
+                throw SQLExceptionMapper.mapCancellation(e)
             } finally {
+                deactivateCancellationSignal()
                 clearBatch()
             }
         }
@@ -274,9 +395,21 @@ open class JdbcStatement internal constructor(
         for (sql in batchedSqlStatements) {
             runCatching {
                 validateBatchSql(sql)
-                val updateCount = executeUpdate(sql)
-                results.add(updateCount)
+                connection.checkWritable()
+                val count = database.compileStatement(sql).use {
+                    if (isInsertSql(sql)) {
+                        lastGeneratedKey = it.executeInsert()
+                        1
+                    } else {
+                        lastGeneratedKey = -1L
+                        it.executeUpdateDelete()
+                    }
+                }
+                results.add(count)
             }.onFailure { e ->
+                if (e is OperationCancelledException) {
+                    throw e
+                }
                 (e as? SQLException ?: SQLException(e.message, e)).run {
                     throw BatchUpdateException(
                         message ?: "Batch execution failed",
