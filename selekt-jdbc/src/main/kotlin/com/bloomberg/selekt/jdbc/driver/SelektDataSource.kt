@@ -139,6 +139,13 @@ class SelektDataSource : DataSource {
         if (closed) {
             throw SQLException("DataSource is closed")
         }
+        if (username != null || password != null) {
+            throw SQLException(
+                "SelektDataSource ignores explicit username/password credentials; " +
+                    "configure encryption via setEncryption(...) at DataSource construction time.",
+                "28000"
+            )
+        }
         return runCatching {
             val connectionURL = buildConnectionURL()
             val mergedProperties = buildConnectionProperties()

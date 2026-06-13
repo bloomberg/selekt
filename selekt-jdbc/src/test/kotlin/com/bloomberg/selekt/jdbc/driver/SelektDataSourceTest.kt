@@ -129,6 +129,33 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun getConnectionRejectsExplicitUsername(): Unit = dataSource.run {
+        databasePath = "/tmp/test.db"
+        val thrown = assertFailsWith<SQLException> {
+            getConnection("user", null)
+        }
+        assertEquals("28000", thrown.sqlState)
+    }
+
+    @Test
+    fun getConnectionRejectsExplicitPassword(): Unit = dataSource.run {
+        databasePath = "/tmp/test.db"
+        val thrown = assertFailsWith<SQLException> {
+            getConnection(null, "secret")
+        }
+        assertEquals("28000", thrown.sqlState)
+    }
+
+    @Test
+    fun getConnectionRejectsBothCredentials(): Unit = dataSource.run {
+        databasePath = "/tmp/test.db"
+        val thrown = assertFailsWith<SQLException> {
+            getConnection("user", "secret")
+        }
+        assertEquals("28000", thrown.sqlState)
+    }
+
+    @Test
     fun close(): Unit = dataSource.run {
         assertFalse(isClosed())
         close()
@@ -194,7 +221,10 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithUsernamePassword(): Unit = dataSource.run {
         databasePath = File(tempDir, "user-pass.db").absolutePath
-        getConnection("user", "pass").close()
+        val thrown = assertFailsWith<SQLException> {
+            getConnection("user", "pass")
+        }
+        assertEquals("28000", thrown.sqlState)
     }
 
     @Test
@@ -246,7 +276,10 @@ internal class SelektDataSourceTest {
     @Test
     fun getConnectionWithUsernamePasswordAttempt(): Unit = dataSource.run {
         databasePath = File(tempDir, "test2.db").absolutePath
-        getConnection("user", "password").close()
+        val thrown = assertFailsWith<SQLException> {
+            getConnection("user", "password")
+        }
+        assertEquals("28000", thrown.sqlState)
     }
 
     @Test
