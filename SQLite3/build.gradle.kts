@@ -79,6 +79,9 @@ fun targetIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".
 logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 val isWindows = osName() == "windows"
+val isWindowsArm64 = isWindows && Regex("(?i)aarch64|arm64").containsMatchIn(
+    System.getProperty("os.arch")
+)
 
 val vec1Enabled: String = providers.gradleProperty("selekt.vec1.enabled")
     .orElse(providers.environmentVariable("SELEKT_ENABLE_VEC1"))
@@ -162,9 +165,16 @@ tasks.register<Exec>("cmakeSQLite") {
         "-DSELEKT_VEC1_ENABLE_X86_AVX2=$vec1EnableX86Avx2"
     )
     if (isWindows) {
-        cmakeArgs.addAll(0, listOf("-G", "MinGW Makefiles"))
-        cmakeArgs.add("-DCMAKE_C_COMPILER=gcc")
-        cmakeArgs.add("-DCMAKE_CXX_COMPILER=g++")
+        if (isWindowsArm64) {
+            cmakeArgs.addAll(0, listOf("-G", "Ninja"))
+            cmakeArgs.add("-DCMAKE_C_COMPILER=cl")
+            cmakeArgs.add("-DCMAKE_CXX_COMPILER=cl")
+            cmakeArgs.add("-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded")
+        } else {
+            cmakeArgs.addAll(0, listOf("-G", "MinGW Makefiles"))
+            cmakeArgs.add("-DCMAKE_C_COMPILER=gcc")
+            cmakeArgs.add("-DCMAKE_CXX_COMPILER=g++")
+        }
         val prefixPath = System.getenv("CMAKE_PREFIX_PATH")
         if (!prefixPath.isNullOrBlank()) {
             cmakeArgs.add("-DCMAKE_PREFIX_PATH=$prefixPath")

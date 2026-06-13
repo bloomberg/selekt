@@ -75,6 +75,12 @@ jobs:
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
+          - display: 'windows-aarch64 (vec1)'
+            os: windows-11-arm
+            platform: windows-aarch64
+            shell: bash
+            vec1_enabled: 'ON'
+            vec1_x86_avx2: 'OFF'
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     defaults:
@@ -99,16 +105,42 @@ jobs:
           elif [ "${{ runner.os }}" = "macOS" ]; then
             brew install make tcl-tk mimalloc
           elif [ "${{ runner.os }}" = "Windows" ]; then
-            choco install mingw make magicsplat-tcl-tk -y --no-progress
+            if [ "${{ runner.arch }}" = "ARM64" ]; then
+              choco install ninja magicsplat-tcl-tk -y --no-progress
+            else
+              choco install mingw make magicsplat-tcl-tk -y --no-progress
+            fi
           fi
 
       - name: 'Configure Windows Perl'
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && runner.arch != 'ARM64'
         shell: cmd
         run: |
           C:\msys64\usr\bin\bash.exe -lc "pacman --noconfirm -S perl make"
           C:\msys64\usr\bin\bash.exe -lc "echo | cpan Locale::Maketext::Simple Pod::Usage"
           C:\msys64\usr\bin\bash.exe -lc "perl -e 'use Locale::Maketext::Simple; use Pod::Usage; print qq{OK\n}'"
+
+      - name: 'Configure Windows ARM64 Perl'
+        if: runner.os == 'Windows' && runner.arch == 'ARM64'
+        shell: pwsh
+        run: |
+          choco install strawberryperl -y --no-progress
+          $strawberry = 'C:\Strawberry\perl\bin'
+          $strawberryC = 'C:\Strawberry\c\bin'
+          $strawberrySite = 'C:\Strawberry\perl\site\bin'
+          if (-not (Test-Path "$strawberry\perl.exe")) {
+            throw "Strawberry Perl install missing: $strawberry\perl.exe not found"
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value $strawberry
+          Add-Content -Path $env:GITHUB_PATH -Value $strawberryC
+          Add-Content -Path $env:GITHUB_PATH -Value $strawberrySite
+          & "$strawberry\perl.exe" -e "use Locale::Maketext::Simple; use Pod::Usage; print qq{OK\n}"
+
+      - name: 'Setup MSVC'
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
 
       - name: 'Build mimalloc'
         if: runner.os != 'macOS'
@@ -120,28 +152,51 @@ jobs:
           mkdir -p out/release
           cd out/release
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cmake ../.. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
-            cmake --build . --target mimalloc-static
-            mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
-            cp libmimalloc.a "C:/mimalloc/lib/"
-            cp ../../include/mimalloc.h "C:/mimalloc/include/"
+            if [ "${{ runner.arch }}" = "ARM64" ]; then
+              cmake ../.. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
+              cmake --build . --target mimalloc-static
+              mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
+              cp mimalloc.lib "C:/mimalloc/lib/"
+              cp ../../include/mimalloc.h "C:/mimalloc/include/"
+            else
+              cmake ../.. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
+              cmake --build . --target mimalloc-static
+              mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
+              STATIC_LIB=""
+              for candidate in libmimalloc.a libmimalloc-static.a; do
+                if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+              done
+              if [ -z "$STATIC_LIB" ]; then
+                echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+                ls -la
+                exit 1
+              fi
+              cp "$STATIC_LIB" "C:/mimalloc/lib/libmimalloc.a"
+              cp ../../include/mimalloc.h "C:/mimalloc/include/"
+            fi
           else
             cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
             make -j$(nproc) mimalloc-static
             mkdir -p /usr/local/lib /usr/local/include
-            cp libmimalloc.a /usr/local/lib/libmimalloc.a
+            STATIC_LIB=""
+            for candidate in libmimalloc.a libmimalloc-static.a; do
+              if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+            done
+            if [ -z "$STATIC_LIB" ]; then
+              echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+              ls -la
+              exit 1
+            fi
+            cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
             cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
           fi
 
-      - name: 'Setup MSVC'
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: 'Setup Java 17'
         if: "!contains(matrix.platform, 'musl')"
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: ${{ (runner.os == 'Windows' && runner.arch == 'ARM64') && 'microsoft' || 'temurin' }}
           java-version: 17
 
       - name: 'Set JAVA_HOME'
@@ -157,11 +212,15 @@ jobs:
           elif [ "${{ runner.os }}" = "macOS" ]; then
             echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $GITHUB_ENV
           elif [ "${{ runner.os }}" = "Windows" ]; then
-            echo "JAVA_HOME=${JAVA_HOME_17_X64//\\//}" >> $GITHUB_ENV
+            if [ "${{ runner.arch }}" = "ARM64" ]; then
+              echo "JAVA_HOME=${JAVA_HOME//\\//}" >> $GITHUB_ENV
+            else
+              echo "JAVA_HOME=${JAVA_HOME_17_X64//\\//}" >> $GITHUB_ENV
+            fi
           fi
 
       - name: 'Setup Android SDK'
-        if: "!contains(matrix.platform, 'linux-aarch64') && !contains(matrix.platform, 'musl')"
+        if: "!contains(matrix.platform, 'linux-aarch64') && !contains(matrix.platform, 'musl') && matrix.platform != 'windows-aarch64'"
         uses: android-actions/setup-android@v4
 
       - name: 'Setup Android SDK (aarch64)'
@@ -188,6 +247,29 @@ jobs:
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$HOME/.android/sdk/licenses/android-sdk-arm-dbt-license"
           echo "ANDROID_HOME=$HOME/.android/sdk" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$HOME/.android/sdk" >> $GITHUB_ENV
+
+      - name: 'Setup Android SDK (windows-aarch64 stub)'
+        if: matrix.platform == 'windows-aarch64'
+        shell: bash
+        run: |
+          SDK_DIR="$USERPROFILE/.android/sdk"
+          SDK_DIR_UNIX=$(echo "$SDK_DIR" | sed 's#\\#/#g')
+          mkdir -p "$SDK_DIR_UNIX/platforms" "$SDK_DIR_UNIX/build-tools" "$SDK_DIR_UNIX/licenses"
+          {
+            echo ""
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee"
+          } > "$SDK_DIR_UNIX/licenses/android-sdk-license"
+          {
+            echo ""
+            echo "84831b9409646a918e30573bab4c9c91346d8abd"
+          } > "$SDK_DIR_UNIX/licenses/android-sdk-preview-license"
+          {
+            echo ""
+            echo "d56f5187479451eabf01fb78af6dfcb131a6481e"
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee"
+          } > "$SDK_DIR_UNIX/licenses/android-sdk-arm-dbt-license"
+          echo "ANDROID_HOME=$SDK_DIR_UNIX" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_DIR_UNIX" >> $GITHUB_ENV
 
       - name: 'Checkout'
         run: |
@@ -220,6 +302,11 @@ jobs:
           elif [ "${{ runner.os }}" = "Linux" ]; then
             export CC=gcc
             export CXX=g++
+          elif [ "${{ runner.os }}" = "Windows" ] && [ "${{ runner.arch }}" = "ARM64" ]; then
+            export STRAWBERRY_PERL='C:/Strawberry/perl/bin/perl.exe'
+            export PATH="/c/Strawberry/perl/bin:/c/Strawberry/c/bin:/c/Strawberry/perl/site/bin:$PATH"
+            which perl
+            perl -e 'use Locale::Maketext::Simple; use Pod::Usage; print qq{Strawberry perl OK\n}'
           fi
           if [ "${{ github.event_name }}" = "push" ]; then
             ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:jar
@@ -291,7 +378,16 @@ jobs:
               cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
               make -j$(nproc) mimalloc-static
               mkdir -p /usr/local/lib /usr/local/include
-              cp libmimalloc.a /usr/local/lib/libmimalloc.a
+              STATIC_LIB=""
+              for candidate in libmimalloc.a libmimalloc-static.a; do
+                if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+              done
+              if [ -z "$STATIC_LIB" ]; then
+                echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+                ls -la
+                exit 1
+              fi
+              cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
               cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
               # Configure and build
@@ -425,6 +521,39 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
+
+      - name: 'Cache mimalloc'
+        id: cache-mimalloc
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/local/lib/libmimalloc.a
+            /usr/local/include/mimalloc.h
+          key: mimalloc-publish-linux-amd64-v3.1.6
+
+      - name: 'Build mimalloc'
+        if: steps.cache-mimalloc.outputs.cache-hit != 'true'
+        run: |
+          cd /tmp
+          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
+          tar xzf mimalloc.tar.gz
+          cd mimalloc-3.1.6
+          mkdir -p out/release
+          cd out/release
+          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
+          make -j$(nproc) mimalloc-static
+          sudo mkdir -p /usr/local/lib /usr/local/include
+          STATIC_LIB=""
+          for candidate in libmimalloc.a libmimalloc-static.a; do
+            if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+          done
+          if [ -z "$STATIC_LIB" ]; then
+            echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+            ls -la
+            exit 1
+          fi
+          sudo cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
+          sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
       - name: 'Checkout'
         uses: actions/checkout@v6

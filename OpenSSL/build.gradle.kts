@@ -153,6 +153,10 @@ fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}".let {
     if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
 }
 
+val isWindowsArm64 = osName() == "windows" && Regex("(?i)aarch64|arm64").containsMatchIn(
+    System.getProperty("os.arch")
+)
+
 val openSslWorkingDir: Provider<Directory> = openSslWorkingDir(targetIdentifier())
 
 // FIXME Some of the host building logic parallels Android's above. Re-purpose?
@@ -186,10 +190,20 @@ tasks.register<Exec>("configureHost") {
         "no-capieng", "no-deprecated", "no-autoerrinit", "no-stdio", "no-ui-console", "no-filenames"
     )
     if (osName() == "windows") {
-        val msys2Bash = "C:/msys64/usr/bin/bash.exe"
-        val workDir = openSslWorkingDir.absolutePath.replace('\\', '/')
-        commandLine(msys2Bash, "-l", "-c",
-            "cd '$workDir' && perl Configure mingw64 ${configArgs.joinToString(" ")}")
+        if (isWindowsArm64) {
+            val strawberryPerl = System.getenv("STRAWBERRY_PERL")
+                ?: "C:/Strawberry/perl/bin/perl.exe"
+            commandLine(strawberryPerl, "Configure", "VC-WIN64-ARM", *configArgs.toTypedArray())
+        } else {
+            val msys2Bash = "C:/msys64/usr/bin/bash.exe"
+            val workDir = openSslWorkingDir.absolutePath.replace('\\', '/')
+            commandLine(
+                msys2Bash,
+                "-l",
+                "-c",
+                "cd '$workDir' && perl Configure mingw64 ${configArgs.joinToString(" ")}"
+            )
+        }
     } else {
         commandLine("./config")
         args(configArgs)
@@ -202,16 +216,19 @@ tasks.register<Exec>("makeHost") {
     inputs.property("version", openSslVersion())
     workingDir(openSslWorkingDir)
     val openSslWorkingDir = openSslWorkingDir.get().asFile
-    arrayOf(".a").forEach {
-        outputs.files("$openSslWorkingDir/libcrypto$it")
-            .withPropertyName("libcrypto$it")
-    }
+    val cryptoExtension = if (isWindowsArm64) ".lib" else ".a"
+    outputs.files("$openSslWorkingDir/libcrypto$cryptoExtension")
+        .withPropertyName("libcrypto$cryptoExtension")
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     outputs.cacheIf { false }
     if (osName() == "windows") {
-        environment("PATH", "C:\\msys64\\usr\\bin;${System.getenv("PATH")}")
-        commandLine("mingw32-make")
+        if (isWindowsArm64) {
+            commandLine("nmake")
+        } else {
+            environment("PATH", "C:\\msys64\\usr\\bin;${System.getenv("PATH")}")
+            commandLine("mingw32-make")
+        }
     } else {
         commandLine("make")
     }
@@ -227,9 +244,14 @@ tasks.register<Copy>("assembleHost") {
     outputs.dir(outputDir).withPropertyName("libs")
     outputs.cacheIf { false }
     val openSslWorkingDir = openSslWorkingDir.get().asFile
+    val cryptoExtensions = if (isWindowsArm64) {
+        arrayOf(".lib")
+    } else {
+        arrayOf(".a")
+    }
     from(fileTree(openSslWorkingDir) {
-        arrayOf(".a").forEach { e ->
-            include("**/libcrypto$e")
+        cryptoExtensions.forEach {
+            include("**/libcrypto$it")
         }
     })
     into(outputDir)

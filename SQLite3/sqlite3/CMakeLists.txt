@@ -39,6 +39,8 @@ add_library(selekt SHARED
 set_property(TARGET selekt PROPERTY C_STANDARD 99)
 set_property(TARGET selekt PROPERTY C_STANDARD_REQUIRED ON)
 
+set_target_properties(selekt PROPERTIES PREFIX "lib")
+
 if(MSVC)
   target_compile_options(selekt PRIVATE /FI stdint.h)
 else()
@@ -111,21 +113,38 @@ if(log-lib)
   target_link_libraries(selekt PRIVATE ${log-lib})
 endif()
 
-set(LIBCRYPTO ${CMAKE_CURRENT_SOURCE_DIR}/../../OpenSSL/build/libs/${SLKT_TARGET_ABI}/libcrypto.a)
+set(LIBCRYPTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../OpenSSL/build/libs/${SLKT_TARGET_ABI})
+set(LIBCRYPTO ${LIBCRYPTO_DIR}/libcrypto.a)
+if(NOT EXISTS ${LIBCRYPTO} AND EXISTS ${LIBCRYPTO_DIR}/libcrypto.lib)
+  set(LIBCRYPTO ${LIBCRYPTO_DIR}/libcrypto.lib)
+endif()
 if(NOT EXISTS ${LIBCRYPTO})
-  message(WARNING "OpenSSL libcrypto.a not found at: ${LIBCRYPTO}")
+  message(WARNING "OpenSSL libcrypto not found under: ${LIBCRYPTO_DIR}")
 endif()
 message(STATUS "Linking to OpenSSL libcrypto: ${LIBCRYPTO}")
 target_link_libraries(selekt PRIVATE ${LIBCRYPTO})
 
 if(WIN32)
   target_link_libraries(selekt PRIVATE ws2_32 crypt32 advapi32 user32 bcrypt gdi32)
+  if(MINGW)
+    target_link_options(selekt PRIVATE
+      -static
+      -static-libgcc
+      -static-libstdc++
+    )
+  endif()
 endif()
 
 if(NOT ANDROID_ABI AND NOT ANDROID)
   find_library(MIMALLOC_STATIC_LIB
-    NAMES libmimalloc.a mimalloc-static
-    PATHS /usr/local/lib /usr/lib $ENV{CMAKE_PREFIX_PATH}/lib
+    NAMES libmimalloc.a mimalloc-static mimalloc
+    PATHS
+      /opt/homebrew/lib
+      /opt/homebrew/opt/mimalloc/lib
+      /usr/local/lib
+      /usr/local/opt/mimalloc/lib
+      /usr/lib
+      $ENV{CMAKE_PREFIX_PATH}/lib
     NO_DEFAULT_PATH)
   if(MIMALLOC_STATIC_LIB)
     message(STATUS "Found static mimalloc: ${MIMALLOC_STATIC_LIB}")
@@ -138,7 +157,7 @@ if(NOT ANDROID_ABI AND NOT ANDROID)
       target_link_libraries(selekt PRIVATE mimalloc)
       target_compile_definitions(selekt PRIVATE MI_MALLOC_OVERRIDE)
     else()
-      message(WARNING "mimalloc not found")
+      message(FATAL_ERROR "mimalloc not found")
     endif()
   endif()
 endif()
