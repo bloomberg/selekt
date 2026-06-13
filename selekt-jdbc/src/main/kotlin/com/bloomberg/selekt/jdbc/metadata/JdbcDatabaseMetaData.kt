@@ -35,6 +35,22 @@ private fun escapeGlob(value: String): String = value.replace("[", "[[]")
     .replace("]", "[]]")
     .replace("?", "[?]")
 
+@JvmField
+internal val SAFE_JDBC_TYPE_NAME: Regex = Regex("^[A-Z_][A-Z0-9_]*(?: [A-Z][A-Z0-9_]*)*$")
+internal const val FALLBACK_JDBC_TYPE_NAME: String = "TEXT"
+private const val SAFE_TYPE_NAME_MAX_LENGTH = 64
+
+@JvmSynthetic
+internal fun sanitiseDeclaredTypeName(
+    declaredType: String
+): String = declaredType.uppercase().let {
+    if (it.length in 1..SAFE_TYPE_NAME_MAX_LENGTH && SAFE_JDBC_TYPE_NAME.matches(it)) {
+        it
+    } else {
+        FALLBACK_JDBC_TYPE_NAME
+    }
+}
+
 @JvmSynthetic
 internal fun String.toJdbcPatternRegex(): Regex = buildString {
     for (c in this@toJdbcPatternRegex) {
@@ -334,7 +350,7 @@ internal class JdbcDatabaseMetaData(
         "VARCHAR", "CHAR", "CHARACTER" -> sqliteType.uppercase()
         "BLOB" -> "BLOB"
         "NULL" -> "NULL"
-        else -> sqliteType.uppercase()
+        else -> sanitiseDeclaredTypeName(sqliteType)
     }
 
     @Suppress("Detekt.MagicNumber")
@@ -425,7 +441,7 @@ internal class JdbcDatabaseMetaData(
                                 '${escapeSql(tableName)}' as TABLE_NAME,
                                 '${escapeSql(columnName)}' as COLUMN_NAME,
                                 $sqlType as DATA_TYPE,
-                                '$typeName' as TYPE_NAME,
+                                '${escapeSql(typeName)}' as TYPE_NAME,
                                 $columnSize as COLUMN_SIZE,
                                 NULL as BUFFER_LENGTH,
                                 NULL as DECIMAL_DIGITS,
