@@ -117,7 +117,8 @@ arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
         dependsOn("unpackOpenSsl$titleCaseName")
         inputs.file("$projectDir/build_libraries.sh")
         inputs.property("version", openSslVersion())
-        outputs.files(fileTree("${openSslWorkingDir(it)}/include") { include("**/*.h") })
+        val workingDirFile = openSslWorkingDir(it).get().asFile
+        outputs.files(fileTree("$workingDirFile/include") { include("**/*.h") })
             .withPropertyName("headers")
         outputs.dir(layout.buildDirectory.dir("libs/$it")).withPropertyName("lib")
         outputs.cacheIf { true }
