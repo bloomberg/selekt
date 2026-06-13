@@ -359,6 +359,31 @@ class SQLDatabase(
         query(query)
     }
 
+    fun <T> withCancellationSignal(
+        cancellationSignal: CancellationSignal,
+        primary: Boolean = false,
+        block: SQLDatabase.() -> T
+    ): T = pledge {
+        cancellationSignal.throwIfCancelled()
+        session().execute(primary) { executor ->
+            executor.setProgressHandler(cancellationSignal.instructionCount) {
+                if (cancellationSignal.isCancelled) { 1 } else { 0 }
+            }
+            try {
+                block()
+            } catch (@Suppress("Detekt.TooGenericExceptionCaught") e: Exception) {
+                if (cancellationSignal.isCancelled &&
+                    (e as? SelektSQLException)?.code == SQL_INTERRUPT
+                ) {
+                    throw OperationCancelledException("Operation was cancelled.")
+                }
+                throw e
+            } finally {
+                executor.setProgressHandler(0, null)
+            }
+        }
+    }
+
     @Suppress("Detekt.LongParameterList")
     fun readFromBlob(
         name: String,
@@ -577,30 +602,6 @@ class SQLDatabase(
         connectionPool.close()
     }
 
-    private fun <T> withCancellationSignal(
-        cancellationSignal: CancellationSignal,
-        block: SQLDatabase.() -> T
-    ): T = pledge {
-        cancellationSignal.throwIfCancelled()
-        session().execute(false) { executor ->
-            executor.setProgressHandler(cancellationSignal.instructionCount) {
-                if (cancellationSignal.isCancelled) { 1 } else { 0 }
-            }
-            try {
-                block()
-            } catch (@Suppress("Detekt.TooGenericExceptionCaught") e: Exception) {
-                if (cancellationSignal.isCancelled &&
-                    (e as? SelektSQLException)?.code == SQL_INTERRUPT
-                ) {
-                    throw OperationCancelledException("Operation was cancelled.")
-                }
-                throw e
-            } finally {
-                executor.setProgressHandler(0, null)
-            }
-        }
-    }
-
     private fun blob(
         name: String,
         table: String,
@@ -628,6 +629,20 @@ class SQLDatabase(
         selectionArgs: Array<out Any?>
     ): ICursor = pledge {
         session().executeForForwardCursor(sql, selectionArgs)
+    }
+
+    /**
+     * Cancellable counterpart of [queryForwardOnly].
+     *
+     * @since 0.35.0
+     */
+    fun queryForwardOnly(
+        sql: String,
+        selectionArgs: Array<out Any?>,
+        cancellationSignal: CancellationSignal
+    ): ICursor = pledge {
+        cancellationSignal.throwIfCancelled()
+        session().executeForForwardCursorWithSignal(sql, selectionArgs, cancellationSignal)
     }
 }
 

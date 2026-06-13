@@ -16,7 +16,9 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
@@ -158,20 +160,25 @@ internal open class JdbcPreparedStatement(
         return runCatching {
             closeCurrentResultSet()
             parameterRow.materializeTo(materializedArgs)
-            val cursor = if (getResultSetType() == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
-                database.queryForwardOnly(applyMaxRows(sql), materializedArgs)
-            } else {
-                database.query(applyMaxRows(sql), materializedArgs)
+            val signal = activateCancellationSignalOrNull()
+            runCatching {
+                val cursor = queryWithSignal(applyMaxRows(sql), materializedArgs, signal)
+                JdbcResultSet(
+                    cursor,
+                    this,
+                    resultSetType,
+                    resultSetConcurrency,
+                    resultSetHoldability
+                )
+            }.getOrElse {
+                deactivateCancellationSignal()
+                if (it is OperationCancelledException) {
+                    throw SQLExceptionMapper.mapCancellation(it)
+                }
+                throw it
             }
-            JdbcResultSet(
-                cursor,
-                this,
-                resultSetType,
-                resultSetConcurrency,
-                resultSetHoldability
-            )
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        }.getOrElse {
+            throw SQLExceptionMapper.mapException(it as? SQLException ?: SQLException(it.message, it))
         }
     }
 
@@ -181,7 +188,16 @@ internal open class JdbcPreparedStatement(
         return try {
             connection.ensureTransaction()
             parameterRow.materializeTo(materializedArgs)
-            executeUpdate(database.compileStatement(sql, materializedArgs))
+            val signal = activateCancellationSignalOrNull()
+            try {
+                withCancellation(signal, primary = true) {
+                    executeUpdate(compileStatement(sql, materializedArgs))
+                }
+            } catch (e: OperationCancelledException) {
+                throw SQLExceptionMapper.mapCancellation(e)
+            } finally {
+                deactivateCancellationSignal()
+            }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
@@ -194,19 +210,39 @@ internal open class JdbcPreparedStatement(
         return try {
             closeCurrentResultSet()
             parameterRow.materializeTo(materializedArgs)
-            val statement = database.compileStatement(sql, materializedArgs)
-            if (statement.isReadOnly) {
-                executeQuery()
-                true
-            } else {
-                connection.checkWritable()
-                executeUpdate(statement)
-                false
+            val signal = activateCancellationSignalOrNull()
+            var signalHandedOff = false
+            try {
+                val statement = database.compileStatement(sql, materializedArgs)
+                if (statement.isReadOnly) {
+                    deactivateCancellationSignal()
+                    signalHandedOff = true
+                    executeQuery()
+                    true
+                } else {
+                    executeWrite(statement, signal)
+                    false
+                }
+            } finally {
+                if (!signalHandedOff) {
+                    deactivateCancellationSignal()
+                }
             }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(SQLException(e.message, e))
+        }
+    }
+
+    private fun executeWrite(statement: ISQLStatement, signal: CancellationSignal?) {
+        connection.checkWritable()
+        try {
+            withCancellation(signal, primary = true) {
+                executeUpdate(statement)
+            }
+        } catch (e: OperationCancelledException) {
+            throw SQLExceptionMapper.mapCancellation(e)
         }
     }
 
@@ -289,7 +325,16 @@ internal open class JdbcPreparedStatement(
             if (database.compileStatement(sql).isReadOnly) {
                 throw SQLException("Read-only statements are not allowed in batch execution")
             }
-            database.batchRows(sql, firstChunk!!)
+            val signal = activateCancellationSignalOrNull()
+            try {
+                withCancellation(signal, primary = true) {
+                    batchRows(sql, firstChunk!!)
+                }
+            } catch (e: OperationCancelledException) {
+                throw SQLExceptionMapper.mapCancellation(e)
+            } finally {
+                deactivateCancellationSignal()
+            }
             val result = successArray?.takeIf { it.size == totalBatchCount }
                 ?: IntArray(totalBatchCount).also { successArray = it }
             result.fill(Statement.SUCCESS_NO_INFO)
