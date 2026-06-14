@@ -21,6 +21,7 @@ import android.database.MatrixCursor
 import android.database.sqlite.SQLiteTransactionListener
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQuery
+import com.bloomberg.selekt.ISQLQuery
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.ConflictAlgorithm
 import com.bloomberg.selekt.android.SQLiteDatabase
@@ -41,6 +42,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.doAnswer
 import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -325,9 +327,49 @@ internal class SupportSQLiteDatabaseTest {
     }
 
     @Test
+    fun queryWithSupportQueryAndNullCancellation() {
+        supportDatabase.query(mock<SupportSQLiteQuery>(), null)
+        verify(database, times(1)).query(any<ISQLQuery>())
+    }
+
+    @Test
     fun queryWithSupportQueryAndCancellation() {
-        supportDatabase.query(mock<SupportSQLiteQuery>(), mock())
-        verify(database, times(1)).query(any())
+        val androidSignal = android.os.CancellationSignal()
+        whenever(database.query(any<ISQLQuery>(), any<com.bloomberg.selekt.CancellationSignal>()))
+            .doReturn(MatrixCursor(emptyArray()))
+        supportDatabase.query(mock<SupportSQLiteQuery>(), androidSignal).close()
+        verify(database, times(1)).query(
+            any<ISQLQuery>(),
+            any<com.bloomberg.selekt.CancellationSignal>()
+        )
+    }
+
+    @Test
+    fun queryWithSupportQueryAndCancellationRelaysCancel() {
+        val androidSignal = android.os.CancellationSignal()
+        val selektSignalSlot = arrayOfNulls<com.bloomberg.selekt.CancellationSignal>(1)
+        whenever(database.query(any<ISQLQuery>(), any<com.bloomberg.selekt.CancellationSignal>())) doAnswer {
+            selektSignalSlot[0] = it.getArgument(1)
+            MatrixCursor(emptyArray())
+        }
+        val cursor = supportDatabase.query(mock<SupportSQLiteQuery>(), androidSignal)
+        val selektSignal = checkNotNull(selektSignalSlot[0])
+        assertFalse(selektSignal.isCancelled)
+        androidSignal.cancel()
+        assertTrue(selektSignal.isCancelled)
+        cursor.close()
+    }
+
+    @Test
+    fun queryWithSupportQueryAndPreCancelledSignal() {
+        val androidSignal = android.os.CancellationSignal().apply { cancel() }
+        val selektSignalSlot = arrayOfNulls<com.bloomberg.selekt.CancellationSignal>(1)
+        whenever(database.query(any<ISQLQuery>(), any<com.bloomberg.selekt.CancellationSignal>())) doAnswer  {
+            selektSignalSlot[0] = it.getArgument(1)
+            MatrixCursor(emptyArray())
+        }
+        supportDatabase.query(mock<SupportSQLiteQuery>(), androidSignal).close()
+        assertTrue(checkNotNull(selektSignalSlot[0]).isCancelled)
     }
 
     @Test
