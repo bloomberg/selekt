@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 0.35.1
+
+* Wire Android CancellationSignal through Selekt's SupportSQLiteDatabase.query.
+
 ## Version 0.35.0
 
 * Sanitise declared column type in DatabaseMetaData.getColumns.
