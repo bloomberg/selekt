@@ -17,6 +17,8 @@
 package com.bloomberg.selekt.android.support
 
 import android.content.ContentValues
+import android.database.Cursor
+import android.database.CursorWrapper
 import android.database.sqlite.SQLiteTransactionListener
 import android.os.CancellationSignal
 import android.util.Pair
@@ -158,8 +160,31 @@ private class SupportSQLiteDatabase(
 
     override fun query(query: SupportSQLiteQuery) = database.query(query.asSelektSQLQuery())
 
-    // TODO Implement using the cancellation signal.
-    override fun query(query: SupportSQLiteQuery, cancellationSignal: CancellationSignal?) = query(query)
+    override fun query(
+        query: SupportSQLiteQuery,
+        cancellationSignal: CancellationSignal?
+    ): Cursor {
+        if (cancellationSignal == null) {
+            return query(query)
+        }
+        val selektSignal = com.bloomberg.selekt.CancellationSignal()
+        cancellationSignal.setOnCancelListener(selektSignal::cancel)
+        val cursor = database.runCatching {
+            query(query.asSelektSQLQuery(), selektSignal)
+        }.getOrElse {
+            cancellationSignal.setOnCancelListener(null)
+            throw it
+        }
+        return object : CursorWrapper(cursor) {
+            override fun close() {
+                try {
+                    super.close()
+                } finally {
+                    cancellationSignal.setOnCancelListener(null)
+                }
+            }
+        }
+    }
 
     override fun setForeignKeyConstraintsEnabled(enabled: Boolean) = database.setForeignKeyConstraintsEnabled(enabled)
 
