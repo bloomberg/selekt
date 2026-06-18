@@ -43,18 +43,8 @@ fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
     "https://oss.sonatype.org/content/repositories/snapshots"
 })
 
-val Project.selektGroupId: String
-    get() = "com.bloomberg.selekt"
-
-val Project.selektVersionName: String
-    get() = if (isRelease()) {
-        checkNotNull(properties["selekt.versionName"]).toString()
-    } else {
-        "${checkNotNull(properties["selekt.nextVersionName"])}-SNAPSHOT"
-    }
-
-val Project.sqlcipherVersionName: String
-    get() = "${checkNotNull(properties["sqlcipher.versionName"])}-$selektVersionName"
+val Project.sqlcipherVersion: String
+    get() = "${checkNotNull(properties["sqlcipher.version"])}-$version"
 
 fun Project.disableKotlinCompilerAssertions() {
     extensions.configure<KotlinJvmExtension>("kotlin") {

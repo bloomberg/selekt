@@ -155,7 +155,7 @@ tasks.withType<ProcessResources>().configureEach {
 }
 
 val generateVersionProperties by tasks.registering {
-    val version = project.selektVersionName
+    val version = project.version
     val outputDir = layout.buildDirectory.dir("generated/resources/version")
     inputs.property("version", version)
     outputs.dir(outputDir)

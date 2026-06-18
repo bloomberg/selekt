@@ -8,8 +8,37 @@ on:
     types: [published]
 
 jobs:
+  compute-version:
+    name: 'Compute SNAPSHOT version'
+    runs-on: ubuntu-latest
+    outputs:
+      snapshot_version: ${{ steps.compute.outputs.snapshot_version }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - name: 'Compute SNAPSHOT version'
+        id: compute
+        run: |
+          BASE_VERSION=$(sed -nE 's/^version=([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' gradle.properties | head -1)
+          if [ -z "$BASE_VERSION" ]; then
+            echo "ERROR: failed to read version from gradle.properties"
+            exit 1
+          fi
+          MAJOR=$(echo "$BASE_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$BASE_VERSION" | cut -d. -f2)
+          NEXT_MINOR=$((MINOR + 1))
+          SNAPSHOT_VERSION="${MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
+          echo "Base version:     $BASE_VERSION"
+          echo "Snapshot version: $SNAPSHOT_VERSION"
+          echo "snapshot_version=$SNAPSHOT_VERSION" >> "$GITHUB_OUTPUT"
+
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
+    needs: compute-version
     strategy:
       matrix:
         include:
@@ -193,10 +222,9 @@ jobs:
             export CXX=g++
           fi
           if [ "${{ github.event_name }}" = "push" ]; then
-            ./gradlew :selekt-sqlite3-sqlcipher:jar
+            ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:jar
           elif [ "${{ github.event_name }}" = "release" ]; then
-            ./gradlew -Prelease \
-              :selekt-sqlite3-sqlcipher:jar
+            ./gradlew :selekt-sqlite3-sqlcipher:jar
           fi
 
       - name: 'Verify native library'
@@ -227,6 +255,7 @@ jobs:
 
   build-native-jar-musl-aarch64:
     name: 'Build Native JARs (linux-aarch64-musl)'
+    needs: compute-version
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:

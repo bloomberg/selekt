@@ -1,6 +1,3 @@
-import com.android.build.gradle.internal.lint.AndroidLintAnalysisTask
-import com.android.build.gradle.internal.lint.LintModelWriterTask
-
 /*
  * Copyright 2020 Bloomberg Finance L.P.
  *
@@ -16,6 +13,9 @@ import com.android.build.gradle.internal.lint.LintModelWriterTask
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import com.android.build.gradle.internal.lint.AndroidLintAnalysisTask
+import com.android.build.gradle.internal.lint.LintModelWriterTask
 
 description = "Selekt Android SQLite library."
 
