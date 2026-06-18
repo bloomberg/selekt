@@ -313,7 +313,7 @@ jobs:
               echo "org.gradle.configuration-cache=false" >> gradle.properties
               echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
               if [ "${{ github.event_name }}" = "push" ]; then
-                ./gradlew :selekt-sqlite3-sqlcipher:jar
+                ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:jar
               elif [ "${{ github.event_name }}" = "release" ]; then
                 ./gradlew -Prelease :selekt-sqlite3-sqlcipher:jar
               fi
@@ -343,7 +343,7 @@ jobs:
   publish-native:
     name: Publish to OSSRH
     runs-on: ubuntu-latest
-    needs: [build-native-jars, build-native-jar-musl-aarch64]
+    needs: [compute-version, build-native-jars, build-native-jar-musl-aarch64]
     timeout-minutes: 120
 
     steps:
@@ -389,7 +389,7 @@ jobs:
       - name: 'Build uber JAR'
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            ./gradlew :selekt-sqlite3-sqlcipher:uberJar
+            ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:uberJar
           elif [ "${{ github.event_name }}" = "release" ]; then
             ./gradlew -Prelease :selekt-sqlite3-sqlcipher:uberJar
           fi
