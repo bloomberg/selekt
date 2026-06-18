@@ -180,7 +180,6 @@ tasks.register<Exec>("makeSQLite") {
     commandLine("cmake", "--build", ".", "--target", "selekt", "--verbose")
 }
 
-
 tasks.register<Copy>("buildHost") {
     dependsOn("makeSQLite")
     from(".cxx-host/sqlite3")
