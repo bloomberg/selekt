@@ -18,8 +18,8 @@ import com.android.build.gradle.tasks.ExternalNativeBuildJsonTask
 
 description = "SQLCipher for Selekt's Android Library."
 
-version = sqlcipherVersionName
-logger.quiet("SQLCipher version: {}", sqlcipherVersionName)
+version = sqlcipherVersion
+logger.quiet("SQLCipher version: {}", version)
 
 plugins {
     id("com.android.library")

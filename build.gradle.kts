@@ -44,8 +44,7 @@ repositories {
     mavenCentral()
 }
 
-group = selektGroupId
-version = selektVersionName
+group = "com.bloomberg.selekt"
 logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
