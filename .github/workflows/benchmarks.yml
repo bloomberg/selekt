@@ -42,6 +42,39 @@ jobs:
       - name: 'Set JAVA_HOME'
         run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
 
+      - name: 'Cache mimalloc'
+        id: cache-mimalloc
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/local/lib/libmimalloc.a
+            /usr/local/include/mimalloc.h
+          key: mimalloc-benchmarks-linux-amd64-v3.1.6
+
+      - name: 'Build mimalloc'
+        if: steps.cache-mimalloc.outputs.cache-hit != 'true'
+        run: |
+          cd /tmp
+          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
+          tar xzf mimalloc.tar.gz
+          cd mimalloc-3.1.6
+          mkdir -p out/release
+          cd out/release
+          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
+          make -j$(nproc) mimalloc-static
+          sudo mkdir -p /usr/local/lib /usr/local/include
+          STATIC_LIB=""
+          for candidate in libmimalloc.a libmimalloc-static.a; do
+            if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+          done
+          if [ -z "$STATIC_LIB" ]; then
+            echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+            ls -la
+            exit 1
+          fi
+          sudo cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
+          sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+
       - name: 'Configure Gradle'
         run: |
           echo 'org.gradle.caching=false' >> gradle.properties
