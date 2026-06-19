@@ -135,14 +135,11 @@ if(WIN32)
   endif()
 endif()
 
-if(NOT ANDROID_ABI AND NOT ANDROID)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID_ABI AND NOT ANDROID)
   find_library(MIMALLOC_STATIC_LIB
     NAMES libmimalloc.a mimalloc-static mimalloc
     PATHS
-      /opt/homebrew/lib
-      /opt/homebrew/opt/mimalloc/lib
       /usr/local/lib
-      /usr/local/opt/mimalloc/lib
       /usr/lib
       $ENV{CMAKE_PREFIX_PATH}/lib
     NO_DEFAULT_PATH)
@@ -157,7 +154,7 @@ if(NOT ANDROID_ABI AND NOT ANDROID)
       target_link_libraries(selekt PRIVATE mimalloc)
       target_compile_definitions(selekt PRIVATE MI_MALLOC_OVERRIDE)
     else()
-      message(FATAL_ERROR "mimalloc not found")
+      message(FATAL_ERROR "mimalloc not found (required on Linux)")
     endif()
   endif()
 endif()

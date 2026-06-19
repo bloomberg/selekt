@@ -70,7 +70,7 @@ jobs:
               dnf install -y git gcc gcc-c++ libstdc++-static glibc-devel make curl tar sed bash gnupg file perl kernel-headers cmake diffutils tcl unzip
             fi
           elif [ "${{ runner.os }}" = "macOS" ]; then
-            brew install make tcl-tk mimalloc
+            brew install make tcl-tk
           elif [ "${{ runner.os }}" = "Windows" ]; then
             if [ "${{ runner.arch }}" = "ARM64" ]; then
               choco install ninja magicsplat-tcl-tk -y --no-progress
@@ -111,17 +111,16 @@ jobs:
 
       - name: 'Cache mimalloc'
         id: cache-mimalloc
-        if: runner.os != 'macOS'
+        if: runner.os == 'Linux'
         uses: actions/cache@v5
         with:
           path: |
             /usr/local/lib/libmimalloc.a
             /usr/local/include/mimalloc.h
-            C:/mimalloc
-          key: mimalloc-${{ matrix.platform }}-v3.1.6-msvcstatic
+          key: mimalloc-${{ matrix.platform }}-v3.1.6
 
       - name: 'Build mimalloc'
-        if: runner.os != 'macOS' && steps.cache-mimalloc.outputs.cache-hit != 'true'
+        if: runner.os == 'Linux' && steps.cache-mimalloc.outputs.cache-hit != 'true'
         run: |
           cd /tmp
           curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
@@ -129,48 +128,25 @@ jobs:
           cd mimalloc-3.1.6
           mkdir -p out/release
           cd out/release
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            if [ "${{ runner.arch }}" = "ARM64" ]; then
-              cmake ../.. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
-              cmake --build . --target mimalloc-static
-              mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
-              cp mimalloc.lib "C:/mimalloc/lib/"
-              cp ../../include/mimalloc.h "C:/mimalloc/include/"
-            else
-              cmake ../.. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF
-              cmake --build . --target mimalloc-static
-              mkdir -p "C:/mimalloc/lib" "C:/mimalloc/include"
-              STATIC_LIB=""
-              for candidate in libmimalloc.a libmimalloc-static.a; do
-                if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
-              done
-              if [ -z "$STATIC_LIB" ]; then
-                echo "ERROR: no mimalloc static lib produced. Build dir contents:"
-                ls -la
-                exit 1
-              fi
-              echo "Installing $STATIC_LIB -> C:/mimalloc/lib/libmimalloc.a"
-              cp "$STATIC_LIB" "C:/mimalloc/lib/libmimalloc.a"
-              cp ../../include/mimalloc.h "C:/mimalloc/include/"
-            fi
-          else
-            cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
-            make -j$(nproc) mimalloc-static
-            mkdir -p /usr/local/lib /usr/local/include
-            STATIC_LIB=""
-            for candidate in libmimalloc.a libmimalloc-static.a; do
-              if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
-            done
-            if [ -z "$STATIC_LIB" ]; then
-              echo "ERROR: no mimalloc static lib produced. Build dir contents:"
-              ls -la
-              exit 1
-            fi
-            echo "Installing $STATIC_LIB -> /usr/local/lib/libmimalloc.a"
-            cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
-            cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
+          make -j$(nproc) mimalloc-static
+          SUDO=""
+          if [ "$(id -u)" != "0" ] && command -v sudo >/dev/null 2>&1; then
+            SUDO="sudo"
           fi
-
+          $SUDO mkdir -p /usr/local/lib /usr/local/include
+          STATIC_LIB=""
+          for candidate in libmimalloc.a libmimalloc-static.a; do
+            if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
+          done
+          if [ -z "$STATIC_LIB" ]; then
+            echo "ERROR: no mimalloc static lib produced. Build dir contents:"
+            ls -la
+            exit 1
+          fi
+          echo "Installing $STATIC_LIB -> /usr/local/lib/libmimalloc.a"
+          $SUDO cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
+          $SUDO cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
       - name: 'Setup Java 17'
         id: setup-java-17
@@ -289,7 +265,6 @@ jobs:
         env:
           LDFLAGS: '-s'
           MACOSX_DEPLOYMENT_TARGET: ${{ runner.os == 'macOS' && '12.0' || '' }}
-          CMAKE_PREFIX_PATH: ${{ runner.os == 'Windows' && 'C:/mimalloc' || '' }}
           SELEKT_ENABLE_VEC1: ${{ matrix.vec1_enabled }}
           SELEKT_VEC1_ENABLE_X86_AVX2: ${{ matrix.vec1_x86_avx2 }}
         run: |

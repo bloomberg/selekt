@@ -52,7 +52,7 @@ target_include_directories(selekt SYSTEM PUBLIC ${INCLUDE_OPENSSL_DIR})
 
 target_sources(selekt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3_jni.cpp)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR WIN32)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR MINGW)
   target_link_options(selekt PRIVATE -static-libstdc++ -static-libgcc)
 endif()
 

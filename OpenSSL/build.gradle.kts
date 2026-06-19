@@ -216,7 +216,7 @@ tasks.register<Exec>("makeHost") {
     inputs.property("version", openSslVersion())
     workingDir(openSslWorkingDir)
     val openSslWorkingDir = openSslWorkingDir.get().asFile
-    val cryptoExtension = if (isWindowsArm64) ".lib" else ".a"
+    val cryptoExtension = if (isWindowsArm64) { ".lib" } else { ".a" }
     outputs.files("$openSslWorkingDir/libcrypto$cryptoExtension")
         .withPropertyName("libcrypto$cryptoExtension")
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
