@@ -181,8 +181,14 @@ tasks.register<Copy>("copyJniLibs") {
     dependsOn(":selekt-sqlite3-sqlcipher:buildNativeHost")
 }
 
-tasks.withType<ProcessResources>().configureEach {
-    dependsOn("copyJniLibs")
+listOf(
+    "processJmhResources",
+    "processJava17TestResources",
+    "processJava25TestResources",
+).forEach { taskName ->
+    tasks.named<ProcessResources>(taskName) {
+        dependsOn("copyJniLibs")
+    }
 }
 
 tasks.named<JMHTask>("jmh") {
