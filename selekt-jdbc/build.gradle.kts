@@ -113,7 +113,7 @@ tasks.register<Copy>("copyJniLibs") {
     mustRunAfter(":SQLite3:buildHost")
 }
 
-tasks.withType<ProcessResources>().configureEach {
+tasks.withType<ProcessResources>().matching { it.name != "processResources" }.configureEach {
     dependsOn("buildHostSQLite")
 }
 
