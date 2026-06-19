@@ -44,7 +44,6 @@ repositories {
     mavenCentral()
 }
 
-group = "com.bloomberg.selekt"
 logger.quiet("Group: {}; Version: {}", group, version)
 
 nexusPublishing {
@@ -82,8 +81,6 @@ dependencies {
 }
 
 subprojects {
-    group = rootProject.group
-    version = rootProject.version
     plugins.withType<JavaPlugin>().configureEach {
         tasks.withType<Jar>().configureEach {
             metaInf {
