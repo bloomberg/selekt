@@ -72,6 +72,7 @@ val platforms = listOf(
     "linux-aarch64-musl",
     "linux-amd64",
     "linux-amd64-musl",
+    "windows-aarch64",
     "windows-amd64"
 )
 

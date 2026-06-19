@@ -48,6 +48,51 @@ internal class NativeResourcesKtTest {
     }
 
     @Test
+    fun platformIdentifierAArch64IncludesArm64Alias() {
+        val ids = platformIdentifiers(systemOsName = "Windows 11", systemOsArch = "aarch64")
+        assertTrue("windows-aarch64" in ids)
+        assertTrue("windows-arm64" in ids)
+    }
+
+    @Test
+    fun platformIdentifierArm64IncludesAArch64Alias() {
+        val ids = platformIdentifiers(systemOsName = "Windows 11", systemOsArch = "arm64")
+        assertTrue("windows-aarch64" in ids)
+        assertTrue("windows-arm64" in ids)
+    }
+
+    @Test
+    fun platformIdentifierMacAArch64IncludesArm64Alias() {
+        val ids = platformIdentifiers(systemOsName = "Mac OS X", systemOsArch = "aarch64")
+        assertTrue("darwin-aarch64" in ids)
+        assertTrue("darwin-arm64" in ids)
+    }
+
+    @Test
+    fun platformIdentifierAmd64IncludesX8664Alias() {
+        val ids = platformIdentifiers(systemOsName = "Linux", systemOsArch = "amd64")
+        assertTrue("linux-amd64" in ids)
+        assertTrue("linux-x86_64" in ids)
+    }
+
+    @Test
+    fun archNamesCanonicaliseAArch64() {
+        assertEquals(listOf("aarch64", "arm64"), archNames("aarch64"))
+        assertEquals(listOf("aarch64", "arm64"), archNames("ARM64"))
+    }
+
+    @Test
+    fun archNamesCanonicaliseAmd64() {
+        assertEquals(listOf("amd64", "x86_64"), archNames("amd64"))
+        assertEquals(listOf("amd64", "x86_64"), archNames("X86_64"))
+    }
+
+    @Test
+    fun archNamesPassThroughUnknown() {
+        assertEquals(listOf("riscv64"), archNames("riscv64"))
+    }
+
+    @Test
     fun commonLibraryExtension() {
         assertTrue(libraryExtensions().intersect(listOf(".dll", ".dylib", ".so")).isNotEmpty())
     }

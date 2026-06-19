@@ -43,15 +43,30 @@ internal fun isMusl(): Boolean = runCatching {
 }.getOrDefault(false)
 
 @JvmSynthetic
-internal fun platformIdentifiers(): List<String> {
-    val osArch = System.getProperty("os.arch")
-    val musl = osNames().first().let { it == "linux" || it.contains("linux") } && isMusl()
-    return osNames().flatMap { os ->
-        val base = listOf('-', File.separatorChar).map { s -> "$os$s$osArch" }
-        if (musl) {
-            base.map { "$it-musl" } + base
-        } else {
-            base
+internal fun archNames(systemOsArch: String = System.getProperty("os.arch")) = systemOsArch.lowercase(Locale.US).let {
+    when (it) {
+        "aarch64", "arm64" -> listOf("aarch64", "arm64")
+        "amd64", "x86_64" -> listOf("amd64", "x86_64")
+        else -> listOf(it)
+    }
+}
+
+@JvmSynthetic
+internal fun platformIdentifiers(
+    systemOsName: String = System.getProperty("os.name"),
+    systemOsArch: String = System.getProperty("os.arch")
+): List<String> {
+    val oses = osNames(systemOsName)
+    val arches = archNames(systemOsArch)
+    val musl = oses.first().let { it == "linux" || it.contains("linux") } && isMusl()
+    return oses.flatMap { os ->
+        arches.flatMap { arch ->
+            val base = listOf('-', File.separatorChar).map { s -> "$os$s$arch" }
+            if (musl) {
+                base.map { "$it-musl" } + base
+            } else {
+                base
+            }
         } + os
     }
 }
