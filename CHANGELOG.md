@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.35.2
+
+* Simplify version handling by delegating to Gradle conventions.
+* Add windows-aarch64 native build target.
+
 ## Version 0.35.1
 
 * Wire Android CancellationSignal through Selekt's SupportSQLiteDatabase.query.
