@@ -1,44 +1,12 @@
 name: 'Publication'
 
 on:
-  push:
-    branches:
-      - main
   release:
     types: [published]
 
 jobs:
-  compute-version:
-    name: 'Compute SNAPSHOT version'
-    runs-on: ubuntu-latest
-    outputs:
-      snapshot_version: ${{ steps.compute.outputs.snapshot_version }}
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-          submodules: false
-
-      - name: 'Compute SNAPSHOT version'
-        id: compute
-        run: |
-          BASE_VERSION=$(sed -nE 's/^version=([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' gradle.properties | head -1)
-          if [ -z "$BASE_VERSION" ]; then
-            echo "ERROR: failed to read version from gradle.properties"
-            exit 1
-          fi
-          MAJOR=$(echo "$BASE_VERSION" | cut -d. -f1)
-          MINOR=$(echo "$BASE_VERSION" | cut -d. -f2)
-          NEXT_MINOR=$((MINOR + 1))
-          SNAPSHOT_VERSION="${MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
-          echo "Base version:     $BASE_VERSION"
-          echo "Snapshot version: $SNAPSHOT_VERSION"
-          echo "snapshot_version=$SNAPSHOT_VERSION" >> "$GITHUB_OUTPUT"
-
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
-    needs: compute-version
     strategy:
       matrix:
         include:
@@ -285,11 +253,7 @@ jobs:
             which perl
             perl -e 'use Locale::Maketext::Simple; use Pod::Usage; print qq{Strawberry perl OK\n}'
           fi
-          if [ "${{ github.event_name }}" = "push" ]; then
-            ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:jar
-          elif [ "${{ github.event_name }}" = "release" ]; then
-            ./gradlew :selekt-sqlite3-sqlcipher:jar
-          fi
+          ./gradlew :selekt-sqlite3-sqlcipher:jar
 
       - name: 'Verify native library'
         run: |
@@ -319,7 +283,6 @@ jobs:
 
   build-native-jar-musl-aarch64:
     name: 'Build Native JARs (linux-aarch64-musl)'
-    needs: compute-version
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -385,9 +348,7 @@ jobs:
               echo "org.gradle.caching=false" >> gradle.properties
               echo "org.gradle.configuration-cache=false" >> gradle.properties
               echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
-              if [ "${{ github.event_name }}" = "push" ]; then
-                ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:jar
-              elif [ "${{ github.event_name }}" = "release" ]; then
+              if [ "${{ github.event_name }}" = "release" ]; then
                 ./gradlew -Prelease :selekt-sqlite3-sqlcipher:jar
               fi
 
@@ -416,7 +377,7 @@ jobs:
   publish-native:
     name: Publish to OSSRH
     runs-on: ubuntu-latest
-    needs: [compute-version, build-native-jars, build-native-jar-musl-aarch64]
+    needs: [build-native-jars, build-native-jar-musl-aarch64]
     timeout-minutes: 120
 
     steps:
@@ -461,9 +422,7 @@ jobs:
 
       - name: 'Build uber JAR'
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            ./gradlew -Pversion=${{ needs.compute-version.outputs.snapshot_version }} :selekt-sqlite3-sqlcipher:uberJar
-          elif [ "${{ github.event_name }}" = "release" ]; then
+          if [ "${{ github.event_name }}" = "release" ]; then
             ./gradlew -Prelease :selekt-sqlite3-sqlcipher:uberJar
           fi
           echo "Uber JAR contents:"
