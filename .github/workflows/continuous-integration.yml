@@ -229,7 +229,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$SDK_DIR_UNIX" >> $GITHUB_ENV
 
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: recursive
@@ -335,7 +335,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: recursive
@@ -473,7 +473,7 @@ jobs:
           sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: recursive
