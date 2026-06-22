@@ -751,7 +751,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
-        val segment = slab.allocateFromBytes(*key)
+        val segment = slab.allocateFromBytes(key)
         try {
             sqlite3_key.invoke(
                 MemorySegment.ofAddress(db),
@@ -874,7 +874,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
-        val segment = slab.allocateFromBytes(*key)
+        val segment = slab.allocateFromBytes(key)
         try {
             sqlite3_rekey.invoke(
                 MemorySegment.ofAddress(db),
