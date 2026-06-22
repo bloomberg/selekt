@@ -287,7 +287,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: recursive
@@ -382,7 +382,7 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: false
@@ -492,7 +492,7 @@ jobs:
           sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
       - name: 'Checkout'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
           submodules: recursive
