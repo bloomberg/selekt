@@ -99,13 +99,13 @@ internal class SlabArena(
         }
     }
 
-    fun allocateFromBytes(vararg values: Byte): MemorySegment {
-        val needed = values.size.toLong()
+    fun allocateFromBytes(bytes: ByteArray): MemorySegment {
+        val needed = bytes.size.toLong()
         if (offset + needed > slab.byteSize()) {
             grow(needed)
         }
         return slab.asSlice(offset, needed).also {
-            MemorySegment.copy(values, 0, it, JAVA_BYTE, 0, values.size)
+            MemorySegment.copy(bytes, 0, it, JAVA_BYTE, 0, bytes.size)
             offset += needed
         }
     }
