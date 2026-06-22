@@ -44,7 +44,7 @@ fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
 })
 
 val Project.sqlcipherVersion: String
-    get() = "${checkNotNull(properties["sqlcipher.version"])}-$version"
+    get() = "${checkNotNull(findProperty("sqlcipher.version"))}-$version"
 
 fun Project.disableKotlinCompilerAssertions() {
     extensions.configure<KotlinJvmExtension>("kotlin") {

@@ -16,7 +16,6 @@
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     alias(libs.plugins.detekt)
 }
 
@@ -39,7 +38,8 @@ android {
         }
     }
     arrayOf("main").forEach {
-        sourceSets[it].java.srcDir("src/$it/kotlin")
+        @Suppress("UnstableApiUsage")
+        sourceSets[it].java.directories.add("src/$it/kotlin")
     }
 
     buildTypes {

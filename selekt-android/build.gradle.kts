@@ -21,7 +21,6 @@ description = "Selekt Android SQLite library."
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
     alias(libs.plugins.dokka)
     alias(libs.plugins.cash.licensee)
     alias(libs.plugins.ksp)
@@ -43,13 +42,15 @@ android {
         minSdk = 24
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
             buildConfigField("String", "gitCommitSha1", "\"${gitCommit()}\"")
         }
     }
-    sourceSets["test"].assets.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     publishing {
         singleVariant("release") {
             withJavadocJar()
@@ -74,16 +75,11 @@ dependencies {
     testRuntimeOnly(libs.robolectric.android.all)
 }
 
-koverReport {
-    defaults {
-        mergeWith("debug")
-    }
-    androidReports("debug") {
+kover {
+    reports {
         filters {
             excludes {
-                classes(
-                    "*.BuildConfig"
-                )
+                classes("*.BuildConfig")
             }
         }
     }
@@ -104,12 +100,14 @@ tasks.register<Task>("buildNativeHost") {
 }
 
 tasks.withType<Test>().configureEach {
+    val libsDir = layout.buildDirectory.dir("intermediates/libs")
     systemProperty("com.bloomberg.selekt.can_use_load", true)
     systemProperty(
         "com.bloomberg.selekt.library_path",
-        layout.buildDirectory.dir("intermediates/assets/debugUnitTest/mergeDebugUnitTestAssets").get()
-            .asFile.toString()
+        libsDir.get().asFile.toString()
     )
+    inputs.dir(libsDir).withPropertyName("nativeLibs").optional(true)
+    dependsOn("copyJniLibs")
 }
 
 arrayOf("Debug", "Release").map { "pre${it}UnitTestBuild" }.forEach {
@@ -126,14 +124,6 @@ tasks.withType<AndroidLintAnalysisTask>().configureEach {
 
 tasks.withType<LintModelWriterTask>().configureEach {
     dependsOn("copyJniLibs")
-}
-
-arrayOf("Debug", "Release").map { "merge${it}UnitTestAssets" }.forEach {
-    tasks.whenTaskAdded {
-        if (it == name) {
-            dependsOn("copyJniLibs")
-        }
-    }
 }
 
 licensee {

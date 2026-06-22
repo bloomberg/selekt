@@ -33,7 +33,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import kotlin.test.assertTrue
 
 @ExtendWith(SelektTestExtension::class)
 internal class MemoryComponentCallbackTest {
@@ -43,29 +42,20 @@ internal class MemoryComponentCallbackTest {
     }
 
     @Test
-    fun onLowMemoryDoesNotThrow() {
-        MemoryComponentCallback.onLowMemory()
-    }
-
-    @Test
-    fun onTrimMemoryLow() {
-        arrayOf(
-            TRIM_MEMORY_RUNNING_LOW,
-            TRIM_MEMORY_RUNNING_CRITICAL,
-            TRIM_MEMORY_UI_HIDDEN
-        ).forEach {
-            val database = mock<SQLiteDatabase>()
-            SQLiteDatabaseRegistry.register(database)
-            try {
-                MemoryComponentCallback.onTrimMemory(it)
-                verify(database, times(1)).releaseMemory(same(Priority.LOW))
-            } finally {
-                SQLiteDatabaseRegistry.unregister(database)
-            }
+    @Suppress("DEPRECATION")
+    fun onLowMemoryReleasesAggressively() {
+        val database = mock<SQLiteDatabase>()
+        SQLiteDatabaseRegistry.register(database)
+        try {
+            MemoryComponentCallback.onLowMemory()
+            verify(database, times(1)).releaseMemory(same(Priority.HIGH))
+        } finally {
+            SQLiteDatabaseRegistry.unregister(database)
         }
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun onTrimMemoryHigh() {
         arrayOf(
             TRIM_MEMORY_BACKGROUND,
@@ -84,28 +74,25 @@ internal class MemoryComponentCallbackTest {
     }
 
     @Test
-    fun onTrimMemoryNone() {
+    @Suppress("DEPRECATION")
+    fun onTrimMemoryForegroundLevelsAreNoOp() {
         val database = mock<SQLiteDatabase>()
         SQLiteDatabaseRegistry.register(database)
         try {
             arrayOf(
-                TRIM_MEMORY_RUNNING_MODERATE
+                TRIM_MEMORY_RUNNING_MODERATE,
+                TRIM_MEMORY_RUNNING_LOW,
+                TRIM_MEMORY_RUNNING_CRITICAL,
+                TRIM_MEMORY_UI_HIDDEN
             ).forEach {
                 MemoryComponentCallback.onTrimMemory(it)
-                verify(database, never()).releaseMemory(any())
             }
+            verify(database, never()).releaseMemory(any())
         } finally {
             SQLiteDatabaseRegistry.unregister(database)
         }
     }
 
-    @Test
-    fun onTrimMemoryRunningLowReleasesNonNegativeBytes() {
-        val softHeapLimit = sqlite.softHeapLimit64()
-        val expectedTarget = maxOf(0, (softHeapLimit / 2).toInt())
-        assertTrue(expectedTarget >= 0, "Expected non-negative release target, got $expectedTarget")
-        MemoryComponentCallback.onTrimMemory(TRIM_MEMORY_RUNNING_LOW)
-    }
 
     @Test
     fun onTrimMemoryBackgroundReleasesDoesNotThrow() {
