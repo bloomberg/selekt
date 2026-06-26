@@ -42,7 +42,7 @@
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
-                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":selekt-android/main">androidJvm</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":selekt-android/release">release</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
@@ -53,9 +53,9 @@
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":selekt-android/main" data-filter=":selekt-android/main">
+                                <input type="checkbox" class="checkbox--input" id=":selekt-android/release" data-filter=":selekt-android/release">
                                 <span class="checkbox--icon"></span>
-                                androidJvm
+                                release
                             </label>
                         </li>
                 </ul>
@@ -89,28 +89,28 @@
         </nav>
         <div id="resizer" class="resizer" data-item-type="BAR"></div>
         <div id="main" data-item-type="SECTION" role="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-android::com.bloomberg.selekt.android/SQLiteOpenParams///PointingToDeclaration//859012755">
+<div class="main-content" data-page-type="classlike" id="content" pageids="selekt-android::com.bloomberg.selekt.android/SQLiteOpenParams///PointingToDeclaration//-1612582430">
   <div class="breadcrumbs"><a href="../../index.html">selekt-android</a><span class="delimiter">/</span><a href="../index.html">com.bloomberg.selekt.android</a><span class="delimiter">/</span><span class="current">SQLiteOpenParams</span></div>
   <div class="cover ">
     <h1 class="cover"><span>SQLite</span><wbr><span>Open</span><wbr><span><span>Params</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">SQLiteOpenParams</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-android/src/main/kotlin/com/bloomberg/selekt/android/SQLiteOpenHelper.kt#L122">source</a>)</span></span></div><p class="paragraph">Wrapper for configuration parameters that are used for opening a <a href="../-s-q-lite-database/index.html">SQLiteDatabase</a>.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">SQLiteOpenParams</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/bloomberg/selekt/tree/master/selekt-android/src/main/kotlin/com/bloomberg/selekt/android/SQLiteOpenHelper.kt#L122">source</a>)</span></span></div><p class="paragraph">Wrapper for configuration parameters that are used for opening a <a href="../-s-q-lite-database/index.html">SQLiteDatabase</a>.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="644945205%2FConstructors%2F859012755" anchor-label="SQLiteOpenParams" id="644945205%2FConstructors%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+        <div class="table"><a data-name="644945205%2FConstructors%2F-1612582430" anchor-label="SQLiteOpenParams" id="644945205%2FConstructors%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-s-q-lite-open-params.html"><span>SQLite</span><wbr><span>Open</span><wbr><span><span>Params</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="644945205%2FConstructors%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="644945205%2FConstructors%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -119,32 +119,32 @@
       </div>
       <div data-togglable="TYPE">
         <h2 class="tableheader">Types</h2>
-        <div class="table"><a data-name="2022331854%2FClasslikes%2F859012755" anchor-label="Builder" id="2022331854%2FClasslikes%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+        <div class="table"><a data-name="2022331854%2FClasslikes%2F-1612582430" anchor-label="Builder" id="2022331854%2FClasslikes%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-builder/index.html"><span><span>Builder</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2022331854%2FClasslikes%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2022331854%2FClasslikes%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/NotThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">NotThreadSafe</span></span></div></div><span class="token keyword">class </span><a href="-builder/index.html">Builder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><span data-unresolved-link="javax.annotation.concurrent/NotThreadSafe///PointingToDeclaration/"><span class="token annotation builtin">NotThreadSafe</span></span></div></div><span class="token keyword">class </span><a href="-builder/index.html">Builder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">journalMode<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a><span class="token operator"> = </span>SQLiteJournalMode.WAL<span class="token punctuation">, </span></span><span class="parameter ">pageSizeExponent<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">12</span><span class="token punctuation">, </span></span><span class="parameter ">trace<span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1359602307%2FClasslikes%2F859012755" anchor-label="Companion" id="-1359602307%2FClasslikes%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+<a data-name="-1359602307%2FClasslikes%2F-1612582430" anchor-label="Companion" id="-1359602307%2FClasslikes%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1359602307%2FClasslikes%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1359602307%2FClasslikes%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -153,47 +153,47 @@
       </div>
       <div data-togglable="PROPERTY">
         <h2 class="tableheader">Properties</h2>
-        <div class="table"><a data-name="-397810244%2FProperties%2F859012755" anchor-label="journalMode" id="-397810244%2FProperties%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+        <div class="table"><a data-name="-397810244%2FProperties%2F-1612582430" anchor-label="journalMode" id="-397810244%2FProperties%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="journal-mode.html"><span>journal</span><wbr><span><span>Mode</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-397810244%2FProperties%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-397810244%2FProperties%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="journal-mode.html">journalMode</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="journal-mode.html">journalMode</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-journal-mode/index.html">SQLiteJournalMode</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1659004923%2FProperties%2F859012755" anchor-label="pageSizeExponent" id="-1659004923%2FProperties%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+<a data-name="-1659004923%2FProperties%2F-1612582430" anchor-label="pageSizeExponent" id="-1659004923%2FProperties%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="page-size-exponent.html"><span>page</span><wbr><span>Size</span><wbr><span><span>Exponent</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1659004923%2FProperties%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1659004923%2FProperties%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="page-size-exponent.html">pageSizeExponent</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="page-size-exponent.html">pageSizeExponent</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1624832239%2FProperties%2F859012755" anchor-label="trace" id="-1624832239%2FProperties%2F859012755" data-filterable-set=":selekt-android/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":selekt-android/main" data-filterable-set=":selekt-android/main">
+<a data-name="-1624832239%2FProperties%2F-1612582430" anchor-label="trace" id="-1624832239%2FProperties%2F-1612582430" data-filterable-set=":selekt-android/release"></a>
+          <div class="table-row table-row_content" data-filterable-current=":selekt-android/release" data-filterable-set=":selekt-android/release">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="trace.html"><span><span>trace</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1624832239%2FProperties%2F859012755"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1624832239%2FProperties%2F-1612582430"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/main"><div class="symbol monospace"><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":selekt-android/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="trace.html">trace</a><span class="token operator">: </span><a href="../../../selekt-api/com.bloomberg.selekt/-s-q-lite-trace-event-mode/index.html">SQLiteTraceEventMode</a><span class="token operator">?</span></div></div></div>
                 </div>
               </div>
             </div>
