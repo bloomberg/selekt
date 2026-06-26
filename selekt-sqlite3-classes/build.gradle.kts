@@ -234,8 +234,8 @@ detekt {
     buildUponDefaultConfig = true
 }
 
-koverReport {
-    defaults {
+kover {
+    reports {
         filters {
             excludes {
                 classes("*Test*")

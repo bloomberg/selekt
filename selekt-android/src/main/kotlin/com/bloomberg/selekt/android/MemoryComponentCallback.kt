@@ -18,7 +18,6 @@ package com.bloomberg.selekt.android
 
 import android.content.ComponentCallbacks2
 import android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
-import android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW
 import android.content.res.Configuration
 import android.util.Log
 import com.bloomberg.selekt.android.Selekt.TAG
@@ -30,20 +29,21 @@ import com.bloomberg.selekt.pools.Priority
 internal object MemoryComponentCallback : ComponentCallbacks2 {
     override fun onConfigurationChanged(newConfig: Configuration) = Unit
 
-    override fun onLowMemory() = Unit
+    @Deprecated("Deprecated in Java")
+    override fun onLowMemory() {
+        releaseAllReclaimableMemory()
+    }
 
     override fun onTrimMemory(level: Int) {
         Log.d(TAG, "Received onTrimMemory code $level.")
         if (level >= TRIM_MEMORY_BACKGROUND) {
-            sqlite.releaseMemory(Int.MAX_VALUE).also { Log.d(TAG, "sqlite released $it bytes.") }
-            Log.d(TAG, "Releasing resources from all registered databases.")
-            SQLiteDatabaseRegistry.releaseMemory(Priority.HIGH)
-        } else if (level >= TRIM_MEMORY_RUNNING_LOW) {
-            sqlite.releaseMemory(maxOf(0, (sqlite.softHeapLimit64() / 2).toInt())).also {
-                Log.d(TAG, "sqlite released $it bytes.")
-            }
-            Log.d(TAG, "Releasing some resources from all registered databases.")
-            SQLiteDatabaseRegistry.releaseMemory(Priority.LOW)
+            releaseAllReclaimableMemory()
         }
+    }
+
+    private fun releaseAllReclaimableMemory() {
+        sqlite.releaseMemory(Int.MAX_VALUE).also { Log.d(TAG, "sqlite released $it bytes.") }
+        Log.d(TAG, "Releasing resources from all registered databases.")
+        SQLiteDatabaseRegistry.releaseMemory(Priority.HIGH)
     }
 }

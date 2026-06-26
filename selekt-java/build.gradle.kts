@@ -17,6 +17,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import me.champeau.jmh.JMHTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 description = "Selekt core library."
 
@@ -72,7 +74,7 @@ dependencies {
     }
     jmhImplementation(projects.selektSqlite3Classes) {
         capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
         }
     }
     jmhImplementation(projects.selektJdbc)
@@ -105,8 +107,8 @@ jmh {
     }
 }
 
-koverReport {
-    defaults {
+kover {
+    reports {
         filters {
             excludes {
                 classes("com.bloomberg.selekt.jvm.*")
@@ -138,6 +140,31 @@ tasks.register<Test>("integrationTest") {
 tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
     shouldRunAfter("integrationTest")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+}
+
+tasks.named<JavaCompile>("compileJmhJava") {
+    javaCompiler.set(javaToolchains.compilerFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    options.release.set(25)
+}
+tasks.named<KotlinCompile>("compileJmhKotlin").configure {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_25)
+    }
+    kotlinJavaToolchain.toolchain.use(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+}
+listOf("jmhCompileClasspath", "jmhRuntimeClasspath").forEach { name ->
+    configurations.named(name) {
+        attributes {
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+        }
+    }
 }
 
 tasks.register<Task>("buildHostSQLite") {

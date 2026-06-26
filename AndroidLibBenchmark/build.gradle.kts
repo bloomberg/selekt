@@ -16,7 +16,6 @@
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
     alias(libs.plugins.androidx.benchmark)
     alias(libs.plugins.detekt)
 }
@@ -30,18 +29,14 @@ android {
     compileSdkVersion(Versions.ANDROID_SDK.version.toInt())
     namespace = "com.bloomberg.selekt.android.benchmark"
     defaultConfig {
-        minSdkVersion(24)
-        targetSdkVersion(34)
+        minSdk = 24
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments.putAll(arrayOf(
             "androidx.benchmark.suppressErrors" to "EMULATOR,LOW_BATTERY,UNLOCKED"
         ))
     }
-    arrayOf("androidTest").forEach {
-        sourceSets[it].java.srcDir("src/$it/kotlin")
-    }
-    lintOptions {
-        disable("OldTargetApi")
+    lint {
+        disable += "OldTargetApi"
     }
 }
 

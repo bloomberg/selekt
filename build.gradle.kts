@@ -99,9 +99,14 @@ subprojects {
                     add(name, platform(libs.kotlinx.coroutines.bom))
                 }
                 configurations.getByName("testImplementation") {
+                    add(name, platform(libs.junit.bom))
                     add(name, libs.bundles.mockito)
                     add(name, libs.kotlin.test)
                     add(name, libs.kotlinx.coroutines.core)
+                }
+                configurations.getByName("testRuntimeOnly") {
+                    add(name, libs.junit.jupiter.engine)
+                    add(name, libs.junit.platform.launcher)
                 }
             }
         }
@@ -186,9 +191,9 @@ subprojects {
     }
     plugins.withType<SigningPlugin> {
         configure<SigningExtension> {
-            val signingKeyId: String? by project
-            val signingKey: String? by project
-            val signingPassword: String? by project
+            val signingKeyId = project.findProperty("signingKeyId") as String?
+            val signingKey = project.findProperty("signingKey") as String?
+            val signingPassword = project.findProperty("signingPassword") as String?
             useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
             configure<PublishingExtension> {
                 isRequired = project.isRelease()
@@ -210,22 +215,19 @@ subprojects {
     }
 }
 
-koverReport {
-    defaults {
+kover {
+    reports {
         filters {
             excludes {
                 classes("*Test*", "*\$DefaultImpls", "com.bloomberg.selekt.jvm.*")
-                packages(listOf(
-                    "*.benchmarks",
-                    "*_generated"
-                ))
+                packages("*.benchmarks", "*_generated")
             }
         }
         verify {
             rule("Minimal coverage") {
                 bound {
                     minValue = 90
-                    aggregation = AggregationType.COVERED_PERCENTAGE
+                    aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                 }
             }
         }

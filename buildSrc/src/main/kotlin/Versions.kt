@@ -21,7 +21,7 @@ enum class Versions(
     val version: String,
     private val url: URL
 ) {
-    ANDROID_SDK("34", URI.create("https://developer.android.com/sdk").toURL()),
+    ANDROID_SDK("36", URI.create("https://developer.android.com/sdk").toURL()),
     JMH("1.36", URI.create("https://openjdk.java.net/projects/code-tools/jmh/").toURL());
 
     override fun toString() = version

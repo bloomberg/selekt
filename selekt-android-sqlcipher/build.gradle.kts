@@ -23,7 +23,6 @@ logger.quiet("SQLCipher version: {}", version)
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
     `maven-publish`
     signing
     alias(libs.plugins.detekt)

@@ -44,7 +44,7 @@ class JmhPlugin : Plugin<Project> {
             mainClass.set("org.openjdk.jmh.Main")
             args(
                 listOfNotNull(
-                    properties["jmh.include"]?.toString(),
+                    findProperty("jmh.include")?.toString(),
                     "-rf", "json",
                     "-rff", reportFile.get().asFile.absolutePath
                 )
