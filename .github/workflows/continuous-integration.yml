@@ -112,7 +112,7 @@ jobs:
       - name: 'Cache mimalloc'
         id: cache-mimalloc
         if: runner.os == 'Linux'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             /usr/local/lib/libmimalloc.a
@@ -240,13 +240,13 @@ jobs:
           git config --global --add safe.directory /__w/selekt/selekt
 
       - name: 'Cache OpenSSL'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: OpenSSL/build
           key: openssl-${{ matrix.platform }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
       - name: 'SQLCipher amalgamation cache'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             SQLite3/sqlite3/generated/cpp/sqlite3.c
@@ -441,7 +441,7 @@ jobs:
 
       - name: 'Cache mimalloc'
         id: cache-mimalloc
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             /usr/local/lib/libmimalloc.a
@@ -500,7 +500,7 @@ jobs:
           fi
 
       - name: 'Gradle cache'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -510,7 +510,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: 'Cache OpenSSL'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: OpenSSL/build
           key: openssl-ci-${{ runner.os }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
