@@ -281,6 +281,7 @@ internal open class JdbcPreparedStatement(
     override fun clearParameters() {
         checkClosed()
         parameterRow.clear()
+        materializedArgs.fill(null)
     }
 
     override fun addBatch() {
@@ -305,14 +306,16 @@ internal open class JdbcPreparedStatement(
 
     override fun clearBatch() {
         checkClosed()
-        currentChunk?.let {
-            for (i in 0 until it.count) {
-                it.data[i].clear()
+        var chunk = firstChunk
+        while (chunk != null) {
+            val rows = chunk.data
+            for (i in 0 until chunk.count) {
+                rows[i].clear()
             }
-            it.count = 0
-            it.next = null
-            firstChunk = it
+            chunk.count = 0
+            chunk = chunk.next
         }
+        firstChunk = currentChunk
         totalBatchCount = 0
     }
 

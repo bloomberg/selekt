@@ -29,7 +29,6 @@ import java.io.InputStream
 import java.io.Reader
 import java.math.BigDecimal
 import java.net.URI
-import java.sql.Blob
 import java.sql.Clob
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -57,9 +56,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.mockito.kotlin.doReturn
+import kotlin.test.assertSame
 
 internal class JdbcPreparedStatementTest {
     private lateinit var database: SQLDatabase
@@ -1165,6 +1166,85 @@ internal class JdbcPreparedStatementTest {
             assertFailsWith<SQLException> {
                 setCharacterStream(1, "test".reader(), Long.MAX_VALUE)
             }
+        }
+    }
+
+    @Test
+    fun clearBatchZerosParameterReferencesAcrossAllChunksInTheChain() {
+        val statement = JdbcPreparedStatement(
+            connection,
+            database,
+            "INSERT INTO t (a) VALUES (?)"
+        )
+        repeat(1050) {
+            statement.setString(1, "sensitive-batch-value")
+            statement.addBatch()
+        }
+        val firstBefore = assertNotNull(readField<Any>(statement, "firstChunk"))
+        val currentBefore = assertNotNull(readField<Any>(statement, "currentChunk"))
+        assertTrue(
+            firstBefore !== currentBefore,
+            "sanity: batch should have spilled into more than one chunk"
+        )
+        val chainBefore = collectChunkChain(firstBefore)
+        assertTrue(chainBefore.size >= 2, "sanity: chain should have at least two chunks")
+
+        statement.clearBatch()
+
+        chainBefore.forEach(::assertChunkFullyCleared)
+        val retained = assertNotNull(readField<Any>(statement, "firstChunk"))
+        assertEquals(
+            chainBefore.maxOf { readField<Int>(it, "capacity")!! },
+            readField<Int>(retained, "capacity")!!,
+            "clearBatch should retain the largest chunk for reuse"
+        )
+        assertSame(
+            retained,
+            readField<Any>(statement, "currentChunk"),
+            "firstChunk and currentChunk should both point at the retained chunk"
+        )
+    }
+
+    private fun collectChunkChain(head: Any): List<Any> = buildList {
+        var node: Any? = head
+        while (node != null) {
+            add(node)
+            node = readField<Any>(node, "next")
+        }
+    }
+
+    private fun assertChunkFullyCleared(chunk: Any) {
+        assertEquals(0, readField<Int>(chunk, "count"), "chunk count should be reset to 0")
+        @Suppress("UNCHECKED_CAST")
+        val rows = readField<Array<Any?>>(chunk, "data")!!
+        for (row in rows) {
+            val paramRow = row as? ParameterRow ?: continue
+            paramRow.objects.forEach {
+                assertNull(it, "no ParameterRow.objects slot should retain a reference")
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> readField(target: Any, name: String): T? = target.javaClass
+        .getDeclaredField(name)
+        .apply { isAccessible = true }
+        .get(target) as T?
+
+    @Test
+    fun clearParametersNullsOutMaterializedArgsScratchArray() {
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
+        preparedStatement.setInt(1, 42)
+        preparedStatement.setString(2, "sensitive-parameter-value")
+        preparedStatement.executeQuery()
+        val before = assertNotNull(readField<Array<Any?>>(preparedStatement, "materializedArgs"))
+        assertTrue(
+            before.any { it != null },
+            "sanity: executeQuery should have materialized at least one non-null arg"
+        )
+        preparedStatement.clearParameters()
+        readField<Array<Any?>>(preparedStatement, "materializedArgs")!!.forEach {
+            assertNull(it, "clearParameters must null out every slot of materializedArgs")
         }
     }
 }
