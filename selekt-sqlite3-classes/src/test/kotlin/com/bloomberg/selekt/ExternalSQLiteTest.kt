@@ -518,6 +518,36 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `expandedSql returns full text when parameter exceeds 64 KiB`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val payloadSize = 128 * 1024
+                val payload = "A".repeat(payloadSize)
+                assertEquals(SQL_OK, sqlite.bindText(statement, 1, payload))
+                val expanded = sqlite.expandedSql(statement)
+                assertNotNull(expanded)
+                assertTrue(
+                    expanded.length >= payloadSize,
+                    "expanded_sql was truncated: got ${expanded.length} chars, expected >= $payloadSize"
+                )
+                assertTrue(expanded.startsWith("SELECT '"))
+                assertTrue(expanded.endsWith("'"))
+                assertTrue(expanded.contains("A".repeat(1024)))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `can get bind parameter count`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
