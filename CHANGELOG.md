@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 0.35.3
+
+* Move group declaration to gradle.properties.
+* Avoid taking extra key copy when sizing segment.
+* Gradle 9.6.1.
+* Zero all BatchChunks on JdbcPreparedStatement.clearBatch.
+
 ## Version 0.35.2
 
 * Simplify version handling by delegating to Gradle conventions.
