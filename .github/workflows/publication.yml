@@ -110,33 +110,30 @@ jobs:
         with:
           arch: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
 
-      - name: 'Build mimalloc'
+      - name: 'Build jemalloc'
         if: runner.os == 'Linux'
         run: |
+          if command -v apk > /dev/null 2>&1; then
+            apk add --no-cache bzip2
+          fi
           cd /tmp
-          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
-          tar xzf mimalloc.tar.gz
-          cd mimalloc-3.1.6
-          mkdir -p out/release
-          cd out/release
-          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
-          make -j$(nproc) mimalloc-static
+          curl -L https://github.com/jemalloc/jemalloc/releases/download/5.3.1/jemalloc-5.3.1.tar.bz2 -o jemalloc.tar.bz2
+          tar xjf jemalloc.tar.bz2
+          cd jemalloc-5.3.1
+          ./configure --disable-shared --enable-static --with-jemalloc-prefix=""
+          make -j$(nproc) build_lib_static
           SUDO=""
           if [ "$(id -u)" != "0" ] && command -v sudo >/dev/null 2>&1; then
             SUDO="sudo"
           fi
-          $SUDO mkdir -p /usr/local/lib /usr/local/include
-          STATIC_LIB=""
-          for candidate in libmimalloc.a libmimalloc-static.a; do
-            if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
-          done
-          if [ -z "$STATIC_LIB" ]; then
-            echo "ERROR: no mimalloc static lib produced. Build dir contents:"
-            ls -la
+          $SUDO mkdir -p /usr/local/lib /usr/local/include/jemalloc
+          if [ ! -f lib/libjemalloc.a ]; then
+            echo "ERROR: no jemalloc static lib produced. Build dir contents:"
+            ls -la lib || true
             exit 1
           fi
-          $SUDO cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
-          $SUDO cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+          $SUDO cp lib/libjemalloc.a /usr/local/lib/libjemalloc.a
+          $SUDO cp -R include/jemalloc/. /usr/local/include/jemalloc/
 
       - name: 'Setup Java 17'
         if: "!contains(matrix.platform, 'musl')"
@@ -306,29 +303,23 @@ jobs:
             alpine:3.20 sh -c '
               set -e
               apk update
-              apk add --no-cache bash git gcc g++ musl-dev make curl tar sed gnupg file perl linux-headers cmake diffutils tcl unzip openjdk17
+              apk add --no-cache bash git gcc g++ musl-dev make curl tar sed gnupg file perl linux-headers cmake diffutils tcl unzip openjdk17 bzip2
 
-              # Build mimalloc
+              # Build jemalloc
               cd /tmp
-              curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
-              tar xzf mimalloc.tar.gz
-              cd mimalloc-3.1.6
-              mkdir -p out/release
-              cd out/release
-              cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
-              make -j$(nproc) mimalloc-static
-              mkdir -p /usr/local/lib /usr/local/include
-              STATIC_LIB=""
-              for candidate in libmimalloc.a libmimalloc-static.a; do
-                if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
-              done
-              if [ -z "$STATIC_LIB" ]; then
-                echo "ERROR: no mimalloc static lib produced. Build dir contents:"
-                ls -la
+              curl -L https://github.com/jemalloc/jemalloc/releases/download/5.3.1/jemalloc-5.3.1.tar.bz2 -o jemalloc.tar.bz2
+              tar xjf jemalloc.tar.bz2
+              cd jemalloc-5.3.1
+              ./configure --disable-shared --enable-static --with-jemalloc-prefix=""
+              make -j$(nproc) build_lib_static
+              mkdir -p /usr/local/lib /usr/local/include/jemalloc
+              if [ ! -f lib/libjemalloc.a ]; then
+                echo "ERROR: no jemalloc static lib produced. Build dir contents:"
+                ls -la lib || true
                 exit 1
               fi
-              cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
-              cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+              cp lib/libjemalloc.a /usr/local/lib/libjemalloc.a
+              cp -R include/jemalloc/. /usr/local/include/jemalloc/
 
               # Configure and build
               cd /workspace
@@ -458,38 +449,32 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends clang gcc make sed tcl
 
-      - name: 'Cache mimalloc'
-        id: cache-mimalloc
+      - name: 'Cache jemalloc'
+        id: cache-jemalloc
         uses: actions/cache@v6
         with:
           path: |
-            /usr/local/lib/libmimalloc.a
-            /usr/local/include/mimalloc.h
-          key: mimalloc-publish-linux-amd64-v3.1.6
+            /usr/local/lib/libjemalloc.a
+            /usr/local/include/jemalloc
+          key: jemalloc-publish-linux-amd64-v5.3.1
 
-      - name: 'Build mimalloc'
-        if: steps.cache-mimalloc.outputs.cache-hit != 'true'
+      - name: 'Build jemalloc'
+        if: steps.cache-jemalloc.outputs.cache-hit != 'true'
         run: |
           cd /tmp
-          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
-          tar xzf mimalloc.tar.gz
-          cd mimalloc-3.1.6
-          mkdir -p out/release
-          cd out/release
-          cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
-          make -j$(nproc) mimalloc-static
-          sudo mkdir -p /usr/local/lib /usr/local/include
-          STATIC_LIB=""
-          for candidate in libmimalloc.a libmimalloc-static.a; do
-            if [ -f "$candidate" ]; then STATIC_LIB="$candidate"; break; fi
-          done
-          if [ -z "$STATIC_LIB" ]; then
-            echo "ERROR: no mimalloc static lib produced. Build dir contents:"
-            ls -la
+          curl -L https://github.com/jemalloc/jemalloc/releases/download/5.3.1/jemalloc-5.3.1.tar.bz2 -o jemalloc.tar.bz2
+          tar xjf jemalloc.tar.bz2
+          cd jemalloc-5.3.1
+          ./configure --disable-shared --enable-static --with-jemalloc-prefix=""
+          make -j$(nproc) build_lib_static
+          sudo mkdir -p /usr/local/lib /usr/local/include/jemalloc
+          if [ ! -f lib/libjemalloc.a ]; then
+            echo "ERROR: no jemalloc static lib produced. Build dir contents:"
+            ls -la lib || true
             exit 1
           fi
-          sudo cp "$STATIC_LIB" /usr/local/lib/libmimalloc.a
-          sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
+          sudo cp lib/libjemalloc.a /usr/local/lib/libjemalloc.a
+          sudo cp -R include/jemalloc/. /usr/local/include/jemalloc/
 
       - name: 'Checkout'
         uses: actions/checkout@v7

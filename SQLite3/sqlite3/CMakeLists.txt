@@ -136,25 +136,20 @@ if(WIN32)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID_ABI AND NOT ANDROID)
-  find_library(MIMALLOC_STATIC_LIB
-    NAMES libmimalloc.a mimalloc-static mimalloc
+  find_library(JEMALLOC_STATIC_LIB
+    NAMES libjemalloc.a jemalloc
     PATHS
       /usr/local/lib
       /usr/lib
       $ENV{CMAKE_PREFIX_PATH}/lib
     NO_DEFAULT_PATH)
-  if(MIMALLOC_STATIC_LIB)
-    message(STATUS "Found static mimalloc: ${MIMALLOC_STATIC_LIB}")
-    target_link_libraries(selekt PRIVATE ${MIMALLOC_STATIC_LIB})
-    target_compile_definitions(selekt PRIVATE MI_MALLOC_OVERRIDE)
+  if(JEMALLOC_STATIC_LIB)
+    message(STATUS "Found static jemalloc: ${JEMALLOC_STATIC_LIB}")
+    target_link_libraries(selekt PRIVATE
+      "-Wl,--whole-archive" ${JEMALLOC_STATIC_LIB} "-Wl,--no-whole-archive"
+      pthread dl)
+    target_compile_definitions(selekt PRIVATE JEMALLOC_MALLOC_OVERRIDE)
   else()
-    find_package(mimalloc QUIET)
-    if(mimalloc_FOUND)
-      message(STATUS "Found mimalloc via find_package")
-      target_link_libraries(selekt PRIVATE mimalloc)
-      target_compile_definitions(selekt PRIVATE MI_MALLOC_OVERRIDE)
-    else()
-      message(FATAL_ERROR "mimalloc not found (required on Linux)")
-    endif()
+    message(FATAL_ERROR "jemalloc not found (required on Linux)")
   endif()
 endif()
