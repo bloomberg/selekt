@@ -117,15 +117,15 @@ jobs:
           path: |
             /usr/local/lib/libmimalloc.a
             /usr/local/include/mimalloc.h
-          key: mimalloc-${{ matrix.platform }}-v3.1.6
+          key: mimalloc-${{ matrix.platform }}-v3.3.2
 
       - name: 'Build mimalloc'
         if: runner.os == 'Linux' && steps.cache-mimalloc.outputs.cache-hit != 'true'
         run: |
           cd /tmp
-          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
+          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.3.2.tar.gz -o mimalloc.tar.gz
           tar xzf mimalloc.tar.gz
-          cd mimalloc-3.1.6
+          cd mimalloc-3.3.2
           mkdir -p out/release
           cd out/release
           cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
@@ -358,9 +358,9 @@ jobs:
 
               # Build mimalloc
               cd /tmp
-              curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
+              curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.3.2.tar.gz -o mimalloc.tar.gz
               tar xzf mimalloc.tar.gz
-              cd mimalloc-3.1.6
+              cd mimalloc-3.3.2
               mkdir -p out/release
               cd out/release
               cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
@@ -446,15 +446,15 @@ jobs:
           path: |
             /usr/local/lib/libmimalloc.a
             /usr/local/include/mimalloc.h
-          key: mimalloc-ci-pipeline-linux-amd64-v3.1.6
+          key: mimalloc-ci-pipeline-linux-amd64-v3.3.2
 
       - name: 'Build mimalloc'
         if: steps.cache-mimalloc.outputs.cache-hit != 'true'
         run: |
           cd /tmp
-          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.1.6.tar.gz -o mimalloc.tar.gz
+          curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.3.2.tar.gz -o mimalloc.tar.gz
           tar xzf mimalloc.tar.gz
-          cd mimalloc-3.1.6
+          cd mimalloc-3.3.2
           mkdir -p out/release
           cd out/release
           cmake ../.. -DCMAKE_BUILD_TYPE=Release -DMI_BUILD_SHARED=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_TESTS=OFF -DMI_LOCAL_DYNAMIC_TLS=ON
