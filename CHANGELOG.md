@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.35.4
+
+* SQLCipher 4.17.0.
+* mimalloc 3.3.2.
+
 ## Version 0.35.3
 
 * Move group declaration to gradle.properties.
