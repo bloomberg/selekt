@@ -44,6 +44,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -908,6 +909,7 @@ internal class JdbcConnectionTest {
 
     @Test
     fun setSavepointId(): Unit = connection.run {
+        whenever(mockDatabase.setSavepoint(anyOrNull())) doReturn "sp_user_0"
         autoCommit = false
         assertEquals(0, connection.setSavepoint().savepointId)
     }
