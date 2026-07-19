@@ -21,9 +21,11 @@ import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.sql.SQLException
@@ -105,6 +107,53 @@ internal class JdbcConnectionSavepointTest {
         }
         verify(mockDatabase).setSavepoint("test_sp")
         verify(mockDatabase).rollbackToSavepoint("test_sp")
+        verify(mockDatabase).releaseSavepoint("test_sp")
+    }
+
+    @Test
+    fun rollbackReleasesSavepointPerJdbc42() {
+        whenever(mockDatabase.setSavepoint("test_sp")) doReturn "test_sp"
+        connection.run {
+            autoCommit = false
+            val savepoint = setSavepoint("test_sp")
+            rollback(savepoint)
+            assertFailsWith<SQLException> {
+                releaseSavepoint(savepoint)
+            }
+            assertFailsWith<SQLException> {
+                rollback(savepoint)
+            }
+        }
+    }
+
+    @Test
+    fun releaseSavepointInvalidatesSavepoint() {
+        whenever(mockDatabase.setSavepoint("test_sp")) doReturn "test_sp"
+        connection.run {
+            autoCommit = false
+            val savepoint = setSavepoint("test_sp")
+            releaseSavepoint(savepoint)
+            assertFailsWith<SQLException> {
+                releaseSavepoint(savepoint)
+            }
+            assertFailsWith<SQLException> {
+                rollback(savepoint)
+            }
+        }
+    }
+
+    @Test
+    fun repeatedRollbackToFreshSavepointsDoesNotAccumulate() {
+        var counter = 0
+        whenever(mockDatabase.setSavepoint(null)) doAnswer { "sp_user_${++counter}" }
+        connection.run {
+            autoCommit = false
+            repeat(2_000) {
+                val sp = setSavepoint()
+                rollback(sp)
+            }
+        }
+        verify(mockDatabase, times(2_000)).releaseSavepoint(any())
     }
 
     @Test

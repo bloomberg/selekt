@@ -279,10 +279,17 @@ internal class JdbcConnection(
             rollback()
             return
         }
+        if (savepoint is JdbcSavepoint && savepoint.invalidated) {
+            throw SQLException("Savepoint ${savepoint.savepointName} has already been released or invalidated")
+        }
         runCatching {
             database.rollbackToSavepoint(savepoint.savepointName)
+            database.releaseSavepoint(savepoint.savepointName)
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+        }
+        if (savepoint is JdbcSavepoint) {
+            savepoint.invalidated = true
         }
     }
 
@@ -294,12 +301,7 @@ internal class JdbcConnection(
             throw SQLException("Cannot create savepoint while in auto-commit mode")
         }
         return runCatching {
-            val savepointName = database.setSavepoint(name)
-            object : Savepoint {
-                override fun getSavepointId(): Int = 0
-
-                override fun getSavepointName(): String = savepointName
-            }
+            JdbcSavepoint(database.setSavepoint(name))
         }.getOrElse { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
@@ -307,11 +309,25 @@ internal class JdbcConnection(
 
     override fun releaseSavepoint(savepoint: Savepoint) {
         checkClosed()
+        if (savepoint is JdbcSavepoint && savepoint.invalidated) {
+            throw SQLException("Savepoint ${savepoint.savepointName} has already been released or invalidated")
+        }
         runCatching {
             database.releaseSavepoint(savepoint.savepointName)
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
+        if (savepoint is JdbcSavepoint) {
+            savepoint.invalidated = true
+        }
+    }
+
+    private class JdbcSavepoint(private val name: String) : Savepoint {
+        @Volatile var invalidated: Boolean = false
+
+        override fun getSavepointId(): Int = 0
+
+        override fun getSavepointName(): String = name
     }
 
     override fun close() {
