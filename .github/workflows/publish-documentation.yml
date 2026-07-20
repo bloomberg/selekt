@@ -28,7 +28,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.8
       - run: pip install mkdocs-material
