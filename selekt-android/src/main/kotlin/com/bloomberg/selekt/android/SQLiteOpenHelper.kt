@@ -110,8 +110,12 @@ class SQLiteOpenHelper internal constructor(
     override val databaseName = configuration.name
 
     override fun close() {
-        if (lazyDatabase.isInitialized()) {
-            writableDatabase.close()
+        try {
+            if (lazyDatabase.isInitialized()) {
+                writableDatabase.close()
+            }
+        } finally {
+            _key?.zero()
         }
     }
 }
