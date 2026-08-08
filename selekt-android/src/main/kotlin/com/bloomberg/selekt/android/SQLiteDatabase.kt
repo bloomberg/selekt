@@ -40,6 +40,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.jvm.Throws
@@ -90,6 +91,8 @@ class SQLiteDatabase private constructor(
         @JvmStatic
         fun deleteDatabase(file: File) = com.bloomberg.selekt.commons.deleteDatabase(file)
     }
+
+    private val closed = AtomicBoolean(false)
 
     init {
         SQLiteDatabaseRegistry.register(this)
@@ -160,8 +163,10 @@ class SQLiteDatabase private constructor(
         set(value) { database.version = value }
 
     override fun close() {
-        database.use {
-            SQLiteDatabaseRegistry.unregister(this)
+        if (closed.compareAndSet(false, true)) {
+            database.use {
+                SQLiteDatabaseRegistry.unregister(this)
+            }
         }
     }
 
