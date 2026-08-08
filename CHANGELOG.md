@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.0.0
+
+* First stable release.
+
 ## Version 0.35.4
 
 * SQLCipher 4.17.0.
