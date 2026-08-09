@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.0.0
+
+* First stable release.
+
 ## Version 0.35.6
 
 * Gradle 9.7.0.
