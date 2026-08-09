@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 0.35.6
+
+* Gradle 9.7.0.
+* Kotlin 2.4.10.
+
 ## Version 0.35.5
 
 * Zero SQLiteOpenHelper key copy on close when database never opened.
