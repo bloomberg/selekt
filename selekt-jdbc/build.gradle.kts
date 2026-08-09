@@ -75,6 +75,7 @@ dependencies {
     testImplementation(platform(libs.exposed.bom))
     testImplementation(libs.exposed.core)
     testImplementation(libs.exposed.jdbc)
+    testImplementation(libs.xerial.sqlite.jdbc)
 }
 
 jmh {
