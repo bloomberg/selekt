@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 0.35.5
+
+* Zero SQLiteOpenHelper key copy on close when database never opened.
+
 ## Version 0.35.4
 
 * SQLCipher 4.17.0.
