@@ -105,14 +105,14 @@ jobs:
 
       - name: 'Setup MSVC'
         if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         with:
           arch: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
 
       - name: 'Cache mimalloc'
         id: cache-mimalloc
         if: runner.os == 'Linux'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             /usr/local/lib/libmimalloc.a
@@ -151,7 +151,7 @@ jobs:
       - name: 'Setup Java 17'
         id: setup-java-17
         if: "!contains(matrix.platform, 'musl')"
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: ${{ (runner.os == 'Windows' && runner.arch == 'ARM64') && 'microsoft' || 'temurin' }}
           java-version: 17
@@ -178,7 +178,7 @@ jobs:
 
       - name: 'Setup Android SDK'
         if: "!contains(matrix.platform, 'linux-aarch64') && !contains(matrix.platform, 'musl') && matrix.platform != 'windows-aarch64'"
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
 
       - name: 'Setup Android SDK (aarch64)'
         if: matrix.platform == 'linux-aarch64'
@@ -229,7 +229,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$SDK_DIR_UNIX" >> $GITHUB_ENV
 
       - name: 'Checkout'
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 2
           submodules: recursive
@@ -240,13 +240,13 @@ jobs:
           git config --global --add safe.directory /__w/selekt/selekt
 
       - name: 'Cache OpenSSL'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: OpenSSL/build
           key: openssl-${{ matrix.platform }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
       - name: 'SQLCipher amalgamation cache'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             SQLite3/sqlite3/generated/cpp/sqlite3.c
@@ -324,7 +324,7 @@ jobs:
           fi
 
       - name: 'Upload native JAR'
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: selekt-sqlite3-sqlcipher-${{ matrix.platform }}
           path: selekt-sqlite3-sqlcipher/build/libs/*.jar
@@ -335,7 +335,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 2
           submodules: recursive
@@ -415,7 +415,7 @@ jobs:
             '
 
       - name: 'Upload native JAR'
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: selekt-sqlite3-sqlcipher-linux-aarch64-musl
           path: selekt-sqlite3-sqlcipher/build/libs/*.jar
@@ -441,7 +441,7 @@ jobs:
 
       - name: 'Cache mimalloc'
         id: cache-mimalloc
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             /usr/local/lib/libmimalloc.a
@@ -473,20 +473,20 @@ jobs:
           sudo cp ../../include/mimalloc.h /usr/local/include/mimalloc.h
 
       - name: 'Checkout'
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 2
           submodules: recursive
 
       - name: 'Setup Java 17'
         id: setup-java-17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
           java-version: 17
 
       - name: 'Setup Java 25'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
           java-version: 25
@@ -500,7 +500,7 @@ jobs:
           fi
 
       - name: 'Gradle cache'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
             ~/.gradle/caches
@@ -510,13 +510,13 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: 'Cache OpenSSL'
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: OpenSSL/build
           key: openssl-ci-${{ runner.os }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
       - name: 'ccache'
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
 
       - name: 'Configure Gradle'
         run: |
@@ -539,7 +539,7 @@ jobs:
         run: ./gradlew detekt lint -x lintRelease ${{ env.SCAN }}
 
       - name: 'Archive analysis reports'
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: 'Analyses'
@@ -550,7 +550,7 @@ jobs:
         run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: 'Unit test and coverage reports'
