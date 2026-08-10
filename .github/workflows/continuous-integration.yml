@@ -73,9 +73,9 @@ jobs:
             brew install make tcl-tk
           elif [ "${{ runner.os }}" = "Windows" ]; then
             if [ "${{ runner.arch }}" = "ARM64" ]; then
-              choco install ninja magicsplat-tcl-tk -y --no-progress
+              choco install ninja --version=1.12.1 magicsplat-tcl-tk --version=9.0.0.3 -y --no-progress
             else
-              choco install mingw make magicsplat-tcl-tk -y --no-progress
+              choco install mingw --version=14.2.0.20231219 make --version=4.4.1 magicsplat-tcl-tk --version=9.0.0.3 -y --no-progress
             fi
           fi
 
