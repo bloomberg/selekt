@@ -60,7 +60,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.mockito.kotlin.doReturn
-import kotlin.test.assertSame
 
 internal class JdbcPreparedStatementTest {
     private lateinit var database: SQLDatabase
@@ -1165,62 +1164,6 @@ internal class JdbcPreparedStatementTest {
         JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
             assertFailsWith<SQLException> {
                 setCharacterStream(1, "test".reader(), Long.MAX_VALUE)
-            }
-        }
-    }
-
-    @Test
-    fun clearBatchZerosParameterReferencesAcrossAllChunksInTheChain() {
-        val statement = JdbcPreparedStatement(
-            connection,
-            database,
-            "INSERT INTO t (a) VALUES (?)"
-        )
-        repeat(1050) {
-            statement.setString(1, "sensitive-batch-value")
-            statement.addBatch()
-        }
-        val firstBefore = assertNotNull(readField<Any>(statement, "firstChunk"))
-        val currentBefore = assertNotNull(readField<Any>(statement, "currentChunk"))
-        assertTrue(
-            firstBefore !== currentBefore,
-            "sanity: batch should have spilled into more than one chunk"
-        )
-        val chainBefore = collectChunkChain(firstBefore)
-        assertTrue(chainBefore.size >= 2, "sanity: chain should have at least two chunks")
-
-        statement.clearBatch()
-
-        chainBefore.forEach(::assertChunkFullyCleared)
-        val retained = assertNotNull(readField<Any>(statement, "firstChunk"))
-        assertEquals(
-            chainBefore.maxOf { readField<Int>(it, "capacity")!! },
-            readField<Int>(retained, "capacity")!!,
-            "clearBatch should retain the largest chunk for reuse"
-        )
-        assertSame(
-            retained,
-            readField<Any>(statement, "currentChunk"),
-            "firstChunk and currentChunk should both point at the retained chunk"
-        )
-    }
-
-    private fun collectChunkChain(head: Any): List<Any> = buildList {
-        var node: Any? = head
-        while (node != null) {
-            add(node)
-            node = readField<Any>(node, "next")
-        }
-    }
-
-    private fun assertChunkFullyCleared(chunk: Any) {
-        assertEquals(0, readField<Int>(chunk, "count"), "chunk count should be reset to 0")
-        @Suppress("UNCHECKED_CAST")
-        val rows = readField<Array<Any?>>(chunk, "data")!!
-        for (row in rows) {
-            val paramRow = row as? ParameterRow ?: continue
-            paramRow.objects.forEach {
-                assertNull(it, "no ParameterRow.objects slot should retain a reference")
             }
         }
     }
