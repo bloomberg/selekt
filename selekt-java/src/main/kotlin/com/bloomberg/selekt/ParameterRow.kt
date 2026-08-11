@@ -16,12 +16,15 @@
 
 package com.bloomberg.selekt
 
+import javax.annotation.concurrent.NotThreadSafe
+
 private const val TAG_NULL: Byte = 0
 private const val TAG_INT: Byte = 1
 private const val TAG_LONG: Byte = 2
 private const val TAG_DOUBLE: Byte = 3
 private const val TAG_OBJECT: Byte = 4
 
+@NotThreadSafe
 class ParameterRow(
     @JvmField val size: Int
 ) {

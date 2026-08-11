@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
@@ -116,35 +117,10 @@ internal open class JdbcPreparedStatement(
     resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
-    @Suppress("Detekt.UseDataClass")
-    private class BatchChunk(val capacity: Int, val parameterCount: Int) : Iterable<ParameterRow> {
-        val data = Array(capacity) { ParameterRow(parameterCount) }
-        var count = 0
-        var next: BatchChunk? = null
-
-        override fun iterator() = object : Iterator<ParameterRow> {
-            private var chunk: BatchChunk? = this@BatchChunk
-            private var index = 0
-
-            override fun hasNext() = chunk != null && index < chunk!!.count
-
-            override fun next(): ParameterRow {
-                val current = chunk ?: throw NoSuchElementException()
-                val row = current.data[index]
-                if (++index >= current.count) {
-                    chunk = current.next
-                    index = 0
-                }
-                return row
-            }
-        }
-    }
-
     private val parameterCount = sql.count { it == '?' }
     private val parameterRow = ParameterRow(parameterCount)
     private val materializedArgs = arrayOfNulls<Any>(parameterCount)
-    private var firstChunk: BatchChunk? = null
-    private var currentChunk: BatchChunk? = null
+    private val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     private var totalBatchCount = 0
     private var successArray: IntArray? = null
 
@@ -286,36 +262,13 @@ internal open class JdbcPreparedStatement(
 
     override fun addBatch() {
         checkClosed()
-        if (firstChunk == null) {
-            firstChunk = BatchChunk(INITIAL_BATCH_CHUNK_SIZE, parameterCount)
-            currentChunk = firstChunk
-        }
-        currentChunk!!.run {
-            if (count == capacity) {
-                currentChunk = BatchChunk(totalBatchCount, parameterCount).also {
-                    next = it
-                }
-            }
-        }
-        currentChunk!!.run {
-            data[count].copyFrom(parameterRow)
-            ++count
-        }
+        batchRows.add(parameterRow)
         ++totalBatchCount
     }
 
     override fun clearBatch() {
         checkClosed()
-        var chunk = firstChunk
-        while (chunk != null) {
-            val rows = chunk.data
-            for (i in 0 until chunk.count) {
-                rows[i].clear()
-            }
-            chunk.count = 0
-            chunk = chunk.next
-        }
-        firstChunk = currentChunk
+        batchRows.clear()
         totalBatchCount = 0
     }
 
@@ -331,7 +284,7 @@ internal open class JdbcPreparedStatement(
             val signal = activateCancellationSignalOrNull()
             try {
                 withCancellation(signal, primary = true) {
-                    batchRows(sql, firstChunk!!)
+                    batchRows(sql, batchRows)
                 }
             } catch (e: OperationCancelledException) {
                 throw SQLExceptionMapper.mapCancellation(e)
