@@ -67,7 +67,7 @@ jobs:
     env:
       SELEKT_LIBC: ${{ contains(matrix.platform, 'musl') && 'musl' || '' }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 500M
+      CCACHE_MAXSIZE: 300M
     steps:
       - name: 'Install system packages'
         shell: sh
@@ -412,7 +412,7 @@ jobs:
             -e CXX=g++ \
             -e LDFLAGS='-s' \
             -e CCACHE_DIR=/workspace/.ccache \
-            -e CCACHE_MAXSIZE=500M \
+            -e CCACHE_MAXSIZE=300M \
             alpine:3.20 sh -c '
               set -e
               apk update

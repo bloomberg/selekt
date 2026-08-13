@@ -16,6 +16,7 @@
 
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
+import java.io.File
 import java.util.Locale
 import java.util.Properties
 
@@ -153,6 +154,25 @@ fun targetIdentifier() = "${osName()}-${System.getProperty("os.arch")}".let {
     if (System.getenv("SELEKT_LIBC") == "musl") { "$it-musl" } else { it }
 }
 
+fun ccacheCompilerOrNull(): String? {
+    val enabled = providers.gradleProperty("selekt.ccache.enabled")
+        .orElse(providers.environmentVariable("SELEKT_ENABLE_CCACHE"))
+        .orElse("ON")
+        .get()
+    if (!enabled.equals("ON", ignoreCase = true) || osName() == "windows") {
+        return null
+    }
+    val onPath = System.getenv("PATH")?.split(File.pathSeparator).orEmpty().asSequence()
+        .map { File(it, "ccache") }
+        .any { it.isFile && it.canExecute() }
+    if (!onPath) {
+        return null
+    }
+    val compiler = System.getenv("CC")?.takeIf { it.isNotBlank() }
+        ?: if (osName() == "darwin") { "clang" } else { "gcc" }
+    return if (compiler.contains("ccache")) { compiler } else { "ccache $compiler" }
+}
+
 val isWindowsArm64 = osName() == "windows" && Regex("(?i)aarch64|arm64").containsMatchIn(
     System.getProperty("os.arch")
 )
@@ -171,6 +191,7 @@ tasks.register<Exec>("configureHost") {
     dependsOn("unpackOpenSslHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
+    inputs.property("cc", ccacheCompilerOrNull().orEmpty())
     val openSslWorkingDir = openSslWorkingDir.get().asFile
     workingDir(openSslWorkingDir)
     outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
@@ -207,6 +228,7 @@ tasks.register<Exec>("configureHost") {
     } else {
         commandLine("./config")
         args(configArgs)
+        ccacheCompilerOrNull()?.let { environment("CC", it) }
     }
 }
 
