@@ -5,6 +5,7 @@
 .fleet
 .vscode
 build
+.ccache
 .gradle
 .kotlin
 *.iml
