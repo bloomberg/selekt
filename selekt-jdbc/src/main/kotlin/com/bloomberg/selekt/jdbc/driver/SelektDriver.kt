@@ -241,11 +241,23 @@ class SelektDriver : Driver {
         urlProperties: Properties,
         mergedProperties: Properties,
         additionalProperties: Properties
-    ): CharArray? = (mergedProperties.getProperty(PROPERTY_KEY) ?: return null).also {
-        urlProperties.remove(PROPERTY_KEY)
-        mergedProperties.remove(PROPERTY_KEY)
-        additionalProperties.remove(PROPERTY_KEY)
-    }.toCharArray()
+    ): CharArray? {
+        val value = findKeyProperty(mergedProperties) ?: return null
+        removeKeyProperty(urlProperties)
+        removeKeyProperty(mergedProperties)
+        removeKeyProperty(additionalProperties)
+        return value.toCharArray()
+    }
+
+    private fun findKeyProperty(properties: Properties): String? = properties.stringPropertyNames()
+        .firstOrNull { it.equals(PROPERTY_KEY, ignoreCase = true) }
+        ?.let(properties::getProperty)
+
+    private fun removeKeyProperty(properties: Properties) {
+        properties.stringPropertyNames()
+            .filter { it.equals(PROPERTY_KEY, ignoreCase = true) }
+            .forEach(properties::remove)
+    }
 
     private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? = keyChars?.let(KeyEncoding::encode)
 

@@ -120,4 +120,22 @@ internal class ConnectionURLTest {
         assertTrue(contains("key=***"))
         assertTrue(contains("poolSize=10"))
     }
+
+    @Test
+    fun toStringRedactsMisCasedKey(): Unit = ConnectionURL.parse(
+        "jdbc:sqlite:/test.db?Key=supersecret&poolSize=10"
+    ).toString().run {
+        assertFalse(contains("supersecret"))
+        assertTrue(contains("key=***"))
+        assertTrue(contains("poolSize=10"))
+    }
+
+    @Test
+    fun misCasedKeyIsNormalized() {
+        listOf("Key", "KEY", "kEy").forEach { name ->
+            val connectionURL = ConnectionURL.parse("jdbc:sqlite:/test.db?$name=supersecret")
+            assertEquals("supersecret", connectionURL.getProperty("key"))
+            assertEquals(setOf("key"), connectionURL.properties.stringPropertyNames())
+        }
+    }
 }
