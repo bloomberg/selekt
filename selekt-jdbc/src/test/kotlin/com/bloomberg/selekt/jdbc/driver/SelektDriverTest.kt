@@ -422,6 +422,28 @@ internal class SelektDriverTest {
     }
 
     @Test
+    fun connectWithMisCasedKeyInUrlDoesNotLeakInMetadataUrl() {
+        val secret = "0123456789ABCDEF"
+        val connection = driver.connect(
+            "jdbc:sqlite:/tmp/test_miscased_key_leak.db?KEY=0x$secret$secret$secret$secret",
+            Properties()
+        )!!.also(connections::add)
+        val metadata = connection.metaData
+        assertNotNull(metadata)
+        assertFalse(metadata.url.contains(secret))
+    }
+
+    @Test
+    fun connectWithMisCasedShortKeyFails() {
+        val properties = Properties().apply {
+            setProperty("Key", "too-short")
+        }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test_miscased_short_key.db", properties)
+        }
+    }
+
+    @Test
     fun getIndexInfoReturnsCreatedIndex() {
         val dbFile = File.createTempFile("selekt_idx_test_", ".db").also(tempFiles::add)
         driver.connect("jdbc:sqlite:${dbFile.absolutePath}", Properties())!!.use { connection ->

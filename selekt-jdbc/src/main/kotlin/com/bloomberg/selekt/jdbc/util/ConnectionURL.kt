@@ -42,6 +42,7 @@ internal class ConnectionURL private constructor(
         private const val JDBC_PREFIX = "jdbc:"
         private const val SELEKT_SUBPROTOCOL = "sqlite:"
         private const val FULL_PREFIX = "$JDBC_PREFIX$SELEKT_SUBPROTOCOL"
+        private const val PROPERTY_KEY = "key"
         private val KEY_PROPERTY_PATTERN = Regex("([?&])key=[^&]*", RegexOption.IGNORE_CASE)
 
         @JvmStatic
@@ -99,15 +100,21 @@ internal class ConnectionURL private constructor(
             queryString.split('&').forEach { param ->
                 val index = param.indexOf('=')
                 if (index != -1) {
-                    val key = param.substring(0, index).trim()
-                    if (key.isNotEmpty()) {
+                    val rawKey = param.substring(0, index).trim()
+                    if (rawKey.isNotEmpty()) {
                         properties.setProperty(
-                            key,
+                            normalizePropertyName(rawKey),
                             URLDecoder.decode(param.substring(index + 1).trim(), Charsets.UTF_8)
                         )
                     }
                 }
             }
+        }
+
+        private fun normalizePropertyName(name: String): String = if (name.equals(PROPERTY_KEY, ignoreCase = true)) {
+            PROPERTY_KEY
+        } else {
+            name
         }
     }
 
@@ -131,7 +138,7 @@ internal class ConnectionURL private constructor(
         "${if (properties.isNotEmpty()) { "?" } else { "" } }${propertiesToQueryString()}"
 
     private fun propertiesToQueryString(): String = properties.entries.joinToString("&") { (key, value) ->
-        if (key == "key") {
+        if ((key as String).equals(PROPERTY_KEY, ignoreCase = true)) {
             "$key=***"
         } else {
             "$key=${URLEncoder.encode(value.toString(), "UTF-8")}"
