@@ -18,14 +18,24 @@ package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.commons.zero
 import java.nio.CharBuffer
-import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+private const val HMAC_ALGORITHM = "HmacSHA256"
+private const val SALT_LENGTH_BYTES = 32
+private const val CACHE_KEY_HASH_LENGTH_BYTES = 16
+
+private val cacheKeyHashSalt = ByteArray(SALT_LENGTH_BYTES).also(SecureRandom()::nextBytes)
 
 internal fun hashKeyChars(keyChars: CharArray): String = Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).let {
     ByteArray(it.remaining()).also(it::get)
 }.run {
     try {
-        MessageDigest.getInstance("SHA-256")
-            .digest(this)
+        Mac.getInstance(HMAC_ALGORITHM).apply {
+            init(SecretKeySpec(cacheKeyHashSalt, HMAC_ALGORITHM))
+        }.doFinal(this)
+            .copyOf(CACHE_KEY_HASH_LENGTH_BYTES)
             .joinToString("") { "%02x".format(it) }
     } finally {
         zero()
