@@ -16,9 +16,11 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import java.nio.CharBuffer
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class KeyEncodingTest {
@@ -95,5 +97,17 @@ internal class KeyEncodingTest {
         assertFailsWith<IllegalArgumentException> {
             KeyEncoding.validateLength(("0x" + "AB".repeat(31)).toCharArray())
         }
+    }
+
+    @Test
+    fun `encodeUtf8KeyBytes returns the UTF-8 encoding of the key`() {
+        val key = "exactly-32-bytes-of-key-data!!!!"
+        assertContentEquals(key.toByteArray(Charsets.UTF_8), encodeUtf8KeyBytes(key.toCharArray()))
+    }
+
+    @Test
+    fun `Charset UTF_8 encode returns a heap-backed buffer whose array we can zero`() {
+        val encoded = Charsets.UTF_8.encode(CharBuffer.wrap("exactly-32-bytes-of-key-data!!!!".toCharArray()))
+        assertTrue(encoded.hasArray(), "encodeUtf8KeyBytes relies on this to zero the abandoned buffer")
     }
 }

@@ -16,7 +16,18 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.commons.zero
 import java.nio.CharBuffer
+
+internal fun encodeUtf8KeyBytes(keyChars: CharArray): ByteArray = Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).run {
+    try {
+        ByteArray(remaining()).also(::get)
+    } finally {
+        if (hasArray()) {
+            array().zero()
+        }
+    }
+}
 
 /**
  * @since 0.34.1
@@ -33,9 +44,7 @@ internal object KeyEncoding {
         val bytes = if (keyChars.isHexPrefixed()) {
             parseHexKey(keyChars)
         } else {
-            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).let {
-                ByteArray(it.remaining()).also(it::get)
-            }
+            encodeUtf8KeyBytes(keyChars)
         }
         require(bytes.size == REQUIRED_KEY_LENGTH_BYTES) {
             "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was ${bytes.size} bytes"
@@ -51,7 +60,13 @@ internal object KeyEncoding {
             }
             hexLength / HEX_CHUNK_SIZE
         } else {
-            Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).remaining()
+            encodeUtf8KeyBytes(keyChars).let {
+                try {
+                    it.size
+                } finally {
+                    it.zero()
+                }
+            }
         }
         require(encodedLength == REQUIRED_KEY_LENGTH_BYTES) {
             "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was $encodedLength bytes"
