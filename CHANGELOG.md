@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 1.0.1
+
+* Configure GitHub Actions token permissions.
+* Pin GitHub Action versions.
+* Move ChunkedParameterRows.kt into selekt-java.
+* Facilitate blob streaming via JdbcConnection.
+* Normalize case-insensitive matching of the JDBC 'key' property.
+* Derive JDBC connection-cache key hashes with a per-process HMAC salt.
+* Zero abandoned UTF-8 key-encoding buffers in KeyEncoding and KeyHashing.
+
 ## Version 1.0.0
 
 * First stable release.
