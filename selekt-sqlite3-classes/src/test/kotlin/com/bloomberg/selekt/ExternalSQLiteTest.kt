@@ -342,6 +342,30 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `can bind and retrieve large blob`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val blob = ByteArray(100_000) { (it % 256).toByte() }
+                assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, blob, blob.size))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                val result = sqlite.columnBlob(statement, 0)
+                assertNotNull(result)
+                assertEquals(blob.toList(), result.toList())
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `can bind and retrieve text with unicode`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)

@@ -284,13 +284,27 @@ internal class ExternalSQLite(
         index: Int,
         blob: ByteArray,
         length: Int
-    ): SQLCode = sqlite3_bind_blob.invoke(
-        MemorySegment.ofAddress(statement),
-        index,
-        MemorySegment.ofArray(blob),
-        length,
-        sqliteTransient
-    ) as Int
+    ): SQLCode = if (length <= BLOB_SLAB_THRESHOLD) {
+        withSlab { slab ->
+            val segment = slab.allocate(length.toLong())
+            MemorySegment.copy(blob, 0, segment, JAVA_BYTE, 0, length)
+            sqlite3_bind_blob_offheap.invoke(
+                MemorySegment.ofAddress(statement),
+                index,
+                segment,
+                length,
+                sqliteTransient
+            ) as Int
+        }
+    } else {
+        sqlite3_bind_blob_onheap.invoke(
+            MemorySegment.ofAddress(statement),
+            index,
+            MemorySegment.ofArray(blob),
+            length,
+            sqliteTransient
+        ) as Int
+    }
 
     override fun bindDouble(
         statement: Long,
@@ -1041,7 +1055,14 @@ internal class ExternalSQLite(
 
         private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
-        private val sqlite3_bind_blob: MethodHandle = linker.downcallHandle(
+        private const val BLOB_SLAB_THRESHOLD = 65_536
+
+        private val sqlite3_bind_blob_offheap: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
+            criticalNoHeapOption
+        )
+        private val sqlite3_bind_blob_onheap: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
             criticalOption
