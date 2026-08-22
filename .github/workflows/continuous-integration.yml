@@ -4,6 +4,9 @@ on: [pull_request, push]
 
 permissions: read-all
 
+env:
+  CCACHE_VERSION: 4.13.6
+
 jobs:
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
@@ -17,6 +20,7 @@ jobs:
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
+            ccache_asset: ccache-4.13.6-linux-x86_64-glibc.tar.gz
           - display: 'linux-aarch64 (vec1)'
             os: ubuntu-24.04-arm
             platform: linux-aarch64
@@ -24,6 +28,7 @@ jobs:
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'OFF'
+            ccache_asset: ccache-4.13.6-linux-aarch64-glibc.tar.gz
           - display: 'linux-amd64-musl (vec1+avx2)'
             os: ubuntu-latest
             platform: linux-amd64-musl
@@ -31,24 +36,28 @@ jobs:
             shell: sh
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
+            ccache_asset: ccache-4.13.6-linux-x86_64-musl-static.tar.gz
           - display: 'darwin-aarch64 (vec1)'
             os: macos-15
             platform: darwin-aarch64
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'OFF'
+            ccache_asset: ccache-4.13.6-darwin.tar.gz
           - display: 'windows-amd64 (vec1+avx2)'
             os: windows-latest
             platform: windows-amd64
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
+            ccache_asset: ccache-4.13.6-windows-x86_64.zip
           - display: 'windows-aarch64 (vec1)'
             os: windows-11-arm
             platform: windows-aarch64
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'OFF'
+            ccache_asset: ccache-4.13.6-windows-aarch64.zip
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     defaults:
@@ -57,6 +66,8 @@ jobs:
     timeout-minutes: 60
     env:
       SELEKT_LIBC: ${{ contains(matrix.platform, 'musl') && 'musl' || '' }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 300M
     steps:
       - name: 'Install system packages'
         shell: sh
@@ -255,9 +266,50 @@ jobs:
             SQLite3/src/main/external/sqlcipher/sqlite3.h
           key: sqlcipher-amalgamation-${{ matrix.platform }}-${{ hashFiles('SQLite3/src/main/external/sqlcipher/src/**', 'SQLite3/src/main/external/sqlcipher/VERSION') }}
 
+      - name: 'Cache ccache data'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.platform }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ matrix.platform }}-
+
+      - name: 'Install ccache'
+        shell: bash
+        run: |
+          set -eu
+          url="https://github.com/ccache/ccache/releases/download/v${{ env.CCACHE_VERSION }}/${{ matrix.ccache_asset }}"
+          archive="/tmp/${{ matrix.ccache_asset }}"
+          curl -fsSL "$url" -o "$archive"
+          extract_dir=/tmp/ccache-extract
+          mkdir -p "$extract_dir"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            if command -v unzip > /dev/null 2>&1; then
+              unzip -q "$archive" -d "$extract_dir"
+            else
+              "/c/Program Files/7-Zip/7z.exe" x "$archive" -o"$extract_dir" -y > /dev/null
+            fi
+          else
+            tar -xzf "$archive" -C "$extract_dir"
+          fi
+          asset="${{ matrix.ccache_asset }}"
+          base="${asset%.tar.gz}"
+          base="${base%.zip}"
+          bin_dir="$extract_dir/$base"
+          ccache_bin="$bin_dir/ccache"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ccache_bin="$ccache_bin.exe"
+          fi
+          chmod +x "$ccache_bin" 2>/dev/null || true
+          if "$ccache_bin" --version > /dev/null 2>&1; then
+            echo "$bin_dir" >> "$GITHUB_PATH"
+          else
+            echo "ccache binary is not usable on this platform; continuing without a compiler cache."
+          fi
+
       - name: 'Configure Gradle'
         run: |
-          echo 'org.gradle.caching=false' >> gradle.properties
+          echo 'org.gradle.caching=true' >> gradle.properties
           echo 'org.gradle.configuration-cache=false' >> gradle.properties
           echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
@@ -340,6 +392,14 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
+      - name: 'Cache ccache data'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .ccache
+          key: ccache-linux-aarch64-musl-${{ github.run_id }}
+          restore-keys: |
+            ccache-linux-aarch64-musl-
+
       - name: 'Build in Alpine container'
         run: |
           docker run --rm \
@@ -351,10 +411,25 @@ jobs:
             -e CC=gcc \
             -e CXX=g++ \
             -e LDFLAGS='-s' \
+            -e CCACHE_DIR=/workspace/.ccache \
+            -e CCACHE_MAXSIZE=300M \
             alpine:3.20 sh -c '
               set -e
               apk update
               apk add --no-cache bash git gcc g++ musl-dev make curl tar sed gnupg file perl linux-headers cmake diffutils tcl unzip openjdk17
+
+              # Install ccache
+              ccache_asset="ccache-${{ env.CCACHE_VERSION }}-linux-aarch64-musl-static.tar.gz"
+              curl -fsSL "https://github.com/ccache/ccache/releases/download/v${{ env.CCACHE_VERSION }}/$ccache_asset" -o "/tmp/$ccache_asset"
+              mkdir -p /tmp/ccache-extract
+              tar -xzf "/tmp/$ccache_asset" -C /tmp/ccache-extract
+              ccache_bin_dir="/tmp/ccache-extract/${ccache_asset%.tar.gz}"
+              chmod +x "$ccache_bin_dir"/ccache
+              if "$ccache_bin_dir"/ccache --version > /dev/null 2>&1; then
+                export PATH="$ccache_bin_dir:$PATH"
+              else
+                echo "ccache binary is not usable on this platform; continuing without a compiler cache."
+              fi
 
               # Build mimalloc
               cd /tmp
@@ -393,7 +468,7 @@ jobs:
               echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
               echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
 
-              echo "org.gradle.caching=false" >> gradle.properties
+              echo "org.gradle.caching=true" >> gradle.properties
               echo "org.gradle.configuration-cache=false" >> gradle.properties
               echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
               ./gradlew :selekt-sqlite3-sqlcipher:jar
