@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.loadLibrary
+import java.nio.ByteBuffer
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -31,7 +32,7 @@ fun externalSQLiteSingleton(
 internal class ExternalSQLite(
     configuration: SQLiteConfiguration,
     loader: () -> Unit
-) : IExternalSQLite {
+) : IExternalSQLite, INativeCursorWindowSQLite {
     init {
         loader()
         nativeInit(configuration.softHeapLimit)
@@ -160,7 +161,16 @@ internal class ExternalSQLite(
 
     external override fun extendedResultCodes(db: Long, onOff: Int): Int
 
+    external override fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ): ByteBuffer?
+
     external override fun finalize(statement: Long): SQLCode
+
+    external override fun freeCursorWindow(buffer: ByteBuffer)
 
     external override fun getAutocommit(db: Long): Int
 

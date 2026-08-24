@@ -33,6 +33,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
+import java.nio.ByteBuffer
 
 private val databaseConfiguration = DatabaseConfiguration(
     busyTimeoutMillis = 2_000,
@@ -117,6 +118,10 @@ internal class SQLDatabaseTest {
         }
         whenever(sqlite.stepWithoutThrowing(any<Long>())) doReturn SQL_DONE
         whenever(sqlite.getAutocommit(any<Long>())) doReturn 1
+        whenever(sqlite.capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = true)
+        whenever(sqlite.fillCursorWindow(any<StatementHandle>(), any(), any(), any())) doAnswer {
+            ByteBuffer.allocate(2 * Int.SIZE_BYTES).apply { putInt(0, 0); putInt(Int.SIZE_BYTES, 0) }
+        }
         database = SQLDatabase("file::memory:", sqlite, databaseConfiguration, null)
     }
 

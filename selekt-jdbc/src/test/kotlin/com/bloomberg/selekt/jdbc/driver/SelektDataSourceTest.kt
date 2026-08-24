@@ -59,12 +59,14 @@ internal class SelektDataSourceTest {
         databasePath = "/tmp/test.db"
         maxPoolSize = 20
         busyTimeout = 5_000
+        cursorWindowSize = 64
         journalMode = "WAL"
         foreignKeys = true
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
         assertEquals(5_000, busyTimeout)
+        assertEquals(64, cursorWindowSize)
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
         assertTrue(encryptionEnabled)
@@ -86,6 +88,12 @@ internal class SelektDataSourceTest {
         assertFailsWith<IllegalArgumentException> {
             dataSource.busyTimeout = -1
         }
+    }
+
+    @Test
+    fun invalidCursorWindowSize() {
+        assertFailsWith<IllegalArgumentException> { dataSource.cursorWindowSize = 0 }
+        assertFailsWith<IllegalArgumentException> { dataSource.cursorWindowSize = -1 }
     }
 
     @Test
@@ -251,6 +259,11 @@ internal class SelektDataSourceTest {
     @Test
     fun busyTimeoutDefault() {
         assertEquals(2_500, dataSource.busyTimeout)
+    }
+
+    @Test
+    fun cursorWindowSizeDefault() {
+        assertEquals(Int.MAX_VALUE, dataSource.cursorWindowSize)
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.lang.foreign.ValueLayout.JAVA_LONG
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
+import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
@@ -51,7 +52,7 @@ private inline fun MemorySegment.getConfinedString(): String = address().let {
 internal class ExternalSQLite(
     configuration: SQLiteConfiguration,
     loader: () -> Unit
-) : IExternalSQLite {
+) : IExternalSQLite, INativeCursorWindowSQLite {
     private val callbackRegistryLock = ReentrantLock()
     @GuardedBy("callbackRegistryLock")
     private val activeListeners = mutableMapOf<Long, CommitHookRegistration>()
@@ -757,9 +758,45 @@ internal class ExternalSQLite(
         onOff
     ) as Int
 
+    override fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ): ByteBuffer? = withSlab { slab ->
+        val outSize = slab.allocate(JAVA_LONG)
+        val buffer = selekt_fill_cursor_window.invoke(
+            MemorySegment.ofAddress(statement),
+            startRow,
+            maxRows,
+            if (countAllRows) { 1 } else { 0 },
+            outSize
+        ) as MemorySegment
+        if (buffer.address() == 0L) {
+            when (outSize.get(JAVA_LONG, 0L)) {
+                -2L -> throw OutOfMemoryError("fillCursorWindow")
+                -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
+                -4L -> error("Unexpected failure while filling cursor window")
+                -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
+            }
+            null
+        } else {
+            try {
+                buffer.reinterpret(outSize.get(JAVA_LONG, 0L)).asByteBuffer()
+            } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
+                selekt_free_cursor_window.invoke(buffer)
+                throw throwable
+            }
+        }
+    }
+
     override fun finalize(
         statement: Long
     ): SQLCode = sqlite3_finalize.invoke(MemorySegment.ofAddress(statement)) as Int
+
+    override fun freeCursorWindow(buffer: ByteBuffer) {
+        selekt_free_cursor_window.invoke(MemorySegment.ofBuffer(buffer))
+    }
 
     override fun getAutocommit(
         db: Long
@@ -1449,6 +1486,15 @@ internal class ExternalSQLite(
         private val sqlite3_step: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_step").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS)
+        )
+        private val selekt_fill_cursor_window: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_fill_cursor_window").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS)
+        )
+        private val selekt_free_cursor_window: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_free_cursor_window").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS),
+            criticalNoHeapOption
         )
         private val sqlite3_stmt_busy: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_stmt_busy").orElseThrow(),

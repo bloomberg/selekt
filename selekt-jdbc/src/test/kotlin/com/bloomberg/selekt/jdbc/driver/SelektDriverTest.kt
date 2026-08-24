@@ -112,6 +112,7 @@ internal class SelektDriverTest {
             assertFalse(contains("key"))
             assertTrue(contains("poolSize"))
             assertTrue(contains("busyTimeout"))
+            assertTrue(contains("cursorWindowSize"))
             assertTrue(contains("journalMode"))
             assertTrue(contains("foreignKeys"))
         }
@@ -155,6 +156,12 @@ internal class SelektDriverTest {
             assertEquals("SQLite busy timeout in milliseconds", it.description)
             assertFalse(it.required)
         }
+        find { it.name == "cursorWindowSize" }.let {
+            assertNotNull(it)
+            assertEquals("Maximum rows retained by a cursor window", it.description)
+            assertFalse(it.required)
+            assertEquals(Int.MAX_VALUE.toString(), it.value)
+        }
         find { it.name == "journalMode" }.let {
             assertNotNull(it)
             assertEquals("SQLite journal mode", it.description)
@@ -175,12 +182,21 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("poolSize", "5")
             setProperty("busyTimeout", "2000")
+            setProperty("cursorWindowSize", "64")
             setProperty("journalMode", "DELETE")
             setProperty("foreignKeys", "false")
         }
         val connection = driver.connect(url, properties)
         assertNotNull(connection)
         connections.add(connection)
+    }
+
+    @Test
+    fun rejectsInvalidCursorWindowSize() {
+        val properties = Properties().apply { setProperty("cursorWindowSize", "0") }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        }
     }
 
     @Test

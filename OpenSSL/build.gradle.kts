@@ -40,6 +40,7 @@ fun Project.openSslPgpUrl() = "$openSslBaseUrl/openssl-${openSslVersion()}.tar.g
 
 val archive: Provider<RegularFile> = layout.buildDirectory.file("tmp/openssl-${openSslVersion()}.tar.gz")
 val archivePgp: Provider<RegularFile> = layout.buildDirectory.file("tmp/openssl-${openSslVersion()}.tar.gz.asc")
+val openSslSourceFiles = tarTree(archive).matching { exclude("**/*.pem") }
 
 tasks.register<Download>("downloadOpenSslPgp") {
     val url = openSslPgpUrl()
@@ -108,7 +109,7 @@ fun openSslWorkingDir(target: String): Provider<Directory> = archive.run {
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
     val titleCaseName = it.replaceFirstChar { c -> c.uppercaseChar() }
     tasks.register<Copy>("unpackOpenSsl$titleCaseName") {
-        from(tarTree(archive))
+        from(openSslSourceFiles)
         into(layout.buildDirectory.dir("generated/$it"))
         dependsOn("downloadOpenSsl")
     }
@@ -161,7 +162,7 @@ val openSslWorkingDir: Provider<Directory> = openSslWorkingDir(targetIdentifier(
 
 // FIXME Some of the host building logic parallels Android's above. Re-purpose?
 tasks.register<Copy>("unpackOpenSslHost") {
-    from(tarTree(archive))
+    from(openSslSourceFiles)
     into(layout.buildDirectory.dir("generated/${targetIdentifier()}"))
     dependsOn("downloadOpenSsl")
     mustRunAfter("clean")

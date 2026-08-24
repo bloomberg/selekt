@@ -83,14 +83,41 @@ interface ICursor : Closeable {
 @NotThreadSafe
 internal class WindowedCursor(
     private val columnNames: Array<out String>,
-    private val window: ICursorWindow
+    page: CursorWindowPage,
+    private val refill: ((startPosition: Int) -> CursorWindowPage)? = null
 ) : ICursor {
     private var closed = false
     private var position = -1
 
+    private var window = page.window
+    private var windowStart = page.startPosition
+
     override val columnCount = columnNames.size
 
-    override val count = window.numberOfRows()
+    override val count = page.count
+
+    private inline fun <R> read(index: Int, block: ICursorWindow.(row: Int) -> R): R {
+        check(!closed) { "Cursor is closed." }
+        check(position in 0 until count) { "Cursor position $position does not identify a row." }
+        if (index !in 0 until columnCount) {
+            throw IndexOutOfBoundsException("Column $index is outside a cursor containing $columnCount columns.")
+        }
+        if (position - windowStart !in 0 until window.numberOfRows()) {
+            val next = requireNotNull(refill) {
+                "Position $position lies outside a cursor window that cannot be refilled."
+            }(startPositionFor(position, window.numberOfRows()))
+            if (position - next.startPosition !in 0 until next.window.numberOfRows()) {
+                next.window.close()
+                error(
+                    "Refilled cursor window starting at ${next.startPosition} does not contain position $position."
+                )
+            }
+            window.close()
+            window = next.window
+            windowStart = next.startPosition
+        }
+        return window.block(position - windowStart)
+    }
 
     override fun close() {
         closed = true
@@ -103,15 +130,15 @@ internal class WindowedCursor(
 
     override fun columnNames() = columnNames
 
-    override fun getBlob(index: Int) = window.getBlob(position, index)
+    override fun getBlob(index: Int) = read(index) { getBlob(it, index) }
 
-    override fun getDouble(index: Int) = window.getDouble(position, index)
+    override fun getDouble(index: Int) = read(index) { getDouble(it, index) }
 
-    override fun getInt(index: Int) = window.getInt(position, index)
+    override fun getInt(index: Int) = read(index) { getInt(it, index) }
 
-    override fun getLong(index: Int) = window.getLong(position, index)
+    override fun getLong(index: Int) = read(index) { getLong(it, index) }
 
-    override fun getString(index: Int) = window.getString(position, index)
+    override fun getString(index: Int) = read(index) { getString(it, index) }
 
     override fun isAfterLast() = count.let { it == 0 || it == position }
 
@@ -123,7 +150,7 @@ internal class WindowedCursor(
 
     override fun isLast() = count.let { it > 0 && it - 1 == position }
 
-    override fun isNull(index: Int) = window.isNull(position, index)
+    override fun isNull(index: Int) = read(index) { isNull(it, index) }
 
     override fun move(offset: Int) = moveToPosition(position + offset)
 
@@ -154,8 +181,15 @@ internal class WindowedCursor(
 
     override fun position() = position
 
-    override fun type(index: Int) = window.type(position, index)
+    override fun type(index: Int) = read(index) { type(it, index) }
 }
+
+private const val WINDOW_LOOKBEHIND_FRACTION = 3
+
+private fun startPositionFor(
+    position: Int,
+    capacity: Int
+) = maxOf(position - capacity / WINDOW_LOOKBEHIND_FRACTION, 0)
 
 @NotThreadSafe
 internal class ForwardCursor(

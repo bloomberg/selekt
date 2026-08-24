@@ -25,6 +25,8 @@ import javax.annotation.concurrent.NotThreadSafe
 private val EMPTY_ARRAY = emptyArray<Any?>()
 private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray())
 
+private fun emptyCursorWindowPage() = CursorWindowPage(SimpleCursorWindow(), 0, 0)
+
 /**
  * @since 0.12.1
  */
@@ -88,11 +90,9 @@ internal class SQLQuery internal constructor(
         clearBindings()
     }
 
-    // TODO Return unit instead? Move populating cursor column names to a cursor factory or similar, always after step?
     // TODO Ever need to prepare again after execute, prepare_v2 will auto-recompile on step picking up any schema change?
-    override fun fill(
-        window: ICursorWindow
-    ): SQLStatementInformation {
+    override fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage> {
+        var page: CursorWindowPage? = null
         val information = session().execute(
             statementType.isPredictedWrite,
             sql,
@@ -101,19 +101,27 @@ internal class SQLQuery internal constructor(
         ) {
             it.prepare(sql).apply {
                 if (isReadOnly) {
-                    it.executeForCursorWindow(sql, bindArgs, window)
-                    return@fill this
+                    page = it.executeForCursorWindow(sql, bindArgs, 0, windowSize, true)
                 }
             }
         }
+        page?.let { return information to it }
         return if (information !== EMPTY_SQL_STATEMENT_INFORMATION) {
-            session().execute(true, sql, statementType, EMPTY_SQL_STATEMENT_INFORMATION) {
-                it.executeForCursorWindow(sql, bindArgs, window)
+            information to session().execute(true, sql, statementType, emptyCursorWindowPage()) {
+                it.executeForCursorWindow(sql, bindArgs, 0, windowSize, true)
             }
-            information
         } else {
             // Query was resolved as transactional(!!)
-            EMPTY_SQL_STATEMENT_INFORMATION
+            EMPTY_SQL_STATEMENT_INFORMATION to emptyCursorWindowPage()
+        }
+    }
+
+    fun refiller(windowSize: Int): (Int) -> CursorWindowPage {
+        val args = bindArgs.copyOf()
+        return { startPosition ->
+            session().execute(false, sql, statementType, emptyCursorWindowPage()) {
+                it.executeForCursorWindow(sql, args, startPosition, windowSize, false)
+            }
         }
     }
 
@@ -157,7 +165,7 @@ class SimpleSQLQuery(
 }
 
 private interface IQuery : ISQLProgram {
-    fun fill(window: ICursorWindow): SQLStatementInformation
+    fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage>
 }
 
 @JvmSynthetic

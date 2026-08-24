@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
+#include <stdexcept>
 #ifdef _WIN32
 #include <string.h>
 #define strncasecmp _strnicmp
@@ -31,6 +32,7 @@
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
 #include <unordered_map>
+#include <vector>
 #include <mutex>
 
 #ifdef VEC1_STATIC
@@ -1245,7 +1247,6 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     return result;
 }
 
-
 extern "C" JNIEXPORT void JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_progressHandler(
     JNIEnv* env,
@@ -1458,6 +1459,274 @@ Java_com_bloomberg_selekt_ExternalSQLite_step(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     return sqlite3_step(statement);
+}
+
+namespace {
+    constexpr size_t CURSOR_WINDOW_HEADER_SIZE = 2 * sizeof(int32_t);
+    constexpr size_t CURSOR_WINDOW_SLOT_SIZE = 1 + sizeof(int64_t);
+
+    class CursorWindowBuffer {
+    public:
+        CursorWindowBuffer() = default;
+        CursorWindowBuffer(const CursorWindowBuffer&) = delete;
+        CursorWindowBuffer& operator=(const CursorWindowBuffer&) = delete;
+
+        ~CursorWindowBuffer() {
+            sqlite3_free(data_);
+        }
+
+        size_t size() const {
+            return size_;
+        }
+
+        size_t appendUninitialised(size_t size) {
+            if (size > INT32_MAX - size_) {
+                throw std::length_error("Cursor window exceeds the maximum Java buffer capacity");
+            }
+            auto offset = size_;
+            resize(size_ + size);
+            return offset;
+        }
+
+        void appendBytes(const void* bytes, size_t size) {
+            if (size == 0) {
+                return;
+            }
+            auto offset = appendUninitialised(size);
+            std::memcpy(data_ + offset, bytes, size);
+        }
+
+        template<typename T>
+        void write(size_t offset, T value) {
+            if (offset > size_ || sizeof(T) > size_ - offset) {
+                throw std::length_error("Cursor window write exceeds its capacity");
+            }
+            std::memcpy(data_ + offset, &value, sizeof(T));
+        }
+
+        void* release() {
+            auto data = data_;
+            data_ = nullptr;
+            size_ = 0;
+            capacity_ = 0;
+            return data;
+        }
+
+    private:
+        void resize(size_t size) {
+            ensureCapacity(size);
+            size_ = size;
+        }
+
+        void ensureCapacity(size_t required) {
+            if (required <= capacity_) {
+                return;
+            }
+            size_t capacity = capacity_ == 0 ? 256 : capacity_;
+            while (capacity < required) {
+                capacity = capacity > INT32_MAX / 2 ? INT32_MAX : capacity * 2;
+                if (capacity < required && capacity == INT32_MAX) {
+                    throw std::length_error("Cursor window exceeds the maximum Java buffer capacity");
+                }
+            }
+            auto data = reinterpret_cast<uint8_t*>(sqlite3_realloc64(data_, capacity));
+            if (data == nullptr) {
+                throw std::bad_alloc();
+            }
+            data_ = data;
+            capacity_ = capacity;
+        }
+
+        uint8_t* data_ = nullptr;
+        size_t size_ = 0;
+        size_t capacity_ = 0;
+    };
+
+    template<typename T>
+    void writeSlot(CursorWindowBuffer& buffer, size_t slotOffset, uint8_t type, T value) {
+        buffer.write<uint8_t>(slotOffset, type);
+        buffer.write<T>(slotOffset + 1, value);
+    }
+
+    constexpr int64_t STEP_FAILED = -1;
+    constexpr int32_t NOT_COUNTED = -1;
+    constexpr int64_t ALLOCATION_FAILED = -2;
+    constexpr int64_t CAPACITY_EXCEEDED = -3;
+    constexpr int64_t INTERNAL_FAILURE = -4;
+    constexpr int64_t INVALID_ARGUMENT = -5;
+}
+
+extern "C" void* selekt_fill_cursor_window(
+    sqlite3_stmt* statement,
+    int32_t startRow,
+    int32_t maxRows,
+    int32_t countAllRows,
+    int64_t* outSize
+) {
+    if (outSize == nullptr) {
+        return nullptr;
+    }
+    if (statement == nullptr || startRow < 0 || maxRows <= 0) {
+        *outSize = INVALID_ARGUMENT;
+        return nullptr;
+    }
+    try {
+        auto columnCount = sqlite3_column_count(statement);
+        CursorWindowBuffer buffer;
+        buffer.appendUninitialised(CURSOR_WINDOW_HEADER_SIZE);
+        std::vector<int32_t> rowOffsets;
+        if (maxRows < 4096) {
+            rowOffsets.reserve(static_cast<size_t>(maxRows));
+        }
+        int64_t rowNo = 0;
+        int result = SQLITE_DONE;
+        while ((countAllRows || rowOffsets.size() < static_cast<size_t>(maxRows)) &&
+               (result = sqlite3_step(statement)) == SQLITE_ROW) {
+            if (rowNo++ < startRow || rowOffsets.size() >= static_cast<size_t>(maxRows)) {
+                continue;
+            }
+            auto rowOffset = buffer.appendUninitialised(static_cast<size_t>(columnCount) * CURSOR_WINDOW_SLOT_SIZE);
+            rowOffsets.push_back(static_cast<int32_t>(rowOffset));
+            for (int i = 0; i < columnCount; ++i) {
+                auto slotOffset = rowOffset + static_cast<size_t>(i) * CURSOR_WINDOW_SLOT_SIZE;
+                auto type = sqlite3_column_type(statement, i);
+                if (type == SQLITE_BLOB && sqlite3_column_bytes(statement, i) <= 0) {
+                    type = SQLITE_NULL;
+                }
+                switch (type) {
+                    case SQLITE_INTEGER:
+                        writeSlot<int64_t>(
+                            buffer,
+                            slotOffset,
+                            static_cast<uint8_t>(type),
+                            sqlite3_column_int64(statement, i)
+                        );
+                        break;
+                    case SQLITE_FLOAT:
+                        writeSlot<double>(
+                            buffer,
+                            slotOffset,
+                            static_cast<uint8_t>(type),
+                            sqlite3_column_double(statement, i)
+                        );
+                        break;
+                    case SQLITE_TEXT: {
+                        auto text = sqlite3_column_text(statement, i);
+                        auto length = sqlite3_column_bytes(statement, i);
+                        if (text == nullptr && sqlite3_errcode(sqlite3_db_handle(statement)) == SQLITE_NOMEM) {
+                            *outSize = ALLOCATION_FAILED;
+                            return nullptr;
+                        }
+                        auto payloadOffset = buffer.size();
+                        buffer.appendBytes(text, static_cast<size_t>(length));
+                        buffer.write<uint8_t>(slotOffset, static_cast<uint8_t>(type));
+                        buffer.write<int32_t>(slotOffset + 1, length);
+                        buffer.write<int32_t>(slotOffset + 1 + sizeof(int32_t), static_cast<int32_t>(payloadOffset));
+                        break;
+                    }
+                    case SQLITE_BLOB: {
+                        auto blob = sqlite3_column_blob(statement, i);
+                        auto length = sqlite3_column_bytes(statement, i);
+                        if (blob == nullptr && sqlite3_errcode(sqlite3_db_handle(statement)) == SQLITE_NOMEM) {
+                            *outSize = ALLOCATION_FAILED;
+                            return nullptr;
+                        }
+                        auto payloadOffset = buffer.size();
+                        buffer.appendBytes(blob, static_cast<size_t>(length));
+                        buffer.write<uint8_t>(slotOffset, static_cast<uint8_t>(type));
+                        buffer.write<int32_t>(slotOffset + 1, length);
+                        buffer.write<int32_t>(slotOffset + 1 + sizeof(int32_t), static_cast<int32_t>(payloadOffset));
+                        break;
+                    }
+                    default:
+                        writeSlot<int64_t>(
+                            buffer,
+                            slotOffset,
+                            static_cast<uint8_t>(type),
+                            static_cast<int64_t>(0)
+                        );
+                        break;
+                }
+            }
+        }
+        if (result != SQLITE_DONE && result != SQLITE_ROW) {
+            *outSize = STEP_FAILED;
+            return nullptr;
+        }
+        if (rowNo > INT32_MAX) {
+            *outSize = CAPACITY_EXCEEDED;
+            return nullptr;
+        }
+        auto rowCount = static_cast<int32_t>(rowOffsets.size());
+        auto totalCount = countAllRows ? static_cast<int32_t>(rowNo) : NOT_COUNTED;
+        buffer.appendBytes(rowOffsets.data(), rowOffsets.size() * sizeof(int32_t));
+        buffer.write<int32_t>(0, rowCount);
+        buffer.write<int32_t>(sizeof(int32_t), totalCount);
+        *outSize = static_cast<int64_t>(buffer.size());
+        return buffer.release();
+    } catch (const std::bad_alloc&) {
+        *outSize = ALLOCATION_FAILED;
+        return nullptr;
+    } catch (const std::length_error&) {
+        *outSize = CAPACITY_EXCEEDED;
+        return nullptr;
+    } catch (...) {
+        *outSize = INTERNAL_FAILURE;
+        return nullptr;
+    }
+}
+
+extern "C" void selekt_free_cursor_window(void* ptr) {
+    sqlite3_free(ptr);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_fillCursorWindow(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint jstartRow,
+    jint jmaxRows,
+    jboolean jcountAllRows
+) {
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    int64_t size = 0;
+    auto buffer = selekt_fill_cursor_window(
+        statement,
+        static_cast<int32_t>(jstartRow),
+        static_cast<int32_t>(jmaxRows),
+        jcountAllRows == JNI_TRUE ? 1 : 0,
+        &size
+    );
+    if (buffer == nullptr) {
+        if (size == ALLOCATION_FAILED) {
+            throwOutOfMemoryError(env, "fillCursorWindow");
+        } else if (size == CAPACITY_EXCEEDED) {
+            throwOutOfMemoryError(env, "Cursor window exceeds the maximum Java buffer capacity");
+        } else if (size == INTERNAL_FAILURE) {
+            throwIllegalStateException(env, "Unexpected failure while filling cursor window");
+        } else if (size == INVALID_ARGUMENT) {
+            throwIllegalArgumentException(env, "Cursor window start row and maximum rows must be valid");
+        }
+        return nullptr;
+    }
+    auto byteBuffer = env->NewDirectByteBuffer(buffer, static_cast<jlong>(size));
+    if (byteBuffer == nullptr) {
+        selekt_free_cursor_window(buffer);
+    }
+    return byteBuffer;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_freeCursorWindow(
+    JNIEnv* env,
+    [[maybe_unused]] jobject obj,
+    jobject jbuffer
+) {
+    auto ptr = env->GetDirectBufferAddress(jbuffer);
+    if (ptr != nullptr) {
+        selekt_free_cursor_window(ptr);
+    }
 }
 
 extern "C" JNIEXPORT jint JNICALL

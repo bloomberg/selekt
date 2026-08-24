@@ -216,24 +216,49 @@ internal class SQLConnection(
     override fun executeForCursorWindow(
         sql: String,
         bindArgs: Array<out Any?>,
-        window: ICursorWindow
-    ) = withPreparedStatement(sql, bindArgs) {
-        window.run {
-            clear()
-            while (SQL_ROW == step()) {
-                check(allocateRow()) { "Failed to allocate a window row." }
+        startPosition: Int,
+        windowSize: Int,
+        countAllRows: Boolean
+    ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
+        if (sqlite.capabilities.useNativeCursorWindow) {
+            NativeCursorWindow(
+                fillCursorWindow(startPosition, windowSize, countAllRows),
+                sqlite,
+                columnCount
+            ).let {
+                CursorWindowPage(it, startPosition, it.totalCount)
+            }
+        } else {
+            fillSimpleCursorWindow(startPosition, windowSize, countAllRows)
+        }
+    }
+
+    private fun SQLPreparedStatement.fillSimpleCursorWindow(
+        startPosition: Int,
+        windowSize: Int,
+        countAllRows: Boolean
+    ): CursorWindowPage {
+        val window = SimpleCursorWindow()
+        var rowCount = 0
+        var storedCount = 0
+        while ((countAllRows || storedCount < windowSize) && SQL_ROW == step()) {
+            if (rowCount >= startPosition && storedCount < windowSize) {
+                check(window.allocateRow()) { "Failed to allocate a window row." }
                 0.forUntil(columnCount) {
                     when (columnType(it)) {
-                        ColumnType.STRING.sqlDataType -> put(columnString(it))
-                        ColumnType.INTEGER.sqlDataType -> put(columnLong(it))
-                        ColumnType.FLOAT.sqlDataType -> put(columnDouble(it))
-                        ColumnType.NULL.sqlDataType -> putNull()
-                        ColumnType.BLOB.sqlDataType -> put(columnBlob(it))
+                        ColumnType.STRING.sqlDataType -> window.put(columnString(it))
+                        ColumnType.INTEGER.sqlDataType -> window.put(columnLong(it))
+                        ColumnType.FLOAT.sqlDataType -> window.put(columnDouble(it))
+                        ColumnType.NULL.sqlDataType -> window.putNull()
+                        ColumnType.BLOB.sqlDataType -> window.put(columnBlob(it))
                         else -> error("Unrecognised column type for column $it.")
                     }
                 }
+                storedCount += 1
             }
+            rowCount += 1
         }
+        return CursorWindowPage(window, startPosition, rowCount)
     }
 
     override fun executeForForwardCursor(

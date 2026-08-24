@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory
  * Supported connection properties:
  * - poolSize: Maximum connection pool size (integer, default: 10)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
+ * - cursorWindowSize: Maximum rows retained by a cursor window (positive integer, default: unbounded)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
  *
@@ -73,6 +74,7 @@ class SelektDriver : Driver {
         private const val PROPERTY_KEY = "key"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
+        private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
@@ -150,6 +152,13 @@ class SelektDriver : Driver {
                 description = "SQLite busy timeout in milliseconds"
                 required = false
             },
+            DriverPropertyInfo(
+                PROPERTY_CURSOR_WINDOW_SIZE,
+                info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, Int.MAX_VALUE.toString())
+            ).apply {
+                description = "Maximum rows retained by a cursor window"
+                required = false
+            },
             DriverPropertyInfo(PROPERTY_JOURNAL_MODE, info.getProperty(PROPERTY_JOURNAL_MODE, "WAL")).apply {
                 description = "SQLite journal mode"
                 required = false
@@ -217,6 +226,7 @@ class SelektDriver : Driver {
         val poolSize = getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: DEFAULT_POOL_SIZE
         val busyTimeout = getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull()
             ?: DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
+        val cursorWindowSize = getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull() ?: Int.MAX_VALUE
         val journalMode = getProperty(PROPERTY_JOURNAL_MODE)?.let {
             SQLiteJournalMode.valueOf(it.uppercase())
         } ?: SQLiteJournalMode.WAL
@@ -224,7 +234,8 @@ class SelektDriver : Driver {
         baseConfig.copy(
             maxConnectionPoolSize = poolSize,
             busyTimeoutMillis = busyTimeout,
-            useNativeTransactionListeners = true
+            useNativeTransactionListeners = true,
+            cursorWindowSize = cursorWindowSize
         )
     }
 
@@ -253,6 +264,7 @@ class SelektDriver : Driver {
     ): String {
         val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
+            PROPERTY_CURSOR_WINDOW_SIZE,
             PROPERTY_FOREIGN_KEYS,
             PROPERTY_JOURNAL_MODE,
             PROPERTY_POOL_SIZE

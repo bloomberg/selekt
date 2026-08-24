@@ -48,10 +48,29 @@ data class DatabaseConfiguration(
      * When false (default), transaction listeners are called explicitly from SQLSession methods,
      * which only works for transactions managed via the SQLSession.
      */
-    val useNativeTransactionListeners: Boolean = false
+    val useNativeTransactionListeners: Boolean = false,
+    /**
+     * Maximum number of rows a cursor holds in memory at once, [Int.MAX_VALUE] to hold every row.
+     *
+     * When bounded, a query materialises only this many rows and re-queries whenever the caller
+     * moves outside them. Memory is then bounded by the window rather than by the size of the
+     * result set, at the cost of re-stepping the statement on each refill. Refills re-run the query,
+     * so volatile expressions, unspecified row ordering, and writes made after the first window can
+     * change the rows subsequently observed.
+     *
+     * Bounding this matters most for cursor windows populated natively, whose rows occupy a single
+     * off-heap allocation sized to the whole result set. Rows held on the Java heap can be paged
+     * too, though an unclosed cursor there is collected as ordinary garbage.
+     *
+     * Paged cursors are not thread safe and must not be accessed concurrently from multiple
+     * threads. Cross-thread hand-off requires the caller to provide the usual happens-before
+     * relationship.
+     */
+    val cursorWindowSize: Int = Int.MAX_VALUE
 ) {
     init {
         require(maxConnectionPoolSize > 0)
+        require(cursorWindowSize > 0) { "Cursor window size must be positive, but was $cursorWindowSize." }
     }
 
     companion object {

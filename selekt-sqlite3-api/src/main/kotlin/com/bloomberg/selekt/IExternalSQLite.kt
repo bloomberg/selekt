@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.forEachByPosition
+import java.nio.ByteBuffer
 
 private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
 
@@ -639,4 +640,28 @@ interface IExternalSQLite {
         name: String?,
         mode: Int
     ): SQLCode = walCheckpointV2(db.pointer, name, mode)
+}
+
+/**
+ * Optional native cursor-window operations implemented by SQLite backends that can materialise a
+ * result set directly into off-heap memory.
+ *
+ * @since 1.1.0
+ */
+interface INativeCursorWindowSQLite {
+    fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ): ByteBuffer?
+
+    fun fillCursorWindow(
+        statement: StatementHandle,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ): ByteBuffer? = fillCursorWindow(statement.pointer, startRow, maxRows, countAllRows)
+
+    fun freeCursorWindow(buffer: ByteBuffer)
 }
