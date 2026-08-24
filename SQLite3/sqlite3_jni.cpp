@@ -1513,6 +1513,23 @@ Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     LOG_D("SQLite3 has hard heap limit %llu bytes.", sqlite3_hard_heap_limit64(-1));
 }
 
+bool registerFastNativeMethods(JNIEnv* env) {
+    auto clazz = env->FindClass("com/bloomberg/selekt/ExternalSQLite");
+    if (clazz == nullptr) {
+        return false;
+    }
+    JNINativeMethod methods[] = {
+        {
+            const_cast<char*>("step"),
+            const_cast<char*>("(J)I"),
+            reinterpret_cast<void*>(&Java_com_bloomberg_selekt_ExternalSQLite_step)
+        }
+    };
+    auto result = env->RegisterNatives(clazz, methods, 1) == JNI_OK;
+    env->DeleteLocalRef(clazz);
+    return result;
+}
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 JNIEXPORT jint
@@ -1526,6 +1543,9 @@ JNI_OnLoad(
         return JNI_ERR;
     }
     if (!initThrowableClasses(env)) {
+        return JNI_ERR;
+    }
+    if (!registerFastNativeMethods(env)) {
         return JNI_ERR;
     }
     return JNI_VERSION_1_6;

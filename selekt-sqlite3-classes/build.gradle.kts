@@ -91,6 +91,11 @@ listOf(
 }
 
 sourceSets {
+    create("androidAnnotations") {
+        kotlin {
+            srcDir("src/androidAnnotations/kotlin")
+        }
+    }
     named("jmh") {
         resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
     }
@@ -102,6 +107,7 @@ sourceSets {
 
 dependencies {
     compileOnly(libs.findbugs.jsr305)
+    "java17CompileOnly"(sourceSets["androidAnnotations"].output)
     implementation(projects.selektCommons)
     implementation(projects.selektSqlite3Api)
     jmhImplementation(projects.selektCommons)
@@ -224,6 +230,7 @@ listOf(
 
 detekt {
     listOf(
+        "androidAnnotations",
         "java17",
         "java25",
         "jmh",

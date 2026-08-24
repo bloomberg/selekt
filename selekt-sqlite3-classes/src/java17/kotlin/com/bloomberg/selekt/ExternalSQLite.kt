@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.loadLibrary
+import dalvik.annotation.optimization.FastNative
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -206,6 +207,7 @@ internal class ExternalSQLite(
 
     external override fun statementStatus(statement: Long, options: Int, reset: Boolean): Int
 
+    @FastNative
     external override fun step(statement: Long): SQLCode
 
     external override fun threadsafe(): Int
