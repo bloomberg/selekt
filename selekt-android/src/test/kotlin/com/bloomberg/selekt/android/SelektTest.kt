@@ -34,12 +34,12 @@ internal class SelektTest {
 
     @Test
     fun libVersion() {
-        assertEquals("3.53.3", Selekt.sqliteLibVersion())
+        assertEquals("3.53.4", Selekt.sqliteLibVersion())
     }
 
     @Test
     fun libVersionNumber() {
-        assertEquals(3_053_003, Selekt.sqliteLibVersionNumber())
+        assertEquals(3_053_004, Selekt.sqliteLibVersionNumber())
     }
 
     @Test
