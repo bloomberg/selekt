@@ -35,4 +35,3 @@ object SelektVersion {
 
     val patchVersion: Int = version.substringAfter('.').substringAfter('.').substringBefore('-').toInt()
 }
-
