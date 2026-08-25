@@ -36,6 +36,7 @@ jobs:
         run: |
           cd /tmp
           curl -L https://github.com/microsoft/mimalloc/archive/refs/tags/v3.3.2.tar.gz -o mimalloc.tar.gz
+          echo "ca02384e007f46950598500dfaebde5ff9948c1d231f5a81b058799afa64bbbb  mimalloc.tar.gz" | sha256sum -c -
           tar xzf mimalloc.tar.gz
           cd mimalloc-3.3.2
           mkdir -p out/release
