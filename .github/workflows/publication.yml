@@ -77,9 +77,12 @@ jobs:
             brew install make tcl-tk
           elif [ "${{ runner.os }}" = "Windows" ]; then
             if [ "${{ runner.arch }}" = "ARM64" ]; then
-              choco install ninja magicsplat-tcl-tk -y --no-progress
+              choco install ninja --version=1.13.2 -y --no-progress
+              choco install magicsplat-tcl-tk --version=2.0.6 -y --no-progress
             else
-              choco install mingw make magicsplat-tcl-tk -y --no-progress
+              choco install mingw --version=16.1.0 -y --no-progress
+              choco install make --version=4.4.1 -y --no-progress
+              choco install magicsplat-tcl-tk --version=2.0.6 -y --no-progress
             fi
           fi
 
@@ -95,7 +98,7 @@ jobs:
         if: runner.os == 'Windows' && runner.arch == 'ARM64'
         shell: pwsh
         run: |
-          choco install strawberryperl -y --no-progress
+          choco install strawberryperl --version=5.42.3.1 -y --no-progress
           $strawberry = 'C:\Strawberry\perl\bin'
           $strawberryC = 'C:\Strawberry\c\bin'
           $strawberrySite = 'C:\Strawberry\perl\site\bin'
