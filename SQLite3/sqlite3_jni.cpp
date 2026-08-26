@@ -17,6 +17,8 @@
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <new>
 #ifdef _WIN32
@@ -137,6 +139,24 @@ static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
     return array;
 }
 
+static int rawKeyImpl(sqlite3* db, const void* key, int keyLength) {
+    char sql[81];
+    std::memcpy(sql, "PRAGMA key=\"x'", 14);
+    const char hex_chars[] = "0123456789abcdef";
+    auto* bytes = reinterpret_cast<const unsigned char*>(key);
+    for (int i = 0; i < keyLength; ++i) {
+        auto byte = static_cast<std::byte>(bytes[i]);
+        sql[14 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte >> 4)];
+        sql[15 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
+    }
+    sql[78] = '\'';
+    sql[79] = '"';
+    sql[80] = '\0';
+    auto result = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
+    selekt::secure_zero(reinterpret_cast<unsigned char*>(sql), sizeof(sql));
+    return result;
+}
+
 static jint rawKey(
     JNIEnv* env,
     jlong jdb,
@@ -149,23 +169,84 @@ static jint rawKey(
     }
     try {
         AutoJByteArray key(env, jkey, keyLength);
-        char sql[81];
-        std::memcpy(sql, "PRAGMA key=\"x'", 14);
-        const char hex_chars[] = "0123456789abcdef";
-        for (int i = 0; i < keyLength; ++i) {
-            auto byte = static_cast<std::byte>(key[i]);
-            sql[14 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte >> 4)];
-            sql[15 + 2*i] = hex_chars[std::to_integer<unsigned char>(byte & std::byte{0xF})];
-        }
-        sql[78] = '\'';
-        sql[79] = '"';
-        sql[80] = '\0';
-        auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), sql, nullptr, nullptr, nullptr);
-        selekt::secure_zero(reinterpret_cast<unsigned char*>(sql), sizeof(sql));
-        return result;
+        return rawKeyImpl(reinterpret_cast<sqlite3*>(jdb), key.data(), keyLength);
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
     }
+}
+
+extern "C" void* selekt_secret_alloc(int32_t size) {
+    if (size <= 0) {
+        return nullptr;
+    }
+    return static_cast<void*>(new (std::nothrow) unsigned char[static_cast<size_t>(size)]());
+}
+
+extern "C" void selekt_secret_free(void* p, int32_t size) {
+    if (p == nullptr) {
+        return;
+    }
+    auto* bytes = static_cast<unsigned char*>(p);
+    selekt::secure_zero(bytes, static_cast<size_t>(size));
+    delete[] bytes;
+}
+
+extern "C" int selekt_secret_key(sqlite3* db, const void* key, int32_t length) {
+    if (length != 32) {
+        return SQLITE_ERROR;
+    }
+    return rawKeyImpl(db, key, length);
+}
+
+extern "C" int selekt_secret_rekey(sqlite3* db, const void* key, int32_t length) {
+    if (length == 0) {
+        return sqlite3_rekey(db, nullptr, 0);
+    }
+    return sqlite3_rekey(db, key, length);
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_allocateSecret(
+    JNIEnv* env,
+    [[maybe_unused]] jobject,
+    jint size
+) {
+    if (size <= 0) {
+        throwIllegalArgumentException(env, "Secret size must be positive.");
+        return 0;
+    }
+    auto* p = selekt_secret_alloc(size);
+    if (p == nullptr) {
+        throwOutOfMemoryError(env, "allocateSecret");
+        return 0;
+    }
+    return reinterpret_cast<jlong>(p);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_freeSecret(
+    [[maybe_unused]] JNIEnv*,
+    [[maybe_unused]] jobject,
+    jlong pointer,
+    jint size
+) {
+    selekt_secret_free(reinterpret_cast<void*>(static_cast<uintptr_t>(pointer)), size);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_storeSecret(
+    JNIEnv* env,
+    [[maybe_unused]] jobject,
+    jlong pointer,
+    jint capacity,
+    jbyteArray jsource,
+    jint length
+) {
+    if (length < 0 || length > capacity) {
+        throwIndexOutOfBoundsException(env, "storeSecret: length exceeds capacity.");
+        return;
+    }
+    env->GetByteArrayRegion(jsource, 0, length, reinterpret_cast<jbyte*>(static_cast<uintptr_t>(pointer)));
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -1058,6 +1139,21 @@ Java_com_bloomberg_selekt_ExternalSQLite_keyConventionally(
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_keyConventionallyAt(
+    JNIEnv* env,
+    jobject jobj,
+    jlong jdb,
+    jlong pointer,
+    jint length
+) {
+    if (length != 32) {
+        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
+        return SQLITE_ERROR;
+    }
+    return selekt_secret_key(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_keywordCount(
     JNIEnv* env,
     jobject jobj
@@ -1248,6 +1344,21 @@ Java_com_bloomberg_selekt_ExternalSQLite_rawKey(
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_rawKeyAt(
+    JNIEnv* env,
+    jobject jobj,
+    jlong jdb,
+    jlong pointer,
+    jint length
+) {
+    if (length != 32) {
+        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
+        return SQLITE_ERROR;
+    }
+    return selekt_secret_key(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     JNIEnv* env,
     jobject jobj,
@@ -1264,6 +1375,17 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
     }
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_rekeyAt(
+    JNIEnv* env,
+    jobject jobj,
+    jlong jdb,
+    jlong pointer,
+    jint length
+) {
+    return selekt_secret_rekey(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
 }
 
 extern "C" JNIEXPORT jint JNICALL

@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jvm
 
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
@@ -35,4 +36,6 @@ private fun openOrCreateDatabase(
     path: String,
     configuration: DatabaseConfiguration,
     key: ByteArray?
-) = SQLDatabase(path, SQLite, configuration, key)
+) = key?.let { DatabaseKey.of(SQLite, it) }.use {
+    SQLDatabase(path, SQLite, configuration, it)
+}

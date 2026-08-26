@@ -355,10 +355,31 @@ open class SQLite(
 
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
+    /**
+     * @since 0.36.0
+     */
+    fun newKey(key: ByteArray): DatabaseKey {
+        val pointer = sqlite.allocateSecret(key.size)
+        try {
+            sqlite.storeSecret(pointer, key.size, key, key.size)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            sqlite.freeSecret(pointer, key.size)
+            throw e
+        }
+        return DatabaseKey(sqlite, pointer, key.size)
+    }
+
     fun keyConventionally(
         db: DatabaseHandle,
         key: ByteArray
     ) = checkConnectionSQLCode(db, sqlite.keyConventionally(db, key, key.size))
+
+    /**
+     * @since 0.36.0
+     */
+    fun keyConventionally(db: DatabaseHandle, key: DatabaseKey) = key.use { pointer, size ->
+        checkConnectionSQLCode(db, sqlite.keyConventionallyAt(db, pointer, size))
+    }
 
     fun keywordCount() = sqlite.keywordCount()
 
@@ -400,7 +421,21 @@ open class SQLite(
 
     fun rawKey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rawKey(db, key, key.size))
 
+    /**
+     * @since 0.36.0
+     */
+    fun rawKey(db: Long, key: DatabaseKey) = key.use { pointer, size ->
+        checkConnectionSQLCode(db, sqlite.rawKeyAt(db, pointer, size))
+    }
+
     fun rekey(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.rekey(db, key, key.size))
+
+    /**
+     * @since 0.36.0
+     */
+    fun rekey(db: Long, key: DatabaseKey) = key.use { pointer, size ->
+        checkConnectionSQLCode(db, sqlite.rekeyAt(db, pointer, size))
+    }
 
     fun releaseMemory(bytes: Int) = sqlite.releaseMemory(bytes)
 

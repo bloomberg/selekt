@@ -76,7 +76,7 @@ class SQLDatabase(
     val path: String,
     private val sqlite: SQLite,
     configuration: DatabaseConfiguration,
-    key: ByteArray?,
+    key: DatabaseKey?,
     random: IRandom = CommonThreadLocalRandom
 ) : IDatabase, SharedCloseable() {
     private val connectionFactory: SQLConnectionFactory
@@ -84,10 +84,32 @@ class SQLDatabase(
     private val session: ThreadLocalSession
 
     init {
-        val (pool, factory) = openConnectionPool(path, sqlite, configuration, random, key)
+        key?.retain()
+        val (pool, factory) = try {
+            openConnectionPool(path, sqlite, configuration, random, key)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            key?.release()
+            throw e
+        }
         connectionPool = pool
         connectionFactory = factory
         session = ThreadLocalSession(connectionPool, configuration.useNativeTransactionListeners)
+    }
+
+    companion object {
+        @Deprecated(
+            "Prefer the DatabaseKey constructor.",
+            ReplaceWith("SQLDatabase(path, sqlite, configuration, sqlite.newKey(key), random)")
+        )
+        operator fun invoke(
+            path: String,
+            sqlite: SQLite,
+            configuration: DatabaseConfiguration,
+            key: ByteArray?,
+            random: IRandom = CommonThreadLocalRandom
+        ): SQLDatabase = key?.let(sqlite::newKey).use { databaseKey ->
+            SQLDatabase(path, sqlite, configuration, databaseKey, random)
+        }
     }
 
     override val inTransaction: Boolean

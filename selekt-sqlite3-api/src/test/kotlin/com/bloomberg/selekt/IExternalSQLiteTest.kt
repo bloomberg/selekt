@@ -568,6 +568,16 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `keyConventionallyAt with DatabaseHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { keyConventionallyAt(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
+            on { keyConventionallyAt(any<DatabaseHandle>(), any(), any()) }.thenCallRealMethod()
+        }
+        sqlite.keyConventionallyAt(dbHandle, 42L, 32)
+        verify(sqlite).keyConventionallyAt(db, 42L, 32)
+    }
+
+    @Test
     fun `lastInsertRowId with DatabaseHandle delegates`() {
         val sqlite = mock<IExternalSQLite> {
             on { lastInsertRowId(any<Long>()) }.thenReturn(7L)
@@ -609,6 +619,16 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `rawKeyAt with DatabaseHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { rawKeyAt(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
+            on { rawKeyAt(any<DatabaseHandle>(), any(), any()) }.thenCallRealMethod()
+        }
+        sqlite.rawKeyAt(dbHandle, 42L, 32)
+        verify(sqlite).rawKeyAt(db, 42L, 32)
+    }
+
+    @Test
     fun `rekey with DatabaseHandle delegates`() {
         val key = byteArrayOf(7, 8)
         val sqlite = mock<IExternalSQLite> {
@@ -617,6 +637,16 @@ internal class IExternalSQLiteTest {
         }
         sqlite.rekey(dbHandle, key, key.size)
         verify(sqlite).rekey(db, key, key.size)
+    }
+
+    @Test
+    fun `rekeyAt with DatabaseHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { rekeyAt(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
+            on { rekeyAt(any<DatabaseHandle>(), any(), any()) }.thenCallRealMethod()
+        }
+        sqlite.rekeyAt(dbHandle, 42L, 32)
+        verify(sqlite).rekeyAt(db, 42L, 32)
     }
 
     @Test

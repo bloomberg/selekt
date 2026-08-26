@@ -54,6 +54,21 @@ interface IExternalSQLite {
 
     fun newBlobHandle(pointer: Long): BlobHandle = BlobHandle(pointer)
 
+    /**
+     * @since 0.36.0
+     */
+    fun allocateSecret(size: Int): Long
+
+    /**
+     * @since 0.36.0
+     */
+    fun freeSecret(pointer: Long, size: Int)
+
+    /**
+     * @since 0.36.0
+     */
+    fun storeSecret(pointer: Long, capacity: Int, source: ByteArray, length: Int)
+
     fun bindBlob(statement: Long, index: Int, blob: ByteArray, length: Int): SQLCode
 
     fun bindBlob(
@@ -481,6 +496,14 @@ interface IExternalSQLite {
     fun keyConventionally(db: DatabaseHandle, key: ByteArray, length: Int): SQLCode =
         keyConventionally(db.pointer, key, length)
 
+    /**
+     * @since 0.36.0
+     */
+    fun keyConventionallyAt(db: Long, pointer: Long, length: Int): SQLCode
+
+    fun keyConventionallyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
+        keyConventionallyAt(db.pointer, pointer, length)
+
     fun keywordCount(): Int
 
     fun lastInsertRowId(db: Long): Long
@@ -518,6 +541,14 @@ interface IExternalSQLite {
         length: Int
     ): SQLCode = rawKey(db.pointer, key, length)
 
+    /**
+     * @since 0.36.0
+     */
+    fun rawKeyAt(db: Long, pointer: Long, length: Int): SQLCode
+
+    fun rawKeyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
+        rawKeyAt(db.pointer, pointer, length)
+
     fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
 
     fun rekey(
@@ -525,6 +556,14 @@ interface IExternalSQLite {
         key: ByteArray,
         length: Int
     ): SQLCode = rekey(db.pointer, key, length)
+
+    /**
+     * @since 0.36.0
+     */
+    fun rekeyAt(db: Long, pointer: Long, length: Int): SQLCode
+
+    fun rekeyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
+        rekeyAt(db.pointer, pointer, length)
 
     fun releaseMemory(bytes: Int): Int
 

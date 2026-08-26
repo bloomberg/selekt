@@ -35,4 +35,11 @@ private fun openOrCreateDatabase(
     path: String,
     configuration: DatabaseConfiguration,
     key: ByteArray?
-) = SQLDatabase(path, SQLite, configuration, key)
+): SQLDatabase {
+    val databaseKey = key?.let(SQLite::newKey)
+    return try {
+        SQLDatabase(path, SQLite, configuration, databaseKey)
+    } finally {
+        databaseKey?.close()
+    }
+}

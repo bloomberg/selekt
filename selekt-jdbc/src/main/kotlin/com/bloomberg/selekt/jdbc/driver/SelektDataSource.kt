@@ -16,9 +16,10 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.commons.forEachCatching
-import com.bloomberg.selekt.commons.zero
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLite
@@ -284,16 +285,14 @@ class SelektDataSource : DataSource {
             is EncryptionKeySource.Literal -> KeyEncoding.encode(source.key)
             null -> null
         }
-        return try {
+        return encryptionKeyBytes?.let { DatabaseKey.take(sqlite, it) }.use {
             SQLDatabase(
                 path = connectionURL.databasePath,
                 sqlite = sqlite,
                 configuration = buildDatabaseConfiguration(properties),
-                key = encryptionKeyBytes,
-                random = com.bloomberg.selekt.CommonThreadLocalRandom
+                key = it,
+                random = CommonThreadLocalRandom
             )
-        } finally {
-            encryptionKeyBytes?.zero()
         }
     }
 

@@ -62,6 +62,7 @@ internal class SampleSQLArgumentsProvider : ArgumentsProvider {
     }.map { Arguments.of(it) }.stream()
 }
 
+@Suppress("DEPRECATION")
 internal class SQLDatabaseTest {
     @ParameterizedTest
     @ArgumentsSource(SampleSQLArgumentsProvider::class)
