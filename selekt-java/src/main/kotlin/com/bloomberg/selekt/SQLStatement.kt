@@ -51,6 +51,27 @@ internal enum class SQLStatementType(
 
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 private const val ONLY_BATCH_UPDATES = "Only batched updates are permitted."
+private const val ROLLBACK_KEYWORD_LENGTH = 8
+private const val TRANSACTION_KEYWORD_LENGTH = 11
+
+internal fun String.isRollbackToSavepointClause(): Boolean {
+    var index = ROLLBACK_KEYWORD_LENGTH
+    while (index < length && this[index].isNotEnglishLetter()) {
+        ++index
+    }
+    if (index + TRANSACTION_KEYWORD_LENGTH <= length &&
+        regionMatches(index, "TRANSACTION", 0, TRANSACTION_KEYWORD_LENGTH, ignoreCase = true)) {
+        index += TRANSACTION_KEYWORD_LENGTH
+    }
+    while (index < length && this[index].isNotEnglishLetter()) {
+        ++index
+    }
+    val toIndex = indexOf("TO", index, ignoreCase = true)
+    if (toIndex < 0) {
+        return false
+    }
+    return this[toIndex - 1].isNotEnglishLetter() && (toIndex + 2 >= length || this[toIndex + 2].isNotEnglishLetter())
+}
 
 @JvmSynthetic
 @Suppress("Detekt.CognitiveComplexMethod", "Detekt.ComplexCondition", "Detekt.MagicNumber", "Detekt.NestedBlockDepth")
@@ -71,11 +92,10 @@ internal fun String.resolvedSqlStatementType(): SQLStatementType = trimStartByIn
             else -> SQLStatementType.OTHER
         }
         'R' -> when (this[2].uppercaseChar()) {
-            'L' -> if (length > 10 && 'T' == this[9].uppercaseChar() ||
-                length >= 7 && 'E' == this[1].uppercaseChar()) {
-                SQLStatementType.OTHER // ROLLBACK TO or RELEASE
+            'L' -> if ('E' == this[1].uppercaseChar() || isRollbackToSavepointClause()) {
+                SQLStatementType.OTHER // RELEASE, or ROLLBACK [TRANSACTION] TO savepoint
             } else {
-                SQLStatementType.ABORT
+                SQLStatementType.ABORT // ROLLBACK, ROLLBACK TRANSACTION
             }
             'P' -> SQLStatementType.UPDATE // REPLACE
             else -> SQLStatementType.OTHER

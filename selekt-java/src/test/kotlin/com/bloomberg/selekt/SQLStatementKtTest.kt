@@ -226,6 +226,31 @@ internal class SQLStatementKtTest {
     }
 
     @Test
+    fun rollbackTransactionSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK TRANSACTION".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackTransactionLowercaseSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "rollback transaction".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackTransactionToSavepointSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TRANSACTION TO savepoint".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackIntoSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK INTO something".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackToSavepointMultipleWhitespaceSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK   TO savepoint".resolvedSqlStatementType())
+    }
+
+    @Test
     fun releaseSqlStatement() {
         assertEquals(SQLStatementType.OTHER, "RELEASE".resolvedSqlStatementType())
     }
