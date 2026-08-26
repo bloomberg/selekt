@@ -186,8 +186,23 @@ internal class SQLStatementKtTest {
     }
 
     @Test
+    fun rollbackTransactionSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK TRANSACTION".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackTransactionLowercaseSqlStatement() {
+        assertEquals(SQLStatementType.ABORT, "rollback transaction".resolvedSqlStatementType())
+    }
+
+    @Test
     fun rollbackToSavepointSqlStatement() {
         assertEquals(SQLStatementType.OTHER, "ROLLBACK TO savepoint1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun rollbackTransactionToSavepointSqlStatement() {
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK TRANSACTION TO savepoint1".resolvedSqlStatementType())
     }
 
     @Test
@@ -223,21 +238,6 @@ internal class SQLStatementKtTest {
     @Test
     fun rollbackTruncatedSqlStatement() {
         assertEquals(SQLStatementType.ABORT, "ROLLBACK X".resolvedSqlStatementType())
-    }
-
-    @Test
-    fun rollbackTransactionSqlStatement() {
-        assertEquals(SQLStatementType.ABORT, "ROLLBACK TRANSACTION".resolvedSqlStatementType())
-    }
-
-    @Test
-    fun rollbackTransactionLowercaseSqlStatement() {
-        assertEquals(SQLStatementType.ABORT, "rollback transaction".resolvedSqlStatementType())
-    }
-
-    @Test
-    fun rollbackTransactionToSavepointSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TRANSACTION TO savepoint".resolvedSqlStatementType())
     }
 
     @Test

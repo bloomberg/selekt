@@ -179,6 +179,10 @@ class SQLDatabase(
         SQLStatement.compile(session, sql, sqlStatementType, bindArgs)
     }
 
+    fun prepare(sql: String): ISQLRawStatement = pledge {
+        SQLRawStatement.prepare(session, sql)
+    }
+
     override fun delete(
         table: String,
         whereClause: String,

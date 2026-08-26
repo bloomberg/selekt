@@ -156,6 +156,43 @@ internal class SQLDatabaseTest {
     }
 
     @Test
+    fun rawStatementBeginAndCommitTransaction() {
+        database.prepare("BEGIN IMMEDIATE TRANSACTION").use {
+            assertFalse(database.inTransaction)
+            it.step()
+            assertTrue(database.inTransaction)
+        }
+        database.prepare("END TRANSACTION").use { it.step() }
+        assertFalse(database.inTransaction)
+        verifyCommit()
+    }
+
+    @Test
+    fun rawStatementBeginAndRollbackTransaction() {
+        database.prepare("BEGIN DEFERRED TRANSACTION").use { it.step() }
+        database.prepare("ROLLBACK TRANSACTION").use { it.step() }
+        assertFalse(database.inTransaction)
+        verifyRollback()
+    }
+
+    @Test
+    fun rawStatementNestedBeginCommitsViaSavepoint() {
+        database.prepare("BEGIN EXCLUSIVE TRANSACTION").use { it.step() }
+        database.prepare("BEGIN IMMEDIATE TRANSACTION").use { it.step() }
+        database.prepare("END TRANSACTION").use { it.step() }
+        assertTrue(database.inTransaction)
+        database.prepare("END TRANSACTION").use { it.step() }
+        assertFalse(database.inTransaction)
+        verifyCommit()
+    }
+
+    @Test
+    fun rawStatementReleasesConnectionOnClose() {
+        database.prepare("SELECT 1").close()
+        database.prepare("SELECT 1").close()
+    }
+
+    @Test
     fun execAfterDatabaseHasClosed() {
         database.run {
             close()

@@ -54,6 +54,7 @@ private const val ONLY_BATCH_UPDATES = "Only batched updates are permitted."
 private const val ROLLBACK_KEYWORD_LENGTH = 8
 private const val TRANSACTION_KEYWORD_LENGTH = 11
 
+@JvmSynthetic
 internal fun String.isRollbackToSavepointClause(): Boolean {
     var index = ROLLBACK_KEYWORD_LENGTH
     while (index < length && this[index].isNotEnglishLetter()) {
