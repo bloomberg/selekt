@@ -32,7 +32,7 @@ internal class SQLConnection(
     private val configuration: DatabaseConfiguration,
     flags: Int,
     private val random: IRandom,
-    key: Key?
+    key: DatabaseKey?
 ) : CloseableSQLExecutor {
     private val databaseHandle = sqlite.open(path, flags)
     private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
@@ -63,7 +63,7 @@ internal class SQLConnection(
 
     init {
         runCatching {
-            key?.use { sqlite.keyConventionally(databaseHandle, it) }
+            key?.let { sqlite.keyConventionally(databaseHandle, it) }
             sqlite.extendedResultCodes(databaseHandle, 0)
             configuration.trace?.let { sqlite.traceV2(databaseHandle, it()) }
             sqlite.busyTimeout(databaseHandle, configuration.busyTimeoutMillis)

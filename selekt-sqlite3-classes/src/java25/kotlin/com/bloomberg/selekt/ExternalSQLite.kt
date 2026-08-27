@@ -103,6 +103,10 @@ internal class ExternalSQLite(
         SlabArena().use { block(it) }
     }
 
+    private fun requireRawKeyLength(length: Int) {
+        require(length == KEY_LENGTH) { "Key must be $KEY_LENGTH bytes in size." }
+    }
+
     private fun databaseSegment(db: DatabaseHandle): MemorySegment =
         (db.attachment as? MemorySegment) ?: MemorySegment.ofAddress(db.pointer)
 
@@ -120,6 +124,30 @@ internal class ExternalSQLite(
 
     override fun newBlobHandle(pointer: Long): BlobHandle =
         BlobHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+
+    override fun allocateSecret(size: Int): Long {
+        require(size > 0) { "Secret size must be positive." }
+        val pointer = (selekt_secret_alloc.invoke(size) as MemorySegment).address()
+        if (pointer == 0L) {
+            throw OutOfMemoryError("allocateSecret")
+        }
+        return pointer
+    }
+
+    override fun freeSecret(pointer: Long, size: Int) {
+        selekt_secret_free.invoke(MemorySegment.ofAddress(pointer), size)
+    }
+
+    override fun storeSecret(pointer: Long, capacity: Int, source: ByteArray, length: Int) {
+        MemorySegment.copy(
+            source,
+            0,
+            MemorySegment.ofAddress(pointer).reinterpret(capacity.toLong()),
+            JAVA_BYTE,
+            0,
+            length
+        )
+    }
 
     override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode =
         sqlite3_bind_blob.invoke(statementSegment(statement), index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
@@ -767,7 +795,30 @@ internal class ExternalSQLite(
         db: Long,
         key: ByteArray,
         length: Int
-    ): SQLCode = this.key(db, key, length)
+    ): SQLCode {
+        requireRawKeyLength(length)
+        return withSlab { slab ->
+            val segment = slab.allocateFromBytes(key)
+            try {
+                selekt_secret_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
+            } finally {
+                segment.fill(0)
+            }
+        }
+    }
+
+    override fun keyConventionallyAt(
+        db: Long,
+        pointer: Long,
+        length: Int
+    ): SQLCode {
+        requireRawKeyLength(length)
+        return selekt_secret_key.invoke(
+            MemorySegment.ofAddress(db),
+            MemorySegment.ofAddress(pointer),
+            length
+        ) as Int
+    }
 
     override fun keywordCount(): Int = sqlite3_keyword_count.invoke() as Int
 
@@ -867,7 +918,30 @@ internal class ExternalSQLite(
         db: Long,
         key: ByteArray,
         length: Int
-    ): SQLCode = this.key(db, key, length)
+    ): SQLCode {
+        requireRawKeyLength(length)
+        return withSlab { slab ->
+            val segment = slab.allocateFromBytes(key)
+            try {
+                selekt_secret_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
+            } finally {
+                segment.fill(0)
+            }
+        }
+    }
+
+    override fun rawKeyAt(
+        db: Long,
+        pointer: Long,
+        length: Int
+    ): SQLCode {
+        requireRawKeyLength(length)
+        return selekt_secret_key.invoke(
+            MemorySegment.ofAddress(db),
+            MemorySegment.ofAddress(pointer),
+            length
+        ) as Int
+    }
 
     override fun rekey(
         db: Long,
@@ -885,6 +959,16 @@ internal class ExternalSQLite(
             segment.fill(0)
         }
     }
+
+    override fun rekeyAt(
+        db: Long,
+        pointer: Long,
+        length: Int
+    ): SQLCode = selekt_secret_rekey.invoke(
+        MemorySegment.ofAddress(db),
+        MemorySegment.ofAddress(pointer),
+        length
+    ) as Int
 
     override fun releaseMemory(
         bytes: Int
@@ -1038,6 +1122,8 @@ internal class ExternalSQLite(
         private val criticalNoHeapOption = Linker.Option.critical(false)
 
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+        private const val KEY_LENGTH = 32
 
         private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
@@ -1266,6 +1352,24 @@ internal class ExternalSQLite(
         )
         private val sqlite3_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_key").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val selekt_secret_alloc: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_secret_alloc").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, JAVA_INT)
+        )
+        private val selekt_secret_free: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_secret_free").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT)
+        )
+        private val selekt_secret_key: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_secret_key").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val selekt_secret_rekey: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_secret_rekey").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
             criticalNoHeapOption
         )

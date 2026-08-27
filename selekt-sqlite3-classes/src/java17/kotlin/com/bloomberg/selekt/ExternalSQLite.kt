@@ -49,6 +49,12 @@ internal class ExternalSQLite(
         }
     }
 
+    external override fun allocateSecret(size: Int): Long
+
+    external override fun freeSecret(pointer: Long, size: Int)
+
+    external override fun storeSecret(pointer: Long, capacity: Int, source: ByteArray, length: Int)
+
     external override fun bindBlob(statement: Long, index: Int, blob: ByteArray, length: Int): SQLCode
 
     external override fun bindDouble(statement: Long, index: Int, value: Double): SQLCode
@@ -170,6 +176,8 @@ internal class ExternalSQLite(
 
     external override fun keyConventionally(db: Long, key: ByteArray, length: Int): SQLCode
 
+    external override fun keyConventionallyAt(db: Long, pointer: Long, length: Int): SQLCode
+
     external override fun keywordCount(): Int
 
     external override fun lastInsertRowId(db: Long): Long
@@ -188,7 +196,11 @@ internal class ExternalSQLite(
 
     external override fun rawKey(db: Long, key: ByteArray, length: Int): SQLCode
 
+    external override fun rawKeyAt(db: Long, pointer: Long, length: Int): SQLCode
+
     external override fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
+
+    external override fun rekeyAt(db: Long, pointer: Long, length: Int): SQLCode
 
     external override fun releaseMemory(bytes: Int): Int
 

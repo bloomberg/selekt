@@ -19,6 +19,7 @@ package com.bloomberg.selekt.android
 import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.ContentValues
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -30,11 +31,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@Suppress("DEPRECATION")
 internal class ConcurrentSQLDatabaseTest {
     private val file = createTempFile("test-concurrent-sql-database", ".db").toFile().apply { deleteOnExit() }
 
-    private val database = SQLDatabase(file.absolutePath, SQLite, SQLiteJournalMode.WAL.databaseConfiguration,
-        ByteArray(32) { 0x42 })
+    private val database = DatabaseKey.take(SQLite, ByteArray(32) { 0x42 }).use { key ->
+        SQLDatabase(file.absolutePath, SQLite, SQLiteJournalMode.WAL.databaseConfiguration, key)
+    }
 
     @BeforeEach
     fun setUp() {

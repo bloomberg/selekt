@@ -26,6 +26,7 @@ import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteDbConfig
 import com.bloomberg.selekt.SQLProgressHandler
 import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteAutoVacuumMode
@@ -60,21 +61,16 @@ class SQLiteDatabase private constructor(
             file: File?,
             configuration: DatabaseConfiguration,
             key: ByteArray?
-        ): SQLiteDatabase {
-            val keyCopy = key?.copyOf()
-            return try {
-                SQLiteDatabase(
-                    SQLDatabase(
-                        file.let { if (it != null) it.path else "file::memory:" },
-                        SQLite,
-                        configuration,
-                        keyCopy,
-                        CommonThreadLocalRandom
-                    )
+        ): SQLiteDatabase = key?.let { DatabaseKey.of(SQLite, it) }.use { key ->
+            SQLiteDatabase(
+                SQLDatabase(
+                    file?.path ?: "file::memory:",
+                    SQLite,
+                    configuration,
+                    key,
+                    CommonThreadLocalRandom
                 )
-            } finally {
-                keyCopy?.fill(0)
-            }
+            )
         }
 
         @JvmStatic

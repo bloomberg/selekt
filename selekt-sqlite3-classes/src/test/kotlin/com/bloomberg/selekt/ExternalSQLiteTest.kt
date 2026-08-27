@@ -38,6 +38,7 @@ internal class ExternalSQLiteTest {
         const val SQL_ROW = 100
         const val SQL_BLOB = 4
         const val SQL_NULL = 5
+        const val KEY_SIZE = 32
     }
 
     @TempDir
@@ -2026,6 +2027,129 @@ internal class ExternalSQLiteTest {
             assertEquals(SQL_OK, sqlite.blobClose(blobHandle))
         } finally {
             sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `allocateSecret then freeSecret does not throw`() {
+        val pointer = sqlite.allocateSecret(KEY_SIZE)
+        assertTrue(pointer != 0L)
+        sqlite.freeSecret(pointer, KEY_SIZE)
+    }
+
+    @Test
+    fun `allocateSecret rejects non-positive size`() {
+        assertFailsWith<IllegalArgumentException> { sqlite.allocateSecret(0) }
+    }
+
+    @Test
+    fun `freeSecret tolerates a zero pointer`() {
+        sqlite.freeSecret(0L, KEY_SIZE)
+    }
+
+    @Test
+    fun `storeSecret then keyConventionallyAt opens a database created with keyConventionally`() {
+        val key = ByteArray(KEY_SIZE) { 0x11 }
+        val dbPath = File(tempDir, "keyed.db").absolutePath
+        val dbHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.keyConventionally(db, key, key.size))
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY)")
+            sqlite.exec(db, "INSERT INTO t VALUES (1)")
+        } finally {
+            sqlite.closeV2(db)
+        }
+
+        val pointer = sqlite.allocateSecret(KEY_SIZE)
+        try {
+            sqlite.storeSecret(pointer, KEY_SIZE, key, key.size)
+            val reopenHolder = LongArray(1)
+            sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, reopenHolder)
+            val reopened = reopenHolder[0]
+            try {
+                assertEquals(SQL_OK, sqlite.keyConventionallyAt(reopened, pointer, KEY_SIZE))
+                assertEquals(SQL_OK, sqlite.exec(reopened, "SELECT * FROM t"))
+            } finally {
+                sqlite.closeV2(reopened)
+            }
+        } finally {
+            sqlite.freeSecret(pointer, KEY_SIZE)
+        }
+        assertTrue(key.all { it == 0x11.toByte() })
+    }
+
+    @Test
+    fun `storeSecret rejects a length greater than capacity`() {
+        val pointer = sqlite.allocateSecret(KEY_SIZE)
+        try {
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.storeSecret(pointer, KEY_SIZE, ByteArray(KEY_SIZE + 1), KEY_SIZE + 1)
+            }
+        } finally {
+            sqlite.freeSecret(pointer, KEY_SIZE)
+        }
+    }
+
+    @Test
+    fun `rawKeyAt behaves identically to keyConventionallyAt`() {
+        val key = ByteArray(KEY_SIZE) { 0x22 }
+        val dbPath = File(tempDir, "rawkeyed.db").absolutePath
+        val dbHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val pointer = sqlite.allocateSecret(KEY_SIZE)
+        try {
+            sqlite.storeSecret(pointer, KEY_SIZE, key, key.size)
+            assertEquals(SQL_OK, sqlite.rawKeyAt(db, pointer, KEY_SIZE))
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY)")
+        } finally {
+            sqlite.closeV2(db)
+            sqlite.freeSecret(pointer, KEY_SIZE)
+        }
+    }
+
+    @Test
+    fun `keyConventionallyAt requires a 32 byte key`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val pointer = sqlite.allocateSecret(1)
+        try {
+            assertFailsWith<IllegalArgumentException> { sqlite.keyConventionallyAt(db, pointer, 1) }
+        } finally {
+            sqlite.closeV2(db)
+            sqlite.freeSecret(pointer, 1)
+        }
+    }
+
+    @Test
+    fun `rekeyAt changes the key of an already keyed database`() {
+        val originalKey = ByteArray(KEY_SIZE) { 0x33 }
+        val newKey = ByteArray(KEY_SIZE) { 0x44 }
+        val dbPath = File(tempDir, "rekeyed.db").absolutePath
+        val dbHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val newKeyPointer = sqlite.allocateSecret(KEY_SIZE)
+        try {
+            assertEquals(SQL_OK, sqlite.keyConventionally(db, originalKey, originalKey.size))
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY)")
+            sqlite.storeSecret(newKeyPointer, KEY_SIZE, newKey, newKey.size)
+            assertEquals(SQL_OK, sqlite.rekeyAt(db, newKeyPointer, KEY_SIZE))
+        } finally {
+            sqlite.closeV2(db)
+            sqlite.freeSecret(newKeyPointer, KEY_SIZE)
+        }
+        val reopenHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, reopenHolder)
+        val reopened = reopenHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.key(reopened, newKey, newKey.size))
+            assertEquals(SQL_OK, sqlite.exec(reopened, "SELECT * FROM t"))
+        } finally {
+            sqlite.closeV2(reopened)
         }
     }
 }

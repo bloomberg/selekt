@@ -53,9 +53,9 @@ internal fun openConnectionPool(
     sqlite: SQLite,
     configuration: DatabaseConfiguration,
     random: IRandom,
-    key: ByteArray?
+    key: DatabaseKey?
 ): Pair<SQLExecutorPool, SQLConnectionFactory> {
-    val factory = SQLConnectionFactory(path, sqlite, configuration, random, key?.let { Key(it) })
+    val factory = SQLConnectionFactory(path, sqlite, configuration, random, key)
     val pool = createObjectPool(
         factory,
         sharedExecutor,
@@ -87,13 +87,13 @@ internal class SQLConnectionFactory(
     private val sqlite: SQLite,
     private val configuration: DatabaseConfiguration,
     private val random: IRandom,
-    private val key: Key?
+    private val key: DatabaseKey?
 ) : IObjectFactory<CloseableSQLExecutor> {
     private val busyLock = ReentrantLock()
     private val connections: MutableSet<CloseableSQLExecutor> = Collections.newSetFromMap(ConcurrentHashMap())
 
     override fun close() {
-        key?.zero()
+        key?.release()
     }
 
     override fun destroyObject(obj: CloseableSQLExecutor) = busyLock.withLock {

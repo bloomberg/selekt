@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SelektVersion
@@ -26,7 +27,6 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
-import com.bloomberg.selekt.commons.zero
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.DriverManager
@@ -209,16 +209,14 @@ class SelektDriver : Driver {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
         }
-        return try {
+        return encryptionKey?.let { DatabaseKey.take(sqlite, it) }.use {
             SQLDatabase(
                 path = connectionURL.databasePath,
                 sqlite = sqlite,
                 configuration = configuration,
-                key = encryptionKey,
+                key = it,
                 random = com.bloomberg.selekt.CommonThreadLocalRandom
             )
-        } finally {
-            encryptionKey?.zero()
         }
     }
 

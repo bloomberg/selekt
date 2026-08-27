@@ -19,6 +19,7 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
@@ -32,6 +33,7 @@ import kotlin.test.assertNull
 private const val DB_POINTER = 0xDEADB00BL
 private const val STMT_POINTER = 0xCAFEBABEL
 private const val BLOB_POINTER = 0xFEEDF00DL
+private const val KEY_POINTER = 0x5EC4E7L
 
 private val DATABASE_HANDLE = DatabaseHandle(DB_POINTER)
 private val STATEMENT_HANDLE = StatementHandle(STMT_POINTER)
@@ -522,5 +524,24 @@ internal class SQLiteTest {
     fun `walCheckpointV2 with DatabaseHandle throws on error`() {
         whenever(externalSqlite.walCheckpointV2(any<DatabaseHandle>(), any(), any())) doReturn SQL_ERROR
         assertFailsWith<SQLException> { sqlite.walCheckpointV2(DATABASE_HANDLE, "main", 0) }
+    }
+
+    @Test
+    fun `newKey allocates and stores the secret`() {
+        val key = ByteArray(32) { 0x42 }
+        whenever(externalSqlite.allocateSecret(key.size)) doReturn KEY_POINTER
+        sqlite.newKey(key)
+        verify(externalSqlite).storeSecret(KEY_POINTER, key.size, key, key.size)
+    }
+
+    @Test
+    fun `newKey frees the secret if storeSecret throws`() {
+        val key = ByteArray(32) { 0x42 }
+        whenever(externalSqlite.allocateSecret(key.size)) doReturn KEY_POINTER
+        whenever(
+            externalSqlite.storeSecret(eq(KEY_POINTER), eq(key.size), eq(key), eq(key.size))
+        ) doThrow IllegalArgumentException("Boom")
+        assertFailsWith<IllegalArgumentException> { sqlite.newKey(key) }
+        verify(externalSqlite).freeSecret(KEY_POINTER, key.size)
     }
 }
