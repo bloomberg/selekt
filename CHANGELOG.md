@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.0.2
+
+* SQLCipher 4.18.0.
+* Distinguish ROLLBACK TRANSACTION from ROLLBACK TO savepoint.
+* Store database keys off the Java heap.
+
 ## Version 1.0.1
 
 * Configure GitHub Actions token permissions.
