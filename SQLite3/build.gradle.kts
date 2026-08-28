@@ -106,6 +106,7 @@ tasks.register<Exec>("configureSqlCipher") {
     } else {
         commandLine("./configure")
         environment("CFLAGS", cFlags.joinToString(" "))
+        environment("CCACHE", "none")
         args("--with-tempstore=yes")
     }
     logging.captureStandardOutput(LogLevel.INFO)
