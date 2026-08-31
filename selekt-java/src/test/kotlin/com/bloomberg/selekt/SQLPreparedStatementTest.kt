@@ -23,6 +23,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -203,6 +204,34 @@ internal class SQLPreparedStatementTest {
             .bindNull(":nullable")
         verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":nullable"))
         verify(sqlite, times(1)).bindNull(eq(STATEMENT), eq(1))
+    }
+
+    @Test
+    fun closeFinalizesStatement() {
+        val sqlite = mock<SQLite>()
+        val statement = SQLPreparedStatement(STATEMENT, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom)
+        statement.close()
+        verify(sqlite, times(1)).finalize(eq(STATEMENT))
+    }
+
+    @Test
+    fun closeIsIdempotent() {
+        val sqlite = mock<SQLite>()
+        val statement = SQLPreparedStatement(STATEMENT, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom)
+        statement.close()
+        statement.close()
+        verify(sqlite, times(1)).finalize(eq(STATEMENT))
+    }
+
+    @Test
+    fun retainDefersFinalizationUntilFullyReleased() {
+        val sqlite = mock<SQLite>()
+        val statement = SQLPreparedStatement(STATEMENT, "SELECT * FROM Foo", sqlite, CommonThreadLocalRandom)
+        statement.retain()
+        statement.close()
+        verify(sqlite, never()).finalize(eq(STATEMENT))
+        statement.release()
+        verify(sqlite, times(1)).finalize(eq(STATEMENT))
     }
 
     @Test

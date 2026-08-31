@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt
 
-import java.io.Closeable
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.min
 
@@ -33,7 +32,7 @@ internal class SQLPreparedStatement(
     val sql: String,
     private val sqlite: SQLite,
     private val random: IRandom
-) : Closeable {
+) : SharedCloseable() {
     val columnCount = sqlite.columnCount(statement)
 
     val columnNames: Array<out String> = sqlite.run {
@@ -116,7 +115,7 @@ internal class SQLPreparedStatement(
         sqlite.clearBindings(statement)
     }
 
-    override fun close() {
+    override fun onReleased() {
         sqlite.finalize(statement)
     }
 
