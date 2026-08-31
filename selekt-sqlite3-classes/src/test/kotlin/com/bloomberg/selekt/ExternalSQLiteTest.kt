@@ -368,6 +368,73 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `can prepare with non-ascii sql`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 1 -- Comment: 世界"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.toByteArray(Charsets.UTF_8).size, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `can prepare with non-ascii sql with clause`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            sqlite.exec(db, "CREATE TABLE t(x INTEGER)")
+            val insertStatement = LongArray(1)
+            sqlite.prepareV2(db, "INSERT INTO t VALUES(1)", 24, insertStatement)
+            sqlite.step(insertStatement[0])
+            sqlite.finalize(insertStatement[0])
+            val statementHolder = LongArray(1)
+            val sql = "SELECT * FROM t WHERE x = 1 -- 世界 comment"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.toByteArray(Charsets.UTF_8).size, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(1, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `can prepare with unpaired surrogate in sql`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 1 -- unpaired surrogate: \uD800 end"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(1, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `can bind zero blob`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)

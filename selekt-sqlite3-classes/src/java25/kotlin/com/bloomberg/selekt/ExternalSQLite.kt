@@ -859,10 +859,11 @@ internal class ExternalSQLite(
         statementHolder: LongArray
     ): SQLCode = withSlab { slab ->
         val statement = slab.allocate(ADDRESS)
+        val sqlSegment = slab.allocateFrom(sql)
         val result = sqlite3_prepare_v2.invoke(
             MemorySegment.ofAddress(db),
-            slab.allocateFrom(sql),
-            length,
+            sqlSegment,
+            (sqlSegment.byteSize() - 1).toInt(),
             statement,
             MemorySegment.NULL
         ) as Int
@@ -879,10 +880,11 @@ internal class ExternalSQLite(
         statementHolder: LongArray
     ): SQLCode = withSlab { slab ->
         val statement = slab.allocate(ADDRESS)
+        val sqlSegment = slab.allocateFrom(sql)
         val result = sqlite3_prepare_v2.invoke(
             databaseSegment(db),
-            slab.allocateFrom(sql),
-            length,
+            sqlSegment,
+            (sqlSegment.byteSize() - 1).toInt(),
             statement,
             MemorySegment.NULL
         ) as Int
