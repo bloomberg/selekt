@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.0.3
+
+* Fix prepareV2 non-ASCII UTF-8 byte length.
+* Prevent LRU cache from finalizing in-use prepared statements.
+* Guard yieldTransaction against releasing pooled connection with open (forward-only) cursors.
+
 ## Version 1.0.2
 
 * SQLCipher 4.18.0.
