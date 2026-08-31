@@ -416,6 +416,23 @@ internal class SQLDatabaseTransactionTest {
 
     @ParameterizedTest
     @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
+    fun yieldTransactionThrowsWithOpenForwardCursor(
+        input: SQLiteJournalMode
+    ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
+        it.exec("CREATE TABLE 'Foo' (bar INT)")
+        it.transact {
+            insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
+            queryForwardOnly("SELECT * FROM Foo", emptyArray()).use { _ ->
+                assertFailsWith<IllegalStateException> {
+                    yieldTransaction()
+                }
+            }
+            yieldTransaction()
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SQLiteJournalMode::class, names = ["DELETE", "WAL"])
     fun yieldTransactionWithPauseThrows(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {

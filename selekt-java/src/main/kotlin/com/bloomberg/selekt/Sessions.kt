@@ -198,6 +198,9 @@ internal class SQLSession(
     override fun yieldTransaction(pauseMillis: Long): Boolean {
         checkInTransaction()
         check(!state.outerSuccessful) { "This thread's current transaction must not have been marked as successful yet." }
+        check(retainCount == 1) {
+            "This thread holds additional references to the connection and cannot yield the transaction."
+        }
         val oldSavepointStack = state.savepointStack
         val oldTransactionSql = state.transactionSql
         val oldTransactionListener = state.transactionListener
