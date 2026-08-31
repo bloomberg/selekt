@@ -160,6 +160,9 @@ internal class SQLConnectionTest {
         whenever(sqlite.statementReadOnly(any<StatementHandle>())) doAnswer {
             sqlite.statementReadOnly((it.arguments[0] as StatementHandle).pointer)
         }
+        whenever(sqlite.finalize(any<StatementHandle>())) doAnswer {
+            sqlite.finalize((it.arguments[0] as StatementHandle).pointer)
+        }
         whenever(sqlite.openV2(any(), any(), any())) doAnswer {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
@@ -711,8 +714,8 @@ internal class SQLConnectionTest {
         whenever(columnType(any<Long>(), any<Int>())) doReturn ColumnType.INTEGER.sqlDataType
         whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         whenever(columnInt64(any<Long>(), any<Int>())) doReturn 99L
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            val cursor = it.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
             assertTrue(cursor.moveToNext())
             assertEquals(99L, cursor.getLong(0))
             assertTrue(cursor.moveToNext())
@@ -733,8 +736,8 @@ internal class SQLConnectionTest {
         }
         whenever(columnCount(any<Long>())) doReturn 1
         whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            val cursor = it.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
             cursor.close()
             verify(this@run, times(1)).resetAndClearBindings(eq(43L))
         }
@@ -753,8 +756,8 @@ internal class SQLConnectionTest {
         whenever(columnCount(any<Long>())) doReturn 1
         whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         var additionalClosed = false
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            val cursor = it.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
                 additionalClosed = true
             }
             assertFalse(additionalClosed)
@@ -776,13 +779,43 @@ internal class SQLConnectionTest {
         whenever(columnCount(any<Long>())) doReturn 1
         whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
         var closeCount = 0
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val cursor = conn.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            val cursor = it.executeForForwardCursor("SELECT * FROM Foo", emptyArray()) {
                 closeCount++
             }
             cursor.close()
             cursor.close()
             assertEquals(1, closeCount)
+        }
+    }
+
+    @Test
+    fun executeForForwardCursorStatementSurvivesCacheEviction(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        val pointers = mutableMapOf<String, Long>()
+        var nextPointer = 100L
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            val sql = it.arguments[1] as String
+            val pointer = pointers.getOrPut(sql) { nextPointer++ }
+            (it.arguments[2] as LongArray)[0] = pointer
+            0
+        }
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            val cursor = it.executeForForwardCursor("SELECT * FROM Foo", emptyArray())
+            val cursorStatementPointer = pointers.getValue("SELECT * FROM Foo")
+            repeat(databaseConfiguration.maxSqlCacheSize) { index ->
+                it.execute("SELECT $index", emptyArray())
+            }
+            verify(this@run, never()).finalize(eq(cursorStatementPointer))
+            assertFalse(cursor.moveToNext())
+            cursor.close()
+            verify(this@run, times(1)).finalize(eq(cursorStatementPointer))
         }
     }
 

@@ -325,13 +325,15 @@ internal class SQLConnection(
             val statement = sqlite.prepare(databaseHandle, sql)
             SQLPreparedStatement(statement, sql, sqlite, random)
         }
-    ]
+    ].apply { retain() }
 
     private fun releasePreparedStatement(preparedStatement: SQLPreparedStatement) {
         try {
             preparedStatement.resetAndClearBindings()
         } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
             preparedStatements.evict(preparedStatement.sql)
+        } finally {
+            preparedStatement.release()
         }
     }
 
