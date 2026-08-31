@@ -1233,7 +1233,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
         throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
-    auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, jlength, &statement, nullptr);
+    auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, env->GetStringUTFLength(jsql), &statement, nullptr);
     env->ReleaseStringUTFChars(jsql, sql);
     if (result == SQLITE_OK) {
         updateHolder(env, statementHolder, 0, reinterpret_cast<jlong>(statement));
