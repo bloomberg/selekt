@@ -24,6 +24,7 @@ import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.commons.zero
 import java.io.Closeable
 import java.io.File
+import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.NotThreadSafe
 
 /**
@@ -62,13 +63,28 @@ class SQLiteOpenHelper internal constructor(
 
     private val _key: ByteArray? = key?.copyOf()
 
-    private val lazyDatabase = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    private val lifecycleLock = Any()
+    @GuardedBy("lifecycleLock")
+    private var keyDestroyed = false
+    @GuardedBy("lifecycleLock")
+    private var initializationInProgress = false
+    @GuardedBy("lifecycleLock")
+    private var closeRequestedDuringInitialization = false
+
+    private val lazyDatabase = lazy(lifecycleLock) {
+        check(_key == null || !keyDestroyed) {
+            "The encryption key has already been destroyed and cannot be reused to open this database."
+        }
+        initializationInProgress = true
+        closeRequestedDuringInitialization = false
+        var database: SQLiteDatabase? = null
         try {
             SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
-                _key?.zero()
+                database = it
                 it.setPageSizeExponent(openParams.pageSizeExponent)
                 it.setJournalMode(openParams.journalMode)
                 configuration.callback.onConfigure(it)
+                checkCloseNotRequested()
                 val currentVersion = it.version
                 if (currentVersion != version) {
                     it.transact {
@@ -85,14 +101,31 @@ class SQLiteOpenHelper internal constructor(
                                 newVersion = version
                             )
                         }
+                        checkCloseNotRequested()
                     }
                     it.version = version
                 }
                 configuration.callback.onOpen(it)
+                checkCloseNotRequested()
+                _key?.zero()
+                keyDestroyed = true
             }
+        } catch (failure: Throwable) {
+            try {
+                database?.close()
+            } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure !== failure) {
+                    failure.addSuppressed(cleanupFailure)
+                }
+            }
+            throw failure
         } finally {
-            _key?.zero()
+            initializationInProgress = false
         }
+    }
+
+    private fun checkCloseNotRequested() = check(!closeRequestedDuringInitialization) {
+        "The database helper was closed while the database was being initialized."
     }
 
     /**
@@ -109,13 +142,17 @@ class SQLiteOpenHelper internal constructor(
 
     override val databaseName = configuration.name
 
-    override fun close() {
+    override fun close() = synchronized(lifecycleLock) {
+        if (initializationInProgress) {
+            closeRequestedDuringInitialization = true
+        }
         try {
             if (lazyDatabase.isInitialized()) {
                 writableDatabase.close()
             }
         } finally {
             _key?.zero()
+            keyDestroyed = true
         }
     }
 }

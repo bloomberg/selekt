@@ -61,16 +61,21 @@ class SQLiteDatabase private constructor(
             file: File?,
             configuration: DatabaseConfiguration,
             key: ByteArray?
-        ): SQLiteDatabase = key?.let { DatabaseKey.of(SQLite, it) }.use { key ->
-            SQLiteDatabase(
-                SQLDatabase(
-                    file?.path ?: "file::memory:",
-                    SQLite,
-                    configuration,
-                    key,
-                    CommonThreadLocalRandom
+        ): SQLiteDatabase {
+            require(key == null || key.any { it != 0.toByte() }) {
+                "Encryption keys must not consist entirely of zero bytes."
+            }
+            return key?.let { DatabaseKey.of(SQLite, it) }.use { key ->
+                SQLiteDatabase(
+                    SQLDatabase(
+                        file?.path ?: "file::memory:",
+                        SQLite,
+                        configuration,
+                        key,
+                        CommonThreadLocalRandom
+                    )
                 )
-            )
+            }
         }
 
         @JvmStatic
