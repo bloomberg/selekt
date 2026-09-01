@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.sql.DriverManager
 import java.util.Properties
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class SelektDataSourceTest {
     @TempDir
@@ -636,5 +639,62 @@ internal class SelektDataSourceTest {
         assertFailsWith<IllegalArgumentException> {
             dataSource.encryptionKeySource = EncryptionKeySource.Literal("short".toCharArray())
         }
+    }
+
+    @Test
+    fun directEncryptionKeySourceDoesNotZeroCallerOwnedArrayOnReplace(): Unit = dataSource.run {
+        val callerArray = VALID_KEY.toCharArray()
+        encryptionKeySource = EncryptionKeySource.Literal(callerArray)
+        encryptionKeySource = EncryptionKeySource.Literal("REPLACEMENT-KEY-exactly-32bytes!".toCharArray())
+        assertEquals(VALID_KEY, String(callerArray))
+    }
+
+    @Test
+    fun directEncryptionKeySourceDoesNotZeroCallerOwnedArrayOnClose(): Unit = dataSource.run {
+        val callerArray = VALID_KEY.toCharArray()
+        encryptionKeySource = EncryptionKeySource.Literal(callerArray)
+        close()
+        assertEquals(VALID_KEY, String(callerArray))
+    }
+
+    @Test
+    fun concurrentGetConnectionDuringKeyRotationDoesNotObserveZeroedOrTornKey() {
+        dataSource.databasePath = File(tempDir, "key-rotation-race.db").absolutePath
+        dataSource.setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+        val threadCount = 8
+        val iterations = 100
+        val running = AtomicBoolean(true)
+        val failures = AtomicInteger(0)
+        val rotator = Thread {
+            while (running.get()) {
+                dataSource.setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+            }
+        }
+        rotator.start()
+        val latch = CountDownLatch(threadCount)
+        repeat(threadCount) {
+            Thread {
+                try {
+                    repeat(iterations) {
+                        runCatching {
+                            dataSource.getConnection().use { connection ->
+                                connection.createStatement().use { statement ->
+                                    statement.executeQuery("SELECT 1").use { resultSet -> resultSet.next() }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    failures.incrementAndGet()
+                    e.printStackTrace()
+                } finally {
+                    latch.countDown()
+                }
+            }.start()
+        }
+        latch.await()
+        running.set(false)
+        rotator.join()
+        assertEquals(0, failures.get(), "Key rotation race caused $failures unexpected failures")
     }
 }

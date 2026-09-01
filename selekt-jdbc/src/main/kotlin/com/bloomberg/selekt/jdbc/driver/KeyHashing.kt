@@ -27,13 +27,15 @@ private const val CACHE_KEY_HASH_LENGTH_BYTES = 16
 
 private val cacheKeyHashSalt = ByteArray(SALT_LENGTH_BYTES).also(SecureRandom()::nextBytes)
 
+internal fun hashKeyBytes(keyBytes: ByteArray): String = Mac.getInstance(HMAC_ALGORITHM).apply {
+    init(SecretKeySpec(cacheKeyHashSalt, HMAC_ALGORITHM))
+}.doFinal(keyBytes)
+    .copyOf(CACHE_KEY_HASH_LENGTH_BYTES)
+    .joinToString("") { "%02x".format(it) }
+
 internal fun hashKeyChars(keyChars: CharArray): String = encodeUtf8KeyBytes(keyChars).let {
     try {
-        Mac.getInstance(HMAC_ALGORITHM).apply {
-            init(SecretKeySpec(cacheKeyHashSalt, HMAC_ALGORITHM))
-        }.doFinal(it)
-            .copyOf(CACHE_KEY_HASH_LENGTH_BYTES)
-            .joinToString("") { "%02x".format(it) }
+        hashKeyBytes(it)
     } finally {
         it.zero()
     }
