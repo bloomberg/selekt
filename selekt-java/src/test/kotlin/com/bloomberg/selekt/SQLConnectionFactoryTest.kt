@@ -146,6 +146,44 @@ internal class SQLConnectionFactoryTest {
         verify(sqlite, times(0)).progressHandler(any<Long>(), any<Int>(), any<SQLProgressHandler>())
     }
 
+    @Test
+    fun setProgressHandlerSkipsCheckedOutConnection() {
+        val sqlite = mockSqliteForFactory()
+        val handler = SQLProgressHandler { 0 }
+        val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
+        factory.makePrimaryObject().use {
+            it.onBorrowed()
+            factory.setProgressHandler(100, handler)
+            verify(sqlite, times(0)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun connectionCreatedAfterSetProgressHandlerAppliesCurrentSetting() {
+        val sqlite = mockSqliteForFactory()
+        val handler = SQLProgressHandler { 0 }
+        val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
+        factory.setProgressHandler(100, handler)
+        factory.makePrimaryObject().use {
+            verify(sqlite, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun connectionSkippedWhileBusyPicksUpLatestSettingOnReturn() {
+        val sqlite = mockSqliteForFactory()
+        val handler = SQLProgressHandler { 0 }
+        val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
+        val connection = factory.makePrimaryObject()
+        connection.use {
+            it.onBorrowed()
+            factory.setProgressHandler(100, handler)
+            verify(sqlite, times(0)).progressHandler(eq(DB), eq(100), eq(handler))
+            it.onReturned()
+            verify(sqlite, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
     private fun mockSqliteForFactory(): SQLite = mock<SQLite>().apply {
         whenever(newDatabaseHandle(any<Long>())) doAnswer { DatabaseHandle(it.getArgument(0)) }
         whenever(openV2(any<String>(), any<Int>(), any<LongArray>())).doAnswer {

@@ -80,4 +80,8 @@ interface IPooledObject<K> {
     fun matches(key: K): Boolean
 
     fun releaseMemory()
+
+    fun onBorrowed() = Unit
+
+    fun onReturned() = Unit
 }

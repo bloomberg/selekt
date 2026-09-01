@@ -453,13 +453,17 @@ internal open class Session<K : Any, T : IPooledObject<K>>(
         primary: Boolean,
         permits: Int,
         block: () -> T
-    ) = (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also { obj = it }).also {
+    ) = (obj ?: (if (primary) pool.borrowPrimaryObject() else block()).also {
+        obj = it
+        it.onBorrowed()
+    }).also {
         retainCount += permits
     }
 
     private fun T.release(permits: Int) {
         retainCount -= permits
         if (retainCount == 0) {
+            onReturned()
             pool.returnObject(this).also { obj = null }
         }
     }

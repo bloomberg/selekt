@@ -20,25 +20,37 @@ import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByIndexUntil
 import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
+import java.util.concurrent.locks.ReentrantLock
+import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.NotThreadSafe
+import kotlin.concurrent.withLock
 
 /**
  * @since 0.12.1
  */
 @NotThreadSafe
+@Suppress("Detekt.LongParameterList")
 internal class SQLConnection(
     path: String,
     private val sqlite: SQLite,
     private val configuration: DatabaseConfiguration,
     flags: Int,
     private val random: IRandom,
-    key: DatabaseKey?
+    key: DatabaseKey?,
+    private val progressHandlerSetting: () -> ProgressHandlerSetting? = { null }
 ) : CloseableSQLExecutor {
     private val databaseHandle = sqlite.open(path, flags)
     private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
         it.close()
     }
     private var commitListener: SQLTransactionListener? = null
+
+    @Volatile
+    private var checkedOut = false
+
+    private val progressHandlerLock = ReentrantLock()
+    @GuardedBy("progressHandlerLock")
+    private var installedProgressHandler: ProgressHandlerSetting? = null
 
     override val isAutoCommit: Boolean
         get() = sqlite.getAutocommit(databaseHandle) != 0
@@ -68,6 +80,7 @@ internal class SQLConnection(
             configuration.trace?.let { sqlite.traceV2(databaseHandle, it()) }
             sqlite.busyTimeout(databaseHandle, configuration.busyTimeoutMillis)
             sqlite.exec(databaseHandle, "PRAGMA secure_delete=${configuration.secureDelete.name}")
+            progressHandlerSetting()?.let { setProgressHandler(it.instructionCount, it.handler) }
         }.exceptionOrNull()?.let {
             close()
             throw it
@@ -83,13 +96,15 @@ internal class SQLConnection(
     }
 
     override fun close() {
-        try {
-            optimiseQuietly()
-            sqlite.progressHandler(databaseHandle, 0, null)
-            sqlite.commitHook(databaseHandle, false, null)
-            sqlite.closeV2(databaseHandle)
-        } finally {
-            preparedStatements.evictAll()
+        progressHandlerLock.withLock {
+            try {
+                optimiseQuietly()
+                setProgressHandler(0, null)
+                sqlite.commitHook(databaseHandle, false, null)
+                sqlite.closeV2(databaseHandle)
+            } finally {
+                preparedStatements.evictAll()
+            }
         }
     }
 
@@ -276,8 +291,30 @@ internal class SQLConnection(
     override val isInterrupted: Boolean
         get() = sqlite.isInterrupted(databaseHandle)
 
-    override fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
+    override fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) = progressHandlerLock.withLock {
         sqlite.progressHandler(databaseHandle, instructionCount, handler)
+        installedProgressHandler = handler?.let { ProgressHandlerSetting(instructionCount, it) }
+    }
+
+    override fun setProgressHandlerIfIdle(
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) = progressHandlerLock.withLock {
+        if (!checkedOut) {
+            setProgressHandler(instructionCount, handler)
+        }
+    }
+
+    override fun onBorrowed() = progressHandlerLock.withLock {
+        checkedOut = true
+    }
+
+    override fun onReturned() = progressHandlerLock.withLock {
+        checkedOut = false
+        val desired = progressHandlerSetting()
+        if (installedProgressHandler != desired) {
+            setProgressHandler(desired?.instructionCount ?: 0, desired?.handler)
+        }
     }
 
     override fun matches(key: String) = preparedStatements.containsKey(key)
