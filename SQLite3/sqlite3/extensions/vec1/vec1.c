@@ -2579,7 +2579,8 @@ static void vec1TrainStep(
 
   n = sqlite3_value_bytes(aArg[0]);
   if( (n==0)
-   || (n%sizeof_f32)!=0 
+   || (n%sizeof_f32)!=0
+   || (n>VEC1_TRAINING_SZCHUNK)
    || (p->tv.nElem!=0 && p->tv.nElem!=(int)(n/sizeof_f32))
   ){
     sqlite3_result_error(pCtx, "vec1_train: bad argument", -1);
@@ -2632,7 +2633,11 @@ static void vec1TrainStep(
     }
   }
 
-  iChunk = (p->tv.nVec+1)/p->tv.nVecPerChunk;
+  iChunk = p->tv.nVec/p->tv.nVecPerChunk;
+  if( iChunk>=VEC1_TRAINING_MAXCHUNK ){
+    sqlite3_result_error(pCtx, "vec1_train: too much training data", -1);
+    return;
+  }
   if( iChunk>=p->tv.nChunk ){
     p->tv.aChunk[iChunk] = (float*)sqlite3_malloc(VEC1_TRAINING_SZCHUNK);
     if( p->tv.aChunk[iChunk]==0 ){
