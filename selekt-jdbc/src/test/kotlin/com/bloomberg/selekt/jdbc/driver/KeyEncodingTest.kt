@@ -74,6 +74,26 @@ internal class KeyEncodingTest {
     }
 
     @Test
+    fun `encode rejects an all-zero plain 32-byte key`() {
+        val allZero = CharArray(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES) { '\u0000' }
+        assertFailsWith<IllegalArgumentException> { KeyEncoding.encode(allZero) }
+    }
+
+    @Test
+    fun `encode rejects an all-zero hex-prefixed key`() {
+        val allZeroHex = ("0x" + "00".repeat(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES)).toCharArray()
+        assertFailsWith<IllegalArgumentException> { KeyEncoding.encode(allZeroHex) }
+    }
+
+    @Test
+    fun `validateLength rejects an all-zero key`() {
+        val allZero = CharArray(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES) { '\u0000' }
+        assertFailsWith<IllegalArgumentException> { KeyEncoding.validateLength(allZero) }
+        val allZeroHex = ("0x" + "00".repeat(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES)).toCharArray()
+        assertFailsWith<IllegalArgumentException> { KeyEncoding.validateLength(allZeroHex) }
+    }
+
+    @Test
     fun `driver and data-source paths both produce the same bytes for the same hex key`() {
         val hex = "0123456789abcdef".repeat(4)
         val keyString = "0x$hex"

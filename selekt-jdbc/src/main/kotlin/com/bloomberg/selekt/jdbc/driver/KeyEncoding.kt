@@ -49,28 +49,14 @@ internal object KeyEncoding {
         require(bytes.size == REQUIRED_KEY_LENGTH_BYTES) {
             "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was ${bytes.size} bytes"
         }
+        require(bytes.any { it != 0.toByte() }) {
+            "Encryption key must not be all-zero bytes"
+        }
         return bytes
     }
 
     fun validateLength(keyChars: CharArray) {
-        val encodedLength = if (keyChars.isHexPrefixed()) {
-            val hexLength = keyChars.size - HEX_PREFIX_LENGTH
-            require(hexLength > 0 && hexLength % HEX_CHUNK_SIZE == 0) {
-                "Hex key must have an even number of hex digits after the '0x' prefix"
-            }
-            hexLength / HEX_CHUNK_SIZE
-        } else {
-            encodeUtf8KeyBytes(keyChars).let {
-                try {
-                    it.size
-                } finally {
-                    it.zero()
-                }
-            }
-        }
-        require(encodedLength == REQUIRED_KEY_LENGTH_BYTES) {
-            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was $encodedLength bytes"
-        }
+        encode(keyChars).zero()
     }
 
     private fun CharArray.isHexPrefixed(): Boolean = size >= HEX_PREFIX_LENGTH

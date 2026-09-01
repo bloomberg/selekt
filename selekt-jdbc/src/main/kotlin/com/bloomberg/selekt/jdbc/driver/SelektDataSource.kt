@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.commons.forEachCatching
+import com.bloomberg.selekt.commons.zero
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLCode
@@ -112,14 +113,24 @@ class SelektDataSource : DataSource {
     @Volatile
     var foreignKeys: Boolean = true
 
+    private val keyLock = Any()
+
     @Volatile
-    var encryptionKeySource: EncryptionKeySource? = null
+    private var keySource: EncryptionKeySource? = null
+
+    var encryptionKeySource: EncryptionKeySource?
+        get() = keySource
         set(value) {
-            if (value is EncryptionKeySource.Literal) {
+            val next = if (value is EncryptionKeySource.Literal) {
                 KeyEncoding.validateLength(value.key)
+                EncryptionKeySource.Literal(value.key.copyOf())
+            } else {
+                value
             }
-            (field as? EncryptionKeySource.Literal)?.zero()
-            field = value
+            synchronized(keyLock) {
+                (keySource as? EncryptionKeySource.Literal)?.zero()
+                keySource = next
+            }
         }
 
     val encryptionEnabled: Boolean
@@ -147,31 +158,39 @@ class SelektDataSource : DataSource {
                 "28000"
             )
         }
-        return runCatching {
-            val connectionURL = buildConnectionURL()
-            val mergedProperties = buildConnectionProperties()
-
-            val database = getOrCreateDatabase(connectionURL, mergedProperties)
+        val (encryptionKeyBytes, keyHash) = snapshotEncryptionKey()
+        return try {
             runCatching {
-                JdbcConnection(database, connectionURL, mergedProperties)
-            }.getOrElse {
-                runCatching(database::release)
-                throw it
+                val connectionURL = buildConnectionURL()
+                val mergedProperties = buildConnectionProperties()
+                val database = getOrCreateDatabase(connectionURL, mergedProperties, encryptionKeyBytes, keyHash)
+                runCatching {
+                    JdbcConnection(database, connectionURL, mergedProperties)
+                }.getOrElse {
+                    runCatching(database::release)
+                    throw it
+                }
+            }.getOrElse { e ->
+                throw SQLExceptionMapper.mapException(
+                    "Failed to create connection: ${e.message}",
+                    -1,
+                    -1,
+                    e
+                )
             }
-        }.getOrElse { e ->
-            throw SQLExceptionMapper.mapException(
-                "Failed to create connection: ${e.message}",
-                -1,
-                -1,
-                e
-            )
+        } finally {
+            encryptionKeyBytes?.zero()
         }
     }
 
     fun setEncryption(keySource: EncryptionKeySource?) {
-        encryptionKeySource = when (keySource) {
-            is EncryptionKeySource.Literal -> EncryptionKeySource.Literal(keySource.key.copyOf())
-            else -> keySource
+        encryptionKeySource = keySource
+    }
+
+    private fun snapshotEncryptionKey(): Pair<ByteArray?, String?> = synchronized(keyLock) {
+        when (val source = keySource) {
+            is EncryptionKeySource.Literal -> KeyEncoding.encode(source.key).let { it to hashKeyBytes(it) }
+            null -> null to null
         }
     }
 
@@ -251,12 +270,14 @@ class SelektDataSource : DataSource {
 
     private fun getOrCreateDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        encryptionKeyBytes: ByteArray?,
+        keyHash: String?
     ): SharedDatabase {
-        val cacheKey = buildCacheKey(connectionURL, properties)
+        val cacheKey = buildCacheKey(connectionURL, properties, keyHash)
         while (true) {
             val cached = databaseCache.computeIfAbsent(cacheKey) {
-                SharedDatabase(createDatabase(connectionURL, properties)) {
+                SharedDatabase(createDatabase(connectionURL, properties, encryptionKeyBytes)) {
                     databaseCache.remove(cacheKey)
                 }
             }
@@ -269,7 +290,8 @@ class SelektDataSource : DataSource {
 
     private fun createDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        encryptionKeyBytes: ByteArray?
     ): SQLDatabase {
         val sqlite = object : SQLite(externalSQLiteSingleton()) {
             override fun throwSQLException(
@@ -280,10 +302,6 @@ class SelektDataSource : DataSource {
             ): Nothing {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
-        }
-        val encryptionKeyBytes = when (val source = encryptionKeySource) {
-            is EncryptionKeySource.Literal -> KeyEncoding.encode(source.key)
-            null -> null
         }
         return encryptionKeyBytes?.let { DatabaseKey.take(sqlite, it) }.use {
             SQLDatabase(
@@ -312,20 +330,14 @@ class SelektDataSource : DataSource {
 
     private fun buildCacheKey(
         connectionURL: ConnectionURL,
-        properties: Properties
+        properties: Properties,
+        keyHash: String?
     ): String = buildString {
         append(connectionURL.databasePath)
         append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
         append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))
         append("&journalMode=").append(properties.getProperty(PROPERTY_JOURNAL_MODE))
         append("&poolSize=").append(properties.getProperty(PROPERTY_POOL_SIZE))
-        hashEncryptionKey(encryptionKeySource)?.let { append("&keyHash=").append(it) }
-    }
-
-    private fun hashEncryptionKey(
-        source: EncryptionKeySource?
-    ): String? = when (source) {
-        is EncryptionKeySource.Literal -> hashKeyChars(source.key)
-        null -> null
+        keyHash?.let { append("&keyHash=").append(it) }
     }
 }
