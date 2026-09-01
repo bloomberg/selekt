@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 1.0.4
+
+* Gradle 9.7.1.
+* Fix key rotation race in SelektDataSource and validate against all-zero keys.
+* Synchronize progress handler registration to prevent races with in-flight queries.
+* Fix vec1_train heap overflow on oversized vectors.
+
 ## Version 1.0.3
 
 * Fix prepareV2 non-ASCII UTF-8 byte length.
