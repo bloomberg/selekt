@@ -73,7 +73,11 @@ internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<
     val isInterrupted: Boolean
 
     fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?)
+
+    fun setProgressHandlerIfIdle(instructionCount: Int, handler: SQLProgressHandler?)
 }
+
+internal data class ProgressHandlerSetting(val instructionCount: Int, val handler: SQLProgressHandler)
 
 private fun DatabaseConfiguration.toPoolConfiguration() = PoolConfiguration(
     evictionDelayMillis = evictionDelayMillis,
@@ -92,6 +96,9 @@ internal class SQLConnectionFactory(
     private val busyLock = ReentrantLock()
     private val connections: MutableSet<CloseableSQLExecutor> = Collections.newSetFromMap(ConcurrentHashMap())
 
+    @Volatile
+    private var progressHandlerSetting: ProgressHandlerSetting? = null
+
     override fun close() {
         key?.release()
     }
@@ -109,17 +116,26 @@ internal class SQLConnectionFactory(
         get() = connections.any(CloseableSQLExecutor::isInterrupted)
 
     fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) {
-        connections.forEach { it.setProgressHandler(instructionCount, handler) }
+        progressHandlerSetting = handler?.let { ProgressHandlerSetting(instructionCount, it) }
+        connections.forEach { it.setProgressHandlerIfIdle(instructionCount, handler) }
     }
 
     override fun makeObject() = busyLock.withLock {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key).also {
+        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key, ::progressHandlerSetting).also {
             connections.add(it)
         }
     }
 
     override fun makePrimaryObject() = busyLock.withLock {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READWRITE or SQL_OPEN_CREATE, random, key).also {
+        SQLConnection(
+            path,
+            sqlite,
+            configuration,
+            SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+            random,
+            key,
+            ::progressHandlerSetting
+        ).also {
             connections.add(it)
         }
     }

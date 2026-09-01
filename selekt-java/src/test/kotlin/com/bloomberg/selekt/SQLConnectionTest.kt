@@ -277,6 +277,63 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun setProgressHandlerIfIdleAppliesWhenIdle(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setProgressHandlerIfIdle(100, handler)
+            verify(this@run, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun setProgressHandlerIfIdleIsNoOpWhileCheckedOut(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.onBorrowed()
+            it.setProgressHandlerIfIdle(100, handler)
+            verify(this@run, never()).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun onReturnedReappliesSettingSkippedWhileCheckedOut(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        var setting: ProgressHandlerSetting? = null
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null) { setting }.use {
+            it.onBorrowed()
+            setting = ProgressHandlerSetting(100, handler)
+            it.setProgressHandlerIfIdle(100, handler)
+            verify(this@run, never()).progressHandler(eq(DB), eq(100), eq(handler))
+            it.onReturned()
+            verify(this@run, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun onReturnedIsNoOpWhenSettingUnchanged(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.onBorrowed()
+            it.onReturned()
+            verify(this@run, never()).progressHandler(eq(DB), any<Int>(), any<SQLProgressHandler>())
+        }
+    }
+
+    @Test
+    fun connectionAppliesCurrentSettingAtConstruction(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ) { ProgressHandlerSetting(100, handler) }.use {
+            verify(this@run, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
     fun checkpointDefault(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.checkpoint()
