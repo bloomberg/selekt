@@ -323,6 +323,10 @@ internal class SQLConnection(
         SQLStatementInformation(isReadOnly, parameterCount, columnNames)
     }
 
+    override fun prepareForRawStatement(sql: String): SQLPreparedStatement = acquirePreparedStatement(sql)
+
+    override fun releaseRawStatement(statement: SQLPreparedStatement) = releasePreparedStatement(statement)
+
     override fun releaseMemory() {
         preparedStatements.evictAll()
         sqlite.databaseReleaseMemory(databaseHandle)
@@ -409,8 +413,8 @@ private fun SQLite.prepare(db: DatabaseHandle, sql: String) = LongArray(1).apply
 }.let(::newStatementHandle)
 
 private fun SQLPreparedStatement.bindArguments(args: Array<out Any?>) {
-    require(parameterCount == args.size) {
-        "Expected $parameterCount bind arguments but ${args.size} were provided."
+    require(args.size >= parameterCount) {
+        "Expected at least $parameterCount bind arguments but ${args.size} were provided."
     }
     args.forEachByPositionUntil(parameterCount) { arg, i ->
         bindArgument(i, arg)

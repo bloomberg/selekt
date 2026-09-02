@@ -127,6 +127,24 @@ internal class SQLSession(
         }
     }
 
+    fun prepareRawStatement(sql: String, primary: Boolean): Pair<CloseableSQLExecutor, SQLPreparedStatement> {
+        val executor = retain(primary, sql)
+        return runCatching {
+            executor to executor.prepareForRawStatement(sql)
+        }.getOrElse {
+            release()
+            throw it
+        }
+    }
+
+    fun releaseRawStatement(executor: CloseableSQLExecutor, statement: SQLPreparedStatement) {
+        try {
+            executor.releaseRawStatement(statement)
+        } finally {
+            release()
+        }
+    }
+
     /**
      * Counterpart of [executeForForwardCursor] that installs a per-connection progress handler driven by
      * [signal] for the cursor's lifetime.

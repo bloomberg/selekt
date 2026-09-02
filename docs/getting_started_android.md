@@ -34,6 +34,42 @@ Selekt Android requires Java 17.
 
 ### Using Room
 
+#### Room 2.7+ / 3.0 (Recommended)
+
+Use `SelektSQLiteDriver` for Room 2.7+ or Room 3.0:
+
+=== "Kotlin"
+    ``` kotlin
+    import com.bloomberg.selekt.android.room.createSelektSQLiteDriver
+
+    private fun deriveKey(): ByteArray? = TODO(
+        "Optional key, must be exactly 32-bytes long.")
+
+    val database = Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
+        .setDriver(createSelektSQLiteDriver(SQLiteJournalMode.WAL, deriveKey()))
+        .build()
+    ```
+
+=== "Java"
+    ``` java
+    import com.bloomberg.selekt.android.room.SelektSQLiteDriverKt;
+
+    private byte[] deriveKey() {
+        // TODO Optional key, must be exactly 32-bytes long.
+    }
+
+    final RoomDatabase database = Room.databaseBuilder(
+        context, MyAppDatabase.class, "app"
+    ).setDriver(SelektSQLiteDriverKt.createSelektSQLiteDriver(
+        SQLiteJournalMode.WAL,
+        deriveKey()))
+        .build();
+    ```
+
+#### Room 2.6 and earlier (Legacy)
+
+For older Room versions, use `SupportSQLiteOpenHelperFactory`:
+
 === "Kotlin"
     ``` kotlin
     private fun deriveKey(): ByteArray? = TODO(
