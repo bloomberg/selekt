@@ -233,6 +233,8 @@ struct Vec1ModelHeader {
 };
 #define VEC1_HEADER_SIZE (6*sizeof_u32)
 
+#define VEC1_MODEL_MAXSIZE (256*1024*1024)
+
 /*
 ** Candidate values for the "flags" field of a Vec1ModelHeader. As follows:
 **
@@ -3903,6 +3905,32 @@ struct Vec1Model {
   float *aModelT;
 };
 
+/*
+** Used by vec1DecodeModel() to validate one section (codebook, centroid
+** or rotation) of a model blob: reject if nSize exceeds VEC1_MODEL_MAXSIZE,
+** or if adding it to *piOffset would run past the end of the blob (nByte).
+** On success, *piOffset is advanced by nSize. zSection names the section
+** for the error message.
+*/
+static int vec1CheckModelSectionSize(
+  sqlite3_int64 *piOffset,
+  sqlite3_int64 nSize,
+  int nByte,
+  const char *zSection,
+  char **pzErr
+){
+  if( nSize>VEC1_MODEL_MAXSIZE ){
+    *pzErr = sqlite3_mprintf("vec1: %s section too large", zSection);
+    return SQLITE_CORRUPT_VTAB;
+  }
+  *piOffset += nSize;
+  if( *piOffset>nByte ){
+    *pzErr = sqlite3_mprintf("vec1: model truncated in %s section", zSection);
+    return SQLITE_CORRUPT_VTAB;
+  }
+  return SQLITE_OK;
+}
+
 static int vec1DecodeModel(
   const u8 *aBlob,
   int nByte,
@@ -3911,6 +3939,7 @@ static int vec1DecodeModel(
 ){
   const u8 *pCsr = aBlob;
   int nCodebook = 0;
+  sqlite3_int64 iOffset = 0;
 
   if( nByte<VEC1_HEADER_SIZE ){
     *pzErr = sqlite3_mprintf("vec1: model too small - %d bytes", nByte);
@@ -3918,6 +3947,7 @@ static int vec1DecodeModel(
   }
   vec1HeaderRead(aBlob, &pMod->hdr);
   pCsr += VEC1_HEADER_SIZE;
+  iOffset = VEC1_HEADER_SIZE;
 
   if( pMod->hdr.iVersion!=VEC1_HEADER_VERSION ){
     if( pMod->hdr.iVersion<VEC1_HEADER_VERSION ){
@@ -3931,24 +3961,51 @@ static int vec1DecodeModel(
     return SQLITE_ERROR;
   }
 
-  nCodebook = pMod->hdr.nCodebook;
-  if( nCodebook>0 ){
-    pMod->aModel = (float*)pCsr;
-    pMod->nCodeElem = (pMod->hdr.nElem + nCodebook-1)/nCodebook;
-    pCsr += (nCodebook*pMod->nCodeElem*VEC1_PQ_CODEBOOK_SZ * sizeof_f32);
+  if( pMod->hdr.nElem==0 || pMod->hdr.nElem>100000 ){
+    *pzErr = sqlite3_mprintf("vec1: invalid nElem value: %u", pMod->hdr.nElem);
+    return SQLITE_CORRUPT_VTAB;
   }
-  if( pMod->hdr.nBucket>0 ){
-    pMod->aCentroid = (float*)pCsr;
-    pCsr += (pMod->hdr.nElem * pMod->hdr.nBucket * sizeof_f32);
+  if( pMod->hdr.nCodebook>100000 ){
+    *pzErr = sqlite3_mprintf("vec1: invalid nCodebook value: %u", pMod->hdr.nCodebook);
+    return SQLITE_CORRUPT_VTAB;
   }
-  if( (pMod->hdr.flags & VEC1_MODEL_ROTATE) ){
-    pMod->aRotation = (float*)pCsr;
-    pCsr += (pMod->hdr.nElem * pMod->hdr.nElem * sizeof_f32);
+  if( pMod->hdr.nBucket>1000000 ){
+    *pzErr = sqlite3_mprintf("vec1: invalid nBucket value: %u", pMod->hdr.nBucket);
+    return SQLITE_CORRUPT_VTAB;
   }
 
-  if( (pCsr - aBlob)!=nByte ){
+  nCodebook = pMod->hdr.nCodebook;
+  if( nCodebook>0 ){
+    sqlite3_int64 nSize;
+    int rc;
+    pMod->aModel = (float*)pCsr;
+    pMod->nCodeElem = (pMod->hdr.nElem + nCodebook-1)/nCodebook;
+    nSize = (sqlite3_int64)nCodebook * pMod->nCodeElem * VEC1_PQ_CODEBOOK_SZ * sizeof_f32;
+    rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "codebook", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
+    pCsr += nSize;
+  }
+  if( pMod->hdr.nBucket>0 ){
+    sqlite3_int64 nSize;
+    int rc;
+    pMod->aCentroid = (float*)pCsr;
+    nSize = (sqlite3_int64)pMod->hdr.nElem * pMod->hdr.nBucket * sizeof_f32;
+    rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "centroid", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
+    pCsr += nSize;
+  }
+  if( (pMod->hdr.flags & VEC1_MODEL_ROTATE) ){
+    sqlite3_int64 nSize;
+    int rc;
+    pMod->aRotation = (float*)pCsr;
+    nSize = (sqlite3_int64)pMod->hdr.nElem * pMod->hdr.nElem * sizeof_f32;
+    rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "rotation", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
+  }
+
+  if( iOffset!=nByte ){
     *pzErr = sqlite3_mprintf(
-        "vec1: model size mismatch: have %d, expected %d", nByte, (pCsr-aBlob)
+        "vec1: model size mismatch: have %d, expected %lld", nByte, iOffset
     );
     return SQLITE_ERROR;
   }
@@ -5112,17 +5169,19 @@ static int vec1NextMethod(sqlite3_vtab_cursor *cur){
 }
 
 static int vec1ModelTransform(
-  Vec1Model *pMod, 
+  Vec1Model *pMod,
   float **paOut
 ){
   if( pMod->aModel ){
     const int nCodebook = pMod->hdr.nCodebook;
     const int nCodeElem = pMod->nCodeElem;
     int M, d, K;
-  
-    float *pOut = (float*)sqlite3_malloc(
-        sizeof_f32 * nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SZ
-    );
+    sqlite3_int64 nAlloc;
+    float *pOut;
+
+    nAlloc = (sqlite3_int64)sizeof_f32 * nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SZ;
+    if( nAlloc>VEC1_MODEL_MAXSIZE ) return SQLITE_CORRUPT_VTAB;
+    pOut = (float*)sqlite3_malloc((int)nAlloc);
     if( pOut==0 ) return SQLITE_NOMEM;
     *paOut = pOut;
   
@@ -6501,8 +6560,11 @@ static int vec1DoKANNBucket(
   assert( 0==pDist->n || 0==(pTab->mod.hdr.flags & VEC1_MODEL_RESIDUAL) );
   if( rc==SQLITE_OK && nCodebook>0 && pDist->n==0 ){
     const float *aEncode = pQuery->aTransform;
-    int nByte = nCodebook * VEC1_PQ_CODEBOOK_SZ * sizeof_f32;
+    sqlite3_int64 nByte64 = (sqlite3_int64)nCodebook * VEC1_PQ_CODEBOOK_SZ * sizeof_f32;
+    int nByte;
 
+    if( nByte64>VEC1_MODEL_MAXSIZE ) return SQLITE_CORRUPT_VTAB;
+    nByte = (int)nByte64;
     rc = vec1BufferSize(pDist, nByte);
     if( rc!=SQLITE_OK ) return rc;
     aDist = (float*)pDist->a;
