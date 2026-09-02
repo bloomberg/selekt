@@ -7,6 +7,7 @@ permissions: read-all
 jobs:
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
+    if: github.event_name != 'pull_request'
     strategy:
       matrix:
         include:
@@ -336,6 +337,7 @@ jobs:
 
   build-native-jar-musl-aarch64:
     name: 'Build Native JARs / linux-aarch64-musl (vec1)'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
