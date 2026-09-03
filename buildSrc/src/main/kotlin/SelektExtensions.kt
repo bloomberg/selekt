@@ -18,7 +18,6 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
-import java.net.URI
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
 
 val <T : Any> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
@@ -36,12 +35,6 @@ fun Project.gitCommitShort(): Provider<String> = providers.exec {
 }.standardOutput.asText.map { it.trim() }
 
 fun Project.isRelease() = hasProperty("release")
-
-fun Project.resolvedOSSSonatypeURI() = URI(if (isRelease()) {
-    "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-} else {
-    "https://oss.sonatype.org/content/repositories/snapshots"
-})
 
 val Project.sqlcipherVersion: String
     get() = "${checkNotNull(findProperty("sqlcipher.version"))}-$version"

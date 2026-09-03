@@ -33,7 +33,7 @@ plugins {
     base
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
-    alias(libs.plugins.nexus)
+    alias(libs.plugins.nmcp)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ideaExt)
     alias(libs.plugins.qodana)
@@ -46,17 +46,13 @@ repositories {
 
 logger.quiet("Group: {}; Version: {}", group, version)
 
-nexusPublishing {
-    repositories {
-        // See: https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/
-        sonatype {
-            nexusUrl = uri("https://ossrh-staging-api.central.sonatype.com/service/local/")
-            snapshotRepositoryUrl = uri("https://central.sonatype.com/repository/maven-snapshots/")
-        }
-    }
-    transitionCheckOptions {
-        maxRetries = 180
-        delayBetween = Duration.ofSeconds(10L)
+nmcpAggregation {
+    centralPortal {
+        username.set(providers.gradleProperty("centralPortalUsername"))
+        password.set(providers.gradleProperty("centralPortalPassword"))
+        publishingType.set("AUTOMATIC")
+        validationTimeout.set(Duration.ofMinutes(30L))
+        publishingTimeout.set(Duration.ofMinutes(30L))
     }
 }
 
@@ -78,9 +74,35 @@ dependencies {
     kover(projects.selektSqlite3Api)
     kover(projects.selektSqlite3Classes)
     kover(projects.selektSqlite3Ext)
+
+    val mainPublicationProjects = listOf(
+        projects.selektAndroid,
+        projects.selektAndroidLint,
+        projects.selektAndroidSqlcipher,
+        projects.selektApi,
+        projects.selektBom,
+        projects.selektCommons,
+        projects.selektJava,
+        projects.selektJdbc,
+        projects.selektJvm,
+        projects.selektSqlite3Api,
+        projects.selektSqlite3Classes,
+        projects.selektSqlite3Ext
+    )
+    val publicationProjects = if (providers.gradleProperty("nativePublication").isPresent) {
+        listOf(projects.selektSqlite3Sqlcipher)
+    } else {
+        mainPublicationProjects
+    }
+    publicationProjects.forEach {
+        add("nmcpAggregation", it)
+    }
 }
 
 subprojects {
+    plugins.withId("maven-publish") {
+        pluginManager.apply("com.gradleup.nmcp")
+    }
     plugins.withType<JavaPlugin>().configureEach {
         tasks.withType<Jar>().configureEach {
             metaInf {
