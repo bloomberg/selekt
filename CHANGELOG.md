@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 1.0.5
+
+* Fix vec1 heap overflow from unvalidated meta list counts.
+* Fix vec1 integer overflow in model decode leading to heap overflow.
+
 ## Version 1.0.4
 
 * Gradle 9.7.1.
