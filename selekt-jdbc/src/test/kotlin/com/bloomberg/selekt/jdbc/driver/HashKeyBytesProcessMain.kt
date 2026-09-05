@@ -18,5 +18,5 @@ package com.bloomberg.selekt.jdbc.driver
 
 fun main() {
     val key = readlnOrNull().orEmpty()
-    println(hashKeyChars(key.toCharArray()))
+    println(hashKeyBytes(key.toByteArray()))
 }

@@ -25,7 +25,6 @@ import java.util.Properties
  * Supported format: jdbc:sqlite:path/to/database.sqlite[?property=value&...]
  *
  * Supported properties:
- * - key: Encryption key (hex string or file path)
  * - poolSize: Maximum connection pool size (integer)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc.)
@@ -43,7 +42,9 @@ internal class ConnectionURL private constructor(
         private const val SELEKT_SUBPROTOCOL = "sqlite:"
         private const val FULL_PREFIX = "$JDBC_PREFIX$SELEKT_SUBPROTOCOL"
         private const val PROPERTY_KEY = "key"
-        private val KEY_PROPERTY_PATTERN = Regex("([?&])key=[^&]*", RegexOption.IGNORE_CASE)
+        private val KEY_PROPERTY_PATTERN = Regex("([?&])\\s*key\\s*=[^&]*", RegexOption.IGNORE_CASE)
+
+        fun containsEncryptionKey(url: String): Boolean = KEY_PROPERTY_PATTERN.containsMatchIn(url)
 
         @JvmStatic
         fun parse(url: String): ConnectionURL {

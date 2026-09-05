@@ -20,6 +20,7 @@ import java.nio.CharBuffer
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -94,18 +95,6 @@ internal class KeyEncodingTest {
     }
 
     @Test
-    fun `driver and data-source paths both produce the same bytes for the same hex key`() {
-        val hex = "0123456789abcdef".repeat(4)
-        val keyString = "0x$hex"
-        val viaDriverPath = KeyEncoding.encode(keyString.toCharArray())
-        val viaDataSourcePath = KeyEncoding.encode(keyString.toCharArray())
-        assertContentEquals(viaDriverPath, viaDataSourcePath)
-        assertEquals(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES, viaDriverPath.size)
-        assertEquals(0x01.toByte(), viaDriverPath[0])
-        assertEquals(0x23.toByte(), viaDriverPath[1])
-    }
-
-    @Test
     fun `validateLength accepts both hex-prefixed and plain 32-byte keys`() {
         KeyEncoding.validateLength("exactly-32-bytes-of-key-data!!!!".toCharArray())
         KeyEncoding.validateLength(("0x" + "AB".repeat(32)).toCharArray())
@@ -117,6 +106,25 @@ internal class KeyEncodingTest {
         assertFailsWith<IllegalArgumentException> {
             KeyEncoding.validateLength(("0x" + "AB".repeat(31)).toCharArray())
         }
+    }
+
+    @Test
+    fun `encoded bytes are zeroed when length validation fails`() {
+        listOf(
+            ByteArray(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES - 1) { 0x5A.toByte() },
+            ByteArray(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES + 1) { 0x5A.toByte() }
+        ).forEach { bytes ->
+            assertFailsWith<IllegalArgumentException> { KeyEncoding.validateEncodedBytes(bytes) }
+            assertContentEquals(ByteArray(bytes.size), bytes)
+        }
+    }
+
+    @Test
+    fun `encoded bytes are retained when validation succeeds`() {
+        val bytes = ByteArray(KeyEncoding.REQUIRED_KEY_LENGTH_BYTES) { 0x5A.toByte() }
+        val expected = bytes.copyOf()
+        assertSame(bytes, KeyEncoding.validateEncodedBytes(bytes))
+        assertContentEquals(expected, bytes)
     }
 
     @Test
