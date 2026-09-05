@@ -27,16 +27,16 @@ import org.junit.jupiter.api.Test
 internal class KeyHashingTest {
     @Test
     fun sameKeyProducesSameHashWithinProcess() {
-        val keyOne = "exactly-32-bytes-of-key-data!!!!".toCharArray()
-        val keyTwo = "exactly-32-bytes-of-key-data!!!!".toCharArray()
-        assertEquals(hashKeyChars(keyOne), hashKeyChars(keyTwo))
+        val keyOne = "exactly-32-bytes-of-key-data!!!!".toByteArray()
+        val keyTwo = "exactly-32-bytes-of-key-data!!!!".toByteArray()
+        assertEquals(hashKeyBytes(keyOne), hashKeyBytes(keyTwo))
     }
 
     @Test
     fun differentKeysProduceDifferentHashes() {
-        val keyOne = "exactly-32-bytes-of-key-data!!!!".toCharArray()
-        val keyTwo = "different-32-bytes-of-key-data!!".toCharArray()
-        assertNotEquals(hashKeyChars(keyOne), hashKeyChars(keyTwo))
+        val keyOne = "exactly-32-bytes-of-key-data!!!!".toByteArray()
+        val keyTwo = "different-32-bytes-of-key-data!!".toByteArray()
+        assertNotEquals(hashKeyBytes(keyOne), hashKeyBytes(keyTwo))
     }
 
     @Test
@@ -45,25 +45,25 @@ internal class KeyHashingTest {
         val bareSha256 = MessageDigest.getInstance("SHA-256")
             .digest(key.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
-        assertNotEquals(bareSha256, hashKeyChars(key.toCharArray()))
+        assertNotEquals(bareSha256, hashKeyBytes(key.toByteArray()))
     }
 
     @Test
     fun sameKeyHashesDifferentlyAcrossProcesses() {
         val key = "exactly-32-bytes-of-key-data!!!!"
-        val hashInThisProcess = hashKeyChars(key.toCharArray())
-        val hashInOtherProcess = hashKeyCharsInSubprocess(key)
+        val hashInThisProcess = hashKeyBytes(key.toByteArray())
+        val hashInOtherProcess = hashKeyBytesInSubprocess(key)
         assertNotEquals(hashInThisProcess, hashInOtherProcess)
     }
 
-    private fun hashKeyCharsInSubprocess(key: String): String {
+    private fun hashKeyBytesInSubprocess(key: String): String {
         val javaBin = "${System.getProperty("java.home")}${File.separator}bin${File.separator}java"
         val classpath = System.getProperty("java.class.path")
         val process = ProcessBuilder(
             javaBin,
             "-cp",
             classpath,
-            "com.bloomberg.selekt.jdbc.driver.HashKeyCharsProcessMainKt"
+            "com.bloomberg.selekt.jdbc.driver.HashKeyBytesProcessMainKt"
         ).redirectErrorStream(true).start()
         process.outputStream.use {
             it.write("$key\n".toByteArray(Charsets.UTF_8))

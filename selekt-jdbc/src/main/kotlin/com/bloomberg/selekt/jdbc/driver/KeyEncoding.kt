@@ -19,7 +19,9 @@ package com.bloomberg.selekt.jdbc.driver
 import com.bloomberg.selekt.commons.zero
 import java.nio.CharBuffer
 
-internal fun encodeUtf8KeyBytes(keyChars: CharArray): ByteArray = Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).run {
+internal fun encodeUtf8KeyBytes(
+    keyChars: CharArray
+): ByteArray = Charsets.UTF_8.encode(CharBuffer.wrap(keyChars)).run {
     try {
         ByteArray(remaining()).also(::get)
     } finally {
@@ -28,6 +30,13 @@ internal fun encodeUtf8KeyBytes(keyChars: CharArray): ByteArray = Charsets.UTF_8
         }
     }
 }
+
+private inline fun ByteArray.zeroOnFailure(
+    crossinline block: ByteArray.() -> Unit
+): ByteArray = runCatching {
+    block()
+    this
+}.onFailure { zero() }.getOrThrow()
 
 /**
  * @since 0.34.1
@@ -40,19 +49,19 @@ internal object KeyEncoding {
     private const val HEX_RADIX = 16
     private const val BITS_PER_HEX_DIGIT = 4
 
-    fun encode(keyChars: CharArray): ByteArray {
-        val bytes = if (keyChars.isHexPrefixed()) {
-            parseHexKey(keyChars)
-        } else {
-            encodeUtf8KeyBytes(keyChars)
+    fun encode(keyChars: CharArray): ByteArray = if (keyChars.isHexPrefixed()) {
+        parseHexKey(keyChars)
+    } else {
+        encodeUtf8KeyBytes(keyChars)
+    }.let(::validateEncodedBytes)
+
+    internal fun validateEncodedBytes(bytes: ByteArray): ByteArray = bytes.zeroOnFailure {
+        require(size == REQUIRED_KEY_LENGTH_BYTES) {
+            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was $size bytes"
         }
-        require(bytes.size == REQUIRED_KEY_LENGTH_BYTES) {
-            "Encryption key must be exactly $REQUIRED_KEY_LENGTH_BYTES bytes, was ${bytes.size} bytes"
-        }
-        require(bytes.any { it != 0.toByte() }) {
+        require(any { it != 0.toByte() }) {
             "Encryption key must not be all-zero bytes"
         }
-        return bytes
     }
 
     fun validateLength(keyChars: CharArray) {
@@ -69,17 +78,18 @@ internal object KeyEncoding {
             "Hex key must have an even number of hex digits after the '0x' prefix"
         }
         val byteArray = ByteArray(hexLength / HEX_CHUNK_SIZE)
-        var i = HEX_PREFIX_LENGTH
-        var j = 0
-        while (i < keyChars.size - 1) {
-            val high = Character.digit(keyChars[i], HEX_RADIX)
-            val low = Character.digit(keyChars[i + 1], HEX_RADIX)
-            require(high != -1 && low != -1) {
-                "Invalid hex character in encryption key"
+        return byteArray.zeroOnFailure {
+            var i = HEX_PREFIX_LENGTH
+            var j = 0
+            while (i < keyChars.size - 1) {
+                val high = Character.digit(keyChars[i], HEX_RADIX)
+                val low = Character.digit(keyChars[i + 1], HEX_RADIX)
+                require(high != -1 && low != -1) {
+                    "Invalid hex character in encryption key"
+                }
+                byteArray[j++] = (high shl BITS_PER_HEX_DIGIT or low).toByte()
+                i += HEX_CHUNK_SIZE
             }
-            byteArray[j++] = (high shl BITS_PER_HEX_DIGIT or low).toByte()
-            i += HEX_CHUNK_SIZE
         }
-        return byteArray
     }
 }

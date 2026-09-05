@@ -149,6 +149,8 @@ Properties can also be inlined in the URL query string:
 
 Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, databases are unencrypted by default. To enable encryption, provide a key that is exactly **32 bytes**.
 
+`SelektDriver` does not accept encryption keys. Encrypted connections must use `SelektDataSource.setEncryption` with an `EncryptionKeySource.Literal` backed by a caller-owned `CharArray`. `SelektDataSource` stores and later zeroes an internal copy; zero the caller-owned array after `setEncryption` returns.
+
 ### With a DataSource
 
 === "Kotlin"
@@ -158,7 +160,12 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
 
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/encrypted.db"
-        setEncryption(EncryptionKeySource.Literal(deriveKey()))
+    }
+    val key = deriveKey()
+    try {
+        dataSource.setEncryption(EncryptionKeySource.Literal(key))
+    } finally {
+        key.fill('\u0000')
     }
     ```
 
@@ -170,26 +177,41 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
 
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/encrypted.db");
-    dataSource.setEncryption(
-        new EncryptionKeySource.Literal(deriveKey()));
+    final char[] key = deriveKey();
+    try {
+        dataSource.setEncryption(new EncryptionKeySource.Literal(key));
+    } finally {
+        java.util.Arrays.fill(key, '\0');
+    }
     ```
 
 ### With a hex key
 
 === "Kotlin"
     ``` kotlin
-    val key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
-    dataSource.setEncryption(
-        EncryptionKeySource.Literal(key.toCharArray())
-    )
+    private fun deriveHexKey(): CharArray = TODO(
+        "Return '0x' followed by 64 hexadecimal digits.")
+
+    val key = deriveHexKey()
+    try {
+        dataSource.setEncryption(EncryptionKeySource.Literal(key))
+    } finally {
+        key.fill('\u0000')
+    }
     ```
 
 === "Java"
     ``` java
-    final String key =
-        "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
-    dataSource.setEncryption(
-        new EncryptionKeySource.Literal(key.toCharArray()));
+    private char[] deriveHexKey() {
+        // TODO Return "0x" followed by 64 hexadecimal digits.
+    }
+
+    final char[] key = deriveHexKey();
+    try {
+        dataSource.setEncryption(new EncryptionKeySource.Literal(key));
+    } finally {
+        java.util.Arrays.fill(key, '\0');
+    }
     ```
 
 ## Interaction
@@ -366,7 +388,6 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, database
 | `busyTimeout`   | int     | `2500`  | SQLite busy timeout in milliseconds                                           |
 | `poolSize`      | int     | `4`     | Maximum connection pool size                                                  |
 | `foreignKeys`   | boolean | `true`  | Enable foreign key constraints                                                |
-| `key`           | String  | `null`  | Encryption key (hex string, via `DriverManager` only)                         |
 
 ## Closing the DataSource
 

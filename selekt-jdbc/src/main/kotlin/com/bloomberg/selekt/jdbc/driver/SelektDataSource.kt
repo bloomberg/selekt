@@ -183,6 +183,10 @@ class SelektDataSource : DataSource {
         }
     }
 
+    /**
+     * Stores an internal copy of a literal key. The caller retains ownership of the supplied [CharArray]
+     * and should zero it after this method returns.
+     */
     fun setEncryption(keySource: EncryptionKeySource?) {
         encryptionKeySource = keySource
     }

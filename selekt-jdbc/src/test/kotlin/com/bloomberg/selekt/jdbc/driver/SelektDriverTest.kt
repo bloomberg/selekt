@@ -22,11 +22,11 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.DriverPropertyInfo
 import java.sql.SQLException
+import java.sql.SQLFeatureNotSupportedException
 import java.util.Properties
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
@@ -109,7 +109,7 @@ internal class SelektDriverTest {
             assertNotNull(it)
             assertTrue(it.isNotEmpty())
         }.map(DriverPropertyInfo::name).run {
-            assertTrue(contains("key"))
+            assertFalse(contains("key"))
             assertTrue(contains("poolSize"))
             assertTrue(contains("busyTimeout"))
             assertTrue(contains("journalMode"))
@@ -144,11 +144,6 @@ internal class SelektDriverTest {
 
     @Test
     fun propertyInfoDetails(): Unit = driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", Properties()).run {
-        find { it.name == "key" }.let {
-            assertNotNull(it)
-            assertEquals("Encryption key (hex string or file path)", it.description)
-            assertFalse(it.required)
-        }
         find { it.name == "poolSize" }.let {
             assertNotNull(it)
             assertEquals("Maximum connection pool size", it.description)
@@ -178,7 +173,6 @@ internal class SelektDriverTest {
     fun connectWithProperties() {
         val url = "jdbc:sqlite:/tmp/test.db"
         val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
             setProperty("poolSize", "5")
             setProperty("busyTimeout", "2000")
             setProperty("journalMode", "DELETE")
@@ -191,8 +185,7 @@ internal class SelektDriverTest {
 
     @Test
     fun connectWithURLProperties() {
-        val url = "jdbc:sqlite:/tmp/test.db" +
-            "?key=0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF&poolSize=5"
+        val url = "jdbc:sqlite:/tmp/test.db?poolSize=5"
         val connection = driver.connect(url, Properties())
         assertNotNull(connection)
         connections.add(connection)
@@ -203,13 +196,8 @@ internal class SelektDriverTest {
         "jdbc:sqlite:/tmp/test.db",
         Properties().apply {
             setProperty("poolSize", "20")
-            setProperty("key", "test-key")
         }
     ).run {
-        find { it.name == "key" }.let {
-            assertNotNull(it)
-            assertEquals("test-key", it.value)
-        }
         find { it.name == "poolSize" }.let {
             assertNotNull(it)
             assertEquals("20", it.value)
@@ -274,33 +262,51 @@ internal class SelektDriverTest {
     }
 
     @Test
-    fun connectWithHexKey() {
-        val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
+    fun connectRejectsEncryptionKeyInProperties() {
+        listOf("key", "Key", "KEY").forEach { name ->
+            val properties = Properties().apply { setProperty(name, "secret") }
+            val exception = assertFailsWith<SQLFeatureNotSupportedException> {
+                driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+            }
+            assertEquals("0A000", exception.sqlState)
+            assertTrue(exception.message.orEmpty().contains("SelektDataSource.setEncryption"))
         }
-        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        assertNotNull(connection)
-        connections.add(connection)
     }
 
     @Test
-    fun connectWithHexKeyUppercasePrefix() {
-        val properties = Properties().apply {
-            setProperty("key", "0X0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
+    fun connectRejectsEncryptionKeyInUrl() {
+        listOf("key", "Key", "KEY", " key ").forEach { name ->
+            val exception = assertFailsWith<SQLFeatureNotSupportedException> {
+                driver.connect("jdbc:sqlite:/tmp/test.db?$name=secret", Properties())
+            }
+            assertEquals("0A000", exception.sqlState)
         }
-        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        assertNotNull(connection)
-        connections.add(connection)
     }
 
     @Test
-    fun connectWithKey() {
+    fun connectRejectsNonStringEncryptionKeyInProperties() {
         val properties = Properties().apply {
-            setProperty("key", "exactly-32-bytes-of-key-data!!!!")
+            this["key"] = "secret".toCharArray()
         }
-        val connection = driver.connect("jdbc:sqlite:/tmp/test.db", properties)
-        assertNotNull(connection)
-        connections.add(connection)
+        assertFailsWith<SQLFeatureNotSupportedException> {
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        }
+    }
+
+    @Test
+    fun connectRejectsEncryptionKeyInDefaultProperties() {
+        val defaults = Properties().apply { setProperty("key", "secret") }
+        assertFailsWith<SQLFeatureNotSupportedException> {
+            driver.connect("jdbc:sqlite:/tmp/test.db", Properties(defaults))
+        }
+    }
+
+    @Test
+    fun getPropertyInfoRejectsEncryptionKey() {
+        val properties = Properties().apply { setProperty("key", "secret") }
+        assertFailsWith<SQLFeatureNotSupportedException> {
+            driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", properties)
+        }
     }
 
     @Test
@@ -397,50 +403,15 @@ internal class SelektDriverTest {
     }
 
     @Test
-    fun connectWithKeyDoesNotRetainKeyInConnectionProperties() {
-        val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
-        }
-        val connection = driver.connect("jdbc:sqlite:/tmp/test_key_scrub.db", properties)!!.also(connections::add)
-        assertNotNull(connection)
-        val metadata = connection.metaData
-        assertNotNull(metadata)
-        assertFalse(metadata.url.contains("0123456789ABCDEF"))
-    }
-
-    @Test
-    fun connectErrorMessageRedactsKey() {
+    fun rejectedEncryptionKeyIsNotIncludedInErrorMessage() {
         val secret = "SUPERSECRETKEY123"
         val properties = Properties().apply {
             setProperty("key", secret)
-            setProperty("journalMode", "INVALID_MODE")
         }
-        val exception = assertFailsWith<SQLException> {
+        val exception = assertFailsWith<SQLFeatureNotSupportedException> {
             driver.connect("jdbc:sqlite:/tmp/test_redact_error.db?key=$secret", properties)
         }
-        assertNotEquals(exception.message?.contains(secret), true, "Error message should not contain the encryption key")
-    }
-
-    @Test
-    fun connectWithMisCasedKeyInUrlDoesNotLeakInMetadataUrl() {
-        val secret = "0123456789ABCDEF"
-        val connection = driver.connect(
-            "jdbc:sqlite:/tmp/test_miscased_key_leak.db?KEY=0x$secret$secret$secret$secret",
-            Properties()
-        )!!.also(connections::add)
-        val metadata = connection.metaData
-        assertNotNull(metadata)
-        assertFalse(metadata.url.contains(secret))
-    }
-
-    @Test
-    fun connectWithMisCasedShortKeyFails() {
-        val properties = Properties().apply {
-            setProperty("Key", "too-short")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_miscased_short_key.db", properties)
-        }
+        assertFalse(exception.message.orEmpty().contains(secret), "Error message should not contain the encryption key")
     }
 
     @Test
@@ -459,79 +430,6 @@ internal class SelektDriverTest {
                 assertTrue(indexNames.any { it == "idx_test_name" })
             }
         }
-    }
-
-
-    @Test
-    fun connectWithShortKeyFails() {
-        val properties = Properties().apply {
-            setProperty("key", "too-short")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_short_key.db", properties)
-        }
-    }
-
-    @Test
-    fun connectWithLongKeyFails() {
-        val properties = Properties().apply {
-            setProperty("key", "this-key-is-way-too-long-for-aes-256-encryption!!")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_long_key.db", properties)
-        }
-    }
-
-    @Test
-    fun connectWithOddLengthHexKeyFails() {
-        val properties = Properties().apply {
-            setProperty("key", "0xABC")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_odd_hex.db", properties)
-        }
-    }
-
-    @Test
-    fun connectWithInvalidHexCharFails() {
-        val properties = Properties().apply {
-            setProperty("key", "0xGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_invalid_hex.db", properties)
-        }
-    }
-
-    @Test
-    fun connectWithHexKeyWrongLengthFails() {
-        val properties = Properties().apply {
-            setProperty("key", "0x0123456789ABCDEF0123456789ABCDEF")
-        }
-        assertFailsWith<SQLException> {
-            driver.connect("jdbc:sqlite:/tmp/test_hex_wrong_len.db", properties)
-        }
-    }
-
-    @Test
-    fun differentKeysProduceDifferentCacheEntries() {
-        val dbFile = File.createTempFile("selekt_key_cache_", ".db").also(tempFiles::add)
-        val url = "jdbc:sqlite:${dbFile.absolutePath}"
-        val keyOne = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
-        val keyTwo = "0xFEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210"
-        val propertiesOne = Properties().apply { setProperty("key", keyOne) }
-        val propertiesTwo = Properties().apply { setProperty("key", keyTwo) }
-        assertNotNull(driver.connect(url, propertiesOne)).also(connections::add)
-        assertNotNull(driver.connect(url, propertiesTwo)).also(connections::add)
-    }
-
-    @Test
-    fun sameKeyReusesCacheEntry() {
-        val url = "jdbc:sqlite:/tmp/test_same_key_cache.db"
-        val key = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
-        val propertiesOne = Properties().apply { setProperty("key", key) }
-        val propertiesTwo = Properties().apply { setProperty("key", key) }
-        assertNotNull(driver.connect(url, propertiesOne)).also(connections::add)
-        assertNotNull(driver.connect(url, propertiesTwo)).also(connections::add)
     }
 
     @Test

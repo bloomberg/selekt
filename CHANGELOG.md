@@ -5,6 +5,7 @@ Change Log
 
 * Fix vec1 heap overflow from unvalidated meta list counts.
 * Fix vec1 integer overflow in model decode leading to heap overflow.
+* Reject encryption keys in `SelektDriver`; encrypted JDBC connections must use `SelektDataSource`.
 
 ## Version 1.0.4
 

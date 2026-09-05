@@ -16,7 +16,6 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
-import com.bloomberg.selekt.commons.zero
 import java.security.SecureRandom
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -32,11 +31,3 @@ internal fun hashKeyBytes(keyBytes: ByteArray): String = Mac.getInstance(HMAC_AL
 }.doFinal(keyBytes)
     .copyOf(CACHE_KEY_HASH_LENGTH_BYTES)
     .joinToString("") { "%02x".format(it) }
-
-internal fun hashKeyChars(keyChars: CharArray): String = encodeUtf8KeyBytes(keyChars).let {
-    try {
-        hashKeyBytes(it)
-    } finally {
-        it.zero()
-    }
-}

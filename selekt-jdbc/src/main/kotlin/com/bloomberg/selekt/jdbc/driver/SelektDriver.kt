@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.DatabaseConfiguration
-import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SelektVersion
@@ -32,6 +31,7 @@ import java.sql.Driver
 import java.sql.DriverManager
 import java.sql.DriverPropertyInfo
 import java.sql.SQLException
+import java.sql.SQLFeatureNotSupportedException
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Logger as JulLogger
@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory
  * Supports the URL format: jdbc:sqlite:path/to/database.sqlite[?properties]
  *
  * Supported connection properties:
- * - key: Encryption key (hex string)
  * - poolSize: Maximum connection pool size (integer, default: 10)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
@@ -78,6 +77,9 @@ class SelektDriver : Driver {
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
         private const val DEFAULT_POOL_SIZE = 10
+        private const val ENCRYPTION_KEY_UNSUPPORTED_MESSAGE =
+            "Encryption keys are not supported by SelektDriver because JDBC URLs and Properties use " +
+                "immutable Strings that cannot be scrubbed; use SelektDataSource.setEncryption with a CharArray"
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
@@ -108,15 +110,11 @@ class SelektDriver : Driver {
     override fun connect(url: String, info: Properties): Connection? = if (!acceptsURL(url)) {
         null
     } else {
+        rejectEncryptionKey(url, info)
         runCatching {
             val connectionURL = ConnectionURL.parse(url)
             val mergedProperties = mergeProperties(connectionURL.properties, info)
-            val keyChars = removeKey(connectionURL.properties, mergedProperties, info)
-            val sharedDatabase = try {
-                getOrCreateDatabase(connectionURL, mergedProperties, keyChars)
-            } finally {
-                keyChars?.fill('\u0000')
-            }
+            val sharedDatabase = getOrCreateDatabase(connectionURL, mergedProperties)
             runCatching {
                 JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
             }.getOrElse {
@@ -124,6 +122,9 @@ class SelektDriver : Driver {
                 throw it
             }
         }.getOrElse { e ->
+            if (e is SQLFeatureNotSupportedException) {
+                throw e
+            }
             val safeUrl = runCatching { ConnectionURL.parse(url).toString() }.getOrDefault("<unparseable URL>")
             throw SQLExceptionMapper.mapException(
                 "Failed to create connection to $safeUrl: ${e.message}",
@@ -139,11 +140,8 @@ class SelektDriver : Driver {
     override fun getPropertyInfo(url: String, info: Properties): Array<DriverPropertyInfo> = if (!acceptsURL(url)) {
         throw SQLException("Invalid URL format: $url")
     } else {
+        rejectEncryptionKey(url, info)
         arrayOf(
-            DriverPropertyInfo(PROPERTY_KEY, info.getProperty(PROPERTY_KEY)).apply {
-                description = "Encryption key (hex string or file path)"
-                required = false
-            },
             DriverPropertyInfo(PROPERTY_POOL_SIZE, info.getProperty(PROPERTY_POOL_SIZE, "10")).apply {
                 description = "Maximum connection pool size"
                 required = false
@@ -175,13 +173,12 @@ class SelektDriver : Driver {
 
     private fun getOrCreateDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties,
-        keyChars: CharArray?
+        properties: Properties
     ): SharedDatabase {
-        val cacheKey = buildCacheKey(connectionURL, properties, keyChars)
+        val cacheKey = buildCacheKey(connectionURL, properties)
         return databaseCacheLock.withLock {
             databaseCache.getOrPut(cacheKey) {
-                SharedDatabase(createDatabase(connectionURL, properties, keyChars)) {
+                SharedDatabase(createDatabase(connectionURL, properties)) {
                     databaseCacheLock.withLock {
                         databaseCache.remove(cacheKey)
                     }
@@ -192,11 +189,9 @@ class SelektDriver : Driver {
 
     private fun createDatabase(
         connectionURL: ConnectionURL,
-        properties: Properties,
-        keyChars: CharArray?
+        properties: Properties
     ): SQLDatabase {
         val configuration = buildDatabaseConfiguration(properties)
-        val encryptionKey = encodeKeyToBytes(keyChars)
         val sqlite = object : com.bloomberg.selekt.SQLite(
             externalSQLiteSingleton()
         ) {
@@ -209,15 +204,13 @@ class SelektDriver : Driver {
                 throw SQLExceptionMapper.mapException(message, code, extendedCode)
             }
         }
-        return encryptionKey?.let { DatabaseKey.take(sqlite, it) }.use {
-            SQLDatabase(
-                path = connectionURL.databasePath,
-                sqlite = sqlite,
-                configuration = configuration,
-                key = it,
-                random = com.bloomberg.selekt.CommonThreadLocalRandom
-            )
-        }
+        return SQLDatabase(
+            path = connectionURL.databasePath,
+            sqlite = sqlite,
+            configuration = configuration,
+            key = null,
+            random = com.bloomberg.selekt.CommonThreadLocalRandom
+        )
     }
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration = properties.run {
@@ -235,29 +228,16 @@ class SelektDriver : Driver {
         )
     }
 
-    private fun removeKey(
-        urlProperties: Properties,
-        mergedProperties: Properties,
-        additionalProperties: Properties
-    ): CharArray? {
-        val value = findKeyProperty(mergedProperties) ?: return null
-        removeKeyProperty(urlProperties)
-        removeKeyProperty(mergedProperties)
-        removeKeyProperty(additionalProperties)
-        return value.toCharArray()
+    private fun rejectEncryptionKey(url: String, properties: Properties) {
+        if (ConnectionURL.containsEncryptionKey(url) || containsEncryptionKey(properties)) {
+            logger.warn(ENCRYPTION_KEY_UNSUPPORTED_MESSAGE)
+            throw SQLFeatureNotSupportedException(ENCRYPTION_KEY_UNSUPPORTED_MESSAGE, "0A000")
+        }
     }
 
-    private fun findKeyProperty(properties: Properties): String? = properties.stringPropertyNames()
-        .firstOrNull { it.equals(PROPERTY_KEY, ignoreCase = true) }
-        ?.let(properties::getProperty)
-
-    private fun removeKeyProperty(properties: Properties) {
-        properties.stringPropertyNames()
-            .filter { it.equals(PROPERTY_KEY, ignoreCase = true) }
-            .forEach(properties::remove)
-    }
-
-    private fun encodeKeyToBytes(keyChars: CharArray?): ByteArray? = keyChars?.let(KeyEncoding::encode)
+    private fun containsEncryptionKey(properties: Properties): Boolean = properties.keys.any {
+        it is String && it.equals(PROPERTY_KEY, ignoreCase = true)
+    } || properties.stringPropertyNames().any { it.equals(PROPERTY_KEY, ignoreCase = true) }
 
     private fun mergeProperties(
         urlProperties: Properties,
@@ -269,8 +249,7 @@ class SelektDriver : Driver {
 
     private fun buildCacheKey(
         connectionURL: ConnectionURL,
-        properties: Properties,
-        keyChars: CharArray?
+        properties: Properties
     ): String {
         val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
@@ -284,7 +263,6 @@ class SelektDriver : Driver {
             append(connectionURL.databasePath)
             append('?')
             append(propertiesString)
-            keyChars?.let { append("&keyHash=").append(hashKeyChars(it)) }
         }
     }
 }
