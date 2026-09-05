@@ -147,7 +147,7 @@ Properties can also be inlined in the URL query string:
 
 ## Encryption
 
-Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, databases are unencrypted by default. To enable encryption, provide a key that is exactly **32 bytes**.
+Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, databases are unencrypted by default. To enable encryption, provide a key that is exactly **32 bytes**. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function. A `0x`-prefixed key must contain exactly 64 hexadecimal digits.
 
 `SelektDriver` does not accept encryption keys. Encrypted connections must use `SelektDataSource.setEncryption` with an `EncryptionKeySource.Literal` backed by a caller-owned `CharArray`. `SelektDataSource` stores and later zeroes an internal copy; zero the caller-owned array after `setEncryption` returns.
 

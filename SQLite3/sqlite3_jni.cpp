@@ -167,6 +167,10 @@ static jint rawKey(
         throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
         return SQLITE_ERROR;
     }
+    if (env->GetArrayLength(jkey) != keyLength) {
+        throwIllegalArgumentException(env, "Key array size must match the declared length.");
+        return SQLITE_ERROR;
+    }
     try {
         AutoJByteArray key(env, jkey, keyLength);
         return rawKeyImpl(reinterpret_cast<sqlite3*>(jdb), key.data(), keyLength);
