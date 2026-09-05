@@ -1,11 +1,15 @@
 Change Log
 ==========
 
+## Version 1.1.0
+
+* Zero JDBC key bytes on encoding failure, support encryption via JDBC data source only.
+* Prevent retrying database open with destroyed encryption key.
+
 ## Version 1.0.5
 
 * Fix vec1 heap overflow from unvalidated meta list counts.
 * Fix vec1 integer overflow in model decode leading to heap overflow.
-* Reject encryption keys in `SelektDriver`; encrypted JDBC connections must use `SelektDataSource`.
 
 ## Version 1.0.4
 
