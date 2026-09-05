@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import java.nio.ByteBuffer
 import java.util.stream.Stream
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -356,16 +357,6 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun connectionRejectsUnrecognisedColumnType(): Unit = sqlite.run {
-        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertFailsWith<IllegalStateException> {
-                it.executeForCursorWindow("INSERT INTO Foo VALUES (42)", emptyArray<Int>(), mock())
-            }
-        }
-    }
-
-    @Test
     fun executeForLastInsertedRowIdChecksDone(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
@@ -611,49 +602,6 @@ internal class SQLConnectionTest {
     }
 
     @Test
-    fun connectionChecksWindowAllocation(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 42L
-            0
-        }
-        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 43L
-            0
-        }
-        whenever(step(any<Long>())) doReturn SQL_ROW
-        whenever(columnCount(any<Long>())) doReturn 1
-        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertFailsWith<IllegalStateException>("Failed to allocate a window row.") {
-                it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), mock())
-            }
-        }
-    }
-
-    @Test
-    fun connectionChecksSqlColumnType(): Unit = sqlite.run {
-        whenever(openV2(any(), any(), any())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 42L
-            0
-        }
-        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 43L
-            0
-        }
-        whenever(step(any<Long>())) doReturn SQL_ROW
-        whenever(columnCount(any<Long>())) doReturn 1
-        whenever(columnType(any<Long>(), any<Int>())) doReturn -1
-        val cursorWindow = mock<ICursorWindow> {
-            whenever(it.allocateRow()) doReturn true
-        }
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
-            assertFailsWith<IllegalStateException>("Unrecognised column type for column 0.") {
-                it.executeForCursorWindow("SELECT * FROM Foo", emptyArray<Int>(), cursorWindow)
-            }
-        }
-    }
-
-    @Test
     fun releaseMemory(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.releaseMemory()
@@ -876,6 +824,108 @@ internal class SQLConnectionTest {
         }
     }
 
+    @Test
+    fun executeForCursorWindowUsesNativeWindowWhenEnabled(): Unit = sqlite.run {
+        whenever(capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = true)
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(fillCursorWindow(any<StatementHandle>(), any(), any(), any())) doAnswer {
+            ByteBuffer.allocate(2 * Int.SIZE_BYTES).apply { putInt(0, 0); putInt(Int.SIZE_BYTES, 0) }
+        }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray()).window.use {
+                assertTrue(it is NativeCursorWindow)
+            }
+        }
+    }
+
+    @Test
+    fun executeForCursorWindowUsesSimpleWindowWhenDisabled(): Unit = sqlite.run {
+        whenever(capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = false)
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
+        whenever(columnType(any<Long>(), any<Int>())) doReturn ColumnType.INTEGER.sqlDataType
+        whenever(columnInt64(any<Long>(), any<Int>())) doReturn 42L
+        var remainingRows = 1
+        whenever(step(any<Long>())) doAnswer { if (remainingRows-- > 0) SQL_ROW else SQL_DONE }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray())
+            assertEquals(1, page.count)
+            assertTrue(page.window is SimpleCursorWindow)
+            assertEquals(1, page.window.numberOfRows())
+            assertEquals(42L, page.window.getLong(0, 0))
+            page.window.close()
+        }
+        verify(this@run, never()).fillCursorWindow(any<StatementHandle>(), any(), any(), any())
+    }
+
+    private fun SQLite.stubRowsForCursorWindow(rowCount: Int) {
+        whenever(capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = false)
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            0
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            0
+        }
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "id"
+        whenever(columnType(any<Long>(), any<Int>())) doReturn ColumnType.INTEGER.sqlDataType
+        var row = -1
+        whenever(step(any<Long>())) doAnswer { if (++row < rowCount) SQL_ROW else SQL_DONE }
+        whenever(columnInt64(any<Long>(), any<Int>())) doAnswer { row.toLong() }
+    }
+
+    @Test
+    fun executeForCursorWindowCountsEveryRowWhileStoringOnlyTheWindow(): Unit = sqlite.run {
+        stubRowsForCursorWindow(rowCount = 10)
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 3, 4, true)
+            assertEquals(10, page.count)
+            assertEquals(3, page.startPosition)
+            assertEquals(4, page.window.numberOfRows())
+            assertEquals(3L, page.window.getLong(0, 0))
+            assertEquals(6L, page.window.getLong(3, 0))
+            page.window.close()
+        }
+    }
+
+    @Test
+    fun executeForCursorWindowStopsEarlyWhenNotCountingAllRows(): Unit = sqlite.run {
+        stubRowsForCursorWindow(rowCount = 10)
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 2, 3, false)
+            assertEquals(3, page.window.numberOfRows())
+            assertEquals(2L, page.window.getLong(0, 0))
+            assertEquals(4L, page.window.getLong(2, 0))
+            page.window.close()
+        }
+        verify(this@run, times(5)).step(any<Long>())
+    }
+
+    @Test
+    fun executeForCursorWindowStepsEveryRowWhenCountingAllRows(): Unit = sqlite.run {
+        stubRowsForCursorWindow(rowCount = 10)
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
+            conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 0, 3, true).window.close()
+        }
+        verify(this@run, times(11)).step(any<Long>())
+    }
     private companion object {
         const val DB = 1L
     }

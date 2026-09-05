@@ -22,6 +22,23 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
+ * A window of rows returned by a fill operation, carrying position and row-count metadata.
+ *
+ * On the first fill (`countAllRows=true`), `count` is the total number of rows in the entire
+ * result set, determined by stepping through all rows during the initial fill.
+ *
+ * On a refill (`countAllRows=false`), `count` is stale or a sentinel ([NOT_COUNTED] = -1) and
+ * should not be read. Only `window` and `startPosition` are meaningful on a refill.
+ * [WindowedCursor] ignores refill pages' `count` and retains the original count from the first
+ * page.
+ */
+internal data class CursorWindowPage(
+    val window: ICursorWindow,
+    val startPosition: Int,
+    val count: Int
+)
+
+/**
  * @since 0.12.1
  */
 @NotThreadSafe

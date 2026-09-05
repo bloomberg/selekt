@@ -19,11 +19,14 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -35,6 +38,7 @@ internal class ExternalSQLiteTest {
         const val SQL_OPEN_READWRITE = SQL_OPEN_READONLY shl 1
         const val SQL_OPEN_CREATE = SQL_OPEN_READWRITE shl 1
         const val SQL_OPEN_READWRITE_OR_CREATE = SQL_OPEN_READWRITE or SQL_OPEN_CREATE
+        const val SQL_CONSTRAINT = 19
         const val SQL_ROW = 100
         const val SQL_BLOB = 4
         const val SQL_NULL = 5
@@ -110,6 +114,62 @@ internal class ExternalSQLiteTest {
             try {
                 assertEquals(SQL_ROW, sqlite.step(statement))
                 assertEquals(42, sqlite.columnInt(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `native cursor window maps an empty blob to null on every backend`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT x''"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
+                val buffer = assertNotNull(nativeSQLite.fillCursorWindow(statement, 0, 1, true))
+                    .order(ByteOrder.nativeOrder())
+                try {
+                    assertEquals(1, buffer.getInt(0))
+                    assertEquals(1, buffer.getInt(Int.SIZE_BYTES))
+                    val rowOffset = buffer.getInt(buffer.capacity() - Int.SIZE_BYTES)
+                    assertEquals(SQL_NULL, buffer[rowOffset].toInt())
+                } finally {
+                    nativeSQLite.freeCursorWindow(buffer)
+                }
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `native cursor window preserves SQLite step errors on every backend`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.exec(db, "CREATE TABLE Foo (bar INTEGER UNIQUE)"))
+            assertEquals(SQL_OK, sqlite.exec(db, "INSERT INTO Foo VALUES (1)"))
+            val statementHolder = LongArray(1)
+            val sql = "INSERT INTO Foo VALUES (1) RETURNING bar"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
+                assertNull(nativeSQLite.fillCursorWindow(statement, 0, 1, true))
+                assertEquals(SQL_CONSTRAINT, sqlite.errorCode(db))
+                assertEquals(SQL_CONSTRAINT, sqlite.extendedErrorCode(db) and 0xFF)
+                assertTrue(sqlite.errorMessage(db).contains("UNIQUE constraint failed"))
             } finally {
                 sqlite.finalize(statement)
             }

@@ -133,6 +133,12 @@ internal class SQLPreparedStatement(
 
     fun columnType(index: Int) = sqlite.columnType(statement, index)
 
+    fun fillCursorWindow(
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ) = sqlite.fillCursorWindow(statement, startRow, maxRows, countAllRows)
+
     fun isBusy() = sqlite.statementBusy(statement) != 0
 
     fun reset() {

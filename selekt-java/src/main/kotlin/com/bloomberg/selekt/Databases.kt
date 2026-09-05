@@ -82,6 +82,7 @@ class SQLDatabase(
     private val connectionFactory: SQLConnectionFactory
     private val connectionPool: SQLExecutorPool
     private val session: ThreadLocalSession
+    private val cursorWindowSize = configuration.cursorWindowSize
 
     init {
         key?.retain()
@@ -659,9 +660,12 @@ class SQLDatabase(
     }
 
     private fun query(query: SQLQuery): ICursor = pledge {
-        SimpleCursorWindow().let {
-            val information = query.fill(it)
-            WindowedCursor(information.columnNames, it)
+        val (information, page) = query.fill(cursorWindowSize)
+        if (page.count <= cursorWindowSize) {
+            WindowedCursor(information.columnNames, page)
+        } else {
+            val refill = query.refiller(cursorWindowSize)
+            WindowedCursor(information.columnNames, page) { startPosition -> pledge { refill(startPosition) } }
         }
     }
 

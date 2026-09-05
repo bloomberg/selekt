@@ -53,8 +53,10 @@ internal interface SQLExecutor : BatchSQLExecutor {
     fun executeForCursorWindow(
         sql: String,
         bindArgs: Array<out Any?>,
-        window: ICursorWindow
-    )
+        startPosition: Int = 0,
+        windowSize: Int = Int.MAX_VALUE,
+        countAllRows: Boolean = true
+    ): CursorWindowPage
 
     fun executeForForwardCursor(
         sql: String,

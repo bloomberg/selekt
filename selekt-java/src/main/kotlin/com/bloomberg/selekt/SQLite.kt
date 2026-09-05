@@ -17,7 +17,10 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.exceptions.SelektSQLException
+import java.nio.ByteBuffer
 import java.sql.SQLException
+
+private const val NATIVE_CURSOR_UNSUPPORTED = "SQLite backend does not support native cursor windows."
 
 /**
  * @since 0.12.1
@@ -26,6 +29,12 @@ import java.sql.SQLException
 open class SQLite(
     private val sqlite: IExternalSQLite
 ) {
+    private val nativeCursorSQLite = sqlite as? INativeCursorWindowSQLite
+
+    open val capabilities: PlatformCapabilities = PlatformCapabilities(
+        useNativeCursorWindow = nativeCursorSQLite != null
+    )
+
     fun newDatabaseHandle(pointer: Long): DatabaseHandle = sqlite.newDatabaseHandle(pointer)
 
     fun newStatementHandle(pointer: Long): StatementHandle = sqlite.newStatementHandle(pointer)
@@ -335,9 +344,30 @@ open class SQLite(
 
     fun extendedResultCodes(db: DatabaseHandle, onOff: Int) = sqlite.extendedResultCodes(db, onOff)
 
+    fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ) = requireNotNull(nativeCursorSQLite) { NATIVE_CURSOR_UNSUPPORTED }
+        .fillCursorWindow(statement, startRow, maxRows, countAllRows)
+        ?: throwSQLException(sqlite.databaseHandle(statement))
+
+    fun fillCursorWindow(
+        statement: StatementHandle,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ) = requireNotNull(nativeCursorSQLite) { NATIVE_CURSOR_UNSUPPORTED }
+        .fillCursorWindow(statement, startRow, maxRows, countAllRows)
+        ?: throwSQLException(sqlite.databaseHandle(statement))
+
     fun finalize(statement: Long) = checkStatementSQLCode(statement, sqlite.finalize(statement))
 
     fun finalize(statement: StatementHandle) = checkStatementSQLCode(statement, sqlite.finalize(statement))
+
+    fun freeCursorWindow(buffer: ByteBuffer) = requireNotNull(nativeCursorSQLite) { NATIVE_CURSOR_UNSUPPORTED }
+        .freeCursorWindow(buffer)
 
     fun getAutocommit(db: Long) = sqlite.getAutocommit(db)
 

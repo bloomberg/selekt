@@ -58,6 +58,7 @@ sealed interface EncryptionKeySource {
 class SelektDataSource : DataSource {
     companion object {
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
+        private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
@@ -93,6 +94,13 @@ class SelektDataSource : DataSource {
     var busyTimeout: Int = DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
         set(value) {
             require(value >= 0) { "Busy timeout must be non-negative" }
+            field = value
+        }
+
+    @Volatile
+    var cursorWindowSize: Int = Int.MAX_VALUE
+        set(value) {
+            require(value > 0) { "Cursor window size must be positive" }
             field = value
         }
 
@@ -253,6 +261,7 @@ class SelektDataSource : DataSource {
         val baseUrl = "jdbc:sqlite:$databasePath"
         return mutableListOf<String>().apply {
             add("busyTimeout=$busyTimeout")
+            add("cursorWindowSize=$cursorWindowSize")
             add("foreignKeys=$foreignKeys")
             add("journalMode=$journalMode")
             add("poolSize=$maxPoolSize")
@@ -268,6 +277,7 @@ class SelektDataSource : DataSource {
     private fun buildConnectionProperties(): Properties = Properties().apply {
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
+        setProperty(PROPERTY_CURSOR_WINDOW_SIZE, cursorWindowSize.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
         setProperty(PROPERTY_FOREIGN_KEYS, foreignKeys.toString())
     }
@@ -321,6 +331,8 @@ class SelektDataSource : DataSource {
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
         val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: maxPoolSize
         val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull() ?: busyTimeout
+        val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull()
+            ?: cursorWindowSize
         val journalModeValue = properties.getProperty(PROPERTY_JOURNAL_MODE)?.let {
             SQLiteJournalMode.valueOf(it.uppercase())
         } ?: SQLiteJournalMode.valueOf(journalMode.uppercase())
@@ -328,7 +340,8 @@ class SelektDataSource : DataSource {
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,
             busyTimeoutMillis = busyTimeoutValue,
-            useNativeTransactionListeners = true
+            useNativeTransactionListeners = true,
+            cursorWindowSize = cursorWindowSizeValue
         )
     }
 
@@ -339,6 +352,7 @@ class SelektDataSource : DataSource {
     ): String = buildString {
         append(connectionURL.databasePath)
         append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
+        append("&cursorWindowSize=").append(properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE))
         append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))
         append("&journalMode=").append(properties.getProperty(PROPERTY_JOURNAL_MODE))
         append("&poolSize=").append(properties.getProperty(PROPERTY_POOL_SIZE))

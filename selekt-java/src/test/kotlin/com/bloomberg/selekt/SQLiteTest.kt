@@ -16,7 +16,9 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.exceptions.SelektSQLException
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -28,6 +30,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.sql.SQLException
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
@@ -35,6 +38,7 @@ private const val DB_POINTER = 0xDEADB00BL
 private const val STMT_POINTER = 0xCAFEBABEL
 private const val BLOB_POINTER = 0xFEEDF00DL
 private const val KEY_POINTER = 0x5EC4E7L
+private const val SQL_CONSTRAINT_UNIQUE = 2067
 
 private val DATABASE_HANDLE = DatabaseHandle(DB_POINTER)
 private val STATEMENT_HANDLE = StatementHandle(STMT_POINTER)
@@ -46,6 +50,30 @@ internal class SQLiteTest {
         on { errorMessage(any<DatabaseHandle>()) }.thenReturn("")
     }
     private val sqlite = SQLite(externalSqlite)
+
+    @Test
+    fun `backends without native cursor support fall back safely`() {
+        assertFalse(sqlite.capabilities.useNativeCursorWindow)
+    }
+
+    @Test
+    fun `native cursor step failures retain SQLite error details`() {
+        val nativeExternal = Mockito.mock(
+            IExternalSQLite::class.java,
+            Mockito.withSettings().extraInterfaces(INativeCursorWindowSQLite::class.java)
+        )
+        val nativeCursorExternal = nativeExternal as INativeCursorWindowSQLite
+        whenever(nativeCursorExternal.fillCursorWindow(STMT_POINTER, 0, 1, true)) doReturn null
+        whenever(nativeExternal.databaseHandle(STMT_POINTER)) doReturn DB_POINTER
+        whenever(nativeExternal.errorCode(DB_POINTER)) doReturn SQL_CONSTRAINT
+        whenever(nativeExternal.extendedErrorCode(DB_POINTER)) doReturn SQL_CONSTRAINT_UNIQUE
+        whenever(nativeExternal.errorMessage(DB_POINTER)) doReturn "UNIQUE constraint failed: Foo.bar"
+        val exception = assertFailsWith<SQLException> {
+            SQLite(nativeExternal).fillCursorWindow(STMT_POINTER, 0, 1, true)
+        } as SelektSQLException
+        assertEquals(SQL_CONSTRAINT, exception.code)
+        assertEquals(SQL_CONSTRAINT_UNIQUE, exception.extendedCode)
+    }
 
     @Test
     fun `newDatabaseHandle delegates to IExternalSQLite`() {
