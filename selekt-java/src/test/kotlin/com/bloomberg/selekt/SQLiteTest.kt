@@ -22,6 +22,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -532,6 +533,14 @@ internal class SQLiteTest {
         whenever(externalSqlite.allocateSecret(key.size)) doReturn KEY_POINTER
         sqlite.newKey(key)
         verify(externalSqlite).storeSecret(KEY_POINTER, key.size, key, key.size)
+    }
+
+    @Test
+    fun `newKey rejects invalid key lengths before allocating native memory`() {
+        listOf(0, 1, 31, 33).forEach {
+            assertFailsWith<IllegalArgumentException> { sqlite.newKey(ByteArray(it)) }
+        }
+        verify(externalSqlite, never()).allocateSecret(any())
     }
 
     @Test

@@ -359,6 +359,9 @@ open class SQLite(
      * @since 0.36.0
      */
     fun newKey(key: ByteArray): DatabaseKey {
+        require(key.size == DatabaseKey.REQUIRED_LENGTH_BYTES) {
+            "Key must be ${DatabaseKey.REQUIRED_LENGTH_BYTES} bytes in size."
+        }
         val pointer = sqlite.allocateSecret(key.size)
         try {
             sqlite.storeSecret(pointer, key.size, key, key.size)

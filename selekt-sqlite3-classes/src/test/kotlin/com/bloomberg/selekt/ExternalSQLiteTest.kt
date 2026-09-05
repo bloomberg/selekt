@@ -2192,6 +2192,23 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `raw key byte array size must match its declared length`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertFailsWith<IllegalArgumentException> {
+                sqlite.keyConventionally(db, ByteArray(1), KEY_SIZE)
+            }
+            assertFailsWith<IllegalArgumentException> {
+                sqlite.rawKey(db, ByteArray(1), KEY_SIZE)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `rekeyAt changes the key of an already keyed database`() {
         val originalKey = ByteArray(KEY_SIZE) { 0x33 }
         val newKey = ByteArray(KEY_SIZE) { 0x44 }

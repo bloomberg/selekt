@@ -53,6 +53,9 @@ class DatabaseKey internal constructor(
     }
 
     companion object {
+        /** Required size of raw database encryption keys. */
+        const val REQUIRED_LENGTH_BYTES = 32
+
         @JvmStatic
         fun of(sqlite: SQLite, key: ByteArray): DatabaseKey = sqlite.newKey(key)
 

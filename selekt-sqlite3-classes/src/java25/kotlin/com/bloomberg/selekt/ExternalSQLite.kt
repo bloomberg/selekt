@@ -107,6 +107,11 @@ internal class ExternalSQLite(
         require(length == KEY_LENGTH) { "Key must be $KEY_LENGTH bytes in size." }
     }
 
+    private fun requireRawKeyLength(key: ByteArray, length: Int) {
+        requireRawKeyLength(length)
+        require(key.size == length) { "Key array size must match the declared length." }
+    }
+
     private fun databaseSegment(db: DatabaseHandle): MemorySegment =
         (db.attachment as? MemorySegment) ?: MemorySegment.ofAddress(db.pointer)
 
@@ -796,7 +801,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode {
-        requireRawKeyLength(length)
+        requireRawKeyLength(key, length)
         return withSlab { slab ->
             val segment = slab.allocateFromBytes(key)
             try {
@@ -921,7 +926,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode {
-        requireRawKeyLength(length)
+        requireRawKeyLength(key, length)
         return withSlab { slab ->
             val segment = slab.allocateFromBytes(key)
             try {
