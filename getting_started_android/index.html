@@ -416,6 +416,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using Room">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#room-28-and-later-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Room 2.8 and later (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#room-27-and-earlier-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Room 2.7 and earlier (Legacy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -728,6 +756,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Using Room">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#room-28-and-later-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Room 2.8 and later (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#room-27-and-earlier-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Room 2.7 and earlier (Legacy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -843,7 +899,7 @@
 <span class="p">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.1.1&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.2.0&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-android&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="n">runtimeOnly</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-android-sqlcipher&quot;</span><span class="p">)</span>
 <span class="p">}</span>
@@ -855,7 +911,7 @@
 <span class="o">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="o">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.1.1&#39;</span><span class="o">)</span>
+<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.2.0&#39;</span><span class="o">)</span>
 <span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="s1">&#39;com.bloomberg.selekt:selekt-android&#39;</span>
 <span class="w">    </span><span class="n">runtimeOnly</span><span class="w"> </span><span class="s1">&#39;com.bloomberg.selekt:selekt-android-sqlcipher&#39;</span>
 <span class="o">}</span>
@@ -865,7 +921,72 @@
 </div>
 <h2 id="getting-a-database">Getting a database</h2>
 <h3 id="using-room">Using Room</h3>
+<h4 id="room-28-and-later-recommended">Room 2.8 and later (Recommended)</h4>
+<p>Use <code>SelektSQLiteDriver</code> with Room 2.8 and later:</p>
+<p>The key must contain exactly 32 bytes and must not be all zero. The array remains yours: the driver does not modify it and
+copies it into protected native memory before creation returns. Clear your array immediately, including when driver
+creation fails. Room does not close the driver; retain it for the database's lifetime, then close the database before the
+driver. Closing the driver releases its native key.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Kotlin</label><label for="__tabbed_2_2">Java</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nn">com.bloomberg.selekt.android.room.createSelektSQLiteDriver</span>
+
+<span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">():</span><span class="w"> </span><span class="n">ByteArray? </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">()</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">createSelektSQLiteDriver</span><span class="p">(</span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">)</span>
+<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">key</span><span class="o">?.</span><span class="na">fill</span><span class="p">(</span><span class="m">0</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="nv">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Room</span><span class="p">.</span><span class="na">databaseBuilder</span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">MyAppDatabase</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;app&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="na">setDriver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">()</span>
+
+<span class="c1">// When shutting down, close the database before its driver.</span>
+<span class="n">database</span><span class="p">.</span><span class="na">close</span><span class="p">()</span>
+<span class="n">driver</span><span class="p">.</span><span class="na">close</span><span class="p">()</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">com.bloomberg.selekt.android.room.SelektSQLiteDriver</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">com.bloomberg.selekt.android.room.SelektSQLiteDriverKt</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.util.Arrays</span><span class="p">;</span>
+
+<span class="kd">private</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// TODO Optional key, must be exactly 32-bytes long.</span>
+<span class="p">}</span>
+
+<span class="kd">final</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">();</span>
+<span class="kd">final</span><span class="w"> </span><span class="n">SelektSQLiteDriver</span><span class="w"> </span><span class="n">driver</span><span class="p">;</span>
+<span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektSQLiteDriverKt</span><span class="p">.</span><span class="na">createSelektSQLiteDriver</span><span class="p">(</span>
+<span class="w">        </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">,</span>
+<span class="w">        </span><span class="n">key</span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Arrays</span><span class="p">.</span><span class="na">fill</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">final</span><span class="w"> </span><span class="n">RoomDatabase</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Room</span><span class="p">.</span><span class="na">databaseBuilder</span><span class="p">(</span>
+<span class="w">    </span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">MyAppDatabase</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;app&quot;</span>
+<span class="p">).</span><span class="na">setDriver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+
+<span class="c1">// When shutting down, close the database before its driver.</span>
+<span class="n">database</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<span class="n">driver</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<h4 id="room-27-and-earlier-legacy">Room 2.7 and earlier (Legacy)</h4>
+<p>For older Room versions, use <code>SupportSQLiteOpenHelperFactory</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Kotlin</label><label for="__tabbed_3_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">():</span><span class="w"> </span><span class="n">ByteArray? </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
@@ -900,7 +1021,7 @@
 </div>
 </div>
 <h3 id="using-an-open-helper">Using an open helper</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Kotlin</label><label for="__tabbed_3_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Kotlin</label><label for="__tabbed_4_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">object</span><span class="w"> </span><span class="nc">MyOpenHelperCallback</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Callback</span><span class="w"> </span><span class="p">{</span>
@@ -967,7 +1088,7 @@
 </div>
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-the-database">Querying the database</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Kotlin</label><label for="__tabbed_4_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Kotlin</label><label for="__tabbed_5_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">databaseHelper</span><span class="p">.</span><span class="na">writableDatabase</span><span class="p">.</span><span class="na">run</span><span class="w"> </span><span class="p">{</span>
@@ -1011,7 +1132,7 @@
 <p>If your app only supports a subset of these architectures, configure ABI filtering to reduce APK size and avoid installs on unsupported devices.</p>
 <h3 id="restricting-native-libraries">Restricting native libraries</h3>
 <p>To support only 64-bit ABIs:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Kotlin</label><label for="__tabbed_5_2">Groovy</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Groovy</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">android</span><span class="w"> </span><span class="p">{</span>
@@ -1033,7 +1154,7 @@
 </div>
 <h3 id="excluding-native-libraries">Excluding native libraries</h3>
 <p>Alternatively, exclude ABIs while packaging. For example, for an APK that only supports ARM architectures:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Groovy</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Groovy</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">android</span><span class="w"> </span><span class="p">{</span>
