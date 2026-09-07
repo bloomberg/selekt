@@ -22,6 +22,11 @@ def prepare_shadow(output: pathlib.Path) -> None:
     valid_index = struct.pack(">4I4f", 0, 1, 0, 1, 0.0, 0.0, 0.0, 0.0)
     truncated_real_metadata = struct.pack(">2I", 8, 1)
     valid_real_metadata = truncated_real_metadata + struct.pack(">d", 1.0)
+    quantized_model = (
+        struct.pack(">6I", 4, 1, 4, 1, 1, 1)
+        + bytes(1 * 4 * 256 * 4)
+        + bytes(1 * 4 * 4)
+    )
     (output / "index-overflow").write_bytes(shadow_packet(model, index_overflow, b""))
     (output / "empty-index").write_bytes(shadow_packet(b"", empty_index, b""))
     (output / "tombstones-exceed-entry-count").write_bytes(
@@ -32,6 +37,9 @@ def prepare_shadow(output: pathlib.Path) -> None:
     )
     (output / "valid-index-and-metadata").write_bytes(
         shadow_packet(model, valid_index, valid_real_metadata)
+    )
+    (output / "quantized-truncated-base").write_bytes(
+        shadow_packet(quantized_model, b"", b"\x00")
     )
     (output / "empty-components").write_bytes(shadow_packet(b"", b"", b""))
 
