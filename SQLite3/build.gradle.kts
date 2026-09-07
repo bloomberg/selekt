@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 plugins {
     base
@@ -195,6 +196,36 @@ tasks.register<Copy>("buildHost") {
     from(".cxx-host/sqlite3")
     into(layout.buildDirectory.dir("intermediates/libs/${targetIdentifier()}"))
     include("*.dll", "*.dylib", "*.so")
+}
+
+val nativeFuzzEngine = providers.gradleProperty("selekt.fuzz.engine").orElse("libfuzzer")
+val nativeFuzzProfile = providers.gradleProperty("selekt.fuzz.profile").orElse("smoke")
+val nativeFuzzBuildDir = nativeFuzzEngine.map { file(".cxx-fuzz-$it").absolutePath }
+
+tasks.register<Exec>("buildNativeFuzzers") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Builds the non-shipping native fuzz targets with ASan and UBSan (Linux only)."
+    dependsOn(":OpenSSL:assembleHost", "amalgamate")
+    environment("SELEKT_FUZZ_SKIP_GRADLE", "1")
+    commandLine(
+        "bash",
+        file("fuzz/build.sh").absolutePath,
+        nativeFuzzEngine.get(),
+        nativeFuzzBuildDir.get()
+    )
+}
+
+tasks.register<Exec>("nativeFuzz") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs native fuzzing; configure with selekt.fuzz.engine and selekt.fuzz.profile."
+    dependsOn("buildNativeFuzzers")
+    commandLine(
+        "bash",
+        file("fuzz/run.sh").absolutePath,
+        nativeFuzzEngine.get(),
+        nativeFuzzProfile.get(),
+        nativeFuzzBuildDir.get()
+    )
 }
 
 tasks.register<Exec>("cleanSqlCipher") {

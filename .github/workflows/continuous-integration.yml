@@ -5,6 +5,12 @@ on: [pull_request, push]
 permissions: read-all
 
 jobs:
+  native-fuzzing:
+    name: 'Native fuzzing / Linux'
+    uses: ./.github/workflows/native-fuzzing.yml
+    with:
+      profile: smoke
+
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
     if: github.event_name != 'pull_request'

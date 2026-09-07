@@ -22,6 +22,10 @@ project(${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(SELEKT_BUILD_FUZZERS "Build CI-only native fuzz targets" OFF)
+set(SELEKT_FUZZ_ENGINE "libfuzzer" CACHE STRING "Fuzz engine: libfuzzer or afl")
+set_property(CACHE SELEKT_FUZZ_ENGINE PROPERTY STRINGS libfuzzer afl)
+
 if(USE_CCACHE)
   find_program(CCACHE_FOUND ccache)
   if(CCACHE_FOUND)
@@ -50,9 +54,18 @@ endif()
 message(STATUS "Including OpenSSL headers from: ${INCLUDE_OPENSSL_DIR}")
 target_include_directories(selekt SYSTEM PUBLIC ${INCLUDE_OPENSSL_DIR})
 
-target_sources(selekt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3_jni.cpp)
+target_sources(selekt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3_jni.cpp)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR MINGW)
+if(SELEKT_BUILD_FUZZERS)
+  if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "Native fuzz targets require Clang or an AFL++ Clang wrapper")
+  endif()
+  target_compile_options(selekt PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+  target_link_options(selekt PRIVATE -fsanitize=address,undefined)
+  add_subdirectory(fuzz)
+endif()
+
+if((CMAKE_SYSTEM_NAME STREQUAL "Linux" OR MINGW) AND NOT SELEKT_BUILD_FUZZERS)
   target_link_options(selekt PRIVATE -static-libstdc++ -static-libgcc)
 endif()
 

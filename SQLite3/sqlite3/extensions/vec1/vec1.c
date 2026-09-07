@@ -4981,16 +4981,19 @@ static int vec1CheckIdxSize(Vec1Tab *p, const u8 *aBlob, int nBlob){
   u64 nEntry;
   u64 nExpected;
   u64 szRowid;
+  u64 nTombstone;
   u32 flags;
 
   if( aBlob==0 || nBlob<VEC1_LIST_SZHDR ) return 1;
 
   flags = vec1GetU32(&aBlob[0]);
   nEntry = (u64)vec1GetU32(&aBlob[4]);
+  nTombstone = (u64)vec1GetU32(&aBlob[8]);
   szRowid = ((flags & VEC1_LIST_64BIT) ? 8 : 4);
 
   /* Downstream list iterators use signed int counts, sizes and offsets. */
   if( nEntry>(u64)INT_MAX ) return 1;
+  if( nTombstone>nEntry ) return 1;
   if( p->mod.hdr.nCodebook<0 ) return 1;
   nExpected = (u64)VEC1_LIST_SZHDR + nEntry*szRowid;
 
@@ -5708,11 +5711,19 @@ static int vec1ReadMeta(
     sqlite3_bind_int64(pStmt, 1, iMetaId);
     if( SQLITE_ROW==sqlite3_step(pStmt) ){
       int nByte = sqlite3_column_bytes(pStmt, 0);
-      rc = vec1BufferGrow(pBuf, nByte);
-      if( rc==SQLITE_OK ){
+      if( nByte<=0 ){
+        rc = VEC1_CORRUPT;
+      }else{
         const u8 *a = sqlite3_column_blob(pStmt, 0);
-        memcpy(pBuf->a, a, nByte);
-        pBuf->n = nByte;
+        if( a==0 ){
+          rc = SQLITE_NOMEM;
+        }else{
+          rc = vec1BufferGrow(pBuf, nByte);
+          if( rc==SQLITE_OK ){
+            memcpy(pBuf->a, a, nByte);
+            pBuf->n = nByte;
+          }
+        }
       }
     }
 
@@ -6429,7 +6440,7 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
   int nByte = (nEntry+7)/8;
   pBitmask->n = 0;
   rc = vec1BufferGrow(pBitmask, nByte);
-  if( rc==SQLITE_OK ){
+  if( rc==SQLITE_OK && nByte>0 ){
     memset(pBitmask->a, 0, nByte);
   }
   pBitmask->n = nByte;
