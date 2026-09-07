@@ -1,0 +1,5 @@
+PRAGMA key="x'370f2c88b153da40745da819f0c412618d1336e85a7109bdec04ca67429af511'";
+CREATE TABLE encrypted(value TEXT);
+INSERT INTO encrypted VALUES('cipher boundary');
+PRAGMA rekey="x'11f59a4267ca04ecbd09715ae836138d6112c4f019a85d7440da53b1882c0f37'";
+SELECT * FROM encrypted;
