@@ -19,11 +19,17 @@
 
 #include <jni.h>
 #include <cstring>
+#include <new>
 #include <stdexcept>
+#include <vector>
 #include "Throws.h"
 #include "secure_zero.h"
 
 struct JniOutOfMemoryError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+struct JniArrayLengthError : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
@@ -36,8 +42,12 @@ public:
     AutoJByteArray(JNIEnv* env, jbyteArray j, jint length)
         : mEnv(env),
           mJArray(j),
-          mpBytes(env->GetByteArrayElements(mJArray, nullptr)),
           mLength(length) {
+        if (mLength < 0 || mLength > mEnv->GetArrayLength(mJArray)) {
+            throwIndexOutOfBoundsException(mEnv, "Byte-array length is out of bounds.");
+            throw JniArrayLengthError("Byte-array length is out of bounds.");
+        }
+        mpBytes = env->GetByteArrayElements(mJArray, nullptr);
         if (mpBytes == nullptr) {
             throwOutOfMemoryError(mEnv, "GetByteArrayElements");
             throw JniOutOfMemoryError("GetByteArrayElements");
@@ -45,7 +55,6 @@ public:
     }
 
     ~AutoJByteArray() {
-        selekt::secure_zero(reinterpret_cast<unsigned char*>(mpBytes), static_cast<size_t>(mLength));
         mEnv->ReleaseByteArrayElements(mJArray, mpBytes, JNI_ABORT);
     }
 
@@ -64,8 +73,61 @@ public:
 private:
     JNIEnv* const mEnv;
     jbyteArray mJArray;
-    jbyte* const mpBytes;
+    jbyte* mpBytes = nullptr;
     jsize const mLength;
+};
+
+class AutoJSensitiveByteArray
+{
+public:
+    AutoJSensitiveByteArray(const AutoJSensitiveByteArray&) = delete;
+    AutoJSensitiveByteArray& operator=(const AutoJSensitiveByteArray&) = delete;
+
+    AutoJSensitiveByteArray(JNIEnv* env, jbyteArray j, jint length)
+        : mLength(length) {
+        if (mLength < 0 || mLength > env->GetArrayLength(j)) {
+            throwIndexOutOfBoundsException(env, "Sensitive byte-array length is out of bounds.");
+            throw JniArrayLengthError("Sensitive byte-array length is out of bounds.");
+        }
+        if (mLength == 0) {
+            return;
+        }
+        try {
+            mBytes.resize(static_cast<size_t>(mLength));
+        } catch (const std::bad_alloc&) {
+            throwOutOfMemoryError(env, "Allocate sensitive byte-array copy");
+            throw JniOutOfMemoryError("Allocate sensitive byte-array copy");
+        }
+        env->GetByteArrayRegion(j, 0, mLength, mBytes.data());
+        if (env->ExceptionCheck()) {
+            selekt::secure_zero(
+                reinterpret_cast<unsigned char*>(mBytes.data()),
+                static_cast<size_t>(mLength)
+            );
+            throw JniArrayLengthError("Copy sensitive byte-array contents.");
+        }
+    }
+
+    ~AutoJSensitiveByteArray() {
+        if (!mBytes.empty()) {
+            selekt::secure_zero(
+                reinterpret_cast<unsigned char*>(mBytes.data()),
+                mBytes.size()
+            );
+        }
+    }
+
+    const jbyte* data() const {
+        return mBytes.data();
+    }
+
+    jsize length() const {
+        return mLength;
+    }
+
+private:
+    jsize const mLength;
+    std::vector<jbyte> mBytes;
 };
 
 #endif //SELEKT_AUTOJBYTEARRAY_H

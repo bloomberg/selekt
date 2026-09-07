@@ -248,10 +248,12 @@ static jint rawKey(
         return SQLITE_ERROR;
     }
     try {
-        AutoJByteArray key(env, jkey, keyLength);
+        AutoJSensitiveByteArray key(env, jkey, keyLength);
         return rawKeyImpl(reinterpret_cast<sqlite3*>(jdb), key.data(), keyLength);
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
+    } catch (const JniArrayLengthError&) {
+        return SQLITE_ERROR;
     }
 }
 
@@ -322,8 +324,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_storeSecret(
     jbyteArray jsource,
     jint length
 ) {
-    if (length < 0 || length > capacity) {
-        throwIndexOutOfBoundsException(env, "storeSecret: length exceeds capacity.");
+    if (const auto sourceLength = env->GetArrayLength(jsource);
+        capacity < 0 || length < 0 || length > capacity || length > sourceLength) {
+        throwIndexOutOfBoundsException(env, "storeSecret: length is out of bounds.");
         return;
     }
     env->GetByteArrayRegion(jsource, 0, length, reinterpret_cast<jbyte*>(static_cast<uintptr_t>(pointer)));
@@ -352,6 +355,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
         return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
+    } catch (const JniArrayLengthError&) {
+        return SQLITE_ERROR;
     }
 }
 
@@ -1213,10 +1218,12 @@ Java_com_bloomberg_selekt_ExternalSQLite_key(
     jint length
 ) {
     try {
-        AutoJByteArray key(env, jkey, length);
+        AutoJSensitiveByteArray key(env, jkey, length);
         return sqlite3_key(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
+    } catch (const JniArrayLengthError&) {
+        return SQLITE_ERROR;
     }
 }
 
@@ -1434,13 +1441,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekey(
     jint length
 ) {
     try {
-        AutoJByteArray key(env, jkey, length);
+        AutoJSensitiveByteArray key(env, jkey, length);
         if (key.length() == 0) {
             return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), nullptr, key.length());
         }
         return sqlite3_rekey(reinterpret_cast<sqlite3*>(jdb), key.data(), key.length());
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
+    } catch (const JniArrayLengthError&) {
+        return SQLITE_ERROR;
     }
 }
 
