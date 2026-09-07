@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 1.2.4
+
+* Validate vec1 base vectors before native transforms.
+* Enable JDBC cancellation without query timeouts.
+* Harden JNI and FFM byte-array handling.
+* Enforce JDBC row limits without rewriting SQL.
+* Serialize DataSource connection creation with close.
+
 ## Version 1.2.3
 
 * Add Linux native fuzzing with ASan and UBSan.
