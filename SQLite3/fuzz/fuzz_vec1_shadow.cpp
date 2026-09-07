@@ -70,6 +70,22 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
         "INSERT INTO model_fuzz(cmd, arg) VALUES('rebuild', ?1)",
         slices[0]
     );
+    selekt::fuzz::executeSql(
+        database.get(),
+        "INSERT INTO model_fuzz(rowid, vector, tag) "
+        "VALUES(1, vec1_from_json('[1,2,3,4]'), 1.0)"
+    );
+    bindBlobAndStep(
+        database.get(),
+        "UPDATE model_fuzz_base SET vector=?1 WHERE id=1",
+        slices[2]
+    );
+    selekt::fuzz::executeSql(
+        database.get(),
+        "SELECT distance FROM model_fuzz WHERE rowid=1; "
+        "PRAGMA integrity_check; "
+        "DELETE FROM model_fuzz WHERE rowid=1"
+    );
 
     selekt::fuzz::executeSql(database.get(), "CREATE VIRTUAL TABLE shadow_fuzz USING vec1(vector, tag)");
     static constexpr std::array<uint8_t, 24> VALID_MODEL = {

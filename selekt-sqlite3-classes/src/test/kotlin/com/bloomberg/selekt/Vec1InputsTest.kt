@@ -27,8 +27,11 @@ import org.junit.jupiter.api.Test
 private const val SQL_OPEN_READWRITE = 2
 private const val SQL_OPEN_CREATE = 4
 private const val VEC1_MODEL_INDEX = 1
+private const val VEC1_DISTANCE_L2 = 1
 private const val VEC1_META_REAL = 8
 private const val VEC1_META_COLUMN_BITS = 8
+private const val VEC1_PQ_CODEBOOK_SIZE = 256
+private const val SIZEOF_F32 = 4
 
 internal class Vec1InputsTest {
     @Test
@@ -39,6 +42,15 @@ internal class Vec1InputsTest {
 
     @Test
     fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
+
+    @Test
+    fun `vec1 validates base vector size before delete-time transformation`() = runProbe("truncated-base-delete")
+
+    @Test
+    fun `vec1 validates base vector size before distance statistics`() = runProbe("truncated-base-distance")
+
+    @Test
+    fun `vec1 validates base vector size before integrity checking`() = runProbe("truncated-base-integrity")
 
     private fun runProbe(mode: String) {
         val command = mutableListOf(
@@ -82,6 +94,9 @@ internal object Vec1SecurityProbeMain {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
+                "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
+                "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
+                "truncated-base-integrity" -> probeTruncatedBaseIntegrity(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -165,6 +180,44 @@ internal object Vec1SecurityProbeMain {
         expectCorrupt(sqlite, db, query)
     }
 
+    private fun probeTruncatedBaseDelete(sqlite: IExternalSQLite, db: Long) {
+        createQuantizedTableWithCorruptBase(sqlite, db)
+        expectCorrupt(sqlite, db, "DELETE FROM t WHERE rowid=1")
+    }
+
+    private fun probeTruncatedBaseDistance(sqlite: IExternalSQLite, db: Long) {
+        createQuantizedTableWithCorruptBase(sqlite, db)
+        expectCorrupt(sqlite, db, "SELECT distance FROM t WHERE rowid=1")
+    }
+
+    private fun probeTruncatedBaseIntegrity(sqlite: IExternalSQLite, db: Long) {
+        createQuantizedTableWithCorruptBase(sqlite, db)
+        val statement = prepare(sqlite, db, "PRAGMA integrity_check")
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            check(sqlite.columnText(statement, 0).contains("vector in %_base row 1 is wrong size"))
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun createQuantizedTableWithCorruptBase(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            quantizedModel()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector) VALUES(1, vec1_from_json('[1,2,3,4]'))"
+            ) == SQL_OK
+        )
+        check(sqlite.exec(db, "UPDATE t_base SET vector=X'00' WHERE id=1") == SQL_OK)
+    }
+
     private fun indexedModelHeader(): ByteArray =
         ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
@@ -174,6 +227,22 @@ internal object Vec1SecurityProbeMain {
             putInt(0)
             putInt(1)
         }.array()
+
+    private fun quantizedModel(): ByteArray {
+        val nElem = 4
+        val nCodebook = 1
+        val nBucket = 1
+        val modelSize = 24 + nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
+            nBucket * nElem * SIZEOF_F32
+        return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(nBucket)
+            putInt(VEC1_DISTANCE_L2)
+        }.array()
+    }
 
     private fun validIndexBlob(): ByteArray =
         ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN).apply {

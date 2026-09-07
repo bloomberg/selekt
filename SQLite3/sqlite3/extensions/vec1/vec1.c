@@ -7650,7 +7650,7 @@ static void vec1DistanceStats(sqlite3_context *ctx, Vec1Csr *pCsr){
     int nVec = 0;
     u8 *pFree = 0;
     rc = vec1GetVector(pCsr, (const u8**)&aVec, &nVec, &pFree);
-    if( rc==SQLITE_OK && aVec ){
+    if( rc==SQLITE_OK ){
       Vec1Tab *pTab = (Vec1Tab*)(pCsr->base.pVtab);
       int nElem = pTab->cfg.nElem;
       Vec1Model *pMod = &pTab->mod;
@@ -7659,32 +7659,38 @@ static void vec1DistanceStats(sqlite3_context *ctx, Vec1Csr *pCsr){
       double fReconError = 0.0;
       double fNorm = 0.0;
       const float *aTransform = 0;
+
+      if( nVec!=(nElem*sizeof_f32) ){
+        rc = VEC1_CORRUPT;
+      }else if( aVec==0 ){
+        rc = SQLITE_NOMEM;
+      }else{
+        aTransform = vec1TransformInputVector(pMod, pTab->aTmpVec, aVec);
+        fNorm = vec1VectorNorm2(aTransform, nElem);
   
-      aTransform = vec1TransformInputVector(pMod, pTab->aTmpVec, aVec); 
-      fNorm = vec1VectorNorm2(aTransform, nElem);
-  
-      /* Find bucket and coarse error if applicable. */
-      if( pMod->hdr.nBucket>1 ){
-        iBucket = vec1PqBestMatch(
-            pMod->aCentroid, pMod->hdr.nBucket, aVec, nElem, &fCoarseError
-        );
-        if( aTransform!=pTab->aTmpVec ){
-          memcpy(pTab->aTmpVec, aTransform, nElem*sizeof_f32);
-          aTransform = pTab->aTmpVec;
+        /* Find bucket and coarse error if applicable. */
+        if( pMod->hdr.nBucket>1 ){
+          iBucket = vec1PqBestMatch(
+              pMod->aCentroid, pMod->hdr.nBucket, aVec, nElem, &fCoarseError
+          );
+          if( aTransform!=pTab->aTmpVec ){
+            memcpy(pTab->aTmpVec, aTransform, nElem*sizeof_f32);
+            aTransform = pTab->aTmpVec;
+          }
+          vec1SubInPlace(pTab->aTmpVec, &pMod->aCentroid[iBucket * nElem], nElem);
         }
-        vec1SubInPlace(pTab->aTmpVec, &pMod->aCentroid[iBucket * nElem], nElem);
-      }
   
-      /* Find reconstruction error if applicable. */
-      if( pMod->hdr.nCodebook>0 ){
-        u8 aPQ[VEC1_MAX_CODESIZE];
-        vec1PqEncodeVector(pMod, aTransform, aPQ, &fReconError);
-      }
+        /* Find reconstruction error if applicable. */
+        if( pMod->hdr.nCodebook>0 ){
+          u8 aPQ[VEC1_MAX_CODESIZE];
+          vec1PqEncodeVector(pMod, aTransform, aPQ, &fReconError);
+        }
   
-      pCsr->zDistance = vec1MPrintf(&rc, 
-          "{bucket:%d, coarse_error:%f, reconstruction_error:%f}", 
-          iBucket, sqrt(fCoarseError/fNorm), sqrt(fReconError/fNorm)
-      );
+        pCsr->zDistance = vec1MPrintf(&rc,
+            "{bucket:%d, coarse_error:%f, reconstruction_error:%f}",
+            iBucket, sqrt(fCoarseError/fNorm), sqrt(fReconError/fNorm)
+        );
+      }
     }
     sqlite3_free(pFree);
   }
@@ -9487,13 +9493,14 @@ static int vec1DeleteByRowid(Vec1Tab *pTab, i64 iRowid){
         int nVec = sqlite3_column_bytes(pDelete, 0);
         const float *aTransform = 0;
 
-        aTransform = vec1TransformInputVector(
-            &pTab->mod, pTab->aTmpVec, (const float*)aVec
-        );
-
         if( nVec!=(pTab->cfg.nElem*sizeof_f32) ){
           rc = VEC1_CORRUPT;
+        }else if( aVec==0 ){
+          rc = SQLITE_NOMEM;
         }else{
+          aTransform = vec1TransformInputVector(
+              &pTab->mod, pTab->aTmpVec, (const float*)aVec
+          );
           iBucket = vec1PqBestMatch(
               pTab->mod.aCentroid, pTab->mod.hdr.nBucket, 
               aTransform, pTab->cfg.nElem, 0
@@ -9997,17 +10004,20 @@ static int vec1IntegrityMethod(
   
             assert( nCodebook>0 );
 
-            aTransform = vec1TransformInputVector(
-                &pTab->mod, pTab->aTmpVec, (const float*)aBaseVec
-            ); 
-  
             /* Check the vector is the right size. */
             if( nBaseVec!=nElem*sizeof_f32 ){
               const char *zFmt = "%s: vector in %%_base row %lld is wrong size";
               zErr = sqlite3_mprintf(zFmt, zTabName, iRowid);
               goto integrity_failed;
+            }else if( aBaseVec==0 ){
+              rc = SQLITE_NOMEM;
+              goto integrity_failed;
             }
-  
+
+            aTransform = vec1TransformInputVector(
+                &pTab->mod, pTab->aTmpVec, (const float*)aBaseVec
+            );
+
             /* Check the vector is in the right bucket. */
             if( pMod->hdr.nBucket>0 ){
               iCalc = vec1PqBestMatch(pMod->aCentroid, 
