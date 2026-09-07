@@ -19,7 +19,8 @@ on:
   schedule:
     - cron: '0 3 * * SUN'
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   fuzz:
