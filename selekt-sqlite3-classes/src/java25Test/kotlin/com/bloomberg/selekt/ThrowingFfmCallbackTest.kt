@@ -28,17 +28,33 @@ internal class ThrowingFfmCallbackTest {
         const val LIBRARY_PATH_PROPERTY = "com.bloomberg.selekt.library_path"
     }
 
-    @TestFactory
-    fun `throwing callbacks never escape the native boundary`() = listOf(
+    private val scenarios = listOf(
         Scenario("commit", "runtime", "java.lang.IllegalStateException:callback runtime failure", "ROLLED_BACK"),
         Scenario("commit", "error", "java.lang.AssertionError:callback error failure", "ROLLED_BACK"),
+        Scenario(
+            "commit-and-rollback",
+            "runtime",
+            "java.lang.IllegalStateException:callback runtime failure",
+            "ROLLED_BACK",
+            "java.lang.IllegalArgumentException:rollback callback failure"
+        ),
         Scenario("rollback", "runtime", "java.lang.IllegalStateException:callback runtime failure", "ROLLED_BACK"),
         Scenario("rollback", "error", "java.lang.AssertionError:callback error failure", "ROLLED_BACK"),
         Scenario("progress", "runtime", "java.lang.IllegalStateException:callback runtime failure", "INTERRUPTED"),
         Scenario("progress", "error", "java.lang.AssertionError:callback error failure", "INTERRUPTED")
-    ).map { scenario ->
+    )
+
+    @TestFactory
+    fun `throwing callbacks never escape the native boundary`() = scenarios.map { scenario ->
         DynamicTest.dynamicTest(scenario.displayName) {
             runChild(scenario)
+        }
+    }
+
+    @TestFactory
+    fun `throwing callback propagation is covered in the instrumented JVM`() = scenarios.map { scenario ->
+        DynamicTest.dynamicTest("${scenario.displayName} in process") {
+            ThrowingFfmCallbackTestMain.main(arrayOf(scenario.callback, scenario.failureType))
         }
     }
 
@@ -50,7 +66,7 @@ internal class ThrowingFfmCallbackTest {
             "-D$LIBRARY_PATH_PROPERTY=${System.getProperty(LIBRARY_PATH_PROPERTY)}",
             "-cp",
             System.getProperty("java.class.path"),
-            ThrowingFfmCallbackMain::class.java.name,
+            ThrowingFfmCallbackTestMain::class.java.name,
             scenario.callback,
             scenario.failureType
         ).redirectErrorStream(true).start()
@@ -63,13 +79,17 @@ internal class ThrowingFfmCallbackTest {
         assertEquals(0, process.exitValue(), "Child JVM terminated: $output")
         assertTrue("THROWABLE=${scenario.expectedThrowable}" in output, "Unexpected child throwable: $output")
         assertTrue("OUTCOME=${scenario.expectedOutcome}" in output, "Unexpected database outcome: $output")
+        scenario.expectedSuppressed?.let {
+            assertTrue("SUPPRESSED=$it" in output, "Unexpected suppressed throwable: $output")
+        }
     }
 
     private data class Scenario(
         val callback: String,
         val failureType: String,
         val expectedThrowable: String,
-        val expectedOutcome: String
+        val expectedOutcome: String,
+        val expectedSuppressed: String? = null
     ) {
         val displayName = "$callback callback contains $failureType"
     }

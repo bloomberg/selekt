@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt
 
-internal object ThrowingFfmCallbackMain {
+internal object ThrowingFfmCallbackTestMain {
     private const val SQLITE_INTERRUPT = 9
     private const val SQLITE_OPEN_READWRITE_CREATE = 6
     private const val SQLITE_ROW = 100
@@ -31,6 +31,7 @@ internal object ThrowingFfmCallbackMain {
         try {
             val outcome = when (args[0]) {
                 "commit" -> throwingCommit(sqlite, database, args[1])
+                "commit-and-rollback" -> throwingCommitAndRollback(sqlite, database, args[1])
                 "rollback" -> throwingRollback(sqlite, database, args[1])
                 "progress" -> throwingProgress(sqlite, database, args[1])
                 else -> error("Unknown callback: ${args[0]}")
@@ -79,6 +80,32 @@ internal object ThrowingFfmCallbackMain {
         sqlite.commitHook(database, false, null)
         check(queryCount(sqlite, database) == 0) { "Rollback did not complete" }
         return outcome(expected, "ROLLED_BACK")
+    }
+
+    private fun throwingCommitAndRollback(sqlite: IExternalSQLite, database: Long, failureType: String): String {
+        requireResult(SQL_OK, sqlite.exec(database, "CREATE TABLE test(value INTEGER)"))
+        requireResult(SQL_OK, sqlite.exec(database, "BEGIN; INSERT INTO test VALUES (1)"))
+        val expected = failure(failureType)
+        val rollbackFailure = IllegalArgumentException("rollback callback failure")
+        requireResult(SQL_OK, sqlite.commitHook(database, true, object : SQLCommitListener {
+            override fun onCommit(): Int = throw expected
+
+            override fun onRollback(): Unit = throw rollbackFailure
+        }))
+        val statement = prepare(sqlite, database, "COMMIT")
+        try {
+            assertExactThrowable(expected) {
+                sqlite.step(sqlite.newStatementHandle(statement))
+            }
+        } finally {
+            sqlite.finalize(statement)
+        }
+        check(expected.suppressed.singleOrNull() === rollbackFailure) {
+            "Rollback callback failure was not preserved as suppressed"
+        }
+        sqlite.commitHook(database, false, null)
+        check(queryCount(sqlite, database) == 0) { "Failed commit was not rolled back" }
+        return outcome(expected, "ROLLED_BACK", rollbackFailure)
     }
 
     private fun throwingProgress(sqlite: IExternalSQLite, database: Long, failureType: String): String {
@@ -143,8 +170,14 @@ internal object ThrowingFfmCallbackMain {
         return statementHolder[0]
     }
 
-    private fun outcome(failure: Throwable, databaseOutcome: String) =
-        "THROWABLE=${failure.javaClass.name}:${failure.message};OUTCOME=$databaseOutcome"
+    private fun outcome(
+        failure: Throwable,
+        databaseOutcome: String,
+        suppressed: Throwable? = null
+    ): String = buildString {
+        append("THROWABLE=${failure.javaClass.name}:${failure.message};OUTCOME=$databaseOutcome")
+        suppressed?.let { append(";SUPPRESSED=${it.javaClass.name}:${it.message}") }
+    }
 
     private fun requireResult(expected: Int, actual: Int) {
         check(expected == actual) { "Expected SQLite result $expected but was $actual" }
