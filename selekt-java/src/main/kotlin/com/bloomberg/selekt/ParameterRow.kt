@@ -93,6 +93,9 @@ class ParameterRow(
 
     fun clear() {
         tags.fill(TAG_NULL)
+        ints.fill(0)
+        longs.fill(0L)
+        doubles.fill(0.0)
         objects.fill(null)
     }
 }

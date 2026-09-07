@@ -24,11 +24,14 @@ import kotlin.test.assertTrue
 
 internal class ChunkedParameterRowsTest {
     @Test
-    fun clearZerosParameterReferencesAcrossAllChunksInTheChain() {
-        val rows = ChunkedParameterRows(parameterCount = 1, initialChunkCapacity = 4)
-        val scratch = ParameterRow(1)
+    fun clearZerosParametersAcrossAllChunksInTheChain() {
+        val rows = ChunkedParameterRows(parameterCount = 4, initialChunkCapacity = 4)
+        val scratch = ParameterRow(4)
         repeat(10) {
-            scratch.setObject(0, "sensitive-batch-value")
+            scratch.setInt(0, Int.MAX_VALUE)
+            scratch.setLong(1, Long.MAX_VALUE)
+            scratch.setDouble(2, Double.MAX_VALUE)
+            scratch.setObject(3, "sensitive-batch-value")
             rows.add(scratch)
         }
 
@@ -81,6 +84,18 @@ internal class ChunkedParameterRowsTest {
         val storedRows = readField<Array<Any?>>(chunk, "data")!!
         for (row in storedRows) {
             val parameterRow = row as? ParameterRow ?: continue
+            parameterRow.tags.forEach {
+                assertEquals(0.toByte(), it, "no ParameterRow.tags slot should retain a type tag")
+            }
+            parameterRow.ints.forEach {
+                assertEquals(0, it, "no ParameterRow.ints slot should retain a value")
+            }
+            parameterRow.longs.forEach {
+                assertEquals(0L, it, "no ParameterRow.longs slot should retain a value")
+            }
+            parameterRow.doubles.forEach {
+                assertEquals(0.0, it, "no ParameterRow.doubles slot should retain a value")
+            }
             parameterRow.objects.forEach {
                 assertNull(it, "no ParameterRow.objects slot should retain a reference")
             }
