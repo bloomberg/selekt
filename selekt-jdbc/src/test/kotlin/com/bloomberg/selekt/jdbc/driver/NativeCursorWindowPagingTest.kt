@@ -28,16 +28,15 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 private const val ROW_COUNT = 25
 private const val WINDOW_SIZE = 4
 
 /**
- * Exercises paging of the natively populated cursor window against real SQLite. `selekt-jdbc`'s
+ * Exercises segmented native cursor-window materialisation against real SQLite. `selekt-jdbc`'s
  * plain `SQLite` does not override [com.bloomberg.selekt.SQLite.capabilities], so this
- * reaches selekt_fill_cursor_window's startRow/maxRows/countAllRows handling, which nothing above
+ * reaches selekt_fill_cursor_window's maxRows handling, which nothing above
  * the JNI/FFM boundary can otherwise verify. Runs as a fast unit test rather than in
  * `selekt-java`'s integrationTest, whose native-backed suite is comparatively slow.
  */
@@ -114,14 +113,14 @@ internal class NativeCursorWindowPagingTest {
     }
 
     @Test
-    fun readsEveryColumnTypeFromARefilledWindow() {
+    fun readsEveryColumnTypeAcrossSegments() {
         database.exec("CREATE TABLE 'Bar' (i INTEGER, r REAL, t TEXT, b BLOB, n INTEGER)", emptyArray())
         database.batch(
             "INSERT INTO 'Bar' VALUES (?, ?, ?, ?, ?)",
             (0 until ROW_COUNT).map { arrayOf<Any?>(it, 0.5 + it, "t$it", byteArrayOf(it.toByte()), null) }
         )
         database.query(SimpleSQLQuery("SELECT i, r, t, b, n FROM Bar ORDER BY i")).use { cursor ->
-            // Far enough in to guarantee this row came from a refill rather than the first window.
+            // Far enough in to guarantee this row came from a later segment.
             assertTrue(cursor.moveToPosition(20))
             assertEquals(ColumnType.INTEGER, cursor.type(0))
             assertEquals(20L, cursor.getLong(0))
@@ -166,11 +165,11 @@ internal class NativeCursorWindowPagingTest {
     }
 
     @Test
-    fun shrinkingResultSetBetweenRefillsFailsSafely() {
+    fun materializedResultRemainsStableAfterSourceChanges() {
         database.query(SimpleSQLQuery("SELECT bar FROM Foo ORDER BY bar")).use { cursor ->
             database.exec("DELETE FROM Foo WHERE bar >= $WINDOW_SIZE", emptyArray())
             assertTrue(cursor.moveToPosition(ROW_COUNT - 1))
-            assertFailsWith<IllegalStateException> { cursor.getLong(0) }
+            assertEquals((ROW_COUNT - 1).toLong(), cursor.getLong(0))
         }
     }
 }

@@ -49,7 +49,7 @@ internal const val DEFAULT_JDBC_POOL_SIZE = 4
  * Supported connection properties:
  * - poolSize: Maximum connection pool size (integer, default: 4)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
- * - cursorWindowSize: Maximum rows retained by a cursor window (positive integer, default: 1024)
+ * - cursorWindowSize: Maximum rows per materialised cursor-window segment (positive integer, default: 1024)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
  *
@@ -166,7 +166,7 @@ class SelektDriver : Driver {
                 PROPERTY_CURSOR_WINDOW_SIZE,
                 info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, DEFAULT_JDBC_CURSOR_WINDOW_SIZE.toString())
             ).apply {
-                description = "Maximum rows retained by a cursor window"
+                description = "Maximum rows per materialised cursor-window segment"
                 required = false
             },
             DriverPropertyInfo(PROPERTY_JOURNAL_MODE, info.getProperty(PROPERTY_JOURNAL_MODE, "WAL")).apply {

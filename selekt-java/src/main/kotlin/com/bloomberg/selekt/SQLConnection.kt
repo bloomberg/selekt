@@ -229,7 +229,7 @@ internal class SQLConnection(
         windowSize: Int,
         countAllRows: Boolean
     ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
-        cursorWindowPage(startPosition, windowSize, countAllRows)
+        fillCursorWindowPage(startPosition, windowSize, countAllRows)
     }
 
     override fun executeForCursorWindow(
@@ -239,10 +239,49 @@ internal class SQLConnection(
         windowSize: Int,
         countAllRows: Boolean
     ): PreparedCursorWindow = withPreparedStatement(sql, bindArgs) {
-        PreparedCursorWindow(columnNames, cursorWindowPage(startPosition, windowSize, countAllRows))
+        PreparedCursorWindow(columnNames, fillCursorWindowPage(startPosition, windowSize, countAllRows))
     }
 
-    private fun SQLPreparedStatement.cursorWindowPage(
+    override fun executeForCursorWindows(
+        sql: String,
+        bindArgs: Array<out Any?>,
+        windowSize: Int
+    ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
+        require(windowSize > 0) { "Cursor window size must be positive." }
+        val windows = ArrayList<ICursorWindow>()
+        var rowCount = 0
+        try {
+            var storedRows: Int
+            do {
+                val window = fillCursorWindowPage(0, windowSize, false).window
+                storedRows = window.numberOfRows()
+                if (storedRows == 0) {
+                    window.close()
+                } else {
+                    windows.add(window)
+                    check(rowCount <= Int.MAX_VALUE - storedRows) { "Cursor row count exceeds Int.MAX_VALUE." }
+                    rowCount += storedRows
+                }
+            } while (storedRows == windowSize)
+            val window = when (windows.size) {
+                0 -> SimpleCursorWindow()
+                1 -> windows.single()
+                else -> SegmentedCursorWindow(windows, windowSize)
+            }
+            CursorWindowPage(window, 0, rowCount)
+        } catch (failure: Throwable) {
+            closeCursorWindowsAfterFailure(windows, failure)
+        }
+    }
+
+    private fun closeCursorWindowsAfterFailure(windows: List<ICursorWindow>, failure: Throwable): Nothing {
+        windows.forEach { window ->
+            runCatching(window::close).exceptionOrNull()?.let(failure::addSuppressed)
+        }
+        throw failure
+    }
+
+    private fun SQLPreparedStatement.fillCursorWindowPage(
         startPosition: Int,
         windowSize: Int,
         countAllRows: Boolean

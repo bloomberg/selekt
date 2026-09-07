@@ -50,19 +50,17 @@ data class DatabaseConfiguration(
      */
     val useNativeTransactionListeners: Boolean = false,
     /**
-     * Maximum number of rows a cursor holds in memory at once, [Int.MAX_VALUE] to hold every row.
+     * Maximum number of rows in each cursor-window segment, [Int.MAX_VALUE] to use one segment.
      *
-     * When bounded, a query materialises only this many rows and re-queries whenever the caller
-     * moves outside them. Memory is then bounded by the window rather than by the size of the
-     * result set, at the cost of re-stepping the statement on each refill. Refills re-run the query,
-     * so volatile expressions, unspecified row ordering, and writes made after the first window can
-     * change the rows subsequently observed.
+     * Scrollable queries are stepped once and materialised into one or more segments. Segmenting
+     * avoids very large individual native allocations, but total cursor memory remains proportional
+     * to the result-set size. It also gives the cursor a stable snapshot: later movement does not
+     * re-run the query.
      *
-     * Bounding this matters most for cursor windows populated natively, whose rows occupy a single
-     * off-heap allocation sized to the whole result set. Rows held on the Java heap can be paged
-     * too, though an unclosed cursor there is collected as ordinary garbage.
+     * Callers processing large results sequentially should use a forward-only API, which retains
+     * only the current SQLite row instead of materialising the result.
      *
-     * Paged cursors are not thread safe and must not be accessed concurrently from multiple
+     * Scrollable cursors are not thread safe and must not be accessed concurrently from multiple
      * threads. Cross-thread hand-off requires the caller to provide the usual happens-before
      * relationship.
      */
