@@ -34,10 +34,11 @@ import java.sql.Connection
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.logging.Logger as JulLogger
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
 import javax.sql.DataSource
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -54,6 +55,33 @@ sealed interface EncryptionKeySource {
     }
 }
 
+internal class DataSourceLifecycle {
+    private val lock = ReentrantReadWriteLock(true)
+
+    @Volatile
+    private var closed = false
+
+    val isClosed: Boolean
+        get() = closed
+
+    fun <T> withOpenDataSource(block: () -> T): T = lock.read {
+        if (closed) {
+            throw SQLException("DataSource is closed")
+        }
+        block()
+    }
+
+    fun close(block: () -> Unit): Boolean = lock.write {
+        if (closed) {
+            false
+        } else {
+            closed = true
+            block()
+            true
+        }
+    }
+}
+
 @Suppress("TooGenericExceptionCaught")
 class SelektDataSource : DataSource {
     companion object {
@@ -63,15 +91,10 @@ class SelektDataSource : DataSource {
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val DEFAULT_POOL_SIZE = 10
-
-        private val CLOSED: VarHandle = MethodHandles.lookup()
-            .findVarHandle(SelektDataSource::class.java, "closed", Boolean::class.javaPrimitiveType)
     }
 
     private val logger: Logger = LoggerFactory.getLogger(SelektDataSource::class.java)
-
-    @Volatile
-    private var closed = false
+    private val lifecycle = DataSourceLifecycle()
 
     @Volatile
     private var url: String = ""
@@ -155,10 +178,7 @@ class SelektDataSource : DataSource {
 
     override fun getConnection(): Connection = getConnection(null, null)
 
-    override fun getConnection(username: String?, password: String?): Connection {
-        if (closed) {
-            throw SQLException("DataSource is closed")
-        }
+    override fun getConnection(username: String?, password: String?): Connection = lifecycle.withOpenDataSource {
         if (username != null || password != null) {
             throw SQLException(
                 "SelektDataSource ignores explicit username/password credentials; " +
@@ -167,7 +187,7 @@ class SelektDataSource : DataSource {
             )
         }
         val (encryptionKeyBytes, keyHash) = snapshotEncryptionKey()
-        return try {
+        try {
             runCatching {
                 val connectionURL = buildConnectionURL()
                 val mergedProperties = buildConnectionProperties()
@@ -207,17 +227,19 @@ class SelektDataSource : DataSource {
     }
 
     fun close() {
-        if (CLOSED.compareAndSet(this, false, true)) {
+        val closedNow = lifecycle.close {
             encryptionKeySource = null
             databaseCache.run {
                 values.forEachCatching(SharedDatabase::release)
                 clear()
             }
+        }
+        if (closedNow) {
             logger.info("SelektDataSource closed")
         }
     }
 
-    fun isClosed(): Boolean = closed
+    fun isClosed(): Boolean = lifecycle.isClosed
 
     override fun getLogWriter(): PrintWriter? = logWriter
 
