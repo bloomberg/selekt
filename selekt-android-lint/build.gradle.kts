@@ -17,6 +17,7 @@
 description = "Selekt Android Lint library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     `maven-publish`
     signing

@@ -36,6 +36,7 @@ include(":selekt-sqlite3-ext")
 include(":selekt-sqlite3-sqlcipher")
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         mavenCentral()
         gradlePluginPortal()

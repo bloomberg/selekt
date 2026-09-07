@@ -17,6 +17,7 @@
 description = "Selekt SQLite extensions."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)

@@ -32,12 +32,31 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     base
     alias(libs.plugins.dokka)
+    alias(libs.plugins.cyclonedx) apply false
     alias(libs.plugins.kover)
     alias(libs.plugins.nmcp)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ideaExt)
     alias(libs.plugins.qodana)
     alias(libs.plugins.ksp) apply false
+}
+
+val embeddedSbomProjects = listOf(
+    ":selekt-android-lint",
+    ":selekt-api",
+    ":selekt-commons",
+    ":selekt-java",
+    ":selekt-jdbc",
+    ":selekt-jvm",
+    ":selekt-sqlite3-api",
+    ":selekt-sqlite3-classes",
+    ":selekt-sqlite3-ext",
+    ":selekt-sqlite3-sqlcipher"
+)
+val cyclonedxBom = tasks.register("cyclonedxBom") {
+    group = "reporting"
+    description = "Generates the final CycloneDX SBOM for every published JVM artifact."
+    dependsOn(embeddedSbomProjects.map { "$it:cyclonedxFinalBom" })
 }
 
 repositories {
