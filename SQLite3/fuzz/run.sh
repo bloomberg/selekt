@@ -15,7 +15,11 @@ artifact_root="$build_dir/artifacts"
 python3 "$fuzz_dir/prepare_corpora.py" "$fuzz_dir" "$corpus_root"
 mkdir -p "$artifact_root"
 
-export ASAN_OPTIONS="abort_on_error=1:allocator_may_return_null=1:detect_leaks=1:symbolize=1"
+if [[ $engine == afl ]]; then
+  export ASAN_OPTIONS="abort_on_error=1:allocator_may_return_null=1:detect_leaks=1:symbolize=0"
+else
+  export ASAN_OPTIONS="abort_on_error=1:allocator_may_return_null=1:detect_leaks=1:symbolize=1"
+fi
 export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 
 targets=(
