@@ -220,6 +220,12 @@ internal class ExternalSQLite(
         require(key.size == length) { "Key array size must match the declared length." }
     }
 
+    private fun requireArrayLength(operation: String, arraySize: Int, length: Int) {
+        if (length < 0 || length > arraySize) {
+            throw IndexOutOfBoundsException("$operation: length is out of bounds.")
+        }
+    }
+
     private fun databaseSegment(db: DatabaseHandle): MemorySegment =
         (db.attachment as? MemorySegment) ?: MemorySegment.ofAddress(db.pointer)
 
@@ -252,6 +258,10 @@ internal class ExternalSQLite(
     }
 
     override fun storeSecret(pointer: Long, capacity: Int, source: ByteArray, length: Int) {
+        requireArrayLength("storeSecret", source.size, length)
+        if (capacity < 0 || length > capacity) {
+            throw IndexOutOfBoundsException("storeSecret: length is out of bounds.")
+        }
         MemorySegment.copy(
             source,
             0,
@@ -262,8 +272,16 @@ internal class ExternalSQLite(
         )
     }
 
-    override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode =
-        sqlite3_bind_blob.invoke(statementSegment(statement), index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
+    override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode {
+        requireArrayLength("bindBlob", blob.size, length)
+        return sqlite3_bind_blob.invoke(
+            statementSegment(statement),
+            index,
+            MemorySegment.ofArray(blob),
+            length,
+            sqliteTransient
+        ) as Int
+    }
 
     override fun bindDouble(statement: StatementHandle, index: Int, value: Double): SQLCode =
         sqlite3_bind_double.invoke(statementSegment(statement), index, value) as Int
@@ -432,13 +450,16 @@ internal class ExternalSQLite(
         index: Int,
         blob: ByteArray,
         length: Int
-    ): SQLCode = sqlite3_bind_blob.invoke(
-        MemorySegment.ofAddress(statement),
-        index,
-        MemorySegment.ofArray(blob),
-        length,
-        sqliteTransient
-    ) as Int
+    ): SQLCode {
+        requireArrayLength("bindBlob", blob.size, length)
+        return sqlite3_bind_blob.invoke(
+            MemorySegment.ofAddress(statement),
+            index,
+            MemorySegment.ofArray(blob),
+            length,
+            sqliteTransient
+        ) as Int
+    }
 
     override fun bindDouble(
         statement: Long,
@@ -950,6 +971,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
+        requireArrayLength("key", key.size, length)
         val segment = slab.allocateFromBytes(key)
         try {
             sqlite3_key.invoke(
@@ -1128,6 +1150,7 @@ internal class ExternalSQLite(
         key: ByteArray,
         length: Int
     ): SQLCode = withSlab { slab ->
+        requireArrayLength("rekey", key.size, length)
         val segment = slab.allocateFromBytes(key)
         try {
             sqlite3_rekey.invoke(

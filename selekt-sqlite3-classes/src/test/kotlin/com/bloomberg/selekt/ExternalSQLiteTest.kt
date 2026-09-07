@@ -23,6 +23,7 @@ import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
@@ -430,11 +431,65 @@ internal class ExternalSQLiteTest {
             val statement = statementHolder[0]
             try {
                 val blob = byteArrayOf(1, 2, 3, 4, 5)
+                val original = blob.copyOf()
                 assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, blob, blob.size))
+                assertContentEquals(original, blob)
                 assertEquals(SQL_ROW, sqlite.step(statement))
                 val result = sqlite.columnBlob(statement, 0)
                 assertNotNull(result)
                 assertEquals(blob.toList(), result.toList())
+                assertContentEquals(original, blob)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindBlob rejects invalid declared lengths`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val blob = byteArrayOf(1, 2, 3)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.bindBlob(statement, 1, blob, -1)
+                }
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.bindBlob(statement, 1, blob, blob.size + 1)
+                }
+                assertContentEquals(byteArrayOf(1, 2, 3), blob)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindBlob accepts zero and partial declared lengths`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?, ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val blob = byteArrayOf(1, 2, 3)
+                assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, blob, 0))
+                assertEquals(SQL_OK, sqlite.bindBlob(statement, 2, blob, 2))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(SQL_BLOB, sqlite.columnType(statement, 0))
+                assertContentEquals(byteArrayOf(1, 2), sqlite.columnBlob(statement, 1))
+                assertContentEquals(byteArrayOf(1, 2, 3), blob)
             } finally {
                 sqlite.finalize(statement)
             }
@@ -1858,6 +1913,12 @@ internal class ExternalSQLiteTest {
             val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
             try {
                 val data = byteArrayOf(1, 2, 3)
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.bindBlob(stmtHandle, 1, data, -1)
+                }
+                assertFailsWith<IndexOutOfBoundsException> {
+                    sqlite.bindBlob(stmtHandle, 1, data, data.size + 1)
+                }
                 assertEquals(SQL_OK, sqlite.bindBlob(stmtHandle, 1, data, data.size))
                 assertEquals(SQL_ROW, sqlite.step(stmtHandle))
                 assertEquals(SQL_BLOB, sqlite.columnType(stmtHandle, 0))
@@ -2261,6 +2322,18 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `storeSecret rejects a length greater than its source`() {
+        val pointer = sqlite.allocateSecret(KEY_SIZE)
+        try {
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.storeSecret(pointer, KEY_SIZE, ByteArray(1), 2)
+            }
+        } finally {
+            sqlite.freeSecret(pointer, KEY_SIZE)
+        }
+    }
+
+    @Test
     fun `rawKeyAt behaves identically to keyConventionallyAt`() {
         val key = ByteArray(KEY_SIZE) { 0x22 }
         val dbPath = File(tempDir, "rawkeyed.db").absolutePath
@@ -2306,6 +2379,64 @@ internal class ExternalSQLiteTest {
             }
         } finally {
             sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `key and rekey reject invalid declared lengths without changing caller arrays`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        val key = ByteArray(KEY_SIZE) { 0x55 }
+        val original = key.copyOf()
+        try {
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.key(db, key, -1)
+            }
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.key(db, key, key.size + 1)
+            }
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.rekey(db, key, -1)
+            }
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.rekey(db, key, key.size + 1)
+            }
+            assertContentEquals(original, key)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `key and rekey use copies without changing caller arrays`() {
+        val dbPath = File(tempDir, "keyed.db").absolutePath
+        val originalKey = ByteArray(KEY_SIZE) { 0x66 }
+        val replacementKey = ByteArray(KEY_SIZE) { 0x77 }
+        val originalKeySnapshot = originalKey.copyOf()
+        val replacementKeySnapshot = replacementKey.copyOf()
+        val dbHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.key(db, originalKey, originalKey.size))
+            assertContentEquals(originalKeySnapshot, originalKey)
+            sqlite.exec(db, "CREATE TABLE t (id INTEGER PRIMARY KEY)")
+            assertEquals(SQL_OK, sqlite.rekey(db, replacementKey, replacementKey.size))
+            assertContentEquals(replacementKeySnapshot, replacementKey)
+        } finally {
+            sqlite.closeV2(db)
+        }
+
+        val reopenHolder = LongArray(1)
+        sqlite.openV2(dbPath, SQL_OPEN_READWRITE_OR_CREATE, reopenHolder)
+        val reopened = reopenHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.key(reopened, replacementKey, replacementKey.size))
+            assertEquals(SQL_OK, sqlite.exec(reopened, "SELECT * FROM t"))
+            assertContentEquals(replacementKeySnapshot, replacementKey)
+        } finally {
+            sqlite.closeV2(reopened)
         }
     }
 
