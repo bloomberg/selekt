@@ -692,6 +692,8 @@ internal class ExternalSQLite(
     ): SQLCode = callbackRegistryLock.withLock {
         val segment = MemorySegment.ofAddress(db)
         sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
+        sqlite3_commit_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
+        sqlite3_rollback_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
         (sqlite3_close_v2.invoke(segment) as Int).also { result ->
             if (result == SQL_OK) {
                 activeListeners.remove(db)?.arena?.close()
