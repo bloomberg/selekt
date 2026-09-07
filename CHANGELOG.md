@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 1.2.2
+
+* Free expanded SQL allocations.
+* Simplify JDBC connection session ownership.
+* Use SQLite parameter metadata in JDBC statements.
+* Force single-connection pools for private memory databases.
+* Contain exceptions in Java 25 FFM callbacks.
+* Harden vec1 against malformed inputs.
+* Harden FFM callback failure containment.
+
 ## Version 1.2.1
 
 * Simplify JDBC transaction ownership tracking.
