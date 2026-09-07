@@ -167,7 +167,7 @@ internal open class JdbcPreparedStatement(
             try {
                 withCancellation(signal, primary = true) {
                     connection.ensureTransaction()
-                    executeUpdate(compileStatement(sql, materializedArgs))
+                    compileStatement(sql, materializedArgs).use(::executeUpdate)
                 }
             } catch (e: OperationCancelledException) {
                 throw SQLExceptionMapper.mapCancellation(e)

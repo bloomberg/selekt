@@ -252,6 +252,7 @@ internal class JdbcPreparedStatementTest {
         }.executeUpdate())
         verify(database).compileStatement(any<String>(), any<Array<Any?>>())
         verify(mockStatement).executeUpdateDelete()
+        verify(mockStatement).close()
     }
 
     @Test
@@ -347,6 +348,7 @@ internal class JdbcPreparedStatementTest {
                 setString(2, "test")
             }.executeUpdate()
         }
+        verify(mockStatement).close()
     }
 
     @Test
