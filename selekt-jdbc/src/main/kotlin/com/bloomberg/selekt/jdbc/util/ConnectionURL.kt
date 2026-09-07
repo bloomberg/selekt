@@ -42,9 +42,32 @@ internal class ConnectionURL private constructor(
         private const val SELEKT_SUBPROTOCOL = "sqlite:"
         private const val FULL_PREFIX = "$JDBC_PREFIX$SELEKT_SUBPROTOCOL"
         private const val PROPERTY_KEY = "key"
-        private val KEY_PROPERTY_PATTERN = Regex("([?&])\\s*key\\s*=[^&]*", RegexOption.IGNORE_CASE)
+        private val CAMEL_CASE_BOUNDARY = Regex("(?<=[a-z0-9])(?=[A-Z])")
+        private val PROPERTY_NAME_SEPARATOR = Regex("[^A-Za-z0-9]+")
+        private val SENSITIVE_PROPERTY_NAME_PARTS = setOf(
+            "authorization",
+            "credential",
+            "credentials",
+            "key",
+            "passwd",
+            "password",
+            "pwd",
+            "secret",
+            "token"
+        )
+        private val SENSITIVE_COMPOUND_PROPERTY_NAMES = setOf(
+            "accesstoken",
+            "apikey",
+            "clientsecret",
+            "privatekey",
+            "refreshtoken"
+        )
 
-        fun containsEncryptionKey(url: String): Boolean = KEY_PROPERTY_PATTERN.containsMatchIn(url)
+        fun containsEncryptionKey(url: String): Boolean = rawPropertyNames(url).any { rawName ->
+            runCatching { normalizePropertyName(rawName) }
+                .getOrNull()
+                ?.equals(PROPERTY_KEY, ignoreCase = true) == true
+        }
 
         @JvmStatic
         fun parse(url: String): ConnectionURL {
@@ -58,12 +81,21 @@ internal class ConnectionURL private constructor(
                     ConnectionURL(first, second)
                 }
             }.getOrElse {
-                throw SQLException("Failed to parse JDBC URL: ${redactSensitiveProperties(url)}", it)
+                throw SQLException("Failed to parse JDBC URL", it)
             }
         }
 
-        private fun redactSensitiveProperties(url: String) = KEY_PROPERTY_PATTERN.replace(url) {
-            "${it.groupValues[1]}key=***"
+        private fun rawPropertyNames(url: String): Sequence<String> {
+            val queryStart = url.indexOf('?')
+            if (queryStart == -1 || queryStart == url.lastIndex) {
+                return emptySequence()
+            }
+            return url.substring(queryStart + 1)
+                .splitToSequence('&')
+                .mapNotNull { parameter ->
+                    val separator = parameter.indexOf('=')
+                    parameter.takeIf { separator >= 0 }?.substring(0, separator)
+                }
         }
 
         @JvmStatic
@@ -112,10 +144,23 @@ internal class ConnectionURL private constructor(
             }
         }
 
-        private fun normalizePropertyName(name: String): String = if (name.equals(PROPERTY_KEY, ignoreCase = true)) {
-            PROPERTY_KEY
-        } else {
-            name
+        private fun normalizePropertyName(name: String): String {
+            val decodedName = URLDecoder.decode(name, Charsets.UTF_8).trim()
+            return if (decodedName.equals(PROPERTY_KEY, ignoreCase = true)) {
+                PROPERTY_KEY
+            } else {
+                decodedName
+            }
+        }
+
+        private fun isSensitivePropertyName(name: String): Boolean {
+            val parts = CAMEL_CASE_BOUNDARY.split(name)
+                .flatMap(PROPERTY_NAME_SEPARATOR::split)
+                .filter(String::isNotEmpty)
+                .map(String::lowercase)
+            val compactName = parts.joinToString("")
+            return parts.any(SENSITIVE_PROPERTY_NAME_PARTS::contains) ||
+                compactName in SENSITIVE_COMPOUND_PROPERTY_NAMES
         }
     }
 
@@ -139,7 +184,7 @@ internal class ConnectionURL private constructor(
         "${if (properties.isNotEmpty()) { "?" } else { "" } }${propertiesToQueryString()}"
 
     private fun propertiesToQueryString(): String = properties.entries.joinToString("&") { (key, value) ->
-        if ((key as String).equals(PROPERTY_KEY, ignoreCase = true)) {
+        if (isSensitivePropertyName(key as String)) {
             "$key=***"
         } else {
             "$key=${URLEncoder.encode(value.toString(), "UTF-8")}"

@@ -73,12 +73,12 @@ internal class ConnectionURLTest {
     }
 
     @Test
-    fun malformedUrlErrorRedactsKey() {
+    fun malformedUrlErrorDoesNotIncludeUrl() {
         val exception = assertFailsWith<SQLException> {
             ConnectionURL.parse("jdbc:sqlite:/test.db?key=supersecret%2")
         }
         assertFalse(exception.message.orEmpty().contains("supersecret"))
-        assertTrue(exception.message.orEmpty().contains("key=***"))
+        assertEquals("Failed to parse JDBC URL", exception.message)
     }
 
     @Test
@@ -131,11 +131,34 @@ internal class ConnectionURLTest {
     }
 
     @Test
+    fun toStringRedactsCommonSecretProperties(): Unit = ConnectionURL.parse(
+        "jdbc:sqlite:/test.db?password=first&api%5Fkey=second&accessToken=third&poolSize=10"
+    ).toString().run {
+        assertFalse(contains("first"))
+        assertFalse(contains("second"))
+        assertFalse(contains("third"))
+        assertTrue(contains("password=***"))
+        assertTrue(contains("api_key=***"))
+        assertTrue(contains("accessToken=***"))
+        assertTrue(contains("poolSize=10"))
+    }
+
+    @Test
     fun misCasedKeyIsNormalized() {
         listOf("Key", "KEY", "kEy").forEach { name ->
             val connectionURL = ConnectionURL.parse("jdbc:sqlite:/test.db?$name=supersecret")
             assertEquals("supersecret", connectionURL.getProperty("key"))
             assertEquals(setOf("key"), connectionURL.properties.stringPropertyNames())
+        }
+    }
+
+    @Test
+    fun encodedKeyIsNormalized() {
+        listOf("%6Bey", "%4B%45%59", "%20Key%20", "+key+").forEach { name ->
+            val connectionURL = ConnectionURL.parse("jdbc:sqlite:/test.db?$name=supersecret")
+            assertEquals("supersecret", connectionURL.getProperty("key"))
+            assertEquals(setOf("key"), connectionURL.properties.stringPropertyNames())
+            assertTrue(ConnectionURL.containsEncryptionKey("jdbc:sqlite:/test.db?$name=supersecret"))
         }
     }
 }

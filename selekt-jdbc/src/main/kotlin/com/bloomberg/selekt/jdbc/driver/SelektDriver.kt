@@ -129,9 +129,8 @@ class SelektDriver : Driver {
             if (e is SQLFeatureNotSupportedException) {
                 throw e
             }
-            val safeUrl = runCatching { ConnectionURL.parse(url).toString() }.getOrDefault("<unparseable URL>")
             throw SQLExceptionMapper.mapException(
-                "Failed to create connection to $safeUrl: ${e.message}",
+                "Failed to create JDBC connection: ${e.message}",
                 -1,
                 -1,
                 e
@@ -142,7 +141,7 @@ class SelektDriver : Driver {
     override fun acceptsURL(url: String?): Boolean = url != null && ConnectionURL.isValidUrl(url)
 
     override fun getPropertyInfo(url: String, info: Properties): Array<DriverPropertyInfo> = if (!acceptsURL(url)) {
-        throw SQLException("Invalid URL format: $url")
+        throw SQLException("Invalid JDBC URL format")
     } else {
         rejectEncryptionKey(url, info)
         arrayOf(
