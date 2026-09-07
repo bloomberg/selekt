@@ -97,7 +97,21 @@ internal class SQLQuery internal constructor(
     }
 
     // TODO Ever need to prepare again after execute, prepare_v2 will auto-recompile on step picking up any schema change?
-    override fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage> {
+    override fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage> = fill(
+        windowSize,
+        countAllRows = true
+    )
+
+    fun fillUpTo(maximumRows: Int): Pair<SQLStatementInformation, CursorWindowPage> {
+        require(maximumRows > 0) { "Maximum rows must be positive." }
+        val (information, page) = fill(maximumRows, countAllRows = false)
+        return information to page.copy(count = page.window.numberOfRows())
+    }
+
+    private fun fill(
+        windowSize: Int,
+        countAllRows: Boolean
+    ): Pair<SQLStatementInformation, CursorWindowPage> {
         var page: CursorWindowPage? = null
         val information = session().execute(
             statementType.isPredictedWrite,
@@ -107,7 +121,13 @@ internal class SQLQuery internal constructor(
         ) {
             it.prepare(sql).apply {
                 if (isReadOnly) {
-                    page = it.executeForCursorWindow(sql, validatedBindArgs(parameterCount), 0, windowSize, true)
+                    page = it.executeForCursorWindow(
+                        sql,
+                        validatedBindArgs(parameterCount),
+                        0,
+                        windowSize,
+                        countAllRows
+                    )
                 }
             }
         }
@@ -119,7 +139,7 @@ internal class SQLQuery internal constructor(
                     validatedBindArgs(information.parameterCount),
                     0,
                     windowSize,
-                    true
+                    countAllRows
                 )
             }
         } else {

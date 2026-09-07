@@ -400,6 +400,24 @@ class SQLDatabase(
     }
 
     /**
+     * Executes a cancellable query while stepping no more than [maximumRows].
+     *
+     * Unlike a SQL `LIMIT` rewrite, this applies to the outer result independently of SQL syntax.
+     */
+    @JvmSynthetic
+    fun queryUpTo(
+        sql: String,
+        selectionArgs: Array<out Any?>,
+        maximumRows: Int,
+        cancellationSignal: CancellationSignal
+    ): ICursor {
+        require(maximumRows > 0) { "Maximum rows must be positive." }
+        return withCancellationSignal(cancellationSignal) {
+            queryUpTo(SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), selectionArgs), maximumRows)
+        }
+    }
+
+    /**
      * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
      * aborted at the earliest opportunity and an [OperationCancelledException] will be thrown.
      *
@@ -699,6 +717,11 @@ class SQLDatabase(
             val refill = query.refiller(cursorWindowSize)
             WindowedCursor(information.columnNames, page) { startPosition -> pledge { refill(startPosition) } }
         }
+    }
+
+    private fun queryUpTo(query: SQLQuery, maximumRows: Int): ICursor = pledge {
+        val (information, page) = query.fillUpTo(maximumRows)
+        WindowedCursor(information.columnNames, page)
     }
 
     /**

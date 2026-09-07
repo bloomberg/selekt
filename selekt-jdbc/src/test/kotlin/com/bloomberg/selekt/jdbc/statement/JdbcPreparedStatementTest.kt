@@ -105,7 +105,9 @@ internal class JdbcPreparedStatementTest {
                 )
             }
         }
-        cursor = mock<ICursor>()
+        cursor = mock<ICursor> {
+            whenever(it.isForwardOnly) doReturn true
+        }
         val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
         connection = JdbcConnection(testSharedDatabase(database), connectionURL, properties)
@@ -173,24 +175,31 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun maxRowsIsAppendedAsBoundParameter() {
+    fun maxRowsLimitsRowsWithoutChangingParametersOrSql() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
+        whenever(cursor.moveToNext()) doReturn true
         preparedStatement.apply {
             setInt(1, 42)
             setString(2, "test")
             maxRows = 5
-        }.executeQuery()
+        }.executeQuery().use { resultSet ->
+            repeat(5) {
+                assertTrue(resultSet.next())
+            }
+            assertFalse(resultSet.next())
+        }
         val args = argumentCaptor<Array<Any?>>()
         verify(database).query(
-            eq("SELECT * FROM users WHERE id = ? AND name = ? LIMIT ?"),
+            eq("SELECT * FROM users WHERE id = ? AND name = ?"),
             args.capture()
         )
-        assertContentEquals(arrayOf<Any?>(42, "test", 5), args.firstValue)
+        assertContentEquals(arrayOf<Any?>(42, "test"), args.firstValue)
+        verify(cursor, times(5)).moveToNext()
     }
 
     @Test
-    fun maxRowsDoesNotOverrideExistingLiteralLimit() {
-        val sql = "SELECT * FROM users WHERE id = ? LIMIT 5"
+    fun maxRowsDoesNotInterpretLimitInSql() {
+        val sql = "SELECT 'LIMIT 1' FROM users WHERE id = ? LIMIT 5"
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(connection, database, sql).use { statement ->
             statement.setInt(1, 42)
@@ -203,7 +212,7 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun maxRowsDoesNotAppendSecondParameterizedLimit() {
+    fun maxRowsDoesNotModifyParameterizedLimit() {
         val sql = "SELECT * FROM users WHERE id = ? LIMIT ?"
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(connection, database, sql).use { statement ->
@@ -218,7 +227,7 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun maxRowsPreservesParameterizedLimitWithTrailingSemicolon() {
+    fun maxRowsDoesNotModifySqlWithTrailingSemicolon() {
         val sql = "SELECT * FROM users WHERE id = ? LIMIT ?;"
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         JdbcPreparedStatement(connection, database, sql).use { statement ->

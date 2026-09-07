@@ -40,13 +40,15 @@ import kotlin.concurrent.withLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+internal const val DEFAULT_JDBC_CURSOR_WINDOW_SIZE = 1024
+
 /**
  * Supports the URL format: jdbc:sqlite:path/to/database.sqlite[?properties]
  *
  * Supported connection properties:
  * - poolSize: Maximum connection pool size (integer, default: 10)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
- * - cursorWindowSize: Maximum rows retained by a cursor window (positive integer, default: unbounded)
+ * - cursorWindowSize: Maximum rows retained by a cursor window (positive integer, default: 1024)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
  *
@@ -154,7 +156,7 @@ class SelektDriver : Driver {
             },
             DriverPropertyInfo(
                 PROPERTY_CURSOR_WINDOW_SIZE,
-                info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, Int.MAX_VALUE.toString())
+                info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, DEFAULT_JDBC_CURSOR_WINDOW_SIZE.toString())
             ).apply {
                 description = "Maximum rows retained by a cursor window"
                 required = false
@@ -226,7 +228,8 @@ class SelektDriver : Driver {
         val poolSize = getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: DEFAULT_POOL_SIZE
         val busyTimeout = getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull()
             ?: DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
-        val cursorWindowSize = getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull() ?: Int.MAX_VALUE
+        val cursorWindowSize = getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull()
+            ?: DEFAULT_JDBC_CURSOR_WINDOW_SIZE
         val journalMode = getProperty(PROPERTY_JOURNAL_MODE)?.let {
             SQLiteJournalMode.valueOf(it.uppercase())
         } ?: SQLiteJournalMode.WAL
