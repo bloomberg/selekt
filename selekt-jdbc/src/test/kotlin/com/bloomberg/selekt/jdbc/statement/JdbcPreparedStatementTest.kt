@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLRawStatement
 import com.bloomberg.selekt.ISQLStatement
@@ -82,6 +83,22 @@ internal class JdbcPreparedStatementTest {
                 }
             }
             whenever(it.queryForwardOnly(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<Array<Any?>>(1)
+                )
+            }
+            whenever(
+                it.query(any<String>(), any<Array<Any?>>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<Array<Any?>>(1)
+                )
+            }
+            whenever(
+                it.queryForwardOnly(any<String>(), any<Array<Any?>>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
                 it.query(
                     invocation.getArgument<String>(0),
                     invocation.getArgument<Array<Any?>>(1)

@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.statement
 
+import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.SQLDatabase
@@ -58,6 +59,22 @@ internal class JdbcStatementTest {
     @BeforeEach
     fun setUp() {
         mockDatabase = mock<SQLDatabase> {
+            whenever(
+                it.query(any<String>(), any<Array<Any?>>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<Array<Any?>>(1)
+                )
+            }
+            whenever(
+                it.queryForwardOnly(any<String>(), any<Array<Any?>>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<Array<Any?>>(1)
+                )
+            }
             whenever(it.queryForwardOnly(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
                 it.query(
                     invocation.getArgument<String>(0),
@@ -286,7 +303,10 @@ internal class JdbcStatementTest {
 
     @Test
     fun cancellation() {
+        val signal = statement.activateCancellationSignal()
         statement.cancel()
+        assertTrue(signal.isCancelled)
+        statement.deactivateCancellationSignal()
     }
 
     @Test

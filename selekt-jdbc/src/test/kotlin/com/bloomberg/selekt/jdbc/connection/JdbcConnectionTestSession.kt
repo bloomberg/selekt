@@ -34,6 +34,11 @@ internal fun testSharedDatabase(
         val block = invocation.arguments.single() as SQLDatabase.() -> Any?
         block(database)
     }.whenever(session).execute<Any?>(any())
+    doAnswer { invocation ->
+        @Suppress("UNCHECKED_CAST")
+        val block = invocation.arguments[2] as SQLDatabase.() -> Any?
+        block(database)
+    }.whenever(database).withCancellationSignal<Any?>(any(), any(), any())
     whenever(database.openSession(any(), any())).thenReturn(session)
     return SharedDatabase(database, onClose)
 }
