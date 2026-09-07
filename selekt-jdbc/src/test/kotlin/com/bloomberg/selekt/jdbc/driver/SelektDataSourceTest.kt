@@ -70,7 +70,6 @@ internal class SelektDataSourceTest {
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -214,17 +213,14 @@ internal class SelektDataSourceTest {
         assertEquals("DELETE", journalMode)
         assertFalse(foreignKeys)
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
     fun setEncryptionWithNullKey(): Unit = dataSource.run {
         setEncryption(null)
         assertFalse(encryptionEnabled)
-        assertNull(encryptionKeySource)
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
     }
 
     @Test
@@ -244,11 +240,6 @@ internal class SelektDataSourceTest {
     @Test
     fun encryptionDisabledByDefault() {
         assertFalse(dataSource.encryptionEnabled)
-    }
-
-    @Test
-    fun encryptionKeyNullByDefault() {
-        assertNull(dataSource.encryptionKeySource)
     }
 
     @Test
@@ -425,7 +416,14 @@ internal class SelektDataSourceTest {
     fun setEncryptionWithKey(): Unit = dataSource.run {
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertTrue(encryptionEnabled)
-        assertEquals(EncryptionKeySource.Literal(VALID_KEY.toCharArray()), encryptionKeySource)
+    }
+
+    @Test
+    fun encryptionKeyMaterialIsWriteOnly() {
+        val publicMethodNames = SelektDataSource::class.java.methods.mapTo(mutableSetOf()) { it.name }
+        assertTrue("setEncryption" in publicMethodNames)
+        assertFalse("getEncryptionKeySource" in publicMethodNames)
+        assertFalse("setEncryptionKeySource" in publicMethodNames)
     }
 
     @Test
@@ -433,14 +431,13 @@ internal class SelektDataSourceTest {
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         val secondKey = "REPLACEMENT-KEY-exactly-32bytes!"
         setEncryption(EncryptionKeySource.Literal(secondKey.toCharArray()))
-        assertEquals(EncryptionKeySource.Literal(secondKey.toCharArray()), encryptionKeySource)
+        assertTrue(encryptionEnabled)
     }
 
     @Test
     fun setEncryptionWithoutKey(): Unit = dataSource.run {
         setEncryption(null)
         assertFalse(encryptionEnabled)
-        assertNull(encryptionKeySource)
     }
 
     @Test
@@ -449,7 +446,6 @@ internal class SelektDataSourceTest {
         assertTrue(encryptionEnabled)
         setEncryption(null)
         assertFalse(encryptionEnabled)
-        assertNull(encryptionKeySource)
     }
 
     @Test
@@ -640,24 +636,17 @@ internal class SelektDataSourceTest {
     }
 
     @Test
-    fun directEncryptionKeySourceRejectsShortKey() {
-        assertFailsWith<IllegalArgumentException> {
-            dataSource.encryptionKeySource = EncryptionKeySource.Literal("short".toCharArray())
-        }
-    }
-
-    @Test
-    fun directEncryptionKeySourceDoesNotZeroCallerOwnedArrayOnReplace(): Unit = dataSource.run {
+    fun setEncryptionDoesNotZeroCallerOwnedArrayOnReplace(): Unit = dataSource.run {
         val callerArray = VALID_KEY.toCharArray()
-        encryptionKeySource = EncryptionKeySource.Literal(callerArray)
-        encryptionKeySource = EncryptionKeySource.Literal("REPLACEMENT-KEY-exactly-32bytes!".toCharArray())
+        setEncryption(EncryptionKeySource.Literal(callerArray))
+        setEncryption(EncryptionKeySource.Literal("REPLACEMENT-KEY-exactly-32bytes!".toCharArray()))
         assertEquals(VALID_KEY, String(callerArray))
     }
 
     @Test
-    fun directEncryptionKeySourceDoesNotZeroCallerOwnedArrayOnClose(): Unit = dataSource.run {
+    fun setEncryptionDoesNotZeroCallerOwnedArrayOnClose(): Unit = dataSource.run {
         val callerArray = VALID_KEY.toCharArray()
-        encryptionKeySource = EncryptionKeySource.Literal(callerArray)
+        setEncryption(EncryptionKeySource.Literal(callerArray))
         close()
         assertEquals(VALID_KEY, String(callerArray))
     }
