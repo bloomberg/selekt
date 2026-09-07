@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.lob
 
+import java.sql.Blob
 import java.sql.SQLException
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -80,6 +81,22 @@ internal class JdbcBlobTest {
     }
 
     @Test
+    fun getBytesRejectsUnrepresentablePosition() {
+        val blob = JdbcBlob(testData)
+        assertFailsWith<SQLException> {
+            blob.getBytes(Int.MAX_VALUE.toLong() + 2L, 1)
+        }
+        assertFailsWith<SQLException> {
+            blob.getBytes(Long.MAX_VALUE, 1)
+        }
+    }
+
+    @Test
+    fun getBytesDoesNotOverflowEndIndex() {
+        assertContentEquals("ello".toByteArray(), JdbcBlob(testData).getBytes(2, Int.MAX_VALUE))
+    }
+
+    @Test
     fun getBinaryStream() {
         val blob = JdbcBlob(testData)
         val stream = blob.getBinaryStream()
@@ -96,6 +113,18 @@ internal class JdbcBlobTest {
         val stream = blob.getBinaryStream(2, 3)
         val result = stream.readBytes()
         assertContentEquals("ell".toByteArray(), result)
+    }
+
+    @Test
+    fun getBinaryStreamValidatesLongLengthBeforeConversion() {
+        val blob = JdbcBlob(testData)
+        assertContentEquals("ello".toByteArray(), blob.getBinaryStream(2, Int.MAX_VALUE.toLong()).readBytes())
+        assertFailsWith<SQLException> {
+            blob.getBinaryStream(1, -1L)
+        }
+        assertFailsWith<SQLException> {
+            blob.getBinaryStream(1, Int.MAX_VALUE.toLong() + 1L)
+        }
     }
 
     @Test
@@ -120,10 +149,25 @@ internal class JdbcBlobTest {
     }
 
     @Test
+    fun positionByteArrayDoesNotWrapLargeStart() {
+        assertEquals(-1L, JdbcBlob(testData).position(testData, Long.MAX_VALUE))
+    }
+
+    @Test
     fun positionBlob() {
         val blob = JdbcBlob("Hello World".toByteArray())
         val searchBlob = JdbcBlob("World".toByteArray())
         assertEquals(7L, blob.position(searchBlob, 1))
+    }
+
+    @Test
+    fun positionBlobRejectsUnrepresentableSearchLength() {
+        val searchBlob = object : Blob by JdbcBlob() {
+            override fun length(): Long = Int.MAX_VALUE.toLong() + 1L
+        }
+        assertFailsWith<SQLException> {
+            JdbcBlob(testData).position(searchBlob, 1)
+        }
     }
 
     @Test
@@ -151,6 +195,13 @@ internal class JdbcBlobTest {
         val written = blob.setBytes(1, "Hello, World".toByteArray(), 6, 5)
         assertEquals(5, written)
         assertContentEquals(" Worl".toByteArray(), blob.getBytes(1, 5))
+    }
+
+    @Test
+    fun setBytesRejectsOverflowingOffsetPlusLength() {
+        assertFailsWith<SQLException> {
+            JdbcBlob().setBytes(1, byteArrayOf(1), 1, Int.MAX_VALUE)
+        }
     }
 
     @Test

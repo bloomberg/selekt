@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.lob
 
+import java.sql.Clob
 import java.sql.SQLException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -64,6 +65,22 @@ internal class JdbcClobTest {
     }
 
     @Test
+    fun getSubStringRejectsUnrepresentablePosition() {
+        val clob = JdbcClob("Hello")
+        assertFailsWith<SQLException> {
+            clob.getSubString(Int.MAX_VALUE.toLong() + 2L, 1)
+        }
+        assertFailsWith<SQLException> {
+            clob.getSubString(Long.MAX_VALUE, 1)
+        }
+    }
+
+    @Test
+    fun getSubStringDoesNotOverflowEndIndex() {
+        assertEquals("ello", JdbcClob("Hello").getSubString(2, Int.MAX_VALUE))
+    }
+
+    @Test
     fun getCharacterStream() {
         val content = "Hello, World!"
         val clob = JdbcClob(content)
@@ -75,6 +92,18 @@ internal class JdbcClobTest {
     @Test
     fun getCharacterStreamWithPosition() {
         assertEquals("World", JdbcClob("Hello, World!").getCharacterStream(8, 5).readText())
+    }
+
+    @Test
+    fun getCharacterStreamValidatesLongLengthBeforeConversion() {
+        val clob = JdbcClob("Hello")
+        assertEquals("ello", clob.getCharacterStream(2, Int.MAX_VALUE.toLong()).readText())
+        assertFailsWith<SQLException> {
+            clob.getCharacterStream(1, -1L)
+        }
+        assertFailsWith<SQLException> {
+            clob.getCharacterStream(1, Int.MAX_VALUE.toLong() + 1L)
+        }
     }
 
     @Test
@@ -107,10 +136,25 @@ internal class JdbcClobTest {
     }
 
     @Test
+    fun positionStringDoesNotWrapLargeStart() {
+        assertEquals(-1L, JdbcClob("Hello").position("Hello", Long.MAX_VALUE))
+    }
+
+    @Test
     fun positionClob() {
         val clob = JdbcClob("Hello, World!")
         val searchClob = JdbcClob("World")
         assertEquals(8L, clob.position(searchClob, 1))
+    }
+
+    @Test
+    fun positionClobRejectsUnrepresentableSearchLength() {
+        val searchClob = object : Clob by JdbcClob() {
+            override fun length(): Long = Int.MAX_VALUE.toLong() + 1L
+        }
+        assertFailsWith<SQLException> {
+            JdbcClob("Hello").position(searchClob, 1)
+        }
     }
 
     @Test
@@ -184,6 +228,13 @@ internal class JdbcClobTest {
         }
         assertFailsWith<SQLException> {
             clob.setString(1, "Hello", 0, 10)
+        }
+    }
+
+    @Test
+    fun setStringRejectsOverflowingOffsetPlusLength() {
+        assertFailsWith<SQLException> {
+            JdbcClob().setString(1, "x", 1, Int.MAX_VALUE)
         }
     }
 
