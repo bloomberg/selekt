@@ -39,6 +39,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -131,6 +132,38 @@ internal class JdbcPreparedStatementTest {
         assertTrue(resultSet is JdbcResultSet)
         assertSame(resultSet, preparedStatement.resultSet)
         verify(database).query(any<String>(), any<Array<Any?>>())
+    }
+
+    @Test
+    fun readOnlyForwardOnlyQueryStreams() {
+        val compiledStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        connection.isReadOnly = true
+        whenever(database.compileStatement(eq(preparedStatement.sql), any<Array<Any?>>())) doReturn compiledStatement
+        whenever(
+            database.queryForwardOnly(
+                eq(preparedStatement.sql),
+                any<Array<Any?>>(),
+                any<CancellationSignal>()
+            )
+        ) doReturn cursor
+
+        preparedStatement.apply {
+            setInt(1, 42)
+            setString(2, "test")
+        }.executeQuery().close()
+
+        verify(database).queryForwardOnly(
+            eq(preparedStatement.sql),
+            any<Array<Any?>>(),
+            any<CancellationSignal>()
+        )
+        verify(database, never()).query(
+            eq(preparedStatement.sql),
+            any<Array<Any?>>(),
+            any<CancellationSignal>()
+        )
     }
 
     @Test
