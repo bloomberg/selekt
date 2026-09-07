@@ -160,7 +160,7 @@ internal class SelektDriverTest {
             assertNotNull(it)
             assertEquals("Maximum rows retained by a cursor window", it.description)
             assertFalse(it.required)
-            assertEquals(Int.MAX_VALUE.toString(), it.value)
+            assertEquals("1024", it.value)
         }
         find { it.name == "journalMode" }.let {
             assertNotNull(it)

@@ -98,7 +98,7 @@ class SelektDataSource : DataSource {
         }
 
     @Volatile
-    var cursorWindowSize: Int = Int.MAX_VALUE
+    var cursorWindowSize: Int = DEFAULT_JDBC_CURSOR_WINDOW_SIZE
         set(value) {
             require(value > 0) { "Cursor window size must be positive" }
             field = value

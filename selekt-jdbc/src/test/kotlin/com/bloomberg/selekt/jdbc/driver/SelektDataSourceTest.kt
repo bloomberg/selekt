@@ -263,7 +263,7 @@ internal class SelektDataSourceTest {
 
     @Test
     fun cursorWindowSizeDefault() {
-        assertEquals(Int.MAX_VALUE, dataSource.cursorWindowSize)
+        assertEquals(1024, dataSource.cursorWindowSize)
     }
 
     @Test

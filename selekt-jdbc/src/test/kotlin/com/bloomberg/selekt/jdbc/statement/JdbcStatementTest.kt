@@ -36,7 +36,6 @@ import org.mockito.kotlin.whenever
 import java.sql.SQLException
 import java.sql.Statement
 import java.util.Properties
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -45,7 +44,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -82,7 +80,9 @@ internal class JdbcStatementTest {
                 )
             }
         }
-        mockCursor = mock<ICursor>()
+        mockCursor = mock<ICursor> {
+            whenever(it.isForwardOnly) doReturn true
+        }
         val connectionURL = ConnectionURL.parse("jdbc:sqlite:/tmp/test.db")
         val properties = Properties()
         mockConnection = JdbcConnection(testSharedDatabase(mockDatabase), connectionURL, properties)
@@ -192,14 +192,20 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun maxRowsAppendsLimit() {
+    fun maxRowsLimitsRowsWithoutRewritingSql() {
+        val sql = "SELECT * FROM users"
         statement.maxRows = 5
-        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT ?"), any<Array<Any?>>()))
-            .doReturn(mockCursor)
-        statement.executeQuery("SELECT * FROM users")
-        val args = argumentCaptor<Array<Any?>>()
-        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT ?"), args.capture())
-        assertContentEquals(arrayOf<Any?>(5), args.firstValue)
+        whenever(mockDatabase.query(eq(sql), any<Array<Any?>>())) doReturn mockCursor
+        whenever(mockCursor.moveToNext()) doReturn true
+        statement.executeQuery(sql).use { resultSet ->
+            repeat(5) {
+                assertTrue(resultSet.next())
+            }
+            assertFalse(resultSet.next())
+            assertFalse(resultSet.next())
+        }
+        verify(mockDatabase).query(eq(sql), eq(emptyArray<Any?>()))
+        verify(mockCursor, times(5)).moveToNext()
     }
 
     @Test
@@ -212,25 +218,34 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun maxRowsDoesNotOverrideExistingLimit() {
+    fun maxRowsDoesNotInterpretOrModifySql() {
         statement.maxRows = 5
-        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT 10"), any<Array<Any?>>()))
-            .doReturn(mockCursor)
-        statement.executeQuery("SELECT * FROM users LIMIT 10")
-        val args = argumentCaptor<Array<Any?>>()
-        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT 10"), args.capture())
-        assertContentEquals(emptyArray(), args.firstValue)
+        listOf(
+            "SELECT 'LIMIT 1' FROM users",
+            "SELECT * FROM users -- LIMIT 1",
+            "SELECT * FROM users WHERE id IN (SELECT id FROM users LIMIT 1)",
+            "SELECT * FROM users LIMIT 10;"
+        ).forEach { sql ->
+            whenever(mockDatabase.query(eq(sql), any<Array<Any?>>())) doReturn mockCursor
+            statement.executeQuery(sql).close()
+            verify(mockDatabase).query(eq(sql), eq(emptyArray<Any?>()))
+        }
     }
 
     @Test
-    fun maxRowsStripsTrailingSemiColon() {
+    fun readOnlyMaxRowsBoundsBufferedExecution() {
+        val sql = "SELECT * FROM users"
+        val compiledStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        mockConnection.isReadOnly = true
         statement.maxRows = 5
-        whenever(mockDatabase.query(eq("SELECT * FROM users LIMIT ?"), any<Array<Any?>>()))
-            .doReturn(mockCursor)
-        statement.executeQuery("SELECT * FROM users;")
-        val args = argumentCaptor<Array<Any?>>()
-        verify(mockDatabase).query(eq("SELECT * FROM users LIMIT ?"), args.capture())
-        assertContentEquals(arrayOf<Any?>(5), args.firstValue)
+        whenever(mockDatabase.compileStatement(sql, emptyArray())) doReturn compiledStatement
+        whenever(
+            mockDatabase.queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
+        ) doReturn mockCursor
+        statement.executeQuery(sql).close()
+        verify(mockDatabase).queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
     }
 
     @Test

@@ -25,6 +25,7 @@ import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.GeneratedKeysResultSet
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
+import com.bloomberg.selekt.jdbc.result.RowLimitedCursor
 import java.sql.BatchUpdateException
 import java.sql.Connection
 import java.sql.ResultSet
@@ -63,8 +64,6 @@ open class JdbcStatement internal constructor(
     companion object {
         private val CLOSED: VarHandle = MethodHandles.lookup()
             .findVarHandle(JdbcStatement::class.java, "closed", Boolean::class.javaPrimitiveType)
-
-        private val limitPattern = Regex("""\bLIMIT\b""", RegexOption.IGNORE_CASE)
 
         private val TIMEOUT_SCHEDULER: ScheduledExecutorService = Executors.newScheduledThreadPool(
             1,
@@ -197,6 +196,8 @@ open class JdbcStatement internal constructor(
         checkReadOnlyQuery(sql, args)
         if (resultSetType == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
             database.queryForwardOnly(sql, args, signal)
+        } else if (maxRows > 0) {
+            database.queryUpTo(sql, args, maxRows, signal)
         } else {
             database.query(sql, args, signal)
         }
@@ -489,14 +490,11 @@ open class JdbcStatement internal constructor(
         args: Array<Any?>,
         signal: CancellationSignal
     ): ICursor {
-        if (maxRows <= 0) {
-            return queryWithSignal(sql, args, signal)
-        }
-        val trimmed = sql.trimEnd().removeSuffix(";").trimEnd()
-        return if (trimmed.contains(limitPattern)) {
-            queryWithSignal(sql, args, signal)
+        val cursor = queryWithSignal(sql, args, signal)
+        return if (maxRows > 0) {
+            RowLimitedCursor(cursor, maxRows)
         } else {
-            queryWithSignal("$trimmed LIMIT ?", args + maxRows, signal)
+            cursor
         }
     }
 
