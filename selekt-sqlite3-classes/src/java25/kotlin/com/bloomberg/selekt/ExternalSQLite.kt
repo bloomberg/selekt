@@ -71,28 +71,44 @@ internal class ExternalSQLite(
 
     private class CallbackFailureStack {
         private var failures = arrayOfNulls<Throwable>(INITIAL_CALLBACK_DEPTH)
+        private var secondaryFailures = arrayOfNulls<Throwable>(INITIAL_CALLBACK_DEPTH)
         private var depth = 0
 
         fun enter(): Int {
             if (depth == failures.size) {
                 failures = failures.copyOf(failures.size shl 1)
+                secondaryFailures = secondaryFailures.copyOf(secondaryFailures.size shl 1)
             }
             failures[depth] = null
+            secondaryFailures[depth] = null
             return depth++
         }
 
         fun record(failure: Throwable) {
-            if (depth > 0 && failures[depth - 1] == null) {
-                failures[depth - 1] = failure
+            if (depth > 0) {
+                val scope = depth - 1
+                when {
+                    failures[scope] == null -> failures[scope] = failure
+                    failures[scope] !== failure && secondaryFailures[scope] == null -> {
+                        secondaryFailures[scope] = failure
+                    }
+                }
             }
         }
 
         fun leave(scope: Int): Throwable? {
             check(scope == depth - 1)
-            return failures[scope].also {
-                failures[scope] = null
-                depth--
+            val failure = failures[scope]
+            val secondaryFailure = secondaryFailures[scope]
+            failures[scope] = null
+            secondaryFailures[scope] = null
+            depth--
+            if (failure != null && secondaryFailure != null) {
+                try {
+                    failure.addSuppressed(secondaryFailure)
+                } catch (_: Throwable) { /* Preserve the primary failure. */ }
             }
+            return failure
         }
     }
 
@@ -150,7 +166,9 @@ internal class ExternalSQLite(
         } catch (nativeFailure: Throwable) {
             val callbackFailure = failures.leave(scope)
             if (callbackFailure != null && callbackFailure !== nativeFailure) {
-                callbackFailure.addSuppressed(nativeFailure)
+                try {
+                    callbackFailure.addSuppressed(nativeFailure)
+                } catch (_: Throwable) { /* Preserve the primary failure. */ }
                 throw callbackFailure
             }
             throw nativeFailure
@@ -1240,8 +1258,9 @@ internal class ExternalSQLite(
             "onCommit",
             MethodType.methodType(Int::class.javaPrimitiveType)
         ).bindTo(dispatcher)
+        val target = MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java)
         return linker.upcallStub(
-            MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
+            failClosedIntUpcall(target),
             FunctionDescriptor.of(JAVA_INT, ADDRESS),
             arena
         )
@@ -1253,8 +1272,9 @@ internal class ExternalSQLite(
             "onRollback",
             MethodType.methodType(Void.TYPE)
         ).bindTo(dispatcher)
+        val target = MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java)
         return linker.upcallStub(
-            MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
+            failClosedVoidUpcall(target),
             FunctionDescriptor.ofVoid(ADDRESS),
             arena
         )
@@ -1266,11 +1286,32 @@ internal class ExternalSQLite(
             "onProgress",
             MethodType.methodType(Int::class.javaPrimitiveType)
         ).bindTo(dispatcher)
+        val target = MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java)
         return linker.upcallStub(
-            MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
+            failClosedIntUpcall(target),
             FunctionDescriptor.of(JAVA_INT, ADDRESS),
             arena
         )
+    }
+
+    private fun failClosedIntUpcall(target: MethodHandle): MethodHandle {
+        val fallback = MethodHandles.dropArguments(
+            MethodHandles.constant(Int::class.javaPrimitiveType, 1),
+            0,
+            Throwable::class.java,
+            MemorySegment::class.java
+        )
+        return MethodHandles.catchException(target, Throwable::class.java, fallback)
+    }
+
+    private fun failClosedVoidUpcall(target: MethodHandle): MethodHandle {
+        val fallback = MethodHandles.dropArguments(
+            MethodHandles.empty(MethodType.methodType(Void.TYPE)),
+            0,
+            Throwable::class.java,
+            MemorySegment::class.java
+        )
+        return MethodHandles.catchException(target, Throwable::class.java, fallback)
     }
 
     private external fun nativeInit(softHeapLimit: Long)
