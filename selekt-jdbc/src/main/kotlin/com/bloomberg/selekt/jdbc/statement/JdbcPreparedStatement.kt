@@ -248,7 +248,7 @@ internal open class JdbcPreparedStatement(
         if (!isClosed) {
             clearParameters()
             clearBatch()
-            closeCurrentResultSet()
+            closeDependentResultSets()
             if (connection.returnPreparedStatement(this)) {
                 markClosed()
             } else {

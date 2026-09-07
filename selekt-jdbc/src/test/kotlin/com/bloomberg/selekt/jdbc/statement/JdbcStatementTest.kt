@@ -46,6 +46,7 @@ import kotlin.test.assertTrue
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 internal class JdbcStatementTest {
@@ -371,6 +372,78 @@ internal class JdbcStatementTest {
         assertFalse(isCloseOnCompletion)
         closeOnCompletion()
         assertTrue(isCloseOnCompletion)
+    }
+
+    @Test
+    fun closeOnCompletionClosesStatementWhenResultSetCloses() {
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
+        statement.closeOnCompletion()
+        val resultSet = statement.executeQuery("SELECT * FROM users")
+        assertFalse(statement.isClosed)
+        resultSet.close()
+        assertTrue(statement.isClosed)
+        assertNull(statement.resultSet)
+        verify(mockCursor).close()
+    }
+
+    @Test
+    fun closeOnCompletionPreventsReexecutionAfterImplicitResultSetClose() {
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
+        statement.closeOnCompletion()
+        statement.executeQuery("SELECT * FROM users")
+        assertFailsWith<SQLException> {
+            statement.executeQuery("SELECT * FROM users")
+        }
+        assertTrue(statement.isClosed)
+        verify(mockCursor).close()
+        verify(mockDatabase, times(1)).query(any<String>(), any<Array<Any?>>())
+    }
+
+    @Test
+    fun resultSetCloseDoesNotCloseStatementByDefault() {
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
+        statement.executeQuery("SELECT * FROM users").close()
+        assertFalse(statement.isClosed)
+        assertNull(statement.resultSet)
+    }
+
+    @Test
+    fun closeOnCompletionWaitsForEveryDependentResultSet() {
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn mockCursor
+        statement.closeOnCompletion()
+        val generatedKeys = statement.generatedKeys
+        val queryResult = statement.executeQuery("SELECT * FROM users")
+        queryResult.close()
+        assertFalse(statement.isClosed)
+        generatedKeys.close()
+        assertTrue(statement.isClosed)
+    }
+
+    @Test
+    fun closingDependentResultSetMoreThanOnceIsHarmless() {
+        statement.closeOnCompletion()
+        val generatedKeys = statement.generatedKeys
+        generatedKeys.close()
+        generatedKeys.close()
+        assertTrue(statement.isClosed)
+    }
+
+    @Test
+    fun explicitCloseClosesDependentsWithoutCloseOnCompletionRecursion() {
+        var cursorClosed = false
+        val statefulCursor = mock<ICursor> {
+            whenever(it.isClosed()) doAnswer { cursorClosed }
+            whenever(it.close()) doAnswer {
+                cursorClosed = true
+            }
+        }
+        whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())) doReturn statefulCursor
+        statement.closeOnCompletion()
+        val resultSet = statement.executeQuery("SELECT * FROM users")
+        statement.close()
+        assertTrue(statement.isClosed)
+        assertTrue(resultSet.isClosed)
+        verify(statefulCursor).close()
     }
 
     @Test

@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.result
 
+import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import java.io.InputStream
 import java.io.Reader
 import java.math.BigDecimal
@@ -71,7 +72,11 @@ internal class GeneratedKeysResultSet(
     }
 
     override fun close() {
+        if (closed) {
+            return
+        }
         closed = true
+        (statement as? JdbcStatement)?.onResultSetClosed(this)
     }
 
     override fun wasNull(): Boolean = false

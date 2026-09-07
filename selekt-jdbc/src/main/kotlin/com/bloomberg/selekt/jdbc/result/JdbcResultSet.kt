@@ -300,10 +300,11 @@ internal class JdbcResultSet(
     }
 
     override fun close() {
-        if (!cursor.isClosed()) {
-            cursor.close()
+        if (cursor.isClosed()) {
+            return
         }
-        (statement as? JdbcStatement)?.deactivateCancellationSignal()
+        cursor.close()
+        (statement as? JdbcStatement)?.onResultSetClosed(this)
     }
 
     override fun wasNull(): Boolean = wasNull
