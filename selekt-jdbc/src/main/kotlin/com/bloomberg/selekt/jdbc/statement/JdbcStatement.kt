@@ -81,6 +81,8 @@ open class JdbcStatement internal constructor(
     @Volatile
     private var closed = false
     private var currentResultSet: ResultSet? = null
+    private val dependentResultSets = mutableSetOf<ResultSet>()
+    private var closingDependentResultSets = false
     private var updateCount = -1
     protected var lastGeneratedKey = -1L
     private var fetchSize = 0
@@ -182,6 +184,7 @@ open class JdbcStatement internal constructor(
 
     protected fun <T : ResultSet> trackResultSet(resultSet: T): T {
         currentResultSet = resultSet
+        dependentResultSets.add(resultSet)
         updateCount = -1
         return resultSet
     }
@@ -257,8 +260,7 @@ open class JdbcStatement internal constructor(
     override fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
             deactivateCancellationSignal()
-            currentResultSet?.close()
-            currentResultSet = null
+            closeDependentResultSets()
         }
     }
 
@@ -267,6 +269,7 @@ open class JdbcStatement internal constructor(
     }
 
     protected fun markOpen() {
+        closeOnCompletion = false
         CLOSED.set(this, false)
     }
 
@@ -278,7 +281,6 @@ open class JdbcStatement internal constructor(
 
     override fun getMoreResults(): Boolean {
         currentResultSet?.close()
-        currentResultSet = null
         return false
     }
 
@@ -483,7 +485,7 @@ open class JdbcStatement internal constructor(
 
     override fun getGeneratedKeys(): ResultSet {
         checkClosed()
-        return GeneratedKeysResultSet(lastGeneratedKey, this)
+        return GeneratedKeysResultSet(lastGeneratedKey, this).also(dependentResultSets::add)
     }
 
     override fun <T> unwrap(iface: Class<T>): T = if (iface.isAssignableFrom(this::class.java)) {
@@ -518,9 +520,38 @@ open class JdbcStatement internal constructor(
     }
 
     protected fun closeCurrentResultSet() {
-        currentResultSet?.close()
-        currentResultSet = null
+        val resultSet = currentResultSet ?: return
+        resultSet.close()
+        checkClosed()
     }
 
     internal fun hasOpenResultSet(): Boolean = currentResultSet?.isClosed == false
+
+    internal fun onResultSetClosed(resultSet: ResultSet) {
+        val wasCurrent = currentResultSet === resultSet
+        if (wasCurrent) {
+            currentResultSet = null
+            deactivateCancellationSignal()
+        }
+        if (!dependentResultSets.remove(resultSet) || dependentResultSets.isNotEmpty()) {
+            return
+        }
+        if (!closeOnCompletion || closingDependentResultSets || isClosed) {
+            return
+        }
+        close()
+    }
+
+    protected fun closeDependentResultSets() {
+        closingDependentResultSets = true
+        try {
+            dependentResultSets.toList().forEach { resultSet ->
+                resultSet.close()
+            }
+        } finally {
+            dependentResultSets.clear()
+            currentResultSet = null
+            closingDependentResultSets = false
+        }
+    }
 }

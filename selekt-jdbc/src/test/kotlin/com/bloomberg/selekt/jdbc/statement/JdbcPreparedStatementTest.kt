@@ -144,6 +144,18 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun closeOnCompletionClosesAndPoolsPreparedStatement() {
+        whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
+        preparedStatement.closeOnCompletion()
+        preparedStatement.executeQuery().close()
+        assertTrue(preparedStatement.isClosed)
+        val reopened = connection.prepareStatement(preparedStatement.sql)
+        assertSame(preparedStatement, reopened)
+        assertFalse(reopened.isCloseOnCompletion)
+        reopened.close()
+    }
+
+    @Test
     fun maxRowsIsAppendedAsBoundParameter() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         preparedStatement.apply {
