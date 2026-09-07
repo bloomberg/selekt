@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 1.2.3
+
+* Add Linux native fuzzing with ASan and UBSan.
+* Close dependent results sets.
+
 ## Version 1.2.2
 
 * Free expanded SQL allocations.
