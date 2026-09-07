@@ -165,7 +165,7 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
-    fun `native cursor window maps an empty blob to null on every backend`() {
+    fun `native cursor window preserves an empty blob on every backend`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
         val db = dbHolder[0]
@@ -182,7 +182,8 @@ internal class ExternalSQLiteTest {
                     assertEquals(1, buffer.getInt(0))
                     assertEquals(1, buffer.getInt(Int.SIZE_BYTES))
                     val rowOffset = buffer.getInt(buffer.capacity() - Int.SIZE_BYTES)
-                    assertEquals(SQL_NULL, buffer[rowOffset].toInt())
+                    assertEquals(SQL_BLOB, buffer[rowOffset].toInt())
+                    assertEquals(0, buffer.getInt(rowOffset + 1))
                 } finally {
                     nativeSQLite.freeCursorWindow(buffer)
                 }

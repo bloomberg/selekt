@@ -158,8 +158,9 @@ internal class NativeCursorWindowPagingTest {
         val value = 123_456_789.123456
         database.query(SimpleSQLQuery("SELECT x'', $value")).use { cursor ->
             assertTrue(cursor.moveToFirst())
-            assertEquals(ColumnType.NULL, cursor.type(0))
-            assertNull(cursor.getBlob(0))
+            assertEquals(ColumnType.BLOB, cursor.type(0))
+            assertFalse(cursor.isNull(0))
+            assertContentEquals(byteArrayOf(), cursor.getBlob(0))
             assertEquals(value.toString(), cursor.getString(1))
         }
     }
