@@ -70,6 +70,7 @@
 
 /* System include files */
 # include <assert.h>
+# include <limits.h>
 # include <string.h>
 # include <stdarg.h>
 # include <math.h>
@@ -666,9 +667,9 @@ static void vec1FromJsonFunc(
   int nVal, 
   sqlite3_value **aVal
 ){
-  const char *zJson = (const char*)sqlite3_value_text(aVal[0]);
-  int nJson = sqlite3_value_bytes(aVal[0]);
-  const char *p = zJson;
+  const char *zJson;
+  int nJson;
+  const char *p;
 
   assert( nVal==1 );
   UNUSED_PARAMETER(nVal);
@@ -676,7 +677,31 @@ static void vec1FromJsonFunc(
   float *aVec = 0;
   int nVec = 0;
 
-  aVec = (float*)sqlite3_malloc(sizeof_f32*(nJson/2));
+  if( sqlite3_value_type(aVal[0])==SQLITE_NULL ){
+    sqlite3_result_null(pCtx);
+    return;
+  }
+
+  zJson = (const char*)sqlite3_value_text(aVal[0]);
+  if( zJson==0 ){
+    sqlite3_result_error_nomem(pCtx);
+    return;
+  }
+  nJson = sqlite3_value_bytes(aVal[0]);
+  p = zJson;
+
+  if( nJson>=2 ){
+    sqlite3_uint64 nAlloc = (sqlite3_uint64)sizeof_f32 * (u64)(nJson/2);
+    if( nAlloc>(u64)INT_MAX ){
+      sqlite3_result_error_toobig(pCtx);
+      return;
+    }
+    aVec = (float*)sqlite3_malloc64(nAlloc);
+    if( aVec==0 ){
+      sqlite3_result_error_nomem(pCtx);
+      return;
+    }
+  }
 
   while( vec1_isspace(*p) ) p++;
   if( *p!='[' ) goto parse_failed;
@@ -691,6 +716,7 @@ static void vec1FromJsonFunc(
     if( p==p2 ) goto parse_failed;
 
     p = p2;
+    if( nVec>=(nJson/2) ) goto parse_failed;
     aVec[nVec] = (float)rVal;
     nVec++;
 
@@ -4952,26 +4978,37 @@ static void vec1FlatIterNext(Vec1FlatIter *pIter){
 ** bounds checking, or non-zero otherwise.
 */
 static int vec1CheckIdxSize(Vec1Tab *p, const u8 *aBlob, int nBlob){
-  int bRet = 1;
+  u64 nEntry;
+  u64 nExpected;
+  u64 szRowid;
+  u32 flags;
 
-  /* If the blob is smaller than 8 bytes, it must be corrupt */
-  if( nBlob>=VEC1_LIST_SZHDR ){
+  if( aBlob==0 || nBlob<VEC1_LIST_SZHDR ) return 1;
 
-    /* Read the flags and number-of-entries fields */
-    u32 flags = vec1GetU32(&aBlob[0]);
-    int nEntry = (int)vec1GetU32(&aBlob[4]);
-    const int szRowid = ((flags & VEC1_LIST_64BIT) ? 8 : 4);
+  flags = vec1GetU32(&aBlob[0]);
+  nEntry = (u64)vec1GetU32(&aBlob[4]);
+  szRowid = ((flags & VEC1_LIST_64BIT) ? 8 : 4);
 
-    if( p->mod.hdr.nCodebook>0 ){
-      const int nBlk = ((nEntry+VEC1_PQ_BLOCKSIZE-1) / VEC1_PQ_BLOCKSIZE);
-      const int szBlk = VEC1_PQ_BLOCKSIZE * p->mod.hdr.nCodebook;
-      bRet = (nBlob!=(VEC1_LIST_SZHDR + nEntry*szRowid + nBlk*szBlk));
-    }else{
-      const int szVec = p->cfg.nElem*sizeof_f32;
-      bRet = (nBlob!=(VEC1_LIST_SZHDR + nEntry*szRowid + nEntry*szVec));
-    }
+  /* Downstream list iterators use signed int counts, sizes and offsets. */
+  if( nEntry>(u64)INT_MAX ) return 1;
+  if( p->mod.hdr.nCodebook<0 ) return 1;
+  nExpected = (u64)VEC1_LIST_SZHDR + nEntry*szRowid;
+
+  if( p->mod.hdr.nCodebook>0 ){
+    u64 nBlk = (nEntry + VEC1_PQ_BLOCKSIZE - 1) / VEC1_PQ_BLOCKSIZE;
+    u64 szBlk = (u64)VEC1_PQ_BLOCKSIZE * (u64)p->mod.hdr.nCodebook;
+    if( szBlk>(u64)INT_MAX ) return 1;
+    nExpected += nBlk*szBlk;
+  }else{
+    u64 szVec;
+    if( p->cfg.nElem<0 ) return 1;
+    szVec = (u64)p->cfg.nElem * sizeof_f32;
+    if( szVec>(u64)INT_MAX ) return 1;
+    nExpected += nEntry*szVec;
   }
-  return bRet;
+
+  /* This also proves every positive component and downstream offset fits. */
+  return nExpected>(u64)INT_MAX || nExpected!=(u64)nBlob;
 }
 
 static int vec1FlatIterStart(
@@ -6371,6 +6408,12 @@ static int vec1MetaFilterIntList(
   return rc;
 }
 
+static int vec1CheckMetaSize(
+  const Vec1Buffer *pBuf,
+  u32 format,
+  int nEntry
+);
+
 static VEC1_NOINLINE int vec1DoMetaFilters(
   Vec1Tab *pTab, 
   Vec1Query *pQuery, 
@@ -6402,15 +6445,22 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
     VEC1_QINSTR_START(pTab, VEC1_QINSTR_METASCAN);
     if( rc==SQLITE_OK ){
       int jj = 0;
-      u32 f = vec1GetU32(pMeta->a);
+      u32 format = 0;
 
-      if( f & VEC1_META_1BYTEINT ){
+      if( pMeta->n<VEC1_META_SZHDR ){
+        rc = VEC1_CORRUPT;
+      }else{
+        format = vec1GetU32(pMeta->a) & VEC1_META_TYPEMASK;
+        rc = vec1CheckMetaSize(pMeta, format, nEntry);
+      }
+
+      if( rc==SQLITE_OK && format==VEC1_META_1BYTEINT ){
         /* Single-byte integer format */
         rc = vec1MetaFilterIntList(pFilter, 1, nEntry, pMeta, pBitmask);
-      }else if( f & VEC1_META_4BYTEINT ){
+      }else if( rc==SQLITE_OK && format==VEC1_META_4BYTEINT ){
         /* 4-byte integer format */
         rc = vec1MetaFilterIntList(pFilter, 4, nEntry, pMeta, pBitmask);
-      }else if( f & VEC1_META_REAL ){
+      }else if( rc==SQLITE_OK && format==VEC1_META_REAL ){
         Vec1MetaValue val = {0, 0, 0, 0};
         for(jj=0; jj<nEntry; jj++){
           u64 iVal = vec1GetU64(
@@ -6428,7 +6478,7 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
             pBitmask->a[jj / 8] |= (1 << (jj % 8));
           }
         }
-      }else{
+      }else if( rc==SQLITE_OK ){
         /* Generic format */
         int iOff = VEC1_META_SZHDR;
         for(jj=0; jj<nEntry; jj++){
@@ -9844,6 +9894,12 @@ static int vec1IntegrityMethod(
       int iMeta = 0;
       int nNonTombstone = 0;
 
+      if( vec1CheckIdxSize(pTab, aBlob, nBlob) ){
+        const char *zFmt = "%s: %%_idx entry id=%lld is corrupt";
+        zErr = sqlite3_mprintf(zFmt, zTabName, sqlite3_column_int64(pScan, 2));
+        goto integrity_failed;
+      }
+
       flags = vec1GetU32(&aBlob[0]);
       nEntry = (int)vec1GetU32(&aBlob[4]);
       nTombstone = (int)vec1GetU32(&aBlob[8]);
@@ -9851,15 +9907,18 @@ static int vec1IntegrityMethod(
         szRowid = 8;
       }
 
-      if( vec1CheckIdxSize(pTab, aBlob, nBlob) ){
-        const char *zFmt = "%s: %%_idx entry id=%lld is corrupt";
-        zErr = sqlite3_mprintf(zFmt, zTabName, sqlite3_column_int64(pScan, 2));
-        goto integrity_failed;
-      }
-
       /* Load the array for each meta-value column from disk */
       for(iMeta=0; iMeta<pTab->nMeta; iMeta++){
         rc = vec1ReadMeta(pTab, &aBufMeta[iMeta], iId, iMeta);
+        if( rc==SQLITE_OK ){
+          Vec1Buffer *pBuf = &aBufMeta[iMeta];
+          if( pBuf->n<VEC1_META_SZHDR ){
+            rc = VEC1_CORRUPT;
+          }else{
+            u32 format = vec1GetU32(pBuf->a) & VEC1_META_TYPEMASK;
+            rc = vec1CheckMetaSize(pBuf, format, nEntry);
+          }
+        }
         if( rc!=SQLITE_OK ){
           if( rc==SQLITE_CORRUPT_VTAB ){
             const char *zFmt = "%s: error reading meta-list id=%lld,meta=%d";
@@ -10601,5 +10660,3 @@ int sqlite3_vec1_extra_init(const char *z){
 #endif
 
 #endif /* !defined(VEC1SIMD) || VEC1SIMD==SCALAR */
-
-
