@@ -67,6 +67,34 @@ internal class ExternalSQLite(
     private val activeListeners = mutableMapOf<Long, CommitHookRegistration>()
     @GuardedBy("callbackRegistryLock")
     private val progressHandlerRegistrations = mutableMapOf<Long, ProgressHandlerRegistration>()
+    private val callbackFailures = ThreadLocal<CallbackFailureStack>()
+
+    private class CallbackFailureStack {
+        private var failures = arrayOfNulls<Throwable>(INITIAL_CALLBACK_DEPTH)
+        private var depth = 0
+
+        fun enter(): Int {
+            if (depth == failures.size) {
+                failures = failures.copyOf(failures.size shl 1)
+            }
+            failures[depth] = null
+            return depth++
+        }
+
+        fun record(failure: Throwable) {
+            if (depth > 0 && failures[depth - 1] == null) {
+                failures[depth - 1] = failure
+            }
+        }
+
+        fun leave(scope: Int): Throwable? {
+            check(scope == depth - 1)
+            return failures[scope].also {
+                failures[scope] = null
+                depth--
+            }
+        }
+    }
 
     private data class CommitHookRegistration(
         val commitStub: MemorySegment,
@@ -80,10 +108,55 @@ internal class ExternalSQLite(
         val arena: Arena
     )
 
-    private class ProgressHandlerDispatcher(
+    private inner class CommitHookDispatcher(
+        private val delegate: SQLCommitListener
+    ) : SQLCommitListener {
+        override fun onCommit(): Int = try {
+            delegate.onCommit()
+        } catch (failure: Throwable) {
+            recordCallbackFailure(failure)
+            1
+        }
+
+        override fun onRollback() {
+            try {
+                delegate.onRollback()
+            } catch (failure: Throwable) {
+                recordCallbackFailure(failure)
+            }
+        }
+    }
+
+    private inner class ProgressHandlerDispatcher(
         @Volatile var delegate: SQLProgressHandler
     ) : SQLProgressHandler {
-        override fun onProgress() = delegate.onProgress()
+        override fun onProgress(): Int = try {
+            delegate.onProgress()
+        } catch (failure: Throwable) {
+            recordCallbackFailure(failure)
+            1
+        }
+    }
+
+    private fun recordCallbackFailure(failure: Throwable) {
+        callbackFailures.get()?.record(failure)
+    }
+
+    private inline fun <T> withCallbackFailurePropagation(block: () -> T): T {
+        val failures = callbackFailures.get() ?: CallbackFailureStack().also(callbackFailures::set)
+        val scope = failures.enter()
+        val result = try {
+            block()
+        } catch (nativeFailure: Throwable) {
+            val callbackFailure = failures.leave(scope)
+            if (callbackFailure != null && callbackFailure !== nativeFailure) {
+                callbackFailure.addSuppressed(nativeFailure)
+                throw callbackFailure
+            }
+            throw nativeFailure
+        }
+        failures.leave(scope)?.let { throw it }
+        return result
     }
 
     init {
@@ -213,8 +286,9 @@ internal class ExternalSQLite(
     override fun clearBindings(statement: StatementHandle): SQLCode =
         sqlite3_clear_bindings.invoke(statementSegment(statement)) as Int
 
-    override fun finalize(statement: StatementHandle): SQLCode =
+    override fun finalize(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
         sqlite3_finalize.invoke(statementSegment(statement)) as Int
+    }
 
     override fun columnBlob(statement: StatementHandle, index: Int): ByteArray? {
         val blob = sqlite3_column_blob.invoke(statementSegment(statement), index) as MemorySegment
@@ -255,21 +329,26 @@ internal class ExternalSQLite(
     override fun statementReadOnly(statement: StatementHandle): Int =
         sqlite3_stmt_readonly.invoke(statementSegment(statement)) as Int
 
-    override fun reset(statement: StatementHandle): SQLCode =
+    override fun reset(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
         sqlite3_reset.invoke(statementSegment(statement)) as Int
+    }
 
-    override fun resetAndClearBindings(statement: StatementHandle): SQLCode =
+    override fun resetAndClearBindings(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
         sqlite3_reset_and_clear_bindings.invoke(statementSegment(statement)) as Int
+    }
 
-    override fun step(statement: StatementHandle): SQLCode =
+    override fun step(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
         sqlite3_step.invoke(statementSegment(statement)) as Int
+    }
 
     override fun databaseHandle(statement: StatementHandle): Long =
         (sqlite3_db_handle.invoke(statementSegment(statement)) as MemorySegment).address()
 
     override fun blobBytes(blob: BlobHandle): Int = sqlite3_blob_bytes.invoke(blobSegment(blob)) as Int
 
-    override fun blobClose(blob: BlobHandle): SQLCode = sqlite3_blob_close.invoke(blobSegment(blob)) as Int
+    override fun blobClose(blob: BlobHandle): SQLCode = withCallbackFailurePropagation {
+        sqlite3_blob_close.invoke(blobSegment(blob)) as Int
+    }
 
     override fun blobRead(
         blob: BlobHandle,
@@ -286,8 +365,9 @@ internal class ExternalSQLite(
         result
     }
 
-    override fun blobReopen(blob: BlobHandle, row: Long): SQLCode =
+    override fun blobReopen(blob: BlobHandle, row: Long): SQLCode = withCallbackFailurePropagation {
         sqlite3_blob_reopen.invoke(blobSegment(blob), row) as Int
+    }
 
     override fun blobWrite(
         blob: BlobHandle,
@@ -473,7 +553,9 @@ internal class ExternalSQLite(
 
     override fun blobClose(
         blob: Long
-    ): SQLCode = sqlite3_blob_close.invoke(MemorySegment.ofAddress(blob)) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        sqlite3_blob_close.invoke(MemorySegment.ofAddress(blob)) as Int
+    }
 
     override fun blobOpen(
         db: Long,
@@ -526,10 +608,12 @@ internal class ExternalSQLite(
     override fun blobReopen(
         blob: Long,
         row: Long
-    ): SQLCode = sqlite3_blob_reopen.invoke(
-        MemorySegment.ofAddress(blob),
-        row
-    ) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        sqlite3_blob_reopen.invoke(
+            MemorySegment.ofAddress(blob),
+            row
+        ) as Int
+    }
 
     override fun blobWrite(
         blob: Long,
@@ -667,9 +751,10 @@ internal class ExternalSQLite(
             val segment = MemorySegment.ofAddress(db)
             if (enabled && listener != null) {
                 val arena = Arena.ofShared()
+                val dispatcher = CommitHookDispatcher(listener)
                 val registration = CommitHookRegistration(
-                    commitStub = createCommitHookStub(listener, arena),
-                    rollbackStub = createRollbackHookStub(listener, arena),
+                    commitStub = createCommitHookStub(dispatcher, arena),
+                    rollbackStub = createRollbackHookStub(dispatcher, arena),
                     arena = arena
                 )
                 sqlite3_commit_hook.invoke(segment, registration.commitStub, MemorySegment.NULL)
@@ -749,14 +834,16 @@ internal class ExternalSQLite(
     override fun exec(
         db: Long,
         query: String
-    ): SQLCode = withSlab { slab ->
-        sqlite3_exec.invoke(
-            MemorySegment.ofAddress(db),
-            slab.allocateFrom(query),
-            MemorySegment.NULL,
-            MemorySegment.NULL,
-            MemorySegment.NULL
-        ) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        withSlab { slab ->
+            sqlite3_exec.invoke(
+                MemorySegment.ofAddress(db),
+                slab.allocateFrom(query),
+                MemorySegment.NULL,
+                MemorySegment.NULL,
+                MemorySegment.NULL
+            ) as Int
+        }
     }
 
     override fun expandedSql(
@@ -783,36 +870,40 @@ internal class ExternalSQLite(
         startRow: Int,
         maxRows: Int,
         countAllRows: Boolean
-    ): ByteBuffer? = withSlab { slab ->
-        val outSize = slab.allocate(JAVA_LONG)
-        val buffer = selekt_fill_cursor_window.invoke(
-            MemorySegment.ofAddress(statement),
-            startRow,
-            maxRows,
-            if (countAllRows) { 1 } else { 0 },
-            outSize
-        ) as MemorySegment
-        if (buffer.address() == 0L) {
-            when (outSize.get(JAVA_LONG, 0L)) {
-                -2L -> throw OutOfMemoryError("fillCursorWindow")
-                -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
-                -4L -> error("Unexpected failure while filling cursor window")
-                -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
-            }
-            null
-        } else {
-            try {
-                buffer.reinterpret(outSize.get(JAVA_LONG, 0L)).asByteBuffer()
-            } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
-                selekt_free_cursor_window.invoke(buffer)
-                throw throwable
+    ): ByteBuffer? = withCallbackFailurePropagation {
+        withSlab { slab ->
+            val outSize = slab.allocate(JAVA_LONG)
+            val buffer = selekt_fill_cursor_window.invoke(
+                MemorySegment.ofAddress(statement),
+                startRow,
+                maxRows,
+                if (countAllRows) { 1 } else { 0 },
+                outSize
+            ) as MemorySegment
+            if (buffer.address() == 0L) {
+                when (outSize.get(JAVA_LONG, 0L)) {
+                    -2L -> throw OutOfMemoryError("fillCursorWindow")
+                    -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
+                    -4L -> error("Unexpected failure while filling cursor window")
+                    -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
+                }
+                null
+            } else {
+                try {
+                    buffer.reinterpret(outSize.get(JAVA_LONG, 0L)).asByteBuffer()
+                } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
+                    selekt_free_cursor_window.invoke(buffer)
+                    throw throwable
+                }
             }
         }
     }
 
     override fun finalize(
         statement: Long
-    ): SQLCode = sqlite3_finalize.invoke(MemorySegment.ofAddress(statement)) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        sqlite3_finalize.invoke(MemorySegment.ofAddress(statement)) as Int
+    }
 
     override fun freeCursorWindow(buffer: ByteBuffer) {
         selekt_free_cursor_window.invoke(MemorySegment.ofBuffer(buffer))
@@ -919,20 +1010,22 @@ internal class ExternalSQLite(
         sql: String,
         length: Int,
         statementHolder: LongArray
-    ): SQLCode = withSlab { slab ->
-        val statement = slab.allocate(ADDRESS)
-        val sqlSegment = slab.allocateFrom(sql)
-        val result = sqlite3_prepare_v2.invoke(
-            MemorySegment.ofAddress(db),
-            sqlSegment,
-            (sqlSegment.byteSize() - 1).toInt(),
-            statement,
-            MemorySegment.NULL
-        ) as Int
-        if (result == 0) {
-            statementHolder[0] = statement.get(ADDRESS, 0).address()
+    ): SQLCode = withCallbackFailurePropagation {
+        withSlab { slab ->
+            val statement = slab.allocate(ADDRESS)
+            val sqlSegment = slab.allocateFrom(sql)
+            val result = sqlite3_prepare_v2.invoke(
+                MemorySegment.ofAddress(db),
+                sqlSegment,
+                (sqlSegment.byteSize() - 1).toInt(),
+                statement,
+                MemorySegment.NULL
+            ) as Int
+            if (result == 0) {
+                statementHolder[0] = statement.get(ADDRESS, 0).address()
+            }
+            result
         }
-        result
     }
 
     override fun prepareV2(
@@ -940,20 +1033,22 @@ internal class ExternalSQLite(
         sql: String,
         length: Int,
         statementHolder: LongArray
-    ): SQLCode = withSlab { slab ->
-        val statement = slab.allocate(ADDRESS)
-        val sqlSegment = slab.allocateFrom(sql)
-        val result = sqlite3_prepare_v2.invoke(
-            databaseSegment(db),
-            sqlSegment,
-            (sqlSegment.byteSize() - 1).toInt(),
-            statement,
-            MemorySegment.NULL
-        ) as Int
-        if (result == 0) {
-            statementHolder[0] = statement.get(ADDRESS, 0).address()
+    ): SQLCode = withCallbackFailurePropagation {
+        withSlab { slab ->
+            val statement = slab.allocate(ADDRESS)
+            val sqlSegment = slab.allocateFrom(sql)
+            val result = sqlite3_prepare_v2.invoke(
+                databaseSegment(db),
+                sqlSegment,
+                (sqlSegment.byteSize() - 1).toInt(),
+                statement,
+                MemorySegment.NULL
+            ) as Int
+            if (result == 0) {
+                statementHolder[0] = statement.get(ADDRESS, 0).address()
+            }
+            result
         }
-        result
     }
 
     override fun progressHandler(
@@ -1043,10 +1138,13 @@ internal class ExternalSQLite(
 
     override fun reset(
         statement: Long
-    ): SQLCode = sqlite3_reset.invoke(MemorySegment.ofAddress(statement)) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        sqlite3_reset.invoke(MemorySegment.ofAddress(statement)) as Int
+    }
 
-    override fun resetAndClearBindings(statement: Long): SQLCode =
+    override fun resetAndClearBindings(statement: Long): SQLCode = withCallbackFailurePropagation {
         sqlite3_reset_and_clear_bindings.invoke(MemorySegment.ofAddress(statement)) as Int
+    }
 
     external override fun softHeapLimit64(): Long
 
@@ -1073,7 +1171,9 @@ internal class ExternalSQLite(
 
     override fun step(
         statement: Long
-    ): SQLCode = sqlite3_step.invoke(MemorySegment.ofAddress(statement)) as Int
+    ): SQLCode = withCallbackFailurePropagation {
+        sqlite3_step.invoke(MemorySegment.ofAddress(statement)) as Int
+    }
 
     override fun threadsafe(): Int = sqlite3_threadsafe.invoke() as Int
 
@@ -1134,12 +1234,12 @@ internal class ExternalSQLite(
         ) as Int
     }
 
-    private fun createCommitHookStub(listener: SQLCommitListener, arena: Arena): MemorySegment {
+    private fun createCommitHookStub(dispatcher: CommitHookDispatcher, arena: Arena): MemorySegment {
         val methodHandle = MethodHandles.lookup().findVirtual(
-            SQLCommitListener::class.java,
+            CommitHookDispatcher::class.java,
             "onCommit",
             MethodType.methodType(Int::class.javaPrimitiveType)
-        ).bindTo(listener)
+        ).bindTo(dispatcher)
         return linker.upcallStub(
             MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
             FunctionDescriptor.of(JAVA_INT, ADDRESS),
@@ -1147,12 +1247,12 @@ internal class ExternalSQLite(
         )
     }
 
-    private fun createRollbackHookStub(listener: SQLCommitListener, arena: Arena): MemorySegment {
+    private fun createRollbackHookStub(dispatcher: CommitHookDispatcher, arena: Arena): MemorySegment {
         val methodHandle = MethodHandles.lookup().findVirtual(
-            SQLCommitListener::class.java,
+            CommitHookDispatcher::class.java,
             "onRollback",
             MethodType.methodType(Void.TYPE)
-        ).bindTo(listener)
+        ).bindTo(dispatcher)
         return linker.upcallStub(
             MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
             FunctionDescriptor.ofVoid(ADDRESS),
@@ -1160,12 +1260,12 @@ internal class ExternalSQLite(
         )
     }
 
-    private fun createProgressHandlerStub(handler: SQLProgressHandler, arena: Arena): MemorySegment {
+    private fun createProgressHandlerStub(dispatcher: ProgressHandlerDispatcher, arena: Arena): MemorySegment {
         val methodHandle = MethodHandles.lookup().findVirtual(
-            SQLProgressHandler::class.java,
+            ProgressHandlerDispatcher::class.java,
             "onProgress",
             MethodType.methodType(Int::class.javaPrimitiveType)
-        ).bindTo(handler)
+        ).bindTo(dispatcher)
         return linker.upcallStub(
             MethodHandles.dropArguments(methodHandle, 0, MemorySegment::class.java),
             FunctionDescriptor.of(JAVA_INT, ADDRESS),
@@ -1176,6 +1276,8 @@ internal class ExternalSQLite(
     private external fun nativeInit(softHeapLimit: Long)
 
     companion object {
+        private const val INITIAL_CALLBACK_DEPTH = 4
+
         init {
             loadLibrary(checkNotNull(ExternalSQLite::class.java.classLoader), "jni", "selekt")
         }
