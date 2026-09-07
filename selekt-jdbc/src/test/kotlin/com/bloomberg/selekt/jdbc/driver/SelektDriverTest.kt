@@ -120,9 +120,12 @@ internal class SelektDriverTest {
 
     @Test
     fun getPropertyInfoWithInvalidURL() {
-        assertFailsWith<SQLException> {
-            driver.getPropertyInfo("invalid://url", Properties())
+        val secret = "property-info-secret"
+        val exception = assertFailsWith<SQLException> {
+            driver.getPropertyInfo("invalid://url?password=$secret", Properties())
         }
+        assertEquals("Invalid JDBC URL format", exception.message)
+        assertFalse(exception.message.orEmpty().contains(secret))
     }
 
     @Test
@@ -309,7 +312,7 @@ internal class SelektDriverTest {
 
     @Test
     fun connectRejectsEncryptionKeyInUrl() {
-        listOf("key", "Key", "KEY", " key ").forEach { name ->
+        listOf("key", "Key", "KEY", " key ", "%6Bey", "%4B%45%59", "%20Key%20", "+key+").forEach { name ->
             val exception = assertFailsWith<SQLFeatureNotSupportedException> {
                 driver.connect("jdbc:sqlite:/tmp/test.db?$name=secret", Properties())
             }
@@ -341,6 +344,15 @@ internal class SelektDriverTest {
         assertFailsWith<SQLFeatureNotSupportedException> {
             driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db", properties)
         }
+    }
+
+    @Test
+    fun getPropertyInfoRejectsEncodedEncryptionKey() {
+        val secret = "property-info-encoded-secret"
+        val exception = assertFailsWith<SQLFeatureNotSupportedException> {
+            driver.getPropertyInfo("jdbc:sqlite:/tmp/test.db?%6Bey=$secret", Properties())
+        }
+        assertFalse(exception.message.orEmpty().contains(secret))
     }
 
     @Test
@@ -446,6 +458,28 @@ internal class SelektDriverTest {
             driver.connect("jdbc:sqlite:/tmp/test_redact_error.db?key=$secret", properties)
         }
         assertFalse(exception.message.orEmpty().contains(secret), "Error message should not contain the encryption key")
+    }
+
+    @Test
+    fun connectionFailureDoesNotIncludeSecretUrlProperties() {
+        val secret = "CONNECTION_FAILURE_SECRET"
+        val exception = assertFailsWith<SQLException> {
+            driver.connect(
+                "jdbc:sqlite:/tmp/test_redact_failure.db?password=$secret&journalMode=invalid",
+                Properties()
+            )
+        }
+        assertFalse(exception.message.orEmpty().contains(secret))
+    }
+
+    @Test
+    fun databaseMetadataRedactsSecretUrlProperties() {
+        val secret = "METADATA_SECRET"
+        driver.connect("jdbc:sqlite::memory:?password=$secret", Properties())!!.use { connection ->
+            val metadataUrl = connection.metaData.url
+            assertFalse(metadataUrl.contains(secret))
+            assertTrue(metadataUrl.contains("password=***"))
+        }
     }
 
     @Test
