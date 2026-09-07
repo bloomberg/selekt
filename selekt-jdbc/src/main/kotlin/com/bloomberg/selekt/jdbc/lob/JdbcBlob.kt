@@ -56,22 +56,12 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
     override fun getBytes(pos: Long, length: Int): ByteArray {
         checkNotFreed()
-        if (pos < 1) {
-            throw SQLException("Position must be >= 1 (got $pos)")
-        } else if (length < 0) {
+        if (length < 0) {
             throw SQLException("Length must be non-negative (got $length)")
         }
-        val startIndex = (pos - 1).toInt().also {
-            if (it < 0) {
-                throw SQLException("Position $pos is out of bounds (index underflow)")
-            }
-        }
-        val bytes = data.toByteArray().also {
-            if (startIndex > it.size) {
-                throw SQLException("Position $pos is out of bounds (length=${it.size})")
-            }
-        }
-        val endIndex = minOf(startIndex + length, bytes.size)
+        val bytes = data.toByteArray()
+        val startIndex = validatedReadIndex(pos, bytes.size)
+        val endIndex = startIndex + minOf(length, bytes.size - startIndex)
         return bytes.copyOfRange(startIndex, endIndex)
     }
 
@@ -82,7 +72,7 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
     override fun getBinaryStream(pos: Long, length: Long): InputStream {
         checkNotFreed()
-        return ByteArrayInputStream(getBytes(pos, length.toInt()))
+        return ByteArrayInputStream(getBytes(pos, validatedLobLength(length, "BLOB stream")))
     }
 
     override fun position(pattern: ByteArray, start: Long): Long {
@@ -90,9 +80,13 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
         if (start < 1) {
             throw SQLException("Start position must be >= 1 (received $start)")
         }
-        val startIndex = (start - 1).toInt()
         val bytes = data.toByteArray()
-        for (i in startIndex until bytes.size - pattern.size + 1) {
+        val candidateIndices = if (start <= bytes.size.toLong() + 1L) {
+            (start - 1L).toInt()..bytes.size - pattern.size
+        } else {
+            IntRange.EMPTY
+        }
+        for (i in candidateIndices) {
             var match = true
             for (j in pattern.indices) {
                 if (bytes[i + j] != pattern[j]) {
@@ -109,8 +103,9 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
     override fun position(searchBlob: Blob, start: Long): Long {
         checkNotFreed()
+        val searchLength = validatedLobLength(searchBlob.length(), "Search BLOB")
         return position(
-            searchBlob.getBytes(1, searchBlob.length().toInt()),
+            searchBlob.getBytes(1, searchLength),
             start
         )
     }
@@ -126,7 +121,7 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
         when {
             offset < 0 || offset > bytes.size -> throw SQLException(
                 "Offset $offset is out of bounds for byte array of size ${bytes.size}")
-            len < 0 || offset + len > bytes.size -> throw SQLException(
+            len < 0 || len > bytes.size - offset -> throw SQLException(
                 "Length $len with offset $offset exceeds byte array size ${bytes.size}")
         }
         if (startIndex.toLong() + len.toLong() > Int.MAX_VALUE.toLong()) {
@@ -229,6 +224,26 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
                     "Position $pos exceeds maximum supported blob index ${Int.MAX_VALUE.toLong() + 1L}")
             }
         }.toInt()
+    }
+
+    private fun validatedReadIndex(pos: Long, size: Int): Int {
+        if (pos < 1L) {
+            throw SQLException("Position must be >= 1 (got $pos)")
+        }
+        val index = pos - 1L
+        if (index > size.toLong()) {
+            throw SQLException("Position $pos is out of bounds (length=$size)")
+        }
+        return index.toInt()
+    }
+
+    private fun validatedLobLength(length: Long, description: String): Int {
+        if (length < 0L) {
+            throw SQLException("$description length must be non-negative (received $length)")
+        } else if (length > Int.MAX_VALUE.toLong()) {
+            throw SQLException("$description length $length exceeds maximum supported length ${Int.MAX_VALUE}")
+        }
+        return length.toInt()
     }
 
     private fun writeZeroPadding(count: Int) {
