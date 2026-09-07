@@ -149,23 +149,8 @@ class SelektDataSource : DataSource {
     @Volatile
     private var keySource: EncryptionKeySource? = null
 
-    var encryptionKeySource: EncryptionKeySource?
-        get() = keySource
-        set(value) {
-            val next = if (value is EncryptionKeySource.Literal) {
-                KeyEncoding.validateLength(value.key)
-                EncryptionKeySource.Literal(value.key.copyOf())
-            } else {
-                value
-            }
-            synchronized(keyLock) {
-                (keySource as? EncryptionKeySource.Literal)?.zero()
-                keySource = next
-            }
-        }
-
     val encryptionEnabled: Boolean
-        get() = encryptionKeySource != null
+        get() = keySource != null
 
 
     @Volatile
@@ -216,7 +201,20 @@ class SelektDataSource : DataSource {
      * and should zero it after this method returns.
      */
     fun setEncryption(keySource: EncryptionKeySource?) {
-        encryptionKeySource = keySource
+        replaceEncryptionKeySource(keySource)
+    }
+
+    private fun replaceEncryptionKeySource(source: EncryptionKeySource?) {
+        val next = if (source is EncryptionKeySource.Literal) {
+            KeyEncoding.validateLength(source.key)
+            EncryptionKeySource.Literal(source.key.copyOf())
+        } else {
+            source
+        }
+        synchronized(keyLock) {
+            (keySource as? EncryptionKeySource.Literal)?.zero()
+            keySource = next
+        }
     }
 
     private fun snapshotEncryptionKey(): Pair<ByteArray?, String?> = synchronized(keyLock) {
@@ -228,7 +226,7 @@ class SelektDataSource : DataSource {
 
     fun close() {
         val closedNow = lifecycle.close {
-            encryptionKeySource = null
+            replaceEncryptionKeySource(null)
             databaseCache.run {
                 values.forEachCatching(SharedDatabase::release)
                 clear()
