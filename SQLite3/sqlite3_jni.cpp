@@ -1661,9 +1661,6 @@ extern "C" void* selekt_fill_cursor_window(
             for (int i = 0; i < columnCount; ++i) {
                 auto slotOffset = rowOffset + static_cast<size_t>(i) * CURSOR_WINDOW_SLOT_SIZE;
                 auto type = sqlite3_column_type(statement, i);
-                if (type == SQLITE_BLOB && sqlite3_column_bytes(statement, i) <= 0) {
-                    type = SQLITE_NULL;
-                }
                 switch (type) {
                     case SQLITE_INTEGER:
                         writeSlot<int64_t>(
