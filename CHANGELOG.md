@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+## Version 1.3.0
+
+* Preserve empty BLOBs in native cursor windows.
+* Prevent JDBC URL secrets from leaking into diagnostics.
+* Detach FFM callbacks before closing their arenas.
+* Return defensive snapshots from the encryption key getter.
+* Clear copied prepared-statement parameters after writes.
+* Validate JDBC LOB ranges before integer narrowing.
+* Clear primitive values from recycled parameter rows.
+
 ## Version 1.2.4
 
 * Validate vec1 base vectors before native transforms.
