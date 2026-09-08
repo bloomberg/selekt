@@ -20,6 +20,8 @@ import com.bloomberg.selekt.cache.LruCache
 import com.bloomberg.selekt.commons.forEachByIndexUntil
 import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
+import java.io.EOFException
+import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.NotThreadSafe
@@ -395,6 +397,93 @@ internal class SQLConnection(
     override fun executeForString(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
         step()
         columnString(0)
+    }
+
+    override fun executeStreamingBlobBatch(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal?
+    ): Int = withPreparedStatement(batch.insertSql) {
+        require(batch.blobParameterIndex <= parameterCount) {
+            "BLOB parameter index ${batch.blobParameterIndex} exceeds statement parameter count $parameterCount."
+        }
+        val bindArguments = arrayOfNulls<Any?>(parameterCount)
+        val transferBuffer = ByteArray(batch.transferBufferSize)
+        var blob: SQLBlob? = null
+        val completed = try {
+            sqlite.withScopedArena {
+                var completed = 0
+                rows.forEach { row ->
+                    cancellationSignal?.throwIfCancelled()
+                    require(row.bindArguments.size == parameterCount) {
+                        "Expected $parameterCount bind arguments but ${row.bindArguments.size} were provided."
+                    }
+                    row.bindArguments.forEachIndexed { index, argument ->
+                        bindArguments[index] = if (index + 1 == batch.blobParameterIndex) { null } else { argument }
+                    }
+                    reset()
+                    bindRow(bindArguments)
+                    bindZeroBlob(batch.blobParameterIndex, row.length)
+                    check(SQL_DONE == step()) { "Streaming BLOB insert did not complete." }
+                    check(sqlite.changes(databaseHandle) == 1) {
+                        "Streaming BLOB SQL must insert exactly one row."
+                    }
+                    val insertedRowId = sqlite.lastInsertRowId(databaseHandle)
+                    check(row.rowId == null || row.rowId == insertedRowId) {
+                        "Inserted rowid $insertedRowId did not match supplied rowid ${row.rowId}."
+                    }
+                    val rowId = row.rowId ?: insertedRowId
+                    val currentBlob = blob?.apply { reopen(rowId) }
+                        ?: executeForBlob(batch.databaseName, batch.table, batch.column, rowId).also { blob = it }
+                    check(currentBlob.size == row.length) {
+                        "Inserted BLOB length ${currentBlob.size} did not match declared length ${row.length}."
+                    }
+                    currentBlob.writeExactly(row, transferBuffer, cancellationSignal)
+                    bindArguments.fill(null)
+                    ++completed
+                }
+                completed
+            }
+        } catch (failure: Throwable) {
+            runCatching { blob?.close() }.exceptionOrNull()?.let(failure::addSuppressed)
+            throw failure
+        } finally {
+            bindArguments.fill(null)
+        }
+        blob?.close()
+        completed
+    }
+
+    private fun SQLBlob.writeExactly(
+        row: StreamingBlobRow,
+        transferBuffer: ByteArray,
+        cancellationSignal: CancellationSignal?
+    ) {
+        var offset = 0
+        while (offset < row.length) {
+            cancellationSignal?.throwIfCancelled()
+            val maximum = minOf(transferBuffer.size, row.length - offset)
+            val count = row.inputStream.read(transferBuffer, 0, maximum).let { read ->
+                if (read != 0) {
+                    read
+                } else {
+                    row.inputStream.read().also {
+                        if (it >= 0) {
+                            transferBuffer[0] = it.toByte()
+                        }
+                    }.coerceAtMost(1)
+                }
+            }
+            if (count < 0) {
+                throw EOFException("BLOB stream ended at $offset bytes; expected ${row.length} bytes.")
+            }
+            write(offset, transferBuffer, 0, count)
+            offset += count
+        }
+        cancellationSignal?.throwIfCancelled()
+        if (row.inputStream.read() >= 0) {
+            throw IOException("BLOB stream contains more than the declared ${row.length} bytes.")
+        }
     }
 
     override fun executeWithRetry(sql: String) = withPreparedStatement(sql) {

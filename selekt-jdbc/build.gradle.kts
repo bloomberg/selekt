@@ -134,6 +134,27 @@ kover {
     }
 }
 
+val jmhSqlite3ClassesJava17 = configurations.create("jmhSqlite3ClassesJava17") {
+    isCanBeConsumed = false
+}
+
+val jmhSqlite3ClassesJava25 = configurations.create("jmhSqlite3ClassesJava25") {
+    isCanBeConsumed = false
+}
+
+dependencies {
+    jmhSqlite3ClassesJava17(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+        }
+    }
+    jmhSqlite3ClassesJava25(projects.selektSqlite3Classes) {
+        capabilities {
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
+        }
+    }
+}
+
 jmh {
     jvmArgs.add("-XX:+UseCompactObjectHeaders")
     resultFormat.set("JSON")
@@ -176,6 +197,48 @@ tasks.withType<ProcessResources>().matching { it.name != "processResources" }.co
 
 tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
+}
+
+listOf(
+    Triple("jmhJni", "JNI", jmhSqlite3ClassesJava17),
+    Triple("jmhFfm", "FFM", jmhSqlite3ClassesJava25)
+).forEach { (taskName, backend, sqliteClasses) ->
+    tasks.register<JavaExec>(taskName) {
+        description = "Runs the JMH benchmarks using the $backend SQLite backend"
+        group = "benchmark"
+        val jmhJar = tasks.named("jmhJar").get().outputs.files.singleFile
+        classpath = sqliteClasses + files(jmhJar)
+        mainClass.set("org.openjdk.jmh.Main")
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        })
+        dependsOn("jmhJar", "buildHostSQLite")
+        outputs.upToDateWhen { false }
+        outputs.cacheIf { false }
+        jvmArgs("--enable-native-access=ALL-UNNAMED", "-XX:+UseCompactObjectHeaders")
+        if (project.hasProperty("jmh.includes")) {
+            args(project.property("jmh.includes").toString())
+        }
+        if (project.hasProperty("jmh.params")) {
+            project.property("jmh.params").toString().split(';').forEach { entry ->
+                val (key, value) = entry.split('=', limit = 2)
+                args("-p", "$key=$value")
+            }
+        }
+        if (project.hasProperty("jmh.profilers")) {
+            val jmhReportsDir = layout.buildDirectory.dir("reports/jmh").get().asFile.absolutePath
+            project.property("jmh.profilers").toString().split(',').forEach {
+                val profiler = it.trim()
+                val resolved = when {
+                    profiler == "jfr" -> "jfr:dir=$jmhReportsDir"
+                    profiler.startsWith("jfr:") && !profiler.contains("dir=") -> "$profiler,dir=$jmhReportsDir"
+                    else -> profiler
+                }
+                args("-prof", resolved)
+            }
+        }
+        args("-jvmArgsAppend", "--enable-native-access=ALL-UNNAMED")
+    }
 }
 
 publishing {

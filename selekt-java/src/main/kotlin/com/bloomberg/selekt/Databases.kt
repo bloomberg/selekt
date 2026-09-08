@@ -192,6 +192,36 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs)
     }
 
+    /**
+     * Inserts rowid-table rows and writes their BLOB values incrementally with bounded memory.
+     *
+     * The input streams remain owned by the caller. See [StreamingBlobBatch] for the required SQL
+     * shape and schema constraints.
+     */
+    fun insertBlobs(batch: StreamingBlobBatch, rows: Iterable<StreamingBlobRow>): Int =
+        insertBlobsInternal(batch, rows, null)
+
+    /**
+     * Cancellable counterpart of [insertBlobs].
+     */
+    fun insertBlobs(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal
+    ): Int = withCancellationSignal(cancellationSignal, primary = true) {
+        insertBlobsInternal(batch, rows, cancellationSignal)
+    }
+
+    private fun insertBlobsInternal(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal?
+    ): Int = transact {
+        session().execute(true, batch.insertSql) {
+            it.executeStreamingBlobBatch(batch, rows, cancellationSignal)
+        }
+    }
+
     override fun beginDeferredTransaction() = pledge { session().beginDeferredTransaction() }
 
     override fun beginDeferredTransactionWithListener(listener: SQLTransactionListener) = pledge {

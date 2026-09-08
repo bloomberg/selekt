@@ -906,8 +906,15 @@ internal class SQLConnectionTest {
         whenever(fillCursorWindow(any<StatementHandle>(), any(), any(), any())) doAnswer {
             ByteBuffer.allocate(2 * Int.SIZE_BYTES).apply { putInt(0, 0); putInt(Int.SIZE_BYTES, 0) }
         }
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray()).window.use {
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray()).window.use {
                 assertTrue(it is NativeCursorWindow)
             }
         }
@@ -930,8 +937,15 @@ internal class SQLConnectionTest {
         whenever(columnInt64(any<Long>(), any<Int>())) doReturn 42L
         var remainingRows = 1
         whenever(step(any<Long>())) doAnswer { if (remainingRows-- > 0) SQL_ROW else SQL_DONE }
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray())
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            val page = connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray())
             assertEquals(1, page.count)
             assertTrue(page.window is SimpleCursorWindow)
             assertEquals(1, page.window.numberOfRows())
@@ -962,8 +976,15 @@ internal class SQLConnectionTest {
     @Test
     fun executeForCursorWindowCountsEveryRowWhileStoringOnlyTheWindow(): Unit = sqlite.run {
         stubRowsForCursorWindow(rowCount = 10)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 3, 4, true)
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            val page = connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 3, 4, true)
             assertEquals(10, page.count)
             assertEquals(3, page.startPosition)
             assertEquals(4, page.window.numberOfRows())
@@ -976,8 +997,15 @@ internal class SQLConnectionTest {
     @Test
     fun executeForCursorWindowStopsEarlyWhenNotCountingAllRows(): Unit = sqlite.run {
         stubRowsForCursorWindow(rowCount = 10)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val page = conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 2, 3, false)
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            val page = connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 2, 3, false)
             assertEquals(3, page.window.numberOfRows())
             assertEquals(2L, page.window.getLong(0, 0))
             assertEquals(4L, page.window.getLong(2, 0))
@@ -989,8 +1017,15 @@ internal class SQLConnectionTest {
     @Test
     fun executeForCursorWindowStepsEveryRowWhenCountingAllRows(): Unit = sqlite.run {
         stubRowsForCursorWindow(rowCount = 10)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            conn.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 0, 3, true).window.close()
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration,
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 0, 3, true).window.close()
         }
         verify(this@run, times(11)).step(any<Long>())
     }

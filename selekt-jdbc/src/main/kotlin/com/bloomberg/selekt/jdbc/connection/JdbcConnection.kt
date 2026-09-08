@@ -18,7 +18,12 @@ package com.bloomberg.selekt.jdbc.connection
 
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLDatabaseSession
+import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.OperationCancelledException
+import com.bloomberg.selekt.StreamingBlobBatch
+import com.bloomberg.selekt.StreamingBlobRow
 import com.bloomberg.selekt.commons.forEachCatching
+import com.bloomberg.selekt.jdbc.SelektConnection
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
@@ -62,7 +67,7 @@ internal class JdbcConnection(
     private val sharedDatabase: SharedDatabase,
     private val connectionURL: ConnectionURL,
     private val properties: Properties
-) : Connection {
+) : Connection, SelektConnection {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(JdbcConnection::class.java)
 
@@ -542,6 +547,40 @@ internal class JdbcConnection(
     }
 
     override fun isWrapperFor(iface: Class<*>): Boolean = iface.isAssignableFrom(this::class.java)
+
+    override fun insertBlobs(batch: StreamingBlobBatch, rows: Iterable<StreamingBlobRow>): Int =
+        insertBlobsInternal(batch, rows, null)
+
+    override fun insertBlobs(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal
+    ): Int = insertBlobsInternal(batch, rows, cancellationSignal)
+
+    private fun insertBlobsInternal(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal?
+    ): Int {
+        checkClosed()
+        checkWritable()
+        return try {
+            ensureTransaction()
+            withSession {
+                if (cancellationSignal == null) {
+                    this.insertBlobs(batch, rows)
+                } else {
+                    this.insertBlobs(batch, rows, cancellationSignal)
+                }
+            }
+        } catch (e: Exception) {
+            throw when (e) {
+                is OperationCancelledException -> SQLExceptionMapper.mapCancellation(e, "BLOB batch was cancelled")
+                is SQLException -> SQLExceptionMapper.mapException(e)
+                else -> SQLExceptionMapper.mapException(SQLException(e.message, e))
+            }
+        }
+    }
 
     private fun checkClosed() {
         if (isClosed) {

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -315,18 +316,18 @@ internal class SelektDataSourceTest {
         dataSource.databasePath = File(tempDir, "n2-race.db").absolutePath
         val threadCount = 32
         val iterations = 50
-        val barrier = java.util.concurrent.CyclicBarrier(threadCount)
-        val latch = java.util.concurrent.CountDownLatch(threadCount)
-        val failures = java.util.concurrent.atomic.AtomicInteger(0)
+        val barrier = CyclicBarrier(threadCount)
+        val latch = CountDownLatch(threadCount)
+        val failures = AtomicInteger(0)
         repeat(threadCount) {
             Thread {
                 try {
                     barrier.await()
                     repeat(iterations) {
-                        dataSource.getConnection().use { conn ->
-                            conn.createStatement().use { st ->
-                                st.executeQuery("SELECT 1").use { rs ->
-                                    rs.next()
+                        dataSource.getConnection().use { connection ->
+                            connection.createStatement().use { statement ->
+                                statement.executeQuery("SELECT 1").use { resultSet ->
+                                    resultSet.next()
                                 }
                             }
                         }
