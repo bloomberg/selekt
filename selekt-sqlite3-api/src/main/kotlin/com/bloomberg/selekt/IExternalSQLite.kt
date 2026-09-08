@@ -61,6 +61,8 @@ interface IExternalSQLite {
     fun allocateSecret(size: Int): Long
 
     /**
+     * The [size] must be positive and match the size passed to [allocateSecret].
+     *
      * @since 0.36.0
      */
     fun freeSecret(pointer: Long, size: Int)
