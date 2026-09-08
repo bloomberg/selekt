@@ -254,7 +254,11 @@ internal class ExternalSQLite(
     }
 
     override fun freeSecret(pointer: Long, size: Int) {
-        selekt_secret_free.invoke(MemorySegment.ofAddress(pointer), size)
+        require(size > 0) { "Secret size must be positive." }
+        val result = selekt_secret_free.invoke(MemorySegment.ofAddress(pointer), size) as Int
+        require(result == SQL_OK) {
+            "Secret size must match the allocation size."
+        }
     }
 
     override fun storeSecret(pointer: Long, capacity: Int, source: ByteArray, length: Int) {
@@ -1607,7 +1611,7 @@ internal class ExternalSQLite(
         )
         private val selekt_secret_free: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_free").orElseThrow(),
-            FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT)
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)
         )
         private val selekt_secret_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_key").orElseThrow(),

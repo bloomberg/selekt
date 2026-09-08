@@ -16,10 +16,12 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <string_view>
@@ -35,6 +37,14 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 #endif
 
 namespace {
+    struct SecretAllocationHeader {
+        std::uint32_t magic;
+        std::uint32_t size;
+        std::uint32_t sizeComplement;
+    };
+
+    constexpr std::uint32_t SECRET_ALLOCATION_MAGIC = 0x534c4b54; // "SLKT"
+
     constexpr bool isAsciiIdentifierCharacter(char value) {
         return (value >= 'a' && value <= 'z')
             || (value >= 'A' && value <= 'Z')
@@ -261,16 +271,44 @@ extern "C" void* selekt_secret_alloc(int32_t size) {
     if (size <= 0) {
         return nullptr;
     }
-    return static_cast<void*>(new (std::nothrow) unsigned char[static_cast<size_t>(size)]());
+    auto const capacity = static_cast<std::uint32_t>(size);
+    auto const allocationSize = sizeof(SecretAllocationHeader) + static_cast<std::size_t>(capacity);
+    auto allocation = std::unique_ptr<unsigned char[]>{
+        new (std::nothrow) unsigned char[allocationSize]()
+    };
+    if (allocation == nullptr) {
+        return nullptr;
+    }
+    SecretAllocationHeader const header{
+        SECRET_ALLOCATION_MAGIC,
+        capacity,
+        ~capacity
+    };
+    std::memcpy(allocation.get(), &header, sizeof(header));
+    return allocation.release() + sizeof(SecretAllocationHeader);
 }
 
-extern "C" void selekt_secret_free(void* p, int32_t size) {
-    if (p == nullptr) {
-        return;
+extern "C" int selekt_secret_free(void* p, int32_t size) {
+    if (size <= 0) {
+        return SQLITE_MISMATCH;
     }
-    auto* bytes = static_cast<unsigned char*>(p);
-    selekt::secure_zero(bytes, static_cast<size_t>(size));
-    delete[] bytes;
+    if (p == nullptr) {
+        return SQLITE_OK;
+    }
+    auto* allocation = static_cast<unsigned char*>(p) - sizeof(SecretAllocationHeader);
+    SecretAllocationHeader header{};
+    std::memcpy(&header, allocation, sizeof(header));
+    if (header.magic != SECRET_ALLOCATION_MAGIC
+        || header.size == 0
+        || header.size > static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max())
+        || header.sizeComplement != ~header.size
+        || static_cast<std::uint32_t>(size) != header.size) {
+        return SQLITE_MISMATCH;
+    }
+    auto owner = std::unique_ptr<unsigned char[]>{allocation};
+    auto const allocationSize = sizeof(SecretAllocationHeader) + static_cast<std::size_t>(header.size);
+    selekt::secure_zero(owner.get(), allocationSize);
+    return SQLITE_OK;
 }
 
 extern "C" int selekt_secret_key(sqlite3* db, const void* key, int32_t length) {
@@ -307,12 +345,18 @@ Java_com_bloomberg_selekt_ExternalSQLite_allocateSecret(
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_freeSecret(
-    [[maybe_unused]] JNIEnv*,
+    JNIEnv* env,
     [[maybe_unused]] jobject,
     jlong pointer,
     jint size
 ) {
-    selekt_secret_free(reinterpret_cast<void*>(static_cast<uintptr_t>(pointer)), size);
+    if (size <= 0) {
+        throwIllegalArgumentException(env, "Secret size must be positive.");
+        return;
+    }
+    if (selekt_secret_free(std::bit_cast<void*>(static_cast<std::uintptr_t>(pointer)), size) != SQLITE_OK) {
+        throwIllegalArgumentException(env, "Secret size must match the allocation size.");
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL
