@@ -427,6 +427,11 @@ interface IExternalSQLite {
 
     fun databaseReleaseMemory(db: DatabaseHandle): Int = databaseReleaseMemory(db.pointer)
 
+    /**
+     * Writes the current and high-water values to the first two elements of [holder].
+     *
+     * @throws IndexOutOfBoundsException if [holder] contains fewer than two elements.
+     */
     fun databaseStatus(
         db: Long,
         options: Int,

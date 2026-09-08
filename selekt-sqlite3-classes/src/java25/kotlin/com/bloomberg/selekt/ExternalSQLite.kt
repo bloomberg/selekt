@@ -846,19 +846,24 @@ internal class ExternalSQLite(
         options: Int,
         reset: Boolean,
         holder: IntArray
-    ): SQLCode = withSlab { slab ->
-        val current = slab.allocate(JAVA_INT)
-        val highwater = slab.allocate(JAVA_INT)
-        (sqlite3_db_status.invoke(
-            MemorySegment.ofAddress(db),
-            options,
-            current,
-            highwater,
-            if (reset) 1 else 0
-        ) as Int).also {
-            if (it == 0 && holder.size >= 2) {
-                holder[0] = current.get(JAVA_INT, 0)
-                holder[1] = highwater.get(JAVA_INT, 0)
+    ): SQLCode {
+        if (holder.size < 2) {
+            throw IndexOutOfBoundsException("databaseStatus: holder must contain at least two elements.")
+        }
+        return withSlab { slab ->
+            val current = slab.allocate(JAVA_INT)
+            val highwater = slab.allocate(JAVA_INT)
+            (sqlite3_db_status.invoke(
+                MemorySegment.ofAddress(db),
+                options,
+                current,
+                highwater,
+                if (reset) 1 else 0
+            ) as Int).also {
+                if (it == SQL_OK) {
+                    holder[0] = current.get(JAVA_INT, 0)
+                    holder[1] = highwater.get(JAVA_INT, 0)
+                }
             }
         }
     }
