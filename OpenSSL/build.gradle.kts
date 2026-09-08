@@ -79,19 +79,19 @@ tasks.register<Verify>("verifyOpenSslChecksum") {
 }
 
 tasks.register<Exec>("verifyOpenSslSignature") {
-    inputs.files(archivePgp, archive)
     val gpgHome = layout.buildDirectory.dir("tmp/gpg-home").get().asFile
-    val keyboxSource = file("openssl.gpg")
+    val signingKeyring = file("openssl.gpg")
+    inputs.files(archivePgp, archive, signingKeyring)
     val gpgHomePath = gpgHome.absolutePath.toMsysPath()
     val pgpPath = archivePgp.get().asFile.absolutePath.toMsysPath()
     val archivePath = archive.get().asFile.absolutePath.toMsysPath()
     doFirst {
         gpgHome.mkdirs()
         gpgHome.resolve("trustdb.gpg").createNewFile()
-        keyboxSource.copyTo(gpgHome.resolve("pubring.kbx"), overwrite = true)
+        signingKeyring.copyTo(gpgHome.resolve("pubring.kbx"), overwrite = true)
     }
     commandLine(
-        "gpg", "--homedir", gpgHomePath,
+        "gpg", "--batch", "--no-auto-key-retrieve", "--homedir", gpgHomePath,
         "--verify", pgpPath, archivePath
     )
 }
