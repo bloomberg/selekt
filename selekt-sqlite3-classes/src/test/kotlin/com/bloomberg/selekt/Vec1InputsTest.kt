@@ -52,6 +52,9 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 validates base vector size before integrity checking`() = runProbe("truncated-base-integrity")
 
+    @Test
+    fun `vec1 train rejects an oversized OPQ model without overflowing`() = runProbe("oversized-opq-model")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -97,6 +100,7 @@ internal object Vec1SecurityProbeMain {
                 "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
                 "truncated-base-integrity" -> probeTruncatedBaseIntegrity(sqlite, db)
+                "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -196,6 +200,24 @@ internal object Vec1SecurityProbeMain {
         try {
             check(sqlite.step(statement) == SQL_ROW)
             check(sqlite.columnText(statement, 0).contains("vector in %_base row 1 is wrong size"))
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeOversizedOpqModel(sqlite: IExternalSQLite, db: Long) {
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT length(vec1_train(zeroblob(200000), '{\"opq\":true}'))"
+        )
+        try {
+            val result = sqlite.step(statement)
+            check(result != SQL_ROW && result != SQL_DONE) { "Oversized OPQ model was accepted" }
+            check(sqlite.errorCode(db) == SQL_TOO_BIG) {
+                "Expected SQLITE_TOOBIG, got $result: ${sqlite.errorMessage(db)}"
+            }
+            check(sqlite.errorMessage(db).contains("rotation section too large"))
         } finally {
             sqlite.finalize(statement)
         }
