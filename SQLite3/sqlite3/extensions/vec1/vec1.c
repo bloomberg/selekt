@@ -1799,9 +1799,101 @@ struct Vec1TrainCtx {
 
   /* Calculated based on training parameters + size of first vector */
   int nCodeElem;                  /* Number of elements in codebook vectors */
+  int nModelByte;                 /* Validated size of serialized model */
+  int nCodebookFloat;             /* Number of floats in model codebooks */
+  int nCentroidFloat;             /* Number of floats in model centroids */
+  int nRotationFloat;             /* Number of floats in model rotation */
 
   u64 aTime[VEC1_TRAINING_NTIMER];
 };
+
+/*
+** Add a float-array section to the model size being calculated. The section
+** contains n1*n2*n3 floats. Reject the section if its cardinality overflows,
+** if it exceeds the vec1 model-section budget, or if the complete model would
+** exceed the SQLite connection's result-length limit.
+*/
+static int vec1TrainAddModelSection(
+  sqlite3_context *pCtx,
+  u64 *pnModelByte,
+  u64 nModelLimit,
+  const char *zSection,
+  u64 n1,
+  u64 n2,
+  u64 n3,
+  int *pnFloat
+){
+  u64 nFloat = n1;
+  u64 nSectionByte;
+
+  if( n2!=0 && nFloat>((u64)-1)/n2 ) goto section_too_large;
+  nFloat *= n2;
+  if( n3!=0 && nFloat>((u64)-1)/n3 ) goto section_too_large;
+  nFloat *= n3;
+  if( nFloat>((u64)VEC1_MODEL_MAXSIZE/sizeof_f32) ){
+    goto section_too_large;
+  }
+
+  nSectionByte = nFloat * sizeof_f32;
+  if( *pnModelByte>nModelLimit
+   || nSectionByte>(nModelLimit-*pnModelByte)
+  ){
+    vec1ResultErrorF(pCtx, "vec1_train: model exceeds SQLITE_LIMIT_LENGTH");
+    sqlite3_result_error_code(pCtx, SQLITE_TOOBIG);
+    return SQLITE_TOOBIG;
+  }
+
+  *pnModelByte += nSectionByte;
+  *pnFloat = (int)nFloat;
+  return SQLITE_OK;
+
+ section_too_large:
+  vec1ResultErrorF(pCtx, "vec1_train: %s section too large", zSection);
+  sqlite3_result_error_code(pCtx, SQLITE_TOOBIG);
+  return SQLITE_TOOBIG;
+}
+
+/*
+** Calculate and validate all model section sizes before allocating training
+** data or deriving any pointer offsets from them.
+*/
+static int vec1TrainModelSize(
+  sqlite3_context *pCtx,
+  Vec1TrainCtx *p
+){
+  sqlite3 *db = sqlite3_context_db_handle(pCtx);
+  u64 nModelLimit = (u64)sqlite3_limit(db, SQLITE_LIMIT_LENGTH, -1);
+  u64 nModelByte = VEC1_HEADER_SIZE;
+  int rc = SQLITE_OK;
+
+  if( nModelLimit>(u64)INT_MAX ) nModelLimit = (u64)INT_MAX;
+
+  if( p->nCodebook>0 ){
+    rc = vec1TrainAddModelSection(
+        pCtx, &nModelByte, nModelLimit, "codebook",
+        (u64)p->nCodebook, (u64)p->nCodeElem, VEC1_PQ_CODEBOOK_SZ,
+        &p->nCodebookFloat
+    );
+  }
+  if( rc==SQLITE_OK && p->nBucket>0 ){
+    rc = vec1TrainAddModelSection(
+        pCtx, &nModelByte, nModelLimit, "centroid",
+        (u64)p->nBucket, (u64)p->tv.nElem, 1,
+        &p->nCentroidFloat
+    );
+  }
+  if( rc==SQLITE_OK && p->bOpq ){
+    rc = vec1TrainAddModelSection(
+        pCtx, &nModelByte, nModelLimit, "rotation",
+        (u64)p->tv.nElem, (u64)p->tv.nElem, 1,
+        &p->nRotationFloat
+    );
+  }
+  if( rc==SQLITE_OK ){
+    p->nModelByte = (int)nModelByte;
+  }
+  return rc;
+}
 
 #define VEC1_TRAINING_WORK_OPQ       2
 #define VEC1_TRAINING_WORK_COARSE1   1
@@ -2659,6 +2751,9 @@ static void vec1TrainStep(
       p->nCodeElem = ((p->tv.nElem+p->nCodebook-1) / p->nCodebook);
       p->nCodebook = ((p->tv.nElem+p->nCodeElem-1) / p->nCodeElem);
     }
+
+    p->rc = vec1TrainModelSize(pCtx, p);
+    if( p->rc!=SQLITE_OK ) return;
   }
 
   iChunk = p->tv.nVec/p->tv.nVecPerChunk;
@@ -3461,17 +3556,16 @@ static void vec1PqFindRotation(
     double *aS = 0;
     double *aW = 0;
     int ii;
-    int nElem2 = (p->tv.nElem * p->tv.nElem);
+    int nElem2 = p->nRotationFloat;
+    sqlite3_int64 nWorkspaceByte =
+        ((sqlite3_int64)4 * nElem2 + p->tv.nElem) * sizeof(double);
   
     Vec1CovarianceJob *aJob = 0;
     int nJob = 0;
   
     /* Allocate space for 4 nElem*nElem matrices - W, M, U and VT. And one
     ** nElem vector - S. */
-    aM = (double*)vec1MallocZero(
-        4 * nElem2 * sizeof(double) +
-        p->tv.nElem * sizeof(double)
-    );
+    aM = (double*)vec1MallocZero(nWorkspaceByte);
     if( aM==0 ){
       p->rc = SQLITE_NOMEM;
       sqlite3_result_error_nomem(p->pCtx);
@@ -3601,12 +3695,13 @@ static void vec1TrainRotation(
   float *aRotation
 ){
   const int nElem = p->tv.nElem;
-  const int nMatrixByte = sizeof_f32 * nElem * nElem;
+  const int nMatrixFloat = p->nRotationFloat;
+  const int nMatrixByte = sizeof_f32 * nMatrixFloat;
   int iRound = 0;                 /* Current OPQ round */
   int rc = SQLITE_OK;
   int ii;
-  float *aRot = (float*)sqlite3_malloc(nMatrixByte * 2);
-  float *aRot2 = &aRot[nElem*nElem];
+  float *aRot = (float*)sqlite3_malloc64((sqlite3_int64)nMatrixByte * 2);
+  float *aRot2 = aRot ? &aRot[nMatrixFloat] : 0;
   Vec1TrainVectors *pTrain = vec1CopyVectors(&p->tv);
   Vec1RotationJob *aJob = 0;
   aJob = vec1RotationAlloc(p, aRotation, pTrain);
@@ -3794,6 +3889,8 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   p = (Vec1TrainCtx*)sqlite3_aggregate_context(pCtx, sizeof(*p));
   if( p==0 ) return;
 
+  if( p->rc!=SQLITE_OK ) goto train_final_out;
+
   if( p->tv.nVec==0 ){
     vec1ResultErrorF(pCtx,
         "too few training vectors (have 0, require more than that)"
@@ -3827,26 +3924,22 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   }
 
   /* Allocate space for the model. */
-  nByte = VEC1_HEADER_SIZE + sizeof_f32 * (
-    (p->nCodebook * p->nCodeElem * VEC1_PQ_CODEBOOK_SZ) +  /* Codebooks */
-    (p->nBucket * p->tv.nElem) +                           /* Centroids */
-    (p->bOpq ? (p->tv.nElem * p->tv.nElem) : 0)            /* Rotation */
-  );
+  nByte = p->nModelByte;
 
   aByte = (u8*)vec1ContextMalloc(pCtx, nByte);
   if( aByte==0 ) goto train_final_out;
   pCsr = (float*)&aByte[VEC1_HEADER_SIZE];
   if( p->nCodebook>0 ){
     aBook = pCsr;
-    pCsr += (p->nCodebook * p->nCodeElem * VEC1_PQ_CODEBOOK_SZ);
+    pCsr += p->nCodebookFloat;
   }
   if( p->nBucket>0 ){
     aCentroid = pCsr;
-    pCsr += (p->nBucket * p->tv.nElem);
+    pCsr += p->nCentroidFloat;
   }
   if( p->bOpq ){
     aRotation = pCsr;
-    pCsr += (p->tv.nElem * p->tv.nElem);
+    pCsr += p->nRotationFloat;
   }
   assert( (u8*)pCsr==&aByte[nByte] );
 
