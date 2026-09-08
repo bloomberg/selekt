@@ -61,7 +61,7 @@ Selekt JBDC requires Java 25 or later.
         databasePath = "/path/to/database.db"
         journalMode = "WAL" // is the default
         busyTimeout = 2_500 // milliseconds is the default
-        maxPoolSize = 4 // is the default, with 3 read-only connections
+        maxPoolSize = 4 // is the default, with 3 read connections
         foreignKeys = true
     }
 
@@ -76,7 +76,7 @@ Selekt JBDC requires Java 25 or later.
     dataSource.setDatabasePath("/path/to/database.db");
     dataSource.setJournalMode("WAL"); // is the default
     dataSource.setBusyTimeout(2500); // milliseconds is the default
-    dataSource.setMaxPoolSize(4); // is the default, with 3 read-only connections
+    dataSource.setMaxPoolSize(4); // is the default, with 3 read connections
     dataSource.setForeignKeys(true);
 
     try (Connection connection = dataSource.getConnection()) {
@@ -147,7 +147,7 @@ Properties can also be inlined in the URL query string:
 
 ## Encryption
 
-Selekt uses SQLCipher for AES-256 encryption. Encryption is **opt-in**, databases are unencrypted by default. To enable encryption, provide a key that is exactly **32 bytes**. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function. A `0x`-prefixed key must contain exactly 64 hexadecimal digits.
+Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases are unencrypted by default. To enable encryption, provide a key that is exactly 32 bytes. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function. A `0x`-prefixed key must contain exactly 64 hexadecimal digits.
 
 `SelektDriver` does not accept encryption keys. Encrypted connections must use `SelektDataSource.setEncryption` with an `EncryptionKeySource.Literal` backed by a caller-owned `CharArray`. `SelektDataSource` stores and later zeroes an internal copy; zero the caller-owned array after `setEncryption` returns.
 

@@ -90,7 +90,6 @@ class SelektDataSource : DataSource {
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
-        private const val DEFAULT_POOL_SIZE = 10
     }
 
     private val logger: Logger = LoggerFactory.getLogger(SelektDataSource::class.java)
@@ -107,7 +106,7 @@ class SelektDataSource : DataSource {
         }
 
     @Volatile
-    var maxPoolSize: Int = DEFAULT_POOL_SIZE
+    var maxPoolSize: Int = DEFAULT_JDBC_POOL_SIZE
         set(value) {
             require(value > 0) { "Pool size must be positive" }
             field = value

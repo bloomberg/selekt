@@ -244,7 +244,7 @@ internal class SelektDataSourceTest {
 
     @Test
     fun maxPoolSizeDefault() {
-        assertEquals(10, dataSource.maxPoolSize)
+        assertEquals(4, dataSource.maxPoolSize)
     }
 
     @Test
