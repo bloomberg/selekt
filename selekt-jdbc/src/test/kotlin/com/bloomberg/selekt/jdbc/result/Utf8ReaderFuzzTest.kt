@@ -16,14 +16,18 @@
 
 package com.bloomberg.selekt.jdbc.result
 
+import com.bloomberg.selekt.jdbc.FUZZ_TEST_TIMEOUT_MINUTES
 import com.code_intelligence.jazzer.junit.FuzzTest
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.provider.MethodSource
 
 @Suppress("MagicNumber")
+@Timeout(value = FUZZ_TEST_TIMEOUT_MINUTES, unit = TimeUnit.MINUTES)
 internal class Utf8ReaderFuzzTest {
     @org.junit.jupiter.api.Test
     fun rejectsInvalidDestinationBounds() {

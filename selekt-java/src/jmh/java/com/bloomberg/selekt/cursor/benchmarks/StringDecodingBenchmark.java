@@ -110,7 +110,8 @@ public class StringDecodingBenchmark {
     public void stringConstructor(Blackhole blackhole) {
         for (int row = 0; row < rowCount; row++) {
             int length = lengths[row];
-            data.get(offsets[row], bytes, 0, length);
+            data.position(offsets[row]);
+            data.get(bytes, 0, length);
             blackhole.consume(new String(bytes, 0, length, StandardCharsets.UTF_8));
         }
     }
@@ -129,7 +130,8 @@ public class StringDecodingBenchmark {
     public void heapCharsetDecoder(Blackhole blackhole) throws CharacterCodingException {
         for (int row = 0; row < rowCount; row++) {
             int length = lengths[row];
-            data.get(offsets[row], bytes, 0, length);
+            data.position(offsets[row]);
+            data.get(bytes, 0, length);
             heapInput.clear();
             heapInput.limit(length);
             blackhole.consume(decode(heapDecoder, heapInput));

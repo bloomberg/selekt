@@ -31,6 +31,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeoutPreemptively
 
@@ -382,8 +383,22 @@ internal class JdbcTransactionOwnershipTest {
     }
 
     @Test
+    fun transactionRejectsSequentialThreadHandoff() = assertTransactionRejectsSequentialThreadHandoff(
+        "thread-handoff",
+        ::startPlatformThread
+    )
+
+    @Test
     fun transactionRejectsSequentialVirtualThreadHandoff() {
-        val url = newDatabaseUrl("virtual-thread-handoff")
+        assumeVirtualThreads()
+        assertTransactionRejectsSequentialThreadHandoff("virtual-thread-handoff", ::startVirtualThread)
+    }
+
+    private fun assertTransactionRejectsSequentialThreadHandoff(
+        databaseName: String,
+        startThread: (Runnable) -> Thread
+    ) {
+        val url = newDatabaseUrl(databaseName)
         createSchema(url)
         DriverManager.getConnection(url).use { connection ->
             DriverManager.getConnection(url).use { observer ->
@@ -392,9 +407,9 @@ internal class JdbcTransactionOwnershipTest {
                     it.executeUpdate("INSERT INTO test(value) VALUES ('main')")
                 }
                 val failure = AtomicReference<Throwable?>()
-                Thread.ofVirtual().start {
+                startThread(Runnable {
                     runCatching(connection::rollback).onFailure(failure::set)
-                }.join()
+                }).join()
                 assertTrue(failure.get() is SQLException)
                 assertTrue(failure.get()?.message.orEmpty().contains("owned by another thread"))
                 assertEquals(0, rowCount(observer))
@@ -405,8 +420,22 @@ internal class JdbcTransactionOwnershipTest {
     }
 
     @Test
-    fun writerOnAnotherThreadWaitsForTransactionOwner() {
-        val url = newDatabaseUrl("other-thread")
+    fun writerOnAnotherThreadWaitsForTransactionOwner() = assertWriterWaitsForTransactionOwner(
+        "other-thread",
+        ::startPlatformThread
+    )
+
+    @Test
+    fun writerOnVirtualThreadWaitsForTransactionOwner() {
+        assumeVirtualThreads()
+        assertWriterWaitsForTransactionOwner("virtual-other-thread", ::startVirtualThread)
+    }
+
+    private fun assertWriterWaitsForTransactionOwner(
+        databaseName: String,
+        startThread: (Runnable) -> Thread
+    ) {
+        val url = newDatabaseUrl(databaseName)
         createSchema(url)
         DriverManager.getConnection(url).use { first ->
             DriverManager.getConnection(url).use { second ->
@@ -417,7 +446,7 @@ internal class JdbcTransactionOwnershipTest {
                 val started = CountDownLatch(1)
                 val completed = CountDownLatch(1)
                 val failure = AtomicReference<Throwable?>()
-                val writer = Thread.ofVirtual().start {
+                val writer = startThread(Runnable {
                     started.countDown()
                     runCatching {
                         second.createStatement().use {
@@ -425,7 +454,7 @@ internal class JdbcTransactionOwnershipTest {
                         }
                     }.onFailure(failure::set)
                     completed.countDown()
-                }
+                })
                 assertTrue(started.await(1, TimeUnit.SECONDS))
                 assertFalse(completed.await(100, TimeUnit.MILLISECONDS))
                 first.rollback()
@@ -436,6 +465,17 @@ internal class JdbcTransactionOwnershipTest {
             }
         }
     }
+
+    private fun startPlatformThread(task: Runnable): Thread = Thread(task).apply { start() }
+
+    private fun startVirtualThread(task: Runnable): Thread = Thread::class.java
+        .getMethod("startVirtualThread", Runnable::class.java)
+        .invoke(null, task) as Thread
+
+    private fun assumeVirtualThreads() = assumeTrue(
+        Runtime.version().feature() >= MINIMUM_VIRTUAL_THREAD_JAVA_VERSION,
+        "Virtual threads require Java $MINIMUM_VIRTUAL_THREAD_JAVA_VERSION or later"
+    )
 
     private fun createSchema(url: String) {
         DriverManager.getConnection(url).use { connection ->
@@ -468,5 +508,9 @@ internal class JdbcTransactionOwnershipTest {
             it.toFile().deleteOnExit()
         }
         return "jdbc:sqlite:$path?journalMode=WAL&busyTimeout=1000&poolSize=2"
+    }
+
+    private companion object {
+        const val MINIMUM_VIRTUAL_THREAD_JAVA_VERSION = 21
     }
 }

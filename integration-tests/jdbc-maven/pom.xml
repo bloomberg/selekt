@@ -9,8 +9,10 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.release>25</maven.compiler.release>
+        <consumer.java.version>25</consumer.java.version>
+        <maven.compiler.release>${consumer.java.version}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <selekt.expected.backend>JNI</selekt.expected.backend>
     </properties>
 
     <dependencyManagement>
@@ -33,6 +35,7 @@
     </dependencies>
 
     <build>
+        <directory>${project.basedir}/target/java${consumer.java.version}</directory>
         <sourceDirectory>${project.basedir}/../jdbc-smoke/src/main/java</sourceDirectory>
         <plugins>
             <plugin>
@@ -53,6 +56,9 @@
                         </goals>
                         <configuration>
                             <mainClass>com.bloomberg.selekt.samples.JdbcSmokeTest</mainClass>
+                            <arguments>
+                                <argument>${selekt.expected.backend}</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>

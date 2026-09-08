@@ -1,8 +1,10 @@
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
+Selekt FFM and Xerial run on Java 25; Selekt JNI runs on Java 11. Comparisons between the Selekt backends therefore include JVM-version effects as well as the native-call mechanism.
+
 ### Batch Insert
 
-Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both metrics.
+Latest JMH batch-insert results across Xerial and both Selekt backends, updated periodically from CI. Lower is better for both metrics.
 
 === "Allocation"
 
@@ -34,24 +36,27 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
     document.head.appendChild(s);
   }
 
-  function pairBenches(benches) {
-    var pairs = {};
+  function groupBenches(benches) {
+    var groups = {};
     benches.forEach(function (b) {
       var method = b.name.replace(/^.*\./, '');
       var driver, base;
-      if (method.startsWith('selekt')) {
-        driver = 'Selekt';
+      if (method.startsWith('selektJni')) {
+        driver = 'Selekt JNI (Java 11)';
+        base = method.substring(9);
+      } else if (method.startsWith('selekt')) {
+        driver = 'Selekt FFM (Java 25)';
         base = method.substring(6);
       } else if (method.startsWith('xerial')) {
-        driver = 'Xerial';
+        driver = 'Xerial (Java 25)';
         base = method.substring(6);
       } else {
         return;
       }
-      if (!pairs[base]) pairs[base] = {};
-      pairs[base][driver] = b;
+      if (!groups[base]) groups[base] = {};
+      groups[base][driver] = b;
     });
-    return pairs;
+    return groups;
   }
 
   var BATCH_BENCH_ORDER = ['BatchInsertSIMPLE', 'BatchInsertMIXED', 'BatchInsertBLOB'];
@@ -72,9 +77,9 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
     'CharacterStreamUTF16': 'getCharacterStream() — emoji'
   };
 
-  function drawPairs(pairs, containerId, defaultUnit, prefix, benchOrder, labels) {
+  function drawComparisons(groups, containerId, defaultUnit, prefix, benchOrder, labels) {
     var container = document.getElementById(containerId);
-    var keys = Object.keys(pairs).filter(function (k) {
+    var keys = Object.keys(groups).filter(function (k) {
       return k.startsWith(prefix);
     });
     keys.sort(function (a, b) {
@@ -85,24 +90,29 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
       return ai - bi;
     });
     keys.forEach(function (base) {
-      var p = pairs[base];
-      var selekt = p['Selekt'];
-      var xerial = p['Xerial'];
-      if (!selekt || !xerial) return;
+      var group = groups[base];
+      var selektFfm = group['Selekt FFM (Java 25)'];
+      var selektJni = group['Selekt JNI (Java 11)'];
+      var xerial = group['Xerial (Java 25)'];
+      if (!selektFfm || !selektJni || !xerial) return;
 
-      var unit = selekt.unit || defaultUnit || 'ms/op';
-      var sv = Number(selekt.value);
+      var unit = selektFfm.unit || defaultUnit || 'ms/op';
+      var fv = Number(selektFfm.value);
+      var jv = Number(selektJni.value);
       var xv = Number(xerial.value);
-      var selektColor = sv <= xv ? '#34A853' : '#EA4335';
-      var xerialColor = xv <= sv ? '#34A853' : '#EA4335';
+      var best = Math.min(fv, jv, xv);
+      function color(value) {
+        return value === best ? '#34A853' : '#EA4335';
+      }
 
       var data = new google.visualization.DataTable();
       data.addColumn('string', 'Driver');
       data.addColumn('number', unit);
       data.addColumn({ type: 'string', role: 'style' });
       data.addRows([
-        ['Selekt', sv, selektColor],
-        ['Xerial', xv, xerialColor]
+        ['Selekt FFM (Java 25)', fv, color(fv)],
+        ['Selekt JNI (Java 11)', jv, color(jv)],
+        ['Xerial (Java 25)', xv, color(xv)]
       ]);
 
       var div = document.createElement('div');
@@ -133,25 +143,25 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
     google.charts.load('current', { packages: ['corechart'] });
     google.charts.setOnLoadCallback(function () {
       if (allocData) {
-        var allocationPairs = pairBenches(allocData);
-        drawPairs(
-          allocationPairs,
+        var allocationGroups = groupBenches(allocData);
+        drawComparisons(
+          allocationGroups,
           'jdbc_allocation',
           'B/op',
           'BatchInsert',
           BATCH_BENCH_ORDER,
           {}
         );
-        drawPairs(
-          allocationPairs,
+        drawComparisons(
+          allocationGroups,
           'jdbc_stream_allocation',
           'B/op',
           'AsciiStream',
           STREAM_BENCH_ORDER,
           STREAM_BENCH_LABELS
         );
-        drawPairs(
-          allocationPairs,
+        drawComparisons(
+          allocationGroups,
           'jdbc_stream_allocation',
           'B/op',
           'CharacterStream',
@@ -193,8 +203,8 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
         if (el && el.offsetWidth > 0) {
           target.drawn = true;
           if (throughputData) {
-            drawPairs(
-              pairBenches(throughputData),
+            drawComparisons(
+              groupBenches(throughputData),
               target.id,
               'ms/op',
               target.prefix,

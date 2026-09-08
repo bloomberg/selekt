@@ -127,7 +127,8 @@ public class FirstGetStringBenchmark {
     public void currentUtf8(Blackhole blackhole) {
         for (int row = 0; row < rowCount; row++) {
             int length = utf8Lengths[row];
-            utf8Data.get(utf8Offsets[row], bytes, 0, length);
+            utf8Data.position(utf8Offsets[row]);
+            utf8Data.get(bytes, 0, length);
             blackhole.consume(new String(bytes, 0, length, StandardCharsets.UTF_8));
         }
     }
@@ -136,7 +137,8 @@ public class FirstGetStringBenchmark {
     public void asciiFlag(Blackhole blackhole) {
         for (int row = 0; row < rowCount; row++) {
             int length = utf8Lengths[row];
-            utf8Data.get(utf8Offsets[row], bytes, 0, length);
+            utf8Data.position(utf8Offsets[row]);
+            utf8Data.get(bytes, 0, length);
             blackhole.consume(new String(
                     bytes,
                     0,
@@ -152,13 +154,15 @@ public class FirstGetStringBenchmark {
         if (stringEncoding == StringEncoding.UTF16) {
             for (int row = 0; row < rowCount; row++) {
                 int length = readyLengths[row];
-                utf16Data.get(readyOffsets[row], chars, 0, length);
+                utf16Data.position(readyOffsets[row]);
+                utf16Data.get(chars, 0, length);
                 blackhole.consume(new String(chars, 0, length));
             }
         } else {
             for (int row = 0; row < rowCount; row++) {
                 int length = readyLengths[row];
-                compactData.get(readyOffsets[row], bytes, 0, length);
+                compactData.position(readyOffsets[row]);
+                compactData.get(bytes, 0, length);
                 blackhole.consume(new String(bytes, 0, length, StandardCharsets.ISO_8859_1));
             }
         }

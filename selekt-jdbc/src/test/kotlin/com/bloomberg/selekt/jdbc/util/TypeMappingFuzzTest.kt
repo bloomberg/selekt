@@ -16,17 +16,21 @@
 
 package com.bloomberg.selekt.jdbc.util
 
+import com.bloomberg.selekt.jdbc.FUZZ_TEST_TIMEOUT_MINUTES
 import com.code_intelligence.jazzer.junit.FuzzTest
 import java.math.BigDecimal
 import java.sql.Date
 import java.sql.Time
 import java.sql.Timestamp
 import java.sql.Types
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.provider.MethodSource
 
+@Timeout(value = FUZZ_TEST_TIMEOUT_MINUTES, unit = TimeUnit.MINUTES)
 internal class TypeMappingFuzzTest {
     @MethodSource("inputs")
     @FuzzTest

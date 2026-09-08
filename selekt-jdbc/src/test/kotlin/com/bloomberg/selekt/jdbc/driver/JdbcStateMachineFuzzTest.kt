@@ -16,17 +16,21 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.jdbc.FUZZ_TEST_TIMEOUT_MINUTES
 import com.code_intelligence.jazzer.junit.FuzzTest
 import java.sql.Connection
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.math.min
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.provider.MethodSource
 
 @Suppress("MagicNumber", "TooManyFunctions")
+@Timeout(value = FUZZ_TEST_TIMEOUT_MINUTES, unit = TimeUnit.MINUTES)
 internal class JdbcStateMachineFuzzTest {
     @MethodSource("inputs")
     @FuzzTest

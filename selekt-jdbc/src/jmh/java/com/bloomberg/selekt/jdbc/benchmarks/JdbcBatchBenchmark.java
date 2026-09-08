@@ -140,25 +140,29 @@ public class JdbcBatchBenchmark {
         blobs = new byte[batchSize][];
         for (int i = 0; i < batchSize; i++) {
             switch (dataType) {
-                case "SIMPLE" -> {
+                case "SIMPLE": {
                     names[i] = "item_" + i;
                     values[i] = i * 1.5;
                     blobs[i] = null;
+                    break;
                 }
-                case "MIXED" -> {
+                case "MIXED": {
                     names[i] = (i % 3 == 0) ? "mixed_" + i : "default_" + i;
                     values[i] = (i % 2 == 0) ? i * 2.5 : 0.0;
                     blobs[i] = (i % 5 == 0) ? new byte[64] : new byte[16];
+                    break;
                 }
-                case "LARGE_BLOBS" -> {
+                case "LARGE_BLOBS": {
                     names[i] = "blob_item_" + i;
                     values[i] = i * 1.0;
                     blobs[i] = new byte[2048];
+                    break;
                 }
-                default -> {
+                default: {
                     names[i] = "default_" + i;
                     values[i] = 1.0;
                     blobs[i] = null;
+                    break;
                 }
             }
         }
@@ -278,4 +282,3 @@ public class JdbcBatchBenchmark {
         new File(file.getPath() + "-shm").delete();
     }
 }
-

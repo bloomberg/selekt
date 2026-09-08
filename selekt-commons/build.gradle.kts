@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 description = "Selekt commons library."
 
 plugins {
@@ -35,8 +37,15 @@ repositories {
 disableKotlinCompilerAssertions()
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
     withJavadocJar()
     withSourcesJar()
+}
+
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 publishing {

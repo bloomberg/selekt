@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 
 internal class SharedDatabaseCacheTest {
@@ -70,9 +71,9 @@ internal class SharedDatabaseCacheTest {
 
         shared.releaseConnection()
 
-        assertTrue(waitUntil { !shared.isOpen() }, "Database did not expire")
+        verify(database, timeout(TimeUnit.SECONDS.toMillis(5L))).close()
+        assertFalse(shared.isOpen())
         assertEquals(0, cache.size)
-        verify(database).close()
     }
 
     @Test
@@ -139,14 +140,4 @@ internal class SharedDatabaseCacheTest {
         verify(database).close()
     }
 
-    private fun waitUntil(condition: () -> Boolean): Boolean {
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
-        while (System.nanoTime() < deadline) {
-            if (condition()) {
-                return true
-            }
-            Thread.sleep(10L)
-        }
-        return condition()
-    }
 }

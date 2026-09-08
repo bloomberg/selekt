@@ -477,7 +477,7 @@ internal class SingleObjectPoolTest {
     fun clearHighPriorityEvictsIdle(): Unit = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         clear(Priority.HIGH)
-        Thread.sleep(200L)
+        awaitPendingTasks()
         assertNotSame(obj, borrowObject())
     }
 
@@ -485,7 +485,7 @@ internal class SingleObjectPoolTest {
     fun clearLowPriorityKeepsIdle(): Unit = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         clear(Priority.LOW)
-        Thread.sleep(200L)
+        awaitPendingTasks()
         assertSame(obj, borrowObject())
     }
 
@@ -494,7 +494,7 @@ internal class SingleObjectPoolTest {
         val obj = borrowObject().also { returnObject(it) }
         evict()
         clear(Priority.LOW)
-        Thread.sleep(200L)
+        awaitPendingTasks()
         assertNotSame(obj, borrowObject())
     }
 
@@ -512,7 +512,7 @@ internal class SingleObjectPoolTest {
         }, executor, Long.MAX_VALUE, Long.MAX_VALUE).use {
             it.borrowObject().apply { it.returnObject(this) }
             it.clear(Priority.LOW)
-            Thread.sleep(200L)
+            awaitPendingTasks()
             verify(obj, times(1)).releaseMemory()
         }
     }
@@ -541,5 +541,9 @@ internal class SingleObjectPoolTest {
                 it.evict(Priority.HIGH)
             }
         }
+    }
+
+    private fun awaitPendingTasks() {
+        executor.submit {}.get(5L, TimeUnit.SECONDS)
     }
 }

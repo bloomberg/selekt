@@ -82,7 +82,7 @@ dependencies {
     implementation(projects.selektSqlite3Api)
     implementation(projects.selektSqlite3Classes) {
         capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
+            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java11")
         }
     }
 }
