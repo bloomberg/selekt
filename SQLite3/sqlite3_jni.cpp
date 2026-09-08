@@ -1074,6 +1074,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseStatus(
     jboolean reset,
     jintArray holder
 ) {
+    if (env->GetArrayLength(holder) < 2) {
+        throwIndexOutOfBoundsException(env, "databaseStatus: holder must contain at least two elements.");
+        return SQLITE_MISUSE;
+    }
     int current = 0;
     int highWater = 0;
     int result = sqlite3_db_status(
@@ -1083,14 +1087,10 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseStatus(
         &highWater,
         reset
     );
-    auto elements = static_cast<jint*>(env->GetPrimitiveArrayCritical(holder, nullptr));
-    if (elements == nullptr) {
-        throwOutOfMemoryError(env, "GetPrimitiveArrayCritical");
-        return result;
+    if (result == SQLITE_OK) {
+        jint values[] = { current, highWater };
+        env->SetIntArrayRegion(holder, 0, 2, values);
     }
-    elements[0] = current;
-    elements[1] = highWater;
-    env->ReleasePrimitiveArrayCritical(holder, elements, 0);
     return result;
 }
 
