@@ -194,7 +194,12 @@ open class JdbcStatement internal constructor(
         signal: CancellationSignal
     ): ICursor = connection.withSession {
         checkReadOnlyQuery(sql, args)
-        if (resultSetType == ResultSet.TYPE_FORWARD_ONLY && !connection.isReadOnly) {
+        // A read-only manual transaction deliberately materialises its result. Keeping a streaming
+        // SQLite statement open there would pin a WAL snapshot beyond this call and can block a
+        // FULL checkpoint. Auto-commit read-only queries have no such transaction-lifetime contract.
+        val shouldStream = resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
+            (!connection.isReadOnly || connection.autoCommit)
+        if (shouldStream) {
             database.queryForwardOnly(sql, args, signal)
         } else if (maxRows > 0) {
             database.queryUpTo(sql, args, maxRows, signal)

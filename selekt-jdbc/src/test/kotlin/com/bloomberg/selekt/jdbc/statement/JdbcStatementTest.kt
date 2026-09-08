@@ -32,6 +32,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
 import java.sql.SQLException
 import java.sql.Statement
@@ -233,7 +234,23 @@ internal class JdbcStatementTest {
     }
 
     @Test
-    fun readOnlyMaxRowsBoundsBufferedExecution() {
+    fun readOnlyForwardOnlyQueryStreams() {
+        val sql = "SELECT * FROM users"
+        val compiledStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        mockConnection.isReadOnly = true
+        whenever(mockDatabase.compileStatement(sql, emptyArray())) doReturn compiledStatement
+        whenever(
+            mockDatabase.queryForwardOnly(eq(sql), eq(emptyArray<Any?>()), any<CancellationSignal>())
+        ) doReturn mockCursor
+        statement.executeQuery(sql).close()
+        verify(mockDatabase).queryForwardOnly(eq(sql), eq(emptyArray<Any?>()), any<CancellationSignal>())
+        verify(mockDatabase, never()).query(eq(sql), any<Array<Any?>>(), any<CancellationSignal>())
+    }
+
+    @Test
+    fun readOnlyForwardOnlyMaxRowsStreamsWithRowLimit() {
         val sql = "SELECT * FROM users"
         val compiledStatement = mock<ISQLStatement> {
             whenever(it.isReadOnly) doReturn true
@@ -242,10 +259,47 @@ internal class JdbcStatementTest {
         statement.maxRows = 5
         whenever(mockDatabase.compileStatement(sql, emptyArray())) doReturn compiledStatement
         whenever(
+            mockDatabase.queryForwardOnly(eq(sql), eq(emptyArray<Any?>()), any<CancellationSignal>())
+        ) doReturn mockCursor
+        whenever(mockCursor.moveToNext()) doReturn true
+        statement.executeQuery(sql).use { resultSet ->
+            repeat(5) {
+                assertTrue(resultSet.next())
+            }
+            assertFalse(resultSet.next())
+        }
+        verify(mockDatabase).queryForwardOnly(eq(sql), eq(emptyArray<Any?>()), any<CancellationSignal>())
+        verify(mockDatabase, never()).queryUpTo(
+            eq(sql),
+            eq(emptyArray<Any?>()),
+            eq(5),
+            any<CancellationSignal>()
+        )
+        verify(mockCursor, times(5)).moveToNext()
+    }
+
+    @Test
+    fun readOnlyManualTransactionMaxRowsBoundsBufferedExecution() {
+        val sql = "SELECT * FROM users"
+        val compiledStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        mockConnection.isReadOnly = true
+        mockConnection.autoCommit = false
+        statement.maxRows = 5
+        whenever(mockDatabase.compileStatement(sql, emptyArray())) doReturn compiledStatement
+        whenever(
             mockDatabase.queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
         ) doReturn mockCursor
+
         statement.executeQuery(sql).close()
+
         verify(mockDatabase).queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
+        verify(mockDatabase, never()).queryForwardOnly(
+            eq(sql),
+            eq(emptyArray<Any?>()),
+            any<CancellationSignal>()
+        )
     }
 
     @Test

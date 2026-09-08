@@ -70,8 +70,12 @@ public class JdbcForwardOnlyBenchmark {
     private File selektDatabaseFile;
     private File xerialDatabaseFile;
     private Connection selektConnection;
+    private Connection selektReadOnlyConnection;
+    private Connection selektReadOnlyManualTransactionConnection;
     private Connection xerialConnection;
     private PreparedStatement selektForwardOnlyStatement;
+    private PreparedStatement selektReadOnlyForwardOnlyStatement;
+    private PreparedStatement selektReadOnlyManualTransactionForwardOnlyStatement;
     private PreparedStatement selektScrollInsensitiveStatement;
     private PreparedStatement xerialForwardOnlyStatement;
 
@@ -79,9 +83,13 @@ public class JdbcForwardOnlyBenchmark {
     public void setUp() throws SQLException, IOException {
         selektDatabaseFile = Files.createTempFile("selekt-fwd-bench", ".db").toFile();
         selektDatabaseFile.deleteOnExit();
+        final String selektUrl = "jdbc:sqlite:" + selektDatabaseFile.getAbsolutePath()
+            + "?cursorWindowSize=1024";
         selektConnection = SELEKT_DRIVER.connect(
-            "jdbc:sqlite:" + selektDatabaseFile.getAbsolutePath(), new Properties());
+            selektUrl, new Properties());
         initializeDatabase(selektConnection);
+        selektReadOnlyConnection = readOnlyConnection(selektUrl, true);
+        selektReadOnlyManualTransactionConnection = readOnlyConnection(selektUrl, false);
 
         xerialDatabaseFile = Files.createTempFile("xerial-fwd-bench", ".db").toFile();
         xerialDatabaseFile.deleteOnExit();
@@ -91,6 +99,11 @@ public class JdbcForwardOnlyBenchmark {
 
         selektForwardOnlyStatement = selektConnection.prepareStatement(
             SELECT_BY_ID_SQL, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        selektReadOnlyForwardOnlyStatement = selektReadOnlyConnection.prepareStatement(
+            SELECT_BY_ID_SQL, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        selektReadOnlyManualTransactionForwardOnlyStatement =
+            selektReadOnlyManualTransactionConnection.prepareStatement(
+                SELECT_BY_ID_SQL, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         selektScrollInsensitiveStatement = selektConnection.prepareStatement(
             SELECT_BY_ID_SQL, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         xerialForwardOnlyStatement = xerialConnection.prepareStatement(
@@ -100,14 +113,14 @@ public class JdbcForwardOnlyBenchmark {
     @TearDown(Level.Iteration)
     public void tearDown() throws SQLException {
         closeQuietly(selektForwardOnlyStatement);
+        closeQuietly(selektReadOnlyForwardOnlyStatement);
+        closeQuietly(selektReadOnlyManualTransactionForwardOnlyStatement);
         closeQuietly(selektScrollInsensitiveStatement);
         closeQuietly(xerialForwardOnlyStatement);
-        if (selektConnection != null && !selektConnection.isClosed()) {
-            selektConnection.close();
-        }
-        if (xerialConnection != null && !xerialConnection.isClosed()) {
-            xerialConnection.close();
-        }
+        closeQuietly(selektConnection);
+        closeQuietly(selektReadOnlyConnection);
+        closeQuietly(selektReadOnlyManualTransactionConnection);
+        closeQuietly(xerialConnection);
         deleteDatabase(selektDatabaseFile);
         deleteDatabase(xerialDatabaseFile);
     }
@@ -115,6 +128,17 @@ public class JdbcForwardOnlyBenchmark {
     @Benchmark
     public void selektForwardOnlyFullScan(final Blackhole blackhole) throws SQLException {
         fullScan(selektConnection, ResultSet.TYPE_FORWARD_ONLY, blackhole);
+    }
+
+    @Benchmark
+    public void selektReadOnlyForwardOnlyFullScan(final Blackhole blackhole) throws SQLException {
+        fullScan(selektReadOnlyConnection, ResultSet.TYPE_FORWARD_ONLY, blackhole);
+    }
+
+    @Benchmark
+    public void selektReadOnlyManualTransactionForwardOnlyFullScan(
+            final Blackhole blackhole) throws SQLException {
+        fullScan(selektReadOnlyManualTransactionConnection, ResultSet.TYPE_FORWARD_ONLY, blackhole);
     }
 
     @Benchmark
@@ -145,6 +169,17 @@ public class JdbcForwardOnlyBenchmark {
     @Benchmark
     public void selektForwardOnlyPointQueryReuse(final Blackhole blackhole) throws SQLException {
         pointQueryReuse(selektForwardOnlyStatement, blackhole);
+    }
+
+    @Benchmark
+    public void selektReadOnlyForwardOnlyPointQueryReuse(final Blackhole blackhole) throws SQLException {
+        pointQueryReuse(selektReadOnlyForwardOnlyStatement, blackhole);
+    }
+
+    @Benchmark
+    public void selektReadOnlyManualTransactionForwardOnlyPointQueryReuse(
+            final Blackhole blackhole) throws SQLException {
+        pointQueryReuse(selektReadOnlyManualTransactionForwardOnlyStatement, blackhole);
     }
 
     @Benchmark
@@ -200,6 +235,13 @@ public class JdbcForwardOnlyBenchmark {
         }
     }
 
+    private static Connection readOnlyConnection(final String url, final boolean autoCommit) throws SQLException {
+        final Connection connection = SELEKT_DRIVER.connect(url, new Properties());
+        connection.setReadOnly(true);
+        connection.setAutoCommit(autoCommit);
+        return connection;
+    }
+
     private void initializeDatabase(final Connection conn) throws SQLException {
         try (Statement statement = conn.createStatement()) {
             statement.execute("PRAGMA journal_mode=WAL");
@@ -251,4 +293,3 @@ public class JdbcForwardOnlyBenchmark {
         }
     }
 }
-
