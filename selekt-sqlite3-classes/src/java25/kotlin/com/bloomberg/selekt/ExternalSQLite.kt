@@ -278,13 +278,7 @@ internal class ExternalSQLite(
 
     override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode {
         requireArrayLength("bindBlob", blob.size, length)
-        return sqlite3_bind_blob.invoke(
-            statementSegment(statement),
-            index,
-            MemorySegment.ofArray(blob),
-            length,
-            sqliteTransient
-        ) as Int
+        return bindBlob(statementSegment(statement), index, blob, length)
     }
 
     override fun bindDouble(statement: StatementHandle, index: Int, value: Double): SQLCode =
@@ -331,15 +325,7 @@ internal class ExternalSQLite(
     }
 
     override fun columnBlob(statement: StatementHandle, index: Int): ByteArray? {
-        val blob = sqlite3_column_blob.invoke(statementSegment(statement), index) as MemorySegment
-        if (blob.address() == 0L) {
-            return null
-        }
-        val size = sqlite3_column_bytes.invoke(statementSegment(statement), index) as Int
-        if (size == 0) {
-            return EMPTY_BYTE_ARRAY
-        }
-        return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+        return columnBlob(statementSegment(statement), index)
     }
 
     override fun columnCount(statement: StatementHandle): Int =
@@ -456,13 +442,7 @@ internal class ExternalSQLite(
         length: Int
     ): SQLCode {
         requireArrayLength("bindBlob", blob.size, length)
-        return sqlite3_bind_blob.invoke(
-            MemorySegment.ofAddress(statement),
-            index,
-            MemorySegment.ofArray(blob),
-            length,
-            sqliteTransient
-        ) as Int
+        return bindBlob(MemorySegment.ofAddress(statement), index, blob, length)
     }
 
     override fun bindDouble(
@@ -571,13 +551,7 @@ internal class ExternalSQLite(
                                 sqliteTransient
                             ) as Int
                         }
-                        is ByteArray -> sqlite3_bind_blob.invoke(
-                            segment,
-                            position,
-                            MemorySegment.ofArray(obj),
-                            obj.size,
-                            sqliteTransient
-                        ) as Int
+                        is ByteArray -> bindBlob(segment, position, obj, obj.size)
                         else -> sqlite3_bind_null.invoke(segment, position) as Int
                     }
                 }
@@ -588,6 +562,27 @@ internal class ExternalSQLite(
             }
         }
         return SQL_OK
+    }
+
+    private fun bindBlob(
+        statement: MemorySegment,
+        index: Int,
+        blob: ByteArray,
+        length: Int
+    ): SQLCode = if (length == 0) {
+        sqlite3_bind_zeroblob.invoke(statement, index, 0) as Int
+    } else {
+        sqlite3_bind_blob.invoke(statement, index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
+    }
+
+    private fun columnBlob(statement: MemorySegment, index: Int): ByteArray? {
+        val blob = sqlite3_column_blob.invoke(statement, index) as MemorySegment
+        val size = sqlite3_column_bytes.invoke(statement, index) as Int
+        if (size == 0) {
+            val type = sqlite3_column_type.invoke(statement, index) as Int
+            return if (type == SQLITE_NULL) null else EMPTY_BYTE_ARRAY
+        }
+        return if (blob.address() == 0L) null else blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
     }
 
     override fun blobBytes(
@@ -709,23 +704,7 @@ internal class ExternalSQLite(
     override fun columnBlob(
         statement: Long,
         index: Int
-    ): ByteArray? {
-        val blob = sqlite3_column_blob.invoke(
-            MemorySegment.ofAddress(statement),
-            index
-        ) as MemorySegment
-        if (blob.address() == 0L) {
-            return null
-        }
-        val size = sqlite3_column_bytes.invoke(
-            MemorySegment.ofAddress(statement),
-            index
-        ) as Int
-        if (size == 0) {
-            return EMPTY_BYTE_ARRAY
-        }
-        return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
-    }
+    ): ByteArray? = columnBlob(MemorySegment.ofAddress(statement), index)
 
     override fun columnCount(
         statement: Long
@@ -1353,6 +1332,7 @@ internal class ExternalSQLite(
 
     companion object {
         private const val INITIAL_CALLBACK_DEPTH = 4
+        private const val SQLITE_NULL = 5
 
         init {
             loadLibrary(checkNotNull(ExternalSQLite::class.java.classLoader), "jni", "selekt")

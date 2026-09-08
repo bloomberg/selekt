@@ -28,7 +28,6 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -187,8 +186,7 @@ internal class SQLDatabaseMemoryTest {
         query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
-            val blob = it.getBlob(0)
-            assertNull(blob)
+            assertContentEquals(byteArrayOf(), it.getBlob(0))
         }
     }
 

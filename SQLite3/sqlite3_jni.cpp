@@ -403,6 +403,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     try {
         AutoJByteArray value(env, jvalue, length);
+        if (value.length() == 0) {
+            return sqlite3_bind_zeroblob(statement, index, 0);
+        }
         return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
     } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
@@ -821,13 +824,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnBlob(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto result = sqlite3_column_blob(statement, index);
-    if (result) {
-        auto size = sqlite3_column_bytes(statement, index);
-        if (size > 0) {
-            return newByteArray(env, result, size);
-        }
+    auto size = sqlite3_column_bytes(statement, index);
+    if (size == 0) {
+        return sqlite3_column_type(statement, index) == SQLITE_NULL ? nullptr : env->NewByteArray(0);
     }
-    return nullptr;
+    return result == nullptr ? nullptr : newByteArray(env, result, size);
 }
 
 extern "C" JNIEXPORT jint JNICALL

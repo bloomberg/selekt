@@ -14,6 +14,12 @@ jobs:
     with:
       profile: release
 
+  jvm-fuzzing:
+    name: 'JVM fuzzing release gate / Linux'
+    uses: ./.github/workflows/jvm-fuzzing.yml
+    with:
+      profile: release
+
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
     strategy:
@@ -392,7 +398,7 @@ jobs:
   publish-native:
     name: Publish native artifact to Central Portal
     runs-on: ubuntu-latest
-    needs: [build-native-jars, build-native-jar-musl-aarch64, native-fuzzing]
+    needs: [build-native-jars, build-native-jar-musl-aarch64, native-fuzzing, jvm-fuzzing]
     timeout-minutes: 120
     environment: release
     permissions:
@@ -464,7 +470,7 @@ jobs:
   publish:
     name: 'Publish'
     runs-on: ubuntu-latest
-    needs: native-fuzzing
+    needs: [native-fuzzing, jvm-fuzzing]
     timeout-minutes: 120
     environment: release
     permissions:

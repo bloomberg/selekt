@@ -102,7 +102,7 @@ private fun validUtf8SequenceLength(utf8: ByteArray, position: Int): Int {
     return continuationCount + 1
 }
 
-private fun utf8Reader(utf8: ByteArray): Reader = Utf8ByteArrayReader(utf8)
+internal fun utf8Reader(utf8: ByteArray): Reader = Utf8ByteArrayReader(utf8)
 
 @Suppress(
     "CognitiveComplexMethod",

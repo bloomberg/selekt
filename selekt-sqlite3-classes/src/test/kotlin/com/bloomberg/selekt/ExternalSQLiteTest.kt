@@ -482,15 +482,19 @@ internal class ExternalSQLiteTest {
         val db = dbHolder[0]
         try {
             val statementHolder = LongArray(1)
-            "SELECT ?, ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            "SELECT ?, ?, ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
             val statement = statementHolder[0]
             try {
                 val blob = byteArrayOf(1, 2, 3)
                 assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, blob, 0))
                 assertEquals(SQL_OK, sqlite.bindBlob(statement, 2, blob, 2))
+                assertEquals(SQL_OK, sqlite.bindBlob(statement, 3, byteArrayOf(), 0))
                 assertEquals(SQL_ROW, sqlite.step(statement))
                 assertEquals(SQL_BLOB, sqlite.columnType(statement, 0))
+                assertContentEquals(byteArrayOf(), sqlite.columnBlob(statement, 0))
                 assertContentEquals(byteArrayOf(1, 2), sqlite.columnBlob(statement, 1))
+                assertEquals(SQL_BLOB, sqlite.columnType(statement, 2))
+                assertContentEquals(byteArrayOf(), sqlite.columnBlob(statement, 2))
                 assertContentEquals(byteArrayOf(1, 2, 3), blob)
             } finally {
                 sqlite.finalize(statement)
@@ -1911,7 +1915,7 @@ internal class ExternalSQLiteTest {
         val db = dbHolder[0]
         try {
             val statementHolder = LongArray(1)
-            "SELECT ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
+            "SELECT ?, ?".let { sqlite.prepareV2(db, it, it.length, statementHolder) }
             val stmtHandle = sqlite.newStatementHandle(statementHolder[0])
             try {
                 val data = byteArrayOf(1, 2, 3)
@@ -1922,8 +1926,11 @@ internal class ExternalSQLiteTest {
                     sqlite.bindBlob(stmtHandle, 1, data, data.size + 1)
                 }
                 assertEquals(SQL_OK, sqlite.bindBlob(stmtHandle, 1, data, data.size))
+                assertEquals(SQL_OK, sqlite.bindBlob(stmtHandle, 2, byteArrayOf(), 0))
                 assertEquals(SQL_ROW, sqlite.step(stmtHandle))
                 assertEquals(SQL_BLOB, sqlite.columnType(stmtHandle, 0))
+                assertEquals(SQL_BLOB, sqlite.columnType(stmtHandle, 1))
+                assertContentEquals(byteArrayOf(), sqlite.columnBlob(stmtHandle, 1))
             } finally {
                 sqlite.finalize(stmtHandle)
             }

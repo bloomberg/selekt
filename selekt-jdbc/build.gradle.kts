@@ -75,7 +75,61 @@ dependencies {
     testImplementation(platform(libs.exposed.bom))
     testImplementation(libs.exposed.core)
     testImplementation(libs.exposed.jdbc)
+    testImplementation(libs.jazzer.junit)
     testImplementation(libs.xerial.sqlite.jdbc)
+}
+
+val jvmFuzzProfile = providers.gradleProperty("selekt.fuzz.profile").getOrElse("smoke")
+val jvmFuzzDuration = when (jvmFuzzProfile) {
+    "smoke" -> "5s"
+    "release" -> "1m"
+    "scheduled" -> "5m"
+    else -> error("Unsupported JVM fuzzing profile: $jvmFuzzProfile")
+}
+val jvmFuzzTargets = mapOf(
+    "jvmFuzzUtf8Reader" to "com.bloomberg.selekt.jdbc.result.Utf8ReaderFuzzTest.fuzzReader",
+    "jvmFuzzConnectionUrl" to "com.bloomberg.selekt.jdbc.util.ConnectionURLFuzzTest.fuzzConnectionUrl",
+    "jvmFuzzKeyEncoding" to "com.bloomberg.selekt.jdbc.driver.KeyEncodingFuzzTest.fuzzKeyEncoding",
+    "jvmFuzzTypeMapping" to "com.bloomberg.selekt.jdbc.util.TypeMappingFuzzTest.fuzzTypeMapping",
+    "jvmFuzzStateMachine" to "com.bloomberg.selekt.jdbc.driver.JdbcStateMachineFuzzTest.fuzzJdbcStateMachine"
+)
+val jvmFuzzTasks = jvmFuzzTargets.map { (taskName, testName) ->
+    tasks.register<Test>(taskName) {
+        description = "Runs the $testName Jazzer campaign."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+        environment("JAZZER_FUZZ", "1")
+        filter {
+            includeTestsMatching(testName)
+        }
+        systemProperty("jazzer.instrument", "com.bloomberg.selekt.jdbc.**")
+        systemProperty("jazzer.max_duration", jvmFuzzDuration)
+        systemProperty("jazzer.reproducer_path", layout.buildDirectory.get().asFile.absolutePath)
+        systemProperty("junit.jupiter.execution.parallel.enabled", false)
+        maxHeapSize = "1g"
+        outputs.upToDateWhen { false }
+        workingDir(layout.buildDirectory.get().asFile)
+    }
+}
+jvmFuzzTasks.zipWithNext().forEach { (previous, next) ->
+    next.configure {
+        mustRunAfter(previous)
+    }
+}
+
+tasks.register("jvmFuzz") {
+    description = "Runs JVM fuzzing; configure with -Pselekt.fuzz.profile=smoke|release|scheduled."
+    group = "verification"
+    dependsOn(jvmFuzzTasks)
+}
+
+kover {
+    currentProject {
+        instrumentation {
+            disabledForTestTasks.addAll(jvmFuzzTargets.keys)
+        }
+    }
 }
 
 jmh {

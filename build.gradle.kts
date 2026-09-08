@@ -241,7 +241,13 @@ kover {
     reports {
         filters {
             excludes {
-                classes("*Test*", "*\$DefaultImpls", "com.bloomberg.selekt.jvm.*")
+                classes(
+                    "*Test*",
+                    "*\$DefaultImpls",
+                    "*ProbeMain*",
+                    "*CrossRuntimeRawKeyMain*",
+                    "com.bloomberg.selekt.jvm.*"
+                )
                 packages("*.benchmarks", "*_generated")
             }
         }
