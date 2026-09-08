@@ -16,11 +16,16 @@
 
 package com.bloomberg.selekt.android.room
 
+import androidx.sqlite.SQLITE_DATA_BLOB
+import androidx.sqlite.SQLITE_DATA_FLOAT
+import androidx.sqlite.SQLITE_DATA_NULL
 import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.commons.deleteDatabase
 import com.bloomberg.selekt.jupiter.SelektTestExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.io.path.createTempFile
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -104,14 +109,15 @@ internal class SelektSQLiteDriverTest {
     }
 
     @Test
-    fun createDriverWithDifferentJournalMode() {
-        val connection = createSelektSQLiteDriver(journalMode = SQLiteJournalMode.TRUNCATE).open(":memory:")
-        connection.use {
-            val statement = connection.prepare("PRAGMA journal_mode")
-            statement.use {
-                assertTrue(statement.step())
-                assertEquals("memory", statement.getText(0).lowercase())
+    fun openFileDatabase() {
+        val file = createTempFile("selekt-room-driver", ".db").toFile()
+        try {
+            createSelektSQLiteDriver(journalMode = SQLiteJournalMode.TRUNCATE).use { driver ->
+                driver.createTable(file.absolutePath)
             }
+            assertTrue(file.length() > 0L)
+        } finally {
+            deleteDatabase(file)
         }
     }
 
@@ -137,6 +143,34 @@ internal class SelektSQLiteDriverTest {
                 assertTrue(select.step())
                 assertEquals(1L, select.getLong(0))
                 assertEquals("hello", select.getText(1))
+            }
+        }
+    }
+
+    @Test
+    fun statementBindingsValuesAndMetadata() {
+        createSelektSQLiteDriver().open(":memory:").use { connection ->
+            assertFalse(connection.inTransaction())
+            connection.prepare("SELECT ? AS payload, ? AS score, ? AS absent").use { statement ->
+                val payload = byteArrayOf(1, 2, 3)
+                statement.bindBlob(1, payload)
+                statement.bindDouble(2, 1.25)
+                statement.bindNull(3)
+                assertTrue(statement.step())
+                assertEquals(3, statement.getColumnCount())
+                assertEquals("payload", statement.getColumnName(0))
+                assertEquals(SQLITE_DATA_BLOB, statement.getColumnType(0))
+                assertEquals(SQLITE_DATA_FLOAT, statement.getColumnType(1))
+                assertEquals(SQLITE_DATA_NULL, statement.getColumnType(2))
+                assertContentEquals(payload, statement.getBlob(0))
+                assertEquals(1.25, statement.getDouble(1))
+                assertTrue(statement.isNull(2))
+                statement.reset()
+                statement.clearBindings()
+                assertTrue(statement.step())
+                assertTrue(statement.isNull(0))
+                assertTrue(statement.isNull(1))
+                assertTrue(statement.isNull(2))
             }
         }
     }
@@ -171,5 +205,11 @@ internal class SelektSQLiteDriverTest {
     private fun SelektSQLiteDriver.nativeKey() = SelektSQLiteDriver::class.java.getDeclaredField("key").run {
         isAccessible = true
         get(this@nativeKey) as DatabaseKey
+    }
+
+    private fun SelektSQLiteDriver.createTable(path: String) = open(path).use { connection ->
+        connection.prepare("CREATE TABLE test (id INTEGER PRIMARY KEY)").use { statement ->
+            assertFalse(statement.step())
+        }
     }
 }
