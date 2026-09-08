@@ -16,7 +16,6 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -44,6 +43,14 @@ namespace {
     };
 
     constexpr std::uint32_t SECRET_ALLOCATION_MAGIC = 0x534c4b54; // "SLKT"
+
+    void* pointerFromJLong(jlong value) noexcept {
+        auto const address = static_cast<std::uintptr_t>(value);
+        static_assert(sizeof(address) == sizeof(void*));
+        void* pointer = nullptr;
+        std::memcpy(&pointer, &address, sizeof(pointer));
+        return pointer;
+    }
 
     constexpr bool isAsciiIdentifierCharacter(char value) {
         return (value >= 'a' && value <= 'z')
@@ -354,7 +361,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_freeSecret(
         throwIllegalArgumentException(env, "Secret size must be positive.");
         return;
     }
-    if (selekt_secret_free(std::bit_cast<void*>(static_cast<std::uintptr_t>(pointer)), size) != SQLITE_OK) {
+    if (selekt_secret_free(pointerFromJLong(pointer), size) != SQLITE_OK) {
         throwIllegalArgumentException(env, "Secret size must match the allocation size.");
     }
 }
