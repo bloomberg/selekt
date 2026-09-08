@@ -127,27 +127,31 @@ public class BatchMethodBenchmark {
     }
 
     private Object[] createRowData(final int index) {
-        return switch (dataType) {
-            case "SIMPLE" -> new Object[]{
-                index,
-                "item_" + index,
-                index * 1.5,
-                null
-            };
-            case "MIXED" -> new Object[]{
-                index,
-                (index % 3 == 0) ? "mixed_" + index : "default_" + index,
-                (index % 2 == 0) ? index * 2.5 : 0.0,
-                (index % 5 == 0) ? generateRandomBytes(64) : generateRandomBytes(16)
-            };
-            case "LARGE_BLOBS" -> new Object[]{
-                index,
-                "blob_item_" + index,
-                index * 1.0,
-                generateRandomBytes(2048)
-            };
-            default -> new Object[]{index, "default", 1.0, null};
-        };
+        switch (dataType) {
+            case "SIMPLE":
+                return new Object[]{
+                    index,
+                    "item_" + index,
+                    index * 1.5,
+                    null
+                };
+            case "MIXED":
+                return new Object[]{
+                    index,
+                    (index % 3 == 0) ? "mixed_" + index : "default_" + index,
+                    (index % 2 == 0) ? index * 2.5 : 0.0,
+                    (index % 5 == 0) ? generateRandomBytes(64) : generateRandomBytes(16)
+                };
+            case "LARGE_BLOBS":
+                return new Object[]{
+                    index,
+                    "blob_item_" + index,
+                    index * 1.0,
+                    generateRandomBytes(2048)
+                };
+            default:
+                return new Object[]{index, "default", 1.0, null};
+        }
     }
 
     private byte[] generateRandomBytes(final int size) {

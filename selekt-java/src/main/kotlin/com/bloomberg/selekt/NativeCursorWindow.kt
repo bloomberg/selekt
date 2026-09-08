@@ -174,7 +174,7 @@ internal class NativeCursorWindow(
             return EMPTY_BYTES
         }
         val bytes = ByteArray(length)
-        buffer.get(buffer.getInt(offset + 1 + Int.SIZE_BYTES), bytes, 0, length)
+        readBytesAt(buffer.getInt(offset + 1 + Int.SIZE_BYTES), bytes, length)
         return bytes
     }
 
@@ -186,7 +186,12 @@ internal class NativeCursorWindow(
         if (stringBytes.size < length) {
             stringBytes = ByteArray(length)
         }
-        buffer.get(buffer.getInt(offset + 1 + Int.SIZE_BYTES), stringBytes, 0, length)
+        readBytesAt(buffer.getInt(offset + 1 + Int.SIZE_BYTES), stringBytes, length)
         return String(stringBytes, 0, length, StandardCharsets.UTF_8)
+    }
+
+    private fun readBytesAt(offset: Int, destination: ByteArray, length: Int) {
+        buffer.position(offset)
+        buffer.get(destination, 0, length)
     }
 }

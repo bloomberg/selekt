@@ -42,8 +42,15 @@ repositories {
 disableKotlinCompilerAssertions()
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
     withJavadocJar()
     withSourcesJar()
+}
+
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 sourceSets {
@@ -68,16 +75,8 @@ dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektCommons)
     implementation(projects.selektSqlite3Api)
-    integrationTestImplementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
-        }
-    }
-    jmhImplementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
-        }
-    }
+    integrationTestImplementation(projects.selektSqlite3Classes)
+    jmhImplementation(projects.selektSqlite3Classes)
     jmhImplementation(projects.selektSqlite3Sqlcipher)
     jmhImplementation(libs.kotlinx.coroutines.core)
 }
@@ -153,12 +152,12 @@ tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
     shouldRunAfter("integrationTest")
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     })
 }
 
-tasks.register("jmhJava17") {
-    description = "Runs the jmh benchmarks using the Java 17 (JNI) SQLite variant"
+tasks.register("jmhJava11") {
+    description = "Runs the jmh benchmarks using the Java 11 (JNI) SQLite variant"
     group = "benchmark"
     dependsOn("jmh")
 }
@@ -202,34 +201,34 @@ tasks.register<JavaExec>("jmhJava25") {
 
 tasks.withType<JmhBytecodeGeneratorTask>().configureEach {
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     })
 }
 
 tasks.named<JavaCompile>("compileJmhJava") {
     javaCompiler.set(javaToolchains.compilerFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     })
-    options.release.set(17)
+    options.release.set(11)
 }
 tasks.named<JavaCompile>("jmhCompileGeneratedClasses") {
     javaCompiler.set(javaToolchains.compilerFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     })
-    options.release.set(17)
+    options.release.set(11)
 }
 tasks.named<KotlinCompile>("compileJmhKotlin").configure {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_11)
     }
     kotlinJavaToolchain.toolchain.use(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     })
 }
 listOf("jmhCompileClasspath", "jmhRuntimeClasspath").forEach { name ->
     configurations.named(name) {
         attributes {
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 11)
         }
     }
 }

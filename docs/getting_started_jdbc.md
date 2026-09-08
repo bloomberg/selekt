@@ -1,6 +1,6 @@
 ## Integration
 
-Selekt JBDC requires Java 25 or later.
+Selekt JDBC requires Java 11 or later. Gradle projects targeting Java 11–24 automatically use Selekt's JNI backend, while projects targeting Java 25 or later automatically use its FFM backend. Selection follows the project's target JVM version, not the JVM running Gradle. Maven uses JNI by default.
 
 ### Gradle
 

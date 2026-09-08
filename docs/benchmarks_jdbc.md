@@ -2,7 +2,7 @@
 
 ### Batch Insert
 
-Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both metrics.
+Latest JMH batch-insert results across drivers, updated periodically from CI. The Selekt benchmarks run on Java 11 using its JNI backend. Lower is better for both metrics.
 
 === "Allocation"
 
@@ -14,7 +14,7 @@ Latest JMH batch-insert results across drivers, updated periodically from CI. Lo
 
 ### Text Stream Reads
 
-Latest JMH results for querying and fully consuming 50,000 text values through JDBC. Lower is better for both metrics.
+Latest JMH results for querying and fully consuming 50,000 text values through JDBC on Java 11 using Selekt's JNI backend. Lower is better for both metrics.
 
 === "Allocation"
 
@@ -225,7 +225,7 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
 
   loadScript('../benchmarks/jmh/data.js', function () {
     if (window.BENCHMARK_DATA) {
-      var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
+      var group = window.BENCHMARK_DATA.entries['JDBC Java 11 JNI Benchmarks'];
       if (group && group.length > 0) {
         throughputData = group[group.length - 1].benches;
       }
@@ -234,7 +234,7 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
     }
     loadScript('../benchmarks/jmh-alloc/data.js', function () {
       if (window.BENCHMARK_DATA) {
-        var group = window.BENCHMARK_DATA.entries['JDBC Allocations'];
+        var group = window.BENCHMARK_DATA.entries['JDBC Java 11 JNI Allocations'];
         if (group && group.length > 0) {
           allocData = group[group.length - 1].benches;
         }

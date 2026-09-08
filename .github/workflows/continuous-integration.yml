@@ -493,6 +493,12 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
+      - name: 'Setup Java 11'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: 11
+
       - name: 'Setup Java 17'
         id: setup-java-17
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
@@ -562,7 +568,7 @@ jobs:
             **/build/reports/detekt
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -574,7 +580,8 @@ jobs:
             selekt-android/build/reports/tests/testDebugUnitTest
             selekt-java/build/reports/tests/test
             selekt-jdbc/build/reports/tests/test
-            selekt-sqlite3-classes/build/reports/tests/testJava17
+            selekt-jdbc/build/reports/tests/testJava25
+            selekt-sqlite3-classes/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/testJava25
 
       - name: 'Build Selekt Android'
