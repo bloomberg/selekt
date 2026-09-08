@@ -11,6 +11,12 @@ jobs:
     with:
       profile: smoke
 
+  jvm-fuzzing:
+    name: 'JVM fuzzing / Linux'
+    uses: ./.github/workflows/jvm-fuzzing.yml
+    with:
+      profile: smoke
+
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
     if: github.event_name != 'pull_request'

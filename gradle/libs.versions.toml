@@ -27,6 +27,7 @@ exposed-bom = { module = "org.jetbrains.exposed:exposed-bom", version = "0.61.0"
 exposed-core = { module = "org.jetbrains.exposed:exposed-core" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc" }
 findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
+jazzer-junit = { module = "com.code-intelligence:jazzer-junit", version = "0.30.0" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 junit-junit = { module = "junit:junit", version = "4.13.2" }
