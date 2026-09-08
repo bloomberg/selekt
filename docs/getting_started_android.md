@@ -107,14 +107,23 @@ For older Room versions, use `SupportSQLiteOpenHelperFactory`:
     private fun deriveKey(): ByteArray? = TODO(
         "Optional key, must be exactly 32-bytes long.")
 
-    private val factory = createSupportSQLiteOpenHelperFactory(
-        SQLiteJournalMode.WAL,
-        deriveKey()
-    )
+    private val factory = run {
+        val key = deriveKey()
+        try {
+            SupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, key)
+        } finally {
+            key?.fill(0)
+        }
+    }
 
-    val database = Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
-        .openHelperFactory(factory)
-        .build()
+    val database = try {
+        Room.databaseBuilder(context, MyAppDatabase::class.java, "app")
+            .openHelperFactory(factory)
+            .build()
+    } finally {
+        // Room has created its helper, which owns a separate key copy.
+        factory.close()
+    }
     ```
 
 === "Java"
@@ -123,16 +132,29 @@ For older Room versions, use `SupportSQLiteOpenHelperFactory`:
         // TODO Optional key, must be exactly 32-bytes long.
     }
 
-    private SupportSQLiteOpenHelper.Factory factory =
-        SupportSQLiteOpenHelperKt.createSupportSQLiteOpenHelperFactory(
-            SQLiteJournalMode.WAL,
-            deriveKey());
+    final byte[] key = deriveKey();
+    final SupportSQLiteOpenHelperFactory factory;
+    try {
+        factory = new SupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, key);
+    } finally {
+        if (key != null) {
+            Arrays.fill(key, (byte) 0);
+        }
+    }
 
-    final RoomDatabase database = Room.databaseBuilder(
-        context, MyAppDatabase.class, "app"
-    ).openHelperFactory(factory)
-        .build();
+    final RoomDatabase database;
+    try {
+        database = Room.databaseBuilder(context, MyAppDatabase.class, "app")
+            .openHelperFactory(factory)
+            .build();
+    } finally {
+        // Room has created its helper, which owns a separate key copy.
+        factory.close();
+    }
     ```
+
+The factory copies the key during construction and never modifies the caller's array. Closing it zeroes its private copy
+and prevents creation of further helpers; helpers already created by Room remain usable.
 
 ### Using an open helper
 

@@ -24,25 +24,57 @@ import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.android.SQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteOpenParams
 import com.bloomberg.selekt.annotations.DelicateApi
+import com.bloomberg.selekt.commons.zero
+import java.io.Closeable
+import javax.annotation.concurrent.ThreadSafe
 
+/**
+ * Creates a legacy Room factory for Selekt-backed databases.
+ *
+ * The supplied [key] remains owned by the caller and is never modified. The returned factory snapshots the key before
+ * this function returns, so the caller should clear the supplied array immediately afterwards. For deterministic cleanup
+ * of the factory's private snapshot, construct and close [SupportSQLiteOpenHelperFactory] directly.
+ */
 fun createSupportSQLiteOpenHelperFactory(
     journalMode: SQLiteJournalMode,
     key: ByteArray?
 ): SupportSQLiteOpenHelper.Factory = SupportSQLiteOpenHelperFactory(journalMode, key)
 
 /**
- * @since 0.12.1
+ * A legacy Room factory that owns a private snapshot of its optional database key.
+ *
+ * The supplied [key] remains owned by the caller and is never modified. This factory snapshots it during construction;
+ * callers should clear their array immediately afterwards. Close the factory as soon as no more helpers will be created.
+ * Closing zeroes the factory's snapshot and prevents new helpers from being created, but does not affect existing helpers
+ * because each owns a separate copy.
+ *
+ * @since 1.3.2
  */
-private class SupportSQLiteOpenHelperFactory(
+@ThreadSafe
+class SupportSQLiteOpenHelperFactory(
     private val journalMode: SQLiteJournalMode,
-    private val key: ByteArray?
-) : SupportSQLiteOpenHelper.Factory {
-    override fun create(configuration: SupportSQLiteOpenHelper.Configuration) = SQLiteOpenHelper(
-        configuration = configuration.asSelektConfiguration(key),
-        context = configuration.context,
-        openParams = SQLiteOpenParams(journalMode),
-        version = configuration.callback.version
-    ).asSupportSQLiteOpenHelper()
+    key: ByteArray?
+) : SupportSQLiteOpenHelper.Factory, Closeable {
+    private val lifecycleLock = Any()
+    private val key = key?.copyOf()
+    private var closed = false
+
+    override fun create(configuration: SupportSQLiteOpenHelper.Configuration) = synchronized(lifecycleLock) {
+        check(!closed) { "Factory is closed." }
+        SQLiteOpenHelper(
+            configuration = configuration.asSelektConfiguration(key),
+            context = configuration.context,
+            openParams = SQLiteOpenParams(journalMode),
+            version = configuration.callback.version
+        ).asSupportSQLiteOpenHelper()
+    }
+
+    override fun close() = synchronized(lifecycleLock) {
+        if (!closed) {
+            closed = true
+            key?.zero()
+        }
+    }
 }
 
 @JvmSynthetic

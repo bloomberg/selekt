@@ -28,6 +28,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.jupiter.SelektTestExtension
 import com.bloomberg.selekt.android.SQLiteDatabase
@@ -42,12 +43,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 private fun <T : RoomDatabase> buildRoomDatabase(
     context: Context,
-    klass: Class<T>
+    klass: Class<T>,
+    factory: SupportSQLiteOpenHelper.Factory
 ) = Room.databaseBuilder(context, klass, "app")
-    .openHelperFactory(createSupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, ByteArray(32) { 0x42 }))
+    .openHelperFactory(factory)
     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
     .allowMainThreadQueries()
     .build()
@@ -79,22 +82,36 @@ internal class SupportSQLiteOpenHelperFactoryTest {
     private val context = mock<Context>().apply {
         whenever(getDatabasePath(any())) doReturn file
     }
-    private val database = buildRoomDatabase(
-        context,
-        AppDatabase::class.java
-    )
+    private val callerKey = ByteArray(32) { 0x42 }
+    private val factory = SupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, callerKey).also {
+        callerKey.fill(0)
+    }
+    private val database = try {
+        buildRoomDatabase(
+            context,
+            AppDatabase::class.java,
+            factory
+        )
+    } finally {
+        factory.close()
+    }
 
     @AfterEach
     fun tearDown() {
         try {
             database.close()
         } finally {
-            deleteDatabase(file)
+            try {
+                factory.close()
+            } finally {
+                deleteDatabase(file)
+            }
         }
     }
 
     @Test
-    fun insert() {
+    fun factorySnapshotsKeyBeforeRoomCreatesHelper() {
+        assertTrue(callerKey.all { it == 0.toByte() })
         val users = arrayOf(User(42, "Michael", "Bloomberg"))
         database.userDao().run {
             insertAll(users)
