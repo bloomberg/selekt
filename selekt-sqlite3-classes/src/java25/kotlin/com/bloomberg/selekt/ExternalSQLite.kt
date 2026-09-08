@@ -947,7 +947,8 @@ internal class ExternalSQLite(
     }
 
     override fun freeCursorWindow(buffer: ByteBuffer) {
-        selekt_free_cursor_window.invoke(MemorySegment.ofBuffer(buffer))
+        val baseBuffer = buffer.duplicate().apply { clear() }
+        selekt_free_cursor_window.invoke(MemorySegment.ofBuffer(baseBuffer))
     }
 
     override fun getAutocommit(

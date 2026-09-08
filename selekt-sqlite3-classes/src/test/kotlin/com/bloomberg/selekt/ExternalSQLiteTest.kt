@@ -184,6 +184,7 @@ internal class ExternalSQLiteTest {
                     val rowOffset = buffer.getInt(buffer.capacity() - Int.SIZE_BYTES)
                     assertEquals(SQL_BLOB, buffer[rowOffset].toInt())
                     assertEquals(0, buffer.getInt(rowOffset + 1))
+                    buffer.position(1)
                 } finally {
                     nativeSQLite.freeCursorWindow(buffer)
                 }
