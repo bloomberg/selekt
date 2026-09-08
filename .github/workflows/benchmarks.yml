@@ -29,6 +29,12 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
+      - name: 'Setup Java 11'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: 11
+
       - name: 'Setup Java 17'
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
@@ -143,7 +149,7 @@ jobs:
       - name: 'Store benchmark results'
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba
         with:
-          name: 'JDBC Benchmarks'
+          name: 'JDBC Java 11 JNI Benchmarks'
           tool: 'jmh'
           output-file-path: /tmp/combined-results.json
           benchmark-data-dir-path: benchmarks/jmh
@@ -156,7 +162,7 @@ jobs:
       - name: 'Store allocation results'
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba
         with:
-          name: 'JDBC Allocations'
+          name: 'JDBC Java 11 JNI Allocations'
           tool: 'jmh'
           output-file-path: /tmp/combined-alloc-results.json
           benchmark-data-dir-path: benchmarks/jmh-alloc

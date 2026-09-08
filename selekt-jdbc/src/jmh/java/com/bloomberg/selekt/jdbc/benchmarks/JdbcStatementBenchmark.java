@@ -269,29 +269,35 @@ public class JdbcStatementBenchmark {
                 final int op = i % 4;
                 final int id = i % DATA_SIZE;
                 switch (op) {
-                    case 0 -> {
+                    case 0: {
                         insertStatement.setInt(1, DATA_SIZE + i);
                         insertStatement.setString(2, "mixed_" + i);
                         insertStatement.setDouble(3, i * 1.0);
                         count += insertStatement.executeUpdate();
+                        break;
                     }
-                    case 1 -> {
+                    case 1: {
                         selectStatement.setInt(1, id);
                         try (ResultSet resultSet = selectStatement.executeQuery()) {
                             if (resultSet.next()) {
                                 count++;
                             }
                         }
+                        break;
                     }
-                    case 2 -> {
+                    case 2: {
                         updateStatement.setDouble(1, id * 4.0);
                         updateStatement.setInt(2, id);
                         count += updateStatement.executeUpdate();
+                        break;
                     }
-                    case 3 -> {
+                    case 3: {
                         deleteStatement.setInt(1, DATA_SIZE + i - 3);
                         count += deleteStatement.executeUpdate();
+                        break;
                     }
+                    default:
+                        throw new AssertionError("Unexpected operation: " + op);
                 }
             }
             connection.commit();
@@ -314,4 +320,3 @@ public class JdbcStatementBenchmark {
         new File(file.getPath() + "-shm").delete();
     }
 }
-

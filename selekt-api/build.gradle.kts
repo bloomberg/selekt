@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 description = "Selekt shared API library."
 
 plugins {
@@ -32,12 +34,16 @@ repositories {
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
     withJavadocJar()
     withSourcesJar()
 }
 
 kotlin {
     compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
         freeCompilerArgs.addAll(
             "-Xinline-classes",
             "-opt-in=kotlin.RequiresOptIn"

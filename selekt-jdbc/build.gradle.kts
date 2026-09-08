@@ -15,6 +15,12 @@
  */
 
 import me.champeau.jmh.JMHTask
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 description = "Selekt JDBC library."
 
@@ -38,10 +44,14 @@ disableKotlinCompilerAssertions()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
     withJavadocJar()
     withSourcesJar()
+}
+
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 sourceSets {
@@ -58,18 +68,11 @@ sourceSets {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektCommons)
-    implementation(projects.selektJvm)
+    implementation(projects.selektJava)
     implementation(projects.selektSqlite3Api)
-    implementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-        }
-    }
-    jmhImplementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-        }
-    }
+    implementation(projects.selektSqlite3Classes)
+    runtimeOnly(projects.selektSqlite3Sqlcipher)
+    jmhImplementation(projects.selektSqlite3Classes)
     jmhImplementation(libs.xerial.sqlite.jdbc)
     implementation(libs.slf4j.api)
     testImplementation(platform(libs.exposed.bom))
@@ -78,8 +81,20 @@ dependencies {
     testImplementation(libs.xerial.sqlite.jdbc)
 }
 
+val java25TestRuntimeClasspath = configurations.create("java25TestRuntimeClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    extendsFrom(configurations.testImplementation.get(), configurations.testRuntimeOnly.get())
+    attributes {
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    }
+}
+
 jmh {
-    jvmArgs.add("-XX:+UseCompactObjectHeaders")
     resultFormat.set("JSON")
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())
@@ -120,6 +135,26 @@ tasks.withType<ProcessResources>().matching { it.name != "processResources" }.co
 
 tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    })
+}
+
+tasks.register<Test>("testJava25") {
+    description = "Runs the Java 11-compatible JDBC tests on Java 25 using the automatically selected FFM backend."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].output + sourceSets["main"].output + java25TestRuntimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    dependsOn("testClasses")
+    shouldRunAfter("test")
+}
+
+tasks.named("check") {
+    dependsOn("testJava25")
 }
 
 publishing {

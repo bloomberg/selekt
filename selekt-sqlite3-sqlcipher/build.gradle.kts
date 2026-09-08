@@ -28,6 +28,12 @@ repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
 sourceSets.main {
     resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
 }

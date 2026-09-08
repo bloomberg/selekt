@@ -80,11 +80,7 @@ dependencies {
     implementation(projects.selektCommons)
     implementation(projects.selektJava)
     implementation(projects.selektSqlite3Api)
-    implementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
-        }
-    }
+    implementation(projects.selektSqlite3Classes)
 }
 
 allABIs.forEach { abi ->

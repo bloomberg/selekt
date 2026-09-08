@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 description = "Selekt SQLite API library."
 
 plugins {
@@ -35,10 +37,14 @@ disableKotlinCompilerAssertions()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
     withJavadocJar()
     withSourcesJar()
+}
+
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 dependencies {
