@@ -152,12 +152,13 @@ internal class SelektDriverTest {
             assertNotNull(it)
             assertEquals("Maximum connection pool size", it.description)
             assertFalse(it.required)
-            assertEquals("10", it.value)
+            assertEquals("4", it.value)
         }
         find { it.name == "busyTimeout" }.let {
             assertNotNull(it)
             assertEquals("SQLite busy timeout in milliseconds", it.description)
             assertFalse(it.required)
+            assertEquals("2500", it.value)
         }
         find { it.name == "cursorWindowSize" }.let {
             assertNotNull(it)
