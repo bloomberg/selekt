@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 1.3.1
+
+* Stream read-only auto-commit JDBC queries.
+* Fix FFM cursor window deallocation.
+* Fix vec1_train integer overflow in model sizing.
+* OpenSSL 3.5.8.
+* Validate database status result holders.
+* Prevent heap overflow when freeing secrets.
+
 ## Version 1.3.0
 
 * Preserve empty BLOBs in native cursor windows.
