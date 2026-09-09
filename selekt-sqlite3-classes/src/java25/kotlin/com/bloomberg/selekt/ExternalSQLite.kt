@@ -45,7 +45,11 @@ private val NATIVE_READER: MemorySegment = MemorySegment.ofAddress(0L).reinterpr
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun MemorySegment.getConfinedString(): String = address().let {
-    if (it == 0L) { "" } else { NATIVE_READER.getString(it) }
+    if (it == 0L) {
+        ""
+    } else {
+        NATIVE_READER.getString(it)
+    }
 }
 
 internal inline fun <T> MemorySegment.useSQLiteAllocation(
@@ -221,7 +225,7 @@ internal class ExternalSQLite(
     }
 
     private fun requireArrayLength(operation: String, arraySize: Int, length: Int) {
-        if (length < 0 || length > arraySize) {
+        if (length !in 0..arraySize) {
             throw IndexOutOfBoundsException("$operation: length is out of bounds.")
         }
     }
@@ -236,13 +240,25 @@ internal class ExternalSQLite(
         (blob.attachment as? MemorySegment) ?: MemorySegment.ofAddress(blob.pointer)
 
     override fun newDatabaseHandle(pointer: Long): DatabaseHandle =
-        DatabaseHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+        DatabaseHandle(pointer, if (pointer != 0L) {
+            MemorySegment.ofAddress(pointer)
+        } else {
+            null
+        })
 
     override fun newStatementHandle(pointer: Long): StatementHandle =
-        StatementHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+        StatementHandle(pointer, if (pointer != 0L) {
+            MemorySegment.ofAddress(pointer)
+        } else {
+            null
+        })
 
     override fun newBlobHandle(pointer: Long): BlobHandle =
-        BlobHandle(pointer, if (pointer != 0L) MemorySegment.ofAddress(pointer) else null)
+        BlobHandle(pointer, if (pointer != 0L) {
+            MemorySegment.ofAddress(pointer)
+        } else {
+            null
+        })
 
     override fun allocateSecret(size: Int): Long {
         require(size > 0) { "Secret size must be positive." }
@@ -301,16 +317,11 @@ internal class ExternalSQLite(
         sqlite3_bind_parameter_index.invoke(statementSegment(statement), slab.allocateFrom(name)) as Int
     }
 
-    override fun bindText(statement: StatementHandle, index: Int, value: String): SQLCode = withSlab { slab ->
-        val textSegment = slab.allocateFrom(value)
-        sqlite3_bind_text.invoke(
-            statementSegment(statement),
-            index,
-            textSegment,
-            (textSegment.byteSize() - 1).toInt(),
-            sqliteTransient
-        ) as Int
-    }
+    override fun bindText(statement: StatementHandle, index: Int, value: String): SQLCode =
+        bindTextUtf8(statementSegment(statement), index, value)
+
+    override fun bindTextAscii(statement: StatementHandle, index: Int, value: String): SQLCode =
+        bindTextAscii(statementSegment(statement), index, value)
 
     override fun bindZeroBlob(
         statement: StatementHandle,
@@ -344,8 +355,8 @@ internal class ExternalSQLite(
     override fun columnName(statement: StatementHandle, index: Int): String =
         (sqlite3_column_name.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
 
-    override fun columnText(statement: StatementHandle, index: Int): String =
-        (sqlite3_column_text.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
+    override fun columnText(statement: StatementHandle, index: Int): String? =
+        columnText(statementSegment(statement), index)
 
     override fun columnType(statement: StatementHandle, index: Int): SQLDataType =
         sqlite3_column_type.invoke(statementSegment(statement), index) as Int
@@ -502,16 +513,13 @@ internal class ExternalSQLite(
         statement: Long,
         index: Int,
         value: String
-    ): SQLCode = withSlab { slab ->
-        val textSegment = slab.allocateFrom(value)
-        sqlite3_bind_text.invoke(
-            MemorySegment.ofAddress(statement),
-            index,
-            textSegment,
-            (textSegment.byteSize() - 1).toInt(),
-            sqliteTransient
-        ) as Int
-    }
+    ): SQLCode = bindTextUtf8(MemorySegment.ofAddress(statement), index, value)
+
+    override fun bindTextAscii(
+        statement: Long,
+        index: Int,
+        value: String
+    ): SQLCode = bindTextAscii(MemorySegment.ofAddress(statement), index, value)
 
     override fun bindZeroBlob(
         statement: Long,
@@ -523,7 +531,6 @@ internal class ExternalSQLite(
         length
     ) as Int
 
-    @Suppress("Detekt.CognitiveComplexMethod")
     override fun bindRowTyped(
         statement: Long,
         tags: ByteArray,
@@ -532,31 +539,66 @@ internal class ExternalSQLite(
         doubles: DoubleArray,
         objects: Array<out Any?>,
         size: Int
+    ): SQLCode = bindRowTyped(
+        MemorySegment.ofAddress(statement),
+        tags,
+        ints,
+        longs,
+        doubles,
+        objects,
+        size,
+        null
+    )
+
+    override fun bindRowTyped(
+        statement: StatementHandle,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int,
+        utf8TextParameters: BooleanArray
+    ): SQLCode = bindRowTyped(
+        statementSegment(statement),
+        tags,
+        ints,
+        longs,
+        doubles,
+        objects,
+        size,
+        utf8TextParameters
+    )
+
+    @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongParameterList")
+    private fun bindRowTyped(
+        statement: MemorySegment,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int,
+        utf8TextParameters: BooleanArray?
     ): SQLCode {
-        val segment = MemorySegment.ofAddress(statement)
         for (i in 0 until size) {
             val position = i + 1
             val result = when (tags[i]) {
-                1.toByte() -> sqlite3_bind_int.invoke(segment, position, ints[i]) as Int
-                2.toByte() -> sqlite3_bind_int64.invoke(segment, position, longs[i]) as Int
-                3.toByte() -> sqlite3_bind_double.invoke(segment, position, doubles[i]) as Int
+                1.toByte() -> sqlite3_bind_int.invoke(statement, position, ints[i]) as Int
+                2.toByte() -> sqlite3_bind_int64.invoke(statement, position, longs[i]) as Int
+                3.toByte() -> sqlite3_bind_double.invoke(statement, position, doubles[i]) as Int
                 4.toByte() -> {
                     when (val obj = objects[i]) {
-                        is String -> withSlab { slab ->
-                            val textSegment = slab.allocateFrom(obj)
-                            sqlite3_bind_text.invoke(
-                                segment,
-                                position,
-                                textSegment,
-                                (textSegment.byteSize() - 1).toInt(),
-                                sqliteTransient
-                            ) as Int
+                        is String -> if (utf8TextParameters == null) {
+                            bindTextUtf8(statement, position, obj)
+                        } else {
+                            bindText(statement, position, obj, utf8TextParameters)
                         }
-                        is ByteArray -> bindBlob(segment, position, obj, obj.size)
-                        else -> sqlite3_bind_null.invoke(segment, position) as Int
+                        is ByteArray -> bindBlob(statement, position, obj, obj.size)
+                        else -> sqlite3_bind_null.invoke(statement, position) as Int
                     }
                 }
-                else -> sqlite3_bind_null.invoke(segment, position) as Int
+                else -> sqlite3_bind_null.invoke(statement, position) as Int
             }
             if (result != SQL_OK) {
                 return result
@@ -576,14 +618,101 @@ internal class ExternalSQLite(
         sqlite3_bind_blob.invoke(statement, index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
     }
 
+    private fun bindText(
+        statement: MemorySegment,
+        index: Int,
+        value: String,
+        utf8TextParameters: BooleanArray
+    ): SQLCode {
+        if (utf8TextParameters[index]) {
+            return bindTextUtf8(statement, index, value)
+        }
+        val result = bindTextAscii(statement, index, value)
+        if (result != SQL_MISMATCH) {
+            return result
+        }
+        utf8TextParameters[index] = true
+        return bindTextUtf8(statement, index, value)
+    }
+
+    private fun bindTextUtf8(
+        statement: MemorySegment,
+        index: Int,
+        value: String
+    ): SQLCode = bindTextUtf8(statement, index, value.toByteArray(Charsets.UTF_8))
+
+    private fun bindTextUtf8(statement: MemorySegment, index: Int, bytes: ByteArray): SQLCode {
+        val size = bytes.size
+        val allocation = sqlite3_malloc64.invoke(size.toLong() + 1L) as MemorySegment
+        if (allocation.address() == 0L) {
+            return withSlab { slab ->
+                val text = slab.allocate(size.toLong() + 1L).also { segment ->
+                    MemorySegment.copy(bytes, 0, segment, JAVA_BYTE, 0, size)
+                    segment.set(JAVA_BYTE, size.toLong(), 0)
+                }
+                sqlite3_bind_text.invoke(
+                    statement,
+                    index,
+                    text,
+                    size,
+                    sqliteTransient
+                ) as Int
+            }
+        }
+        val text = try {
+            allocation.reinterpret(size.toLong() + 1L).also { segment ->
+                MemorySegment.copy(bytes, 0, segment, JAVA_BYTE, 0, size)
+                segment.set(JAVA_BYTE, size.toLong(), 0)
+            }
+        } catch (failure: Throwable) {
+            sqlite3_free.invoke(allocation)
+            throw failure
+        }
+        return try {
+            sqlite3_bind_text.invoke(statement, index, text, size, sqliteFree) as Int
+        } catch (failure: Throwable) {
+            sqlite3_free.invoke(allocation)
+            throw failure
+        }
+    }
+
+    private fun bindTextAscii(statement: MemorySegment, index: Int, value: String): SQLCode {
+        val bytes = value.toByteArray(Charsets.UTF_8)
+        // For well-formed UTF-16, UTF-8 byte length equals UTF-16 length only for ASCII.
+        // String.toByteArray replaces malformed surrogates with one-byte '?', matching bindText.
+        return if (bytes.size == value.length) {
+            bindTextUtf8(statement, index, bytes)
+        } else {
+            SQL_MISMATCH
+        }
+    }
+
     private fun columnBlob(statement: MemorySegment, index: Int): ByteArray? {
         val blob = sqlite3_column_blob.invoke(statement, index) as MemorySegment
         val size = sqlite3_column_bytes.invoke(statement, index) as Int
         if (size == 0) {
             val type = sqlite3_column_type.invoke(statement, index) as Int
-            return if (type == SQLITE_NULL) null else EMPTY_BYTE_ARRAY
+            return if (type == SQLITE_NULL) {
+                null
+            } else {
+                EMPTY_BYTE_ARRAY
+            }
         }
-        return if (blob.address() == 0L) null else blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+        return if (blob.address() == 0L) {
+            null
+        } else {
+            blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+        }
+    }
+
+    private fun columnText(statement: MemorySegment, index: Int): String? {
+        val text = sqlite3_column_text.invoke(statement, index) as MemorySegment
+        val size = sqlite3_column_bytes.invoke(statement, index) as Int
+        return if (text.address() == 0L) {
+            null
+        } else {
+            text.reinterpret(size.toLong()).toArray(JAVA_BYTE).toString(Charsets.UTF_8)
+        }
     }
 
     override fun blobBytes(
@@ -746,10 +875,7 @@ internal class ExternalSQLite(
     override fun columnText(
         statement: Long,
         index: Int
-    ): String = (sqlite3_column_text.invoke(
-        MemorySegment.ofAddress(statement),
-        index
-    ) as MemorySegment).run(MemorySegment::getConfinedString)
+    ): String? = columnText(MemorySegment.ofAddress(statement), index)
 
     override fun columnType(
         statement: Long,
@@ -798,11 +924,10 @@ internal class ExternalSQLite(
         db: Long,
         op: Int,
         value: Int
-    ): Int = sqlite3_db_config.invoke(
+    ): Int = selekt_database_config.invoke(
         MemorySegment.ofAddress(db),
         op,
-        value,
-        MemorySegment.NULL
+        value
     ) as Int
 
     override fun databaseHandle(
@@ -842,7 +967,11 @@ internal class ExternalSQLite(
                 options,
                 current,
                 highwater,
-                if (reset) 1 else 0
+                if (reset) {
+                    1
+                } else {
+                    0
+                }
             ) as Int).also {
                 if (it == SQL_OK) {
                     holder[0] = current.get(JAVA_INT, 0)
@@ -907,7 +1036,11 @@ internal class ExternalSQLite(
                 MemorySegment.ofAddress(statement),
                 startRow,
                 maxRows,
-                if (countAllRows) { 1 } else { 0 },
+                if (countAllRows) {
+                    1
+                } else {
+                    0
+                },
                 outSize
             ) as MemorySegment
             if (buffer.address() == 0L) {
@@ -1199,7 +1332,11 @@ internal class ExternalSQLite(
     ): Int = sqlite3_stmt_status.invoke(
         MemorySegment.ofAddress(statement),
         options,
-        if (reset) 1 else 0
+        if (reset) {
+            1
+        } else {
+            0
+        }
     ) as Int
 
     override fun step(
@@ -1260,7 +1397,11 @@ internal class ExternalSQLite(
     ): SQLCode = withSlab { slab ->
         sqlite3_wal_checkpoint_v2.invoke(
             MemorySegment.ofAddress(db),
-            if (name != null) { slab.allocateFrom(name) } else { MemorySegment.NULL },
+            if (name != null) {
+                slab.allocateFrom(name)
+            } else {
+                MemorySegment.NULL
+            },
             mode,
             MemorySegment.NULL,
             MemorySegment.NULL
@@ -1343,6 +1484,7 @@ internal class ExternalSQLite(
         private val symbolLookup: SymbolLookup = SymbolLookup.loaderLookup()
 
         private val sqliteTransient = MemorySegment.ofAddress(-1L)
+        private val sqliteFree = symbolLookup.find("sqlite3_free").orElseThrow()
 
         private val criticalOption = Linker.Option.critical(true)
         private val criticalNoHeapOption = Linker.Option.critical(false)
@@ -1499,9 +1641,10 @@ internal class ExternalSQLite(
             FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS),
             criticalNoHeapOption
         )
-        private val sqlite3_db_config: MethodHandle = linker.downcallHandle(
-            symbolLookup.find("sqlite3_db_config").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT, ADDRESS)
+        private val selekt_database_config: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_database_config").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, JAVA_INT),
+            criticalNoHeapOption
         )
         private val sqlite3_db_handle: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_db_handle").orElseThrow(),
@@ -1555,6 +1698,11 @@ internal class ExternalSQLite(
         private val sqlite3_finalize: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_finalize").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS)
+        )
+        private val sqlite3_malloc64: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_malloc64").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, JAVA_LONG),
+            criticalNoHeapOption
         )
         private val sqlite3_free: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_free").orElseThrow(),

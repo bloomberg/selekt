@@ -19,7 +19,6 @@ package com.bloomberg.selekt
 import java.lang.ref.Cleaner
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
@@ -187,6 +186,6 @@ internal class NativeCursorWindow(
             stringBytes = ByteArray(length)
         }
         buffer.get(buffer.getInt(offset + 1 + Int.SIZE_BYTES), stringBytes, 0, length)
-        return String(stringBytes, 0, length, StandardCharsets.UTF_8)
+        return String(stringBytes, 0, length, Charsets.UTF_8)
     }
 }

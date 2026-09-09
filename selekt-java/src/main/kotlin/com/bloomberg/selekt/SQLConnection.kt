@@ -273,7 +273,7 @@ internal class SQLConnection(
                 check(window.allocateRow()) { "Failed to allocate a window row." }
                 0.forUntil(columnCount) {
                     when (columnType(it)) {
-                        ColumnType.STRING.sqlDataType -> window.put(columnString(it))
+                        ColumnType.STRING.sqlDataType -> window.put(checkNotNull(columnString(it)))
                         ColumnType.INTEGER.sqlDataType -> window.put(columnLong(it))
                         ColumnType.FLOAT.sqlDataType -> window.put(columnDouble(it))
                         ColumnType.NULL.sqlDataType -> window.putNull()

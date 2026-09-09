@@ -489,7 +489,7 @@ internal object Vec1SecurityProbeMain {
         val statement = prepare(sqlite, db, "PRAGMA integrity_check")
         try {
             check(sqlite.step(statement) == SQL_ROW)
-            check(sqlite.columnText(statement, 0).contains("vector in %_base row 1 is wrong size"))
+            check(checkNotNull(sqlite.columnText(statement, 0)).contains("vector in %_base row 1 is wrong size"))
         } finally {
             sqlite.finalize(statement)
         }

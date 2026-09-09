@@ -20,7 +20,6 @@ import java.lang.foreign.Arena
 import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout.JAVA_BYTE
-import java.nio.charset.StandardCharsets
 
 internal class SlabArena(
     capacity: Long = DEFAULT_CAPACITY
@@ -87,7 +86,7 @@ internal class SlabArena(
     }
 
     private fun allocateFromNonAscii(value: String): MemorySegment {
-        val bytes = value.toByteArray(StandardCharsets.UTF_8)
+        val bytes = value.toByteArray(Charsets.UTF_8)
         val needed = bytes.size + 1L
         if (offset + needed > slab.byteSize()) {
             grow(needed)

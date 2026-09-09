@@ -172,6 +172,62 @@ internal class SQLiteTest {
     }
 
     @Test
+    fun `adaptive bind overloads delegate encoding modes`() {
+        val modes = BooleanArray(2)
+        val args = arrayOf<Any?>("text")
+        val row = ParameterRow(1).apply { setObject(0, "text") }
+        whenever(externalSqlite.bindText(STATEMENT_HANDLE, 1, "text", modes)) doReturn SQL_OK
+        whenever(externalSqlite.bindRow(STATEMENT_HANDLE, args, modes)) doReturn SQL_OK
+        whenever(externalSqlite.bindRowTyped(
+            STATEMENT_HANDLE,
+            row.tags,
+            row.ints,
+            row.longs,
+            row.doubles,
+            row.objects,
+            row.size,
+            modes
+        )) doReturn SQL_OK
+        assertEquals(SQL_OK, sqlite.bindText(STATEMENT_HANDLE, 1, "text", modes))
+        assertEquals(SQL_OK, sqlite.bindRow(STATEMENT_HANDLE, args, modes))
+        assertEquals(SQL_OK, sqlite.bindRow(STATEMENT_HANDLE, row, modes))
+        verify(externalSqlite).bindText(STATEMENT_HANDLE, 1, "text", modes)
+        verify(externalSqlite).bindRow(STATEMENT_HANDLE, args, modes)
+        verify(externalSqlite).bindRowTyped(
+            STATEMENT_HANDLE,
+            row.tags,
+            row.ints,
+            row.longs,
+            row.doubles,
+            row.objects,
+            row.size,
+            modes
+        )
+    }
+
+    @Test
+    fun `adaptive bind overloads throw on binding errors`() {
+        val modes = BooleanArray(2)
+        val args = arrayOf<Any?>("text")
+        val row = ParameterRow(1).apply { setObject(0, "text") }
+        whenever(externalSqlite.bindText(STATEMENT_HANDLE, 1, "text", modes)) doReturn SQL_ERROR
+        whenever(externalSqlite.bindRow(STATEMENT_HANDLE, args, modes)) doReturn SQL_ERROR
+        whenever(externalSqlite.bindRowTyped(
+            STATEMENT_HANDLE,
+            row.tags,
+            row.ints,
+            row.longs,
+            row.doubles,
+            row.objects,
+            row.size,
+            modes
+        )) doReturn SQL_ERROR
+        assertFailsWith<SQLException> { sqlite.bindText(STATEMENT_HANDLE, 1, "text", modes) }
+        assertFailsWith<SQLException> { sqlite.bindRow(STATEMENT_HANDLE, args, modes) }
+        assertFailsWith<SQLException> { sqlite.bindRow(STATEMENT_HANDLE, row, modes) }
+    }
+
+    @Test
     fun `blobBytes with BlobHandle delegates`() {
         whenever(externalSqlite.blobBytes(BLOB_HANDLE)) doReturn 512
         assertEquals(512, sqlite.blobBytes(BLOB_HANDLE))

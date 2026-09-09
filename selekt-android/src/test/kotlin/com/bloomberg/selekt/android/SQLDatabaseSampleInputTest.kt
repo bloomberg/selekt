@@ -25,7 +25,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
-import java.nio.charset.StandardCharsets
 import java.util.stream.Stream
 import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
@@ -71,7 +70,7 @@ internal class SQLDatabaseSampleTests {
     ).use {
         it.transact {
             exec("CREATE TABLE 'Foo' (bar TEXT)")
-            val json = javaClass.classLoader!!.getResource(inputs.resourceFileName).readText(StandardCharsets.UTF_8)
+            val json = javaClass.classLoader!!.getResource(inputs.resourceFileName).readText(Charsets.UTF_8)
             insert("Foo", ContentValues().apply { put("bar", json) }, ConflictAlgorithm.REPLACE)
             query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use { cursor ->
                 assertTrue(cursor.moveToNext())

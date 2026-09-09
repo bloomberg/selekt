@@ -102,6 +102,16 @@ open class SQLite(
         sqlite.bindText(statement, index, value)
     )
 
+    fun bindText(
+        statement: StatementHandle,
+        index: Int,
+        value: String,
+        utf8TextParameters: BooleanArray
+    ) = checkBindSQLCode(
+        statement,
+        sqlite.bindText(statement, index, value, utf8TextParameters)
+    )
+
     fun bindZeroBlob(
         statement: Long,
         index: Int,
@@ -121,9 +131,36 @@ open class SQLite(
         sqlite.bindRow(statement, args)
     )
 
+    fun bindRow(
+        statement: StatementHandle,
+        args: Array<out Any?>,
+        utf8TextParameters: BooleanArray
+    ) = checkBindSQLCode(
+        statement,
+        sqlite.bindRow(statement, args, utf8TextParameters)
+    )
+
     fun bindRow(statement: StatementHandle, row: ParameterRow) = checkBindSQLCode(
         statement,
         sqlite.bindRowTyped(statement, row.tags, row.ints, row.longs, row.doubles, row.objects, row.size)
+    )
+
+    fun bindRow(
+        statement: StatementHandle,
+        row: ParameterRow,
+        utf8TextParameters: BooleanArray
+    ) = checkBindSQLCode(
+        statement,
+        sqlite.bindRowTyped(
+            statement,
+            row.tags,
+            row.ints,
+            row.longs,
+            row.doubles,
+            row.objects,
+            row.size,
+            utf8TextParameters
+        )
     )
 
     fun <T> withScopedArena(block: () -> T): T = sqlite.withScopedArena(block)

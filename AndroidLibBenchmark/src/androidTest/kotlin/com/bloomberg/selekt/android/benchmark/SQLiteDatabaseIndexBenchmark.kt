@@ -34,7 +34,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import java.nio.charset.StandardCharsets
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -45,7 +44,7 @@ private fun createSQLiteOpenHelper(
     context,
     ISQLiteOpenHelper.Configuration(
         callback = inputs.callback,
-        key = "a".repeat(32).toByteArray(StandardCharsets.UTF_8),
+        key = "a".repeat(32).toByteArray(Charsets.UTF_8),
         name = "test-index"
     ),
     1,

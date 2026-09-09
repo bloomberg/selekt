@@ -50,6 +50,9 @@ internal class SQLPreparedStatement(
     val isReadOnly = sqlite.statementReadOnly(statement) != 0
 
     val parameterCount = sqlite.bindParameterCount(statement)
+    // SQLite parameter indexes are one-based. Once a parameter needs general UTF-8,
+    // keep that mode for this statement's entire lifetime, including cache reuse.
+    private val utf8TextParameters = BooleanArray(parameterCount + 1)
 
     fun bind(index: Int, value: ByteArray) {
         sqlite.bindBlob(statement, index, value)
@@ -84,11 +87,11 @@ internal class SQLPreparedStatement(
     }
 
     fun bind(index: Int, value: String) {
-        sqlite.bindText(statement, index, value)
+        sqlite.bindText(statement, index, value, utf8TextParameters)
     }
 
     fun bind(name: String, value: String) {
-        sqlite.bindText(statement, resolveParameterIndex(name), value)
+        sqlite.bindText(statement, resolveParameterIndex(name), value, utf8TextParameters)
     }
 
     fun bindNull(index: Int) {
@@ -104,11 +107,11 @@ internal class SQLPreparedStatement(
     }
 
     fun bindRow(args: Array<out Any?>) {
-        sqlite.bindRow(statement, args)
+        sqlite.bindRow(statement, args, utf8TextParameters)
     }
 
     fun bindRow(row: ParameterRow) {
-        sqlite.bindRow(statement, row)
+        sqlite.bindRow(statement, row, utf8TextParameters)
     }
 
     fun clearBindings() {

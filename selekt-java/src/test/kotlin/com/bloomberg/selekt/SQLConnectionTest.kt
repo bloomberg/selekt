@@ -36,6 +36,7 @@ import org.mockito.kotlin.argumentCaptor
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
@@ -372,6 +373,33 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun preparedStatementCacheRetainsTextEncodingModes(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            SQL_OK
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        whenever(bindParameterCount(any<Long>())) doReturn 1
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        whenever(bindText(any<StatementHandle>(), any(), any(), any())) doAnswer {
+            (it.arguments[3] as BooleanArray)[1] = true
+            SQL_OK
+        }
+        val modes = argumentCaptor<BooleanArray>()
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            assertEquals(SQL_DONE, connection.execute("SELECT ?", arrayOf("café")))
+            assertEquals(SQL_DONE, connection.execute("SELECT ?", arrayOf("ascii later")))
+        }
+        verify(this, times(2)).bindText(eq(StatementHandle(43L)), eq(1), any(), modes.capture())
+        assertSame(modes.firstValue, modes.secondValue)
+        assertTrue(modes.secondValue[1])
+        verify(this, times(1)).prepareV2(any<Long>(), eq("SELECT ?"), any<LongArray>())
+    }
+
+    @Test
     fun executeForLastInsertedRowIdChecksDone(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
@@ -441,7 +469,7 @@ internal class SQLConnectionTest {
             assertEquals(7L, connection.executeForLastInsertedRowId("INSERT INTO Foo VALUES (?, ?, ?)", row))
             connection.executeForForwardCursor("SELECT ?, ?, ?", row).close()
         }
-        verify(this, times(3)).bindRow(eq(StatementHandle(43L)), same(row))
+        verify(this, times(3)).bindRow(eq(StatementHandle(43L)), same(row), any())
     }
 
     @Test

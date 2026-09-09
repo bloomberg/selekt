@@ -41,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 public class ExternalSQLiteBenchmark {
     private static final com.bloomberg.selekt.IExternalSQLite sqlite = com.bloomberg.selekt.ExternalSQLiteKt.externalSQLiteSingleton();
+    private static final String LARGE_TEXT = "x".repeat(1024 * 1024);
+    private static final String LARGE_UTF8_TEXT = "x".repeat(1024 * 1024 - 2) + "🌍";
     private File tempDir;
     private long db;
 
@@ -118,13 +120,37 @@ public class ExternalSQLiteBenchmark {
 
     @Benchmark
     public String bindAndQueryText() {
+        return bindAndQueryText("Benchmark string for FFM vs JNI comparison", true);
+    }
+
+    @Benchmark
+    public String bindAndQueryLargeText() {
+        return bindAndQueryText(LARGE_TEXT, true);
+    }
+
+    @Benchmark
+    public String bindAndQueryLargeUtf8Text() {
+        return bindAndQueryText(LARGE_UTF8_TEXT, false);
+    }
+
+    @Benchmark
+    public String bindAndQueryLargeUtf8TextFailover() {
+        return bindAndQueryText(LARGE_UTF8_TEXT, true);
+    }
+
+    private String bindAndQueryText(final String value, final boolean optimisticAscii) {
         final long[] stmtHolder = new long[1];
         final String sql = "SELECT ?";
 
         sqlite.prepareV2(db, sql, sql.length(), stmtHolder);
         final long statement = stmtHolder[0];
 
-        sqlite.bindText(statement, 1, "Benchmark string for FFM vs JNI comparison");
+        final int asciiResult = optimisticAscii
+            ? sqlite.bindTextAscii(statement, 1, value)
+            : com.bloomberg.selekt.SQLCodesKt.SQL_MISMATCH;
+        if (asciiResult == com.bloomberg.selekt.SQLCodesKt.SQL_MISMATCH) {
+            sqlite.bindText(statement, 1, value);
+        }
         sqlite.step(statement);
         final String result = sqlite.columnText(statement, 0);
         sqlite.finalize(statement);
