@@ -36,7 +36,8 @@ internal class SQLQuery internal constructor(
     private val sql: String,
     private val statementType: SQLStatementType,
     private val bindArgs: Array<Any?>,
-    private var highestBoundIndex: Int = 0
+    private var highestBoundIndex: Int = 0,
+    private val copyBindArgsForRefill: Boolean = true
 ) : IQuery {
     private val namedParameters: Map<String, Int> by lazy { parseNamedParameters(sql) }
     private var preparedParameterCount: Int? = null
@@ -58,6 +59,24 @@ internal class SQLQuery internal constructor(
         ): SQLQuery {
             val argsCopy = Array<Any?>::class.java.cast(args.copyOf())
             return SQLQuery(session, sql, statementType, argsCopy, argsCopy.size)
+        }
+
+        fun create(
+            session: SQLSessionProvider,
+            @Language("RoomSql") sql: String,
+            statementType: SQLStatementType,
+            row: ParameterRow
+        ): SQLQuery {
+            val args = arrayOfNulls<Any>(row.size)
+            row.materializeTo(args)
+            return SQLQuery(
+                session,
+                sql,
+                statementType,
+                args,
+                args.size,
+                copyBindArgsForRefill = false
+            )
         }
     }
 
@@ -149,7 +168,8 @@ internal class SQLQuery internal constructor(
     }
 
     fun refiller(windowSize: Int): (Int) -> CursorWindowPage {
-        val args = validatedBindArgs(checkNotNull(preparedParameterCount)).copyOf()
+        val bindArgs = validatedBindArgs(checkNotNull(preparedParameterCount))
+        val args = if (copyBindArgsForRefill) { bindArgs.copyOf() } else { bindArgs }
         return { startPosition ->
             session().execute(false, sql, statementType, emptyCursorWindowPage()) {
                 it.executeForCursorWindow(sql, args, startPosition, windowSize, false)

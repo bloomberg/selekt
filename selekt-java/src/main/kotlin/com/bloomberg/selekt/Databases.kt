@@ -174,6 +174,20 @@ class SQLDatabase(
         SQLStatement.executeRows(session, sql, bindArgs)
     }
 
+    @JvmSynthetic
+    fun executePreparedInsert(sql: String, bindArgs: ParameterRow): Long = pledge {
+        session().execute(true, sql) {
+            it.executeForLastInsertedRowId(sql, bindArgs)
+        }
+    }
+
+    @JvmSynthetic
+    fun executePreparedUpdateDelete(sql: String, bindArgs: ParameterRow): Int = pledge {
+        session().execute(true, sql) {
+            it.executeForChangedRowCount(sql, bindArgs)
+        }
+    }
+
     fun batch(sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
@@ -415,6 +429,34 @@ class SQLDatabase(
         return withCancellationSignal(cancellationSignal) {
             queryUpTo(SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), selectionArgs), maximumRows)
         }
+    }
+
+    @JvmSynthetic
+    fun queryUpTo(
+        sql: String,
+        bindArgs: ParameterRow,
+        maximumRows: Int,
+        cancellationSignal: CancellationSignal
+    ): ICursor {
+        require(maximumRows > 0) { "Maximum rows must be positive." }
+        return withCancellationSignal(cancellationSignal) {
+            val result = session().execute(false, sql) {
+                it.executeForCursorWindow(sql, bindArgs, windowSize = maximumRows, countAllRows = false)
+            }
+            WindowedCursor(
+                result.columnNames,
+                result.page.copy(count = result.page.window.numberOfRows())
+            )
+        }
+    }
+
+    @JvmSynthetic
+    fun query(
+        sql: String,
+        bindArgs: ParameterRow,
+        cancellationSignal: CancellationSignal
+    ): ICursor = withCancellationSignal(cancellationSignal) {
+        query(SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), bindArgs))
     }
 
     /**
@@ -748,6 +790,16 @@ class SQLDatabase(
     ): ICursor = pledge {
         cancellationSignal.throwIfCancelled()
         session().executeForForwardCursorWithSignal(sql, selectionArgs, cancellationSignal)
+    }
+
+    @JvmSynthetic
+    fun queryForwardOnly(
+        sql: String,
+        bindArgs: ParameterRow,
+        cancellationSignal: CancellationSignal
+    ): ICursor = pledge {
+        cancellationSignal.throwIfCancelled()
+        session().executeForForwardCursorWithSignal(sql, bindArgs, cancellationSignal)
     }
 }
 

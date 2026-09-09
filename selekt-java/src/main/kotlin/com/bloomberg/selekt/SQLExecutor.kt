@@ -50,6 +50,8 @@ internal interface SQLExecutor : BatchSQLExecutor {
         bindArgs: Array<out Any?> = EMPTY_ARRAY
     ): Int
 
+    fun executeForChangedRowCount(sql: String, bindArgs: ParameterRow): Int
+
     fun executeForCursorWindow(
         sql: String,
         bindArgs: Array<out Any?>,
@@ -58,13 +60,29 @@ internal interface SQLExecutor : BatchSQLExecutor {
         countAllRows: Boolean = true
     ): CursorWindowPage
 
+    fun executeForCursorWindow(
+        sql: String,
+        bindArgs: ParameterRow,
+        startPosition: Int = 0,
+        windowSize: Int = Int.MAX_VALUE,
+        countAllRows: Boolean = true
+    ): PreparedCursorWindow
+
     fun executeForForwardCursor(
         sql: String,
         bindArgs: Array<out Any?>,
         additionalOnClose: (() -> Unit)? = null
     ): ForwardCursor
 
+    fun executeForForwardCursor(
+        sql: String,
+        bindArgs: ParameterRow,
+        additionalOnClose: (() -> Unit)? = null
+    ): ForwardCursor
+
     fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Long
+
+    fun executeForLastInsertedRowId(sql: String, bindArgs: ParameterRow): Long
 
     fun executeForInt(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): Int
 
@@ -82,3 +100,9 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun setTransactionListener(listener: SQLTransactionListener?)
 }
+
+@Suppress("Detekt.UseDataClass")
+internal class PreparedCursorWindow(
+    val columnNames: Array<out String>,
+    val page: CursorWindowPage
+)

@@ -63,7 +63,7 @@ public class JdbcStatementBenchmark {
     private static final Driver SELEKT_DRIVER = new SelektDriver();
     private static final Driver XERIAL_DRIVER = new org.sqlite.JDBC();
 
-    @Param({"100", "1000"})
+    @Param({"1", "100", "1000"})
     int operationCount;
 
     private File selektDatabaseFile;
@@ -174,6 +174,26 @@ public class JdbcStatementBenchmark {
     }
 
     @Benchmark
+    public int selektPreparedExecuteUpdate() throws SQLException {
+        return executePreparedUpdatesWithExecute(selektConnection);
+    }
+
+    @Benchmark
+    public int xerialPreparedExecuteUpdate() throws SQLException {
+        return executePreparedUpdatesWithExecute(xerialConnection);
+    }
+
+    @Benchmark
+    public int selektPreparedExecuteSelect() throws SQLException {
+        return executePreparedSelectsWithExecute(selektConnection);
+    }
+
+    @Benchmark
+    public int xerialPreparedExecuteSelect() throws SQLException {
+        return executePreparedSelectsWithExecute(xerialConnection);
+    }
+
+    @Benchmark
     public int selektMixedWorkload() throws SQLException {
         return executeMixedWorkload(selektConnection);
     }
@@ -258,6 +278,45 @@ public class JdbcStatementBenchmark {
         return count;
     }
 
+    private int executePreparedUpdatesWithExecute(final Connection connection) throws SQLException {
+        connection.setAutoCommit(false);
+        int count = 0;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
+            for (int i = 0; i < operationCount; i++) {
+                final int id = i % DATA_SIZE;
+                preparedStatement.setDouble(1, id * 3.0);
+                preparedStatement.setInt(2, id);
+                if (!preparedStatement.execute()) {
+                    count += preparedStatement.getUpdateCount();
+                }
+            }
+            connection.commit();
+        } catch (final SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+        return count;
+    }
+
+    private int executePreparedSelectsWithExecute(final Connection connection) throws SQLException {
+        int count = 0;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SELECT_SQL)) {
+            for (int i = 0; i < operationCount; i++) {
+                preparedStatement.setInt(1, i % DATA_SIZE);
+                if (preparedStatement.execute()) {
+                    try (ResultSet resultSet = preparedStatement.getResultSet()) {
+                        if (resultSet.next()) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
     private int executeMixedWorkload(final Connection connection) throws SQLException {
         connection.setAutoCommit(false);
         int count = 0;
@@ -314,4 +373,3 @@ public class JdbcStatementBenchmark {
         new File(file.getPath() + "-shm").delete();
     }
 }
-
