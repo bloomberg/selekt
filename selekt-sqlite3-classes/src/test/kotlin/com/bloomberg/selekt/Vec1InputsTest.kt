@@ -29,7 +29,10 @@ private const val SQL_OPEN_CREATE = 4
 private const val VEC1_MODEL_INDEX = 1
 private const val VEC1_MODEL_RESIDUAL = 4
 private const val VEC1_DISTANCE_L2 = 1
+private const val VEC1_META_1BYTE_INT = 2
+private const val VEC1_META_4BYTE_INT = 4
 private const val VEC1_META_REAL = 8
+private const val VEC1_META_TYPE_MASK = 15
 private const val VEC1_META_COLUMN_BITS = 8
 private const val VEC1_PQ_CODEBOOK_SIZE = 256
 private const val VEC1_MAX_CODESIZE = 128
@@ -87,6 +90,14 @@ internal class Vec1InputsTest {
     fun `vec1 pads non-divisible PQ queries without reading past the vector`() =
         runProbe("padded-pq-query")
 
+    @Test
+    fun `vec1 validates numeric query options before conversion`() =
+        runProbe("numeric-query-options")
+
+    @Test
+    fun `vec1 compares non-finite filters without integer conversion`() =
+        runProbe("non-finite-meta-filters")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -141,6 +152,8 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-training" -> probeNonFiniteTraining(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
+                "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
+                "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -503,6 +516,179 @@ internal object Vec1SecurityProbeMain {
         try {
             check(sqlite.step(statement) == SQL_ROW)
             check(sqlite.columnInt64(statement, 0) == 1L)
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeNumericQueryOptions(sqlite: IExternalSQLite, db: Long) {
+        expectError(
+            sqlite,
+            db,
+            "SELECT vec1_config('nprobe', 1e999)",
+            SQL_ERROR,
+            "nprobe requires a finite value larger than 0.0"
+        )
+
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE numeric_options USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO numeric_options(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO numeric_options(rowid, vector) " +
+                    "VALUES(1, vec1_from_json('[0,0,0,0]'))"
+            ) == SQL_OK
+        )
+
+        val invalidOptions = listOf(
+            "{\"K\":1,\"nprobe\":1e999}" to "nprobe requires a finite numeric value",
+            "{\"K\":1,\"nprobe\":\"1\"}" to "nprobe requires a finite numeric value",
+            "{\"K\":1,\"streaming\":1e999}" to "streaming requires a finite numeric value",
+            "{\"K\":1,\"streaming\":\"1\"}" to "streaming requires a finite numeric value",
+            "{\"K\":1,\"nprobe_slack\":1e999}" to
+                "nprobe_slack requires a finite numeric value",
+            "{\"K\":1e999}" to "K must be an integer between 1 and 2147483647"
+        )
+        invalidOptions.forEach { (arg, message) ->
+            expectError(
+                sqlite,
+                db,
+                "SELECT rowid FROM numeric_options " +
+                    "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg='$arg'",
+                SQL_ERROR,
+                message
+            )
+        }
+
+        check(sqlite.exec(db, "SELECT vec1_config('nprobe', 1e300)") == SQL_OK)
+        expectSingleRow(
+            sqlite,
+            db,
+            "SELECT rowid FROM numeric_options " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1"
+        )
+        expectSingleRow(
+            sqlite,
+            db,
+            "SELECT rowid FROM numeric_options " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') " +
+                "AND arg='{\"K\":1,\"nprobe\":1e300,\"streaming\":1e300}'"
+        )
+    }
+
+    private fun probeNonFiniteMetadataFilters(sqlite: IExternalSQLite, db: Long) {
+        createIntegerMetadataTable(sqlite, db, "meta_byte", listOf(0, 1, 2))
+        expectMetadataFormat(sqlite, db, "meta_byte", VEC1_META_1BYTE_INT)
+        createIntegerMetadataTable(sqlite, db, "meta_int", listOf(-2, -1, 0))
+        expectMetadataFormat(sqlite, db, "meta_int", VEC1_META_4BYTE_INT)
+
+        listOf("meta_byte", "meta_int").forEach { table ->
+            expectMetadataCount(sqlite, db, table, "< 1e999", 3)
+            expectMetadataCount(sqlite, db, table, "<= 1e999", 3)
+            expectMetadataCount(sqlite, db, table, "> 1e999", 0)
+            expectMetadataCount(sqlite, db, table, ">= 1e999", 0)
+            expectMetadataCount(sqlite, db, table, "= 1e999", 0)
+            expectMetadataCount(sqlite, db, table, "> -1e999", 3)
+            expectMetadataCount(sqlite, db, table, ">= -1e999", 3)
+            expectMetadataCount(sqlite, db, table, "< -1e999", 0)
+            expectMetadataCount(sqlite, db, table, "<= -1e999", 0)
+            expectMetadataCount(sqlite, db, table, "= -1e999", 0)
+            expectMetadataCount(sqlite, db, table, "< 1e300", 3)
+            expectMetadataCount(sqlite, db, table, "> -1e300", 3)
+        }
+        expectMetadataCount(sqlite, db, "meta_byte", "IN (1e999, 1)", 1)
+        expectMetadataCount(sqlite, db, "meta_int", "IN (-1e999, -1)", 1)
+
+        expectMetadataCount(sqlite, db, "meta_int", "< -1.5", 1)
+        expectMetadataCount(sqlite, db, "meta_int", "<= -1.5", 1)
+        expectMetadataCount(sqlite, db, "meta_int", "> -1.5", 2)
+        expectMetadataCount(sqlite, db, "meta_int", ">= -1.5", 2)
+        expectMetadataCount(sqlite, db, "meta_int", "= -1.5", 0)
+        expectBoundMetadataCount(sqlite, db, "meta_int", Double.NaN, 0)
+    }
+
+    private fun createIntegerMetadataTable(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        values: List<Int>
+    ) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector, tag)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        val rows = values.mapIndexed { index, value ->
+            "(${index + 1}, vec1_from_json('[0,0,0,0]'), $value)"
+        }.joinToString()
+        check(sqlite.exec(db, "INSERT INTO $table(rowid, vector, tag) VALUES $rows") == SQL_OK)
+    }
+
+    private fun expectMetadataFormat(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        expected: Int
+    ) {
+        val statement = prepare(sqlite, db, "SELECT val FROM ${table}_meta")
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            val blob = checkNotNull(sqlite.columnBlob(statement, 0))
+            val format = ByteBuffer.wrap(blob).order(ByteOrder.BIG_ENDIAN).getInt(0)
+            check(format and VEC1_META_TYPE_MASK == expected)
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun expectMetadataCount(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        filter: String,
+        expected: Long
+    ) {
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT count(*) FROM $table " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=10 AND tag $filter"
+        )
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            check(sqlite.columnInt64(statement, 0) == expected)
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun expectBoundMetadataCount(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        value: Double,
+        expected: Long
+    ) {
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT count(*) FROM $table " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=10 AND tag < ?"
+        )
+        try {
+            check(sqlite.bindDouble(statement, 1, value) == SQL_OK)
+            check(sqlite.step(statement) == SQL_ROW)
+            check(sqlite.columnInt64(statement, 0) == expected)
             check(sqlite.step(statement) == SQL_DONE)
         } finally {
             sqlite.finalize(statement)
