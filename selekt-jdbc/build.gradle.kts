@@ -108,6 +108,7 @@ val jvmFuzzTasks = jvmFuzzTargets.map { (taskName, testName) ->
         systemProperty("jazzer.max_duration", jvmFuzzDuration)
         systemProperty("jazzer.reproducer_path", layout.buildDirectory.get().asFile.absolutePath)
         systemProperty("junit.jupiter.execution.parallel.enabled", false)
+        systemProperty("junit.jupiter.execution.timeout.mode", "disabled")
         maxHeapSize = "1g"
         outputs.upToDateWhen { false }
         workingDir(layout.buildDirectory.get().asFile)
