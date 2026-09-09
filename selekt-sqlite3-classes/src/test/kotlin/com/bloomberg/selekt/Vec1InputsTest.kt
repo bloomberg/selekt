@@ -76,6 +76,10 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 rejects non-finite model sections`() = runProbe("non-finite-model")
 
+    @Test
+    fun `vec1 pads non-divisible PQ queries without reading past the vector`() =
+        runProbe("padded-pq-query")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -127,6 +131,7 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
+                "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -432,6 +437,40 @@ internal object Vec1SecurityProbeMain {
             nonFiniteCentroidModel(),
             ExpectedSqlError(SQL_CORRUPT, "non-finite value in model centroid section")
         )
+    }
+
+    private fun probePaddedPqQuery(sqlite: IExternalSQLite, db: Long) {
+        val vector = List(11) { "0" }.joinToString(prefix = "[", postfix = "]")
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE c(x) AS (" +
+                    "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<512" +
+                    ") INSERT INTO t(rowid,vector) " +
+                    "SELECT x,vec1_from_json('$vector') FROM c"
+            ) == SQL_OK
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(cmd,vector) " +
+                    "SELECT 'rebuild',vec1_train(vector,'{\"codesize\":8}') FROM t"
+            ) == SQL_OK
+        )
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT count(*) FROM t " +
+                "WHERE cmd=vec1_from_json('$vector') AND arg=1"
+        )
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            check(sqlite.columnInt64(statement, 0) == 1L)
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
     }
 
     private fun createQuantizedTableWithCorruptBase(sqlite: IExternalSQLite, db: Long) {
