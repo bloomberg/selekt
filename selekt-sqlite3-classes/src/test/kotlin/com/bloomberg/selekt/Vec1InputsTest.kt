@@ -106,6 +106,10 @@ internal class Vec1InputsTest {
         runProbe("numeric-query-options")
 
     @Test
+    fun `vec1 bounds and preserves grouped metadata IN filters`() =
+        runProbe("metadata-in-filters")
+
+    @Test
     fun `vec1 compares non-finite filters without integer conversion`() =
         runProbe("non-finite-meta-filters")
 
@@ -169,6 +173,7 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
+                "metadata-in-filters" -> probeMetadataInFilters(sqlite, db)
                 "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
                 "pq-block-padding" -> probePqBlockPadding(sqlite, db)
                 else -> error("Unknown probe")
@@ -675,6 +680,63 @@ internal object Vec1SecurityProbeMain {
             "SELECT rowid FROM numeric_options " +
                 "WHERE cmd=vec1_from_json('[0,0,0,0]') " +
                 "AND arg='{\"K\":1,\"nprobe\":1e300,\"streaming\":1e300}'"
+        )
+    }
+
+    private fun probeMetadataInFilters(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, first, second)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector, first, second) VALUES " +
+                    "(1, vec1_from_json('[0,0,0,0]'), 1, 10)," +
+                    "(2, vec1_from_json('[0,0,0,0]'), 2, 20)," +
+                    "(3, vec1_from_json('[0,0,0,0]'), 3, 30)"
+            ) == SQL_OK
+        )
+        val grouped = prepare(
+            sqlite,
+            db,
+            "SELECT count(*) FROM t " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=10 " +
+                "AND second IN (10,30) AND first IN (1,3)"
+        )
+        try {
+            check(sqlite.step(grouped) == SQL_ROW)
+            check(sqlite.columnInt64(grouped, 0) == 2L)
+            check(sqlite.step(grouped) == SQL_DONE)
+        } finally {
+            sqlite.finalize(grouped)
+        }
+
+        fun metadataInQuery(maximum: Int) =
+            "SELECT count(*) FROM t " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=10 " +
+                "AND second IN (" +
+                "WITH RECURSIVE c(x) AS (" +
+                "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<$maximum" +
+                ") SELECT x FROM c)"
+
+        val atLimit = prepare(sqlite, db, metadataInQuery(32766))
+        try {
+            check(sqlite.step(atLimit) == SQL_ROW)
+            check(sqlite.columnInt64(atLimit, 0) == 3L)
+            check(sqlite.step(atLimit) == SQL_DONE)
+        } finally {
+            sqlite.finalize(atLimit)
+        }
+        expectError(
+            sqlite,
+            db,
+            metadataInQuery(32767),
+            SQL_TOO_BIG,
+            "metadata IN filters exceed limit of 32766 values"
         )
     }
 

@@ -4616,6 +4616,7 @@ struct Vec1Writer {
 
 #define VEC1_META_COLUMN_BITS 8
 #define VEC1_MAX_META_COLUMNS (1<<VEC1_META_COLUMN_BITS)
+#define VEC1_MAX_FILTER_VALUES 32766
 
 /* Virtual table object */
 struct Vec1Tab {
@@ -7384,27 +7385,43 @@ static int vec1VectorValueError(Vec1Tab *pTab){
 }
 
 static int vec1FilterArraySize(
+  Vec1Tab *pTab,
   const char *idxStr,
   sqlite3_value **argv,
   int *pnFilter
 ){
   int ii;
   int nFilter = 0;
+  int nIn = 0;
   int iArg = 1;
   int rc = SQLITE_OK;
+  int nLimit = sqlite3_limit(pTab->db, SQLITE_LIMIT_VARIABLE_NUMBER, -1);
 
-  for(ii=0; idxStr[ii]; ii++){
+  if( nLimit<1 || nLimit>VEC1_MAX_FILTER_VALUES ){
+    nLimit = VEC1_MAX_FILTER_VALUES;
+  }
+
+  for(ii=0; rc==SQLITE_OK && idxStr[ii]; ii++){
     char c = idxStr[ii];
     if( c==VEC1_OP_IN ){
       sqlite3_value *pDummy = 0;
       sqlite3_value *pList = argv[iArg];
       nFilter++;
-      for(rc=sqlite3_vtab_in_first(pList, &pDummy); 
+      for(rc=sqlite3_vtab_in_first(pList, &pDummy);
           rc==SQLITE_OK;
           rc=sqlite3_vtab_in_next(pList, &pDummy)
       ){
         assert( pDummy!=0 );
+        if( nIn>=nLimit ){
+          rc = SQLITE_TOOBIG;
+          break;
+        }
+        nIn++;
         nFilter++;
+        if( (nIn & 0xFF)==0 && sqlite3_is_interrupted(pTab->db) ){
+          rc = SQLITE_INTERRUPT;
+          break;
+        }
       }
       if( rc==SQLITE_DONE ) rc = SQLITE_OK;
       ii += 2;
@@ -7415,6 +7432,11 @@ static int vec1FilterArraySize(
     iArg++;
   }
 
+  if( rc==SQLITE_TOOBIG ){
+    vec1VtabError(
+        pTab, "vec1: metadata IN filters exceed limit of %d values", nLimit
+    );
+  }
   *pnFilter = nFilter;
   return rc;
 }
@@ -7461,6 +7483,73 @@ static void vec1ValueToFilter(
   }
 }
 
+/*
+** Group filters by metadata column in linear time. Within each column,
+** preserve the original order and keep each IN header and its RHS entries
+** together as a single group.
+*/
+static int vec1SortFilterGroups(Vec1Tab *pTab, Vec1Query *p){
+  int anEntry[VEC1_MAX_META_COLUMNS] = {0};
+  int aiNext[VEC1_MAX_META_COLUMNS];
+  int bSorted = 1;
+  int iPrev = -1;
+  int iMeta;
+  int ii;
+  int nSinceInterrupt = 0;
+  Vec1Filter *aSorted;
+
+  for(ii=0; ii<p->nFilter; ){
+    Vec1Filter *pFilter = &p->aFilter[ii];
+    int nGroup = 1;
+    if( pFilter->op==VEC1_OP_IN ){
+      nGroup += (int)pFilter->iVal;
+    }
+    assert( pFilter->iMeta>=0 && pFilter->iMeta<VEC1_MAX_META_COLUMNS );
+    assert( nGroup>0 && nGroup<=p->nFilter-ii );
+    if( pFilter->iMeta<iPrev ) bSorted = 0;
+    iPrev = pFilter->iMeta;
+    anEntry[pFilter->iMeta] += nGroup;
+    ii += nGroup;
+    nSinceInterrupt += nGroup;
+    if( nSinceInterrupt>=256 ){
+      if( sqlite3_is_interrupted(pTab->db) ) return SQLITE_INTERRUPT;
+      nSinceInterrupt = 0;
+    }
+  }
+  if( bSorted ) return SQLITE_OK;
+
+  aiNext[0] = 0;
+  for(iMeta=1; iMeta<VEC1_MAX_META_COLUMNS; iMeta++){
+    aiNext[iMeta] = aiNext[iMeta-1] + anEntry[iMeta-1];
+  }
+  aSorted = sqlite3_malloc64((sqlite3_uint64)p->nFilter * sizeof(Vec1Filter));
+  if( aSorted==0 ) return SQLITE_NOMEM;
+
+  for(ii=0; ii<p->nFilter; ){
+    Vec1Filter *pFilter = &p->aFilter[ii];
+    int nGroup = 1;
+    if( pFilter->op==VEC1_OP_IN ){
+      nGroup += (int)pFilter->iVal;
+    }
+    iMeta = pFilter->iMeta;
+    memcpy(
+        &aSorted[aiNext[iMeta]], pFilter, nGroup * sizeof(Vec1Filter)
+    );
+    aiNext[iMeta] += nGroup;
+    ii += nGroup;
+    if( sqlite3_is_interrupted(pTab->db) ){
+      sqlite3_free(aSorted);
+      return SQLITE_INTERRUPT;
+    }
+  }
+
+  memcpy(
+      p->aFilter, aSorted, (sqlite3_uint64)p->nFilter * sizeof(Vec1Filter)
+  );
+  sqlite3_free(aSorted);
+  return SQLITE_OK;
+}
+
 static int vec1SetupKANNQuery(
   Vec1Tab *pTab,
   const char *idxStr,             /* idxStr passed to xFilter */
@@ -7475,16 +7564,19 @@ static int vec1SetupKANNQuery(
   Vec1Query *p = 0;
 
   int bTransform = vec1TransformRequired(&pTab->mod);
+  i64 nAlloc;
 
   /* Determine the required size of the Vec1Query.aFilter[] array. */
-  rc = vec1FilterArraySize(idxStr, argv, &nMax);
-  
-  p = (Vec1Query*)vec1MallocZero(
-        sizeof(Vec1Query)                          /* Vec1Query object itself */
-      + nMax * sizeof(Vec1Filter)                  /* Vec1Query.aFilter[] */
-      + pTab->cfg.nElem * sizeof_f32               /* Vec1Query.aVector[] */
-      + bTransform * (pTab->nTmpVec * sizeof_f32)  /* aTransform[] */
+  rc = vec1FilterArraySize(pTab, idxStr, argv, &nMax);
+  if( rc!=SQLITE_OK ) return rc;
+
+  nAlloc = (
+        (i64)sizeof(Vec1Query)                     /* Vec1Query object itself */
+      + (i64)nMax * sizeof(Vec1Filter)              /* Vec1Query.aFilter[] */
+      + (i64)pTab->cfg.nElem * sizeof_f32           /* Vec1Query.aVector[] */
+      + (i64)bTransform * pTab->nTmpVec * sizeof_f32 /* aTransform[] */
   );
+  p = (Vec1Query*)vec1MallocZero(nAlloc);
   if( p==0 ) return SQLITE_NOMEM;
   p->aFilter = (Vec1Filter*)&p[1];
   p->aVector = (float*)&p->aFilter[nMax];
@@ -7573,6 +7665,12 @@ static int vec1SetupKANNQuery(
             pInFilter->op = VEC1_OP_EQ;
             pInFilter->iMeta = pFilter->iMeta;
             pFilter->iVal++;
+            if( (p->nFilter & 0xFF)==0
+             && sqlite3_is_interrupted(pTab->db)
+            ){
+              rc = SQLITE_INTERRUPT;
+              break;
+            }
           }
           if( rc==SQLITE_DONE ) rc = SQLITE_OK;
 
@@ -7598,22 +7696,16 @@ static int vec1SetupKANNQuery(
     rc = SQLITE_ERROR;
   }
 
+  /* Group filters by metadata column before returning the query object. */
+  if( rc==SQLITE_OK ){
+    rc = vec1SortFilterGroups(pTab, p);
+  }
+
   /* If an error occurred, free any dynamic allocations and zero the output
-  ** structure before returning. Otherwise, sort the aFilter[] array by
-  ** iMeta value. */
+  ** structure before returning. */
   if( rc!=SQLITE_OK ){
     vec1QueryFree(p);
     p = 0;
-  }else{
-    /* Sort aFilter[] by Vec1Filter.iMeta value. */
-    int i1, i2;
-    for(i1=0; i1<p->nFilter; i1++){
-      for(i2=i1+1; i2<p->nFilter; i2++){
-        if( p->aFilter[i2].iMeta<p->aFilter[i1].iMeta ){
-          SWAP(Vec1Filter, p->aFilter[i1], p->aFilter[i2]);
-        }
-      }
-    }
   }
 
   *ppOut = p;
