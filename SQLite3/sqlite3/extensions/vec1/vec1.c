@@ -4133,7 +4133,7 @@ static int vec1DecodeModel(
     *pzErr = sqlite3_mprintf("vec1: invalid nElem value: %u", pMod->hdr.nElem);
     return SQLITE_CORRUPT_VTAB;
   }
-  if( pMod->hdr.nCodebook>100000 ){
+  if( pMod->hdr.nCodebook>VEC1_MAX_CODESIZE ){
     *pzErr = sqlite3_mprintf("vec1: invalid nCodebook value: %u", pMod->hdr.nCodebook);
     return SQLITE_CORRUPT_VTAB;
   }
@@ -6652,15 +6652,18 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
   return rc;
 }
 
-static void vec1EncodeVector(
+static int vec1EncodeVector(
   const Vec1Model *pMod,
   const float *aVec,
-  u8 *aCode
+  u8 *aCode,
+  int nCode
 ){
   const int nCodebook = pMod->hdr.nCodebook;
   const int nCodeElem = pMod->nCodeElem;
   const float *pIn = pMod->aModelT;
   int M, K;
+
+  if( nCodebook>nCode ) return VEC1_CORRUPT;
 
   for(M=0; M<nCodebook; M++){
     float fBestDist = INFINITY;
@@ -6679,6 +6682,7 @@ static void vec1EncodeVector(
       }
     }
   }
+  return SQLITE_OK;
 }
 
 static void vec1ScanPQBlocked(
@@ -7726,15 +7730,18 @@ static int vec1FindByRowid(
   return rc;
 }
 
-static void vec1PqEncodeVector(
+static int vec1PqEncodeVector(
   const Vec1Model *pMod,          /* Model to encode with */
   const float *aVec,              /* Vector to encode */
   u8 *aOut,                       /* OUT: Quantized vector */
+  int nOut,                       /* Capacity of aOut[] */
   double *pfTotalDist             /* OUT: reconstruction L2 squared from orig */
 ){
   const int nCodebook = (int)pMod->hdr.nCodebook;
   const int nCodeElem = pMod->nCodeElem;
   int ii = 0;
+
+  if( nCodebook>nOut ) return VEC1_CORRUPT;
 
   for(ii=0; ii<nCodebook; ii++){
     const float *pCodebook = &pMod->aModel[ii*nCodeElem*VEC1_PQ_CODEBOOK_SZ];
@@ -7743,6 +7750,7 @@ static void vec1PqEncodeVector(
         pCodebook, VEC1_PQ_CODEBOOK_SZ, aSub, nCodeElem, pfTotalDist
     );
   }
+  return SQLITE_OK;
 }
 
 /*
@@ -7841,13 +7849,17 @@ static void vec1DistanceStats(sqlite3_context *ctx, Vec1Csr *pCsr){
         /* Find reconstruction error if applicable. */
         if( pMod->hdr.nCodebook>0 ){
           u8 aPQ[VEC1_MAX_CODESIZE];
-          vec1PqEncodeVector(pMod, aTransform, aPQ, &fReconError);
+          rc = vec1PqEncodeVector(
+              pMod, aTransform, aPQ, sizeof(aPQ), &fReconError
+          );
         }
-  
-        pCsr->zDistance = vec1MPrintf(&rc,
-            "{bucket:%d, coarse_error:%f, reconstruction_error:%f}",
-            iBucket, sqrt(fCoarseError/fNorm), sqrt(fReconError/fNorm)
-        );
+
+        if( rc==SQLITE_OK ){
+          pCsr->zDistance = vec1MPrintf(&rc,
+              "{bucket:%d, coarse_error:%f, reconstruction_error:%f}",
+              iBucket, sqrt(fCoarseError/fNorm), sqrt(fReconError/fNorm)
+          );
+        }
       }
     }
     sqlite3_free(pFree);
@@ -8657,15 +8669,17 @@ static int vec1WriterAlloc(
 /*
 ** Quantize a vector so that it can be written to the index.
 */
-static void vec1QuantizeVector(
+static int vec1QuantizeVector(
   const Vec1Model *pMod,        /* Current model */
   float *aTmp,                    /* Temporary space - same dim as vectors */
   const float *aVector,           /* Vector to quantize */
   int *piBucket,                  /* OUT: Bucket to put vector in */
-  u8 *aCode                       /* OUT: Write PQ code (if any) here */ 
+  u8 *aCode,                      /* OUT: Write PQ code (if any) here */
+  int nCode                       /* Capacity of aCode[] */
 ){
   const int nBucket = pMod->hdr.nBucket;
   const float *aVec;
+  int rc = SQLITE_OK;
   int iBucket = 0;
 
   aVec = vec1TransformInputVector(pMod, aTmp, aVector);
@@ -8679,10 +8693,11 @@ static void vec1QuantizeVector(
   }
 
   if( pMod->hdr.nCodebook>0 ){
-    vec1EncodeVector(pMod, aVec, aCode);
+    rc = vec1EncodeVector(pMod, aVec, aCode, nCode);
   }
 
-  *piBucket = iBucket;
+  if( rc==SQLITE_OK ) *piBucket = iBucket;
+  return rc;
 }
 
 
@@ -8701,19 +8716,21 @@ static int vec1WriterVector(
 
   /* Transform and quantize the vector */
   if( iBld<0 ){
-    vec1QuantizeVector(pMod, p->aResidual, aVector, &iBld, p->aPQ);
+    rc = vec1QuantizeVector(
+        pMod, p->aResidual, aVector, &iBld, p->aPQ, sizeof(p->aPQ)
+    );
   }
 
-  if( pMod->hdr.nCodebook>0 ){
+  if( rc==SQLITE_OK && pMod->hdr.nCodebook>0 ){
     aStore = p->aPQ;
-  }else{
+  }else if( rc==SQLITE_OK ){
     /* If the index is storing full vectors, not PQ codes, store the original,
     ** not the transformed vector.  */
     aStore = (const u8*)aVector;
   }
 
-  pBld = &p->aBld[iBld];
-  if( pBld->pTab==0 ){
+  if( rc==SQLITE_OK ) pBld = &p->aBld[iBld];
+  if( rc==SQLITE_OK && pBld->pTab==0 ){
     /* Attempt to load blob smaller than 'blocksize-min' belonging to
     ** this bucket to append to. */
     sqlite3_stmt *pSearch = 0;
@@ -8740,7 +8757,7 @@ static int vec1WriterVector(
     rc = vec1ListBuilderAdd(pBld, iRowid, aStore);
   }
 
-  *piBucket = iBld;
+  if( rc==SQLITE_OK ) *piBucket = iBld;
   return rc;
 }
 
@@ -9119,6 +9136,7 @@ typedef struct Vec1QuantizeJob Vec1QuantizeJob;
 struct Vec1QuantizeJob {
   Vec1Model *pModel;
   Vec1Writer *pWriter;
+  int rc;                         /* Error code from quantization */
   int nVector;                    /* Number of vectors to quantize */
   i64 *aRowid;                    /* Array of nVector rowids */
   float *aTmp;                    /* Temp space for one vector */
@@ -9134,10 +9152,12 @@ static void vec1QuantizeJob(void *pCtx){
   const int nCodebook = p->pModel->hdr.nCodebook;
   int ii;
 
-  for(ii=0; ii<p->nVector; ii++){
+  for(ii=0; p->rc==SQLITE_OK && ii<p->nVector; ii++){
     float *v = &p->aVec[nElem * ii];
     u8 *a = &p->aCode[nCodebook * ii];
-    vec1QuantizeVector(p->pModel, p->aTmp, v, &p->aBucket[ii], a);
+    p->rc = vec1QuantizeVector(
+        p->pModel, p->aTmp, v, &p->aBucket[ii], a, nCodebook
+    );
   }
 }
 
@@ -9168,6 +9188,7 @@ static int vec1QuantizeJobFinish(void *pCtx, int rcin){
   int iOffMeta = 0;
 
   assert( bBucketBase==0 || p->pModel->hdr.nCodebook==0 );
+  if( rc==SQLITE_OK ) rc = p->rc;
 
   for(ii=0; rc==SQLITE_OK && ii<p->nVector; ii++){
     int iBucket = p->aBucket[ii];
@@ -9816,11 +9837,14 @@ static int vec1UpdateMethod(
       ** is written */
       if( pTab->pWriter ){
         Vec1Writer *p = pTab->pWriter;
-        vec1QuantizeVector(&pTab->mod, p->aResidual, aVec, &iBucket, p->aPQ);
+        rc = vec1QuantizeVector(
+            &pTab->mod, p->aResidual, aVec, &iBucket,
+            p->aPQ, sizeof(p->aPQ)
+        );
       }
 
-      *pRowid = 0;
-      rc = vec1GetSql(pTab, VEC1_SQL_INSERT_BASE, &pInsert);
+      if( rc==SQLITE_OK ) *pRowid = 0;
+      if( rc==SQLITE_OK ) rc = vec1GetSql(pTab, VEC1_SQL_INSERT_BASE, &pInsert);
       if( rc==SQLITE_OK ){
         int ii;
         sqlite3_bind_value(pInsert, 1, argv[1]);
@@ -10200,7 +10224,8 @@ static int vec1IntegrityMethod(
                 vec1Sub(aResidual, aEnc, &pMod->aCentroid[iCalc*nElem], nElem);
                 aEnc = aResidual;
               }
-              vec1PqEncodeVector(pMod, aEnc, aPQ, 0);
+              rc = vec1PqEncodeVector(pMod, aEnc, aPQ, sizeof(aPQ), 0);
+              if( rc!=SQLITE_OK ) goto integrity_failed;
   
               /* Load the PQ code from the index into aIdxPQ[] */
               {

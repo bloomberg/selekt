@@ -31,6 +31,7 @@ private const val VEC1_DISTANCE_L2 = 1
 private const val VEC1_META_REAL = 8
 private const val VEC1_META_COLUMN_BITS = 8
 private const val VEC1_PQ_CODEBOOK_SIZE = 256
+private const val VEC1_MAX_CODESIZE = 128
 private const val SIZEOF_F32 = 4
 
 internal class Vec1InputsTest {
@@ -58,6 +59,10 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 rejects an ANN result count that overflows its heap allocation`() =
         runProbe("oversized-query-k")
+
+    @Test
+    fun `vec1 rejects models whose codebooks exceed fixed encoder capacity`() =
+        runProbe("oversized-codebook-model")
 
     private fun runProbe(mode: String) {
         val command = mutableListOf(
@@ -106,6 +111,7 @@ internal object Vec1SecurityProbeMain {
                 "truncated-base-integrity" -> probeTruncatedBaseIntegrity(sqlite, db)
                 "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
                 "oversized-query-k" -> probeOversizedQueryK(sqlite, db)
+                "oversized-codebook-model" -> probeOversizedCodebookModel(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -269,6 +275,53 @@ internal object Vec1SecurityProbeMain {
         }
     }
 
+    private fun probeOversizedCodebookModel(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE valid USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO valid(cmd, arg) VALUES('rebuild', ?)",
+            codebookModel(VEC1_MAX_CODESIZE)
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO valid(vector) VALUES(vec1_from_json('[1,1]'))"
+            ) == SQL_OK
+        )
+        listOf(VEC1_MAX_CODESIZE + 1, 200).forEach { nCodebook ->
+            check(
+                sqlite.exec(
+                    db,
+                    "CREATE VIRTUAL TABLE oversized_$nCodebook USING vec1(vector)"
+                ) == SQL_OK
+            )
+            val statement = prepare(
+                sqlite,
+                db,
+                "INSERT INTO oversized_$nCodebook(cmd, arg) VALUES('rebuild', ?)"
+            )
+            try {
+                val model = codebookModel(nCodebook)
+                check(sqlite.bindBlob(statement, 1, model, model.size) == SQL_OK)
+                val result = sqlite.step(statement)
+                check(result != SQL_ROW && result != SQL_DONE) {
+                    "Model with $nCodebook codebooks was accepted"
+                }
+                check(sqlite.errorCode(db) == SQL_CORRUPT) {
+                    "Expected SQLITE_CORRUPT, got $result: ${sqlite.errorMessage(db)}"
+                }
+                check(
+                    sqlite.errorMessage(db).contains(
+                        "vec1: invalid nCodebook value: $nCodebook"
+                    )
+                )
+            } finally {
+                sqlite.finalize(statement)
+            }
+        }
+    }
+
     private fun createQuantizedTableWithCorruptBase(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
         executeBlob(
@@ -308,6 +361,20 @@ internal object Vec1SecurityProbeMain {
             putInt(nElem)
             putInt(nCodebook)
             putInt(nBucket)
+            putInt(VEC1_DISTANCE_L2)
+        }.array()
+    }
+
+    private fun codebookModel(nCodebook: Int): ByteArray {
+        val nElem = 2
+        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
+        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(0)
             putInt(VEC1_DISTANCE_L2)
         }.array()
     }
