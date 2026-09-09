@@ -34,6 +34,8 @@ private const val VEC1_PQ_CODEBOOK_SIZE = 256
 private const val VEC1_MAX_CODESIZE = 128
 private const val SIZEOF_F32 = 4
 
+private data class ExpectedSqlError(val code: Int, val message: String)
+
 internal class Vec1InputsTest {
     @Test
     fun `vec1 from json accepts SQL null without crashing`() = runProbe("null-json")
@@ -63,6 +65,16 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 rejects models whose codebooks exceed fixed encoder capacity`() =
         runProbe("oversized-codebook-model")
+
+    @Test
+    fun `vec1 rejects non-finite JSON vector elements`() = runProbe("non-finite-json")
+
+    @Test
+    fun `vec1 rejects non-finite raw vectors without corrupting its index`() =
+        runProbe("non-finite-vector")
+
+    @Test
+    fun `vec1 rejects non-finite model sections`() = runProbe("non-finite-model")
 
     private fun runProbe(mode: String) {
         val command = mutableListOf(
@@ -112,6 +124,9 @@ internal object Vec1SecurityProbeMain {
                 "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
                 "oversized-query-k" -> probeOversizedQueryK(sqlite, db)
                 "oversized-codebook-model" -> probeOversizedCodebookModel(sqlite, db)
+                "non-finite-json" -> probeNonFiniteJson(sqlite, db)
+                "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
+                "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -322,6 +337,103 @@ internal object Vec1SecurityProbeMain {
         }
     }
 
+    private fun probeNonFiniteJson(sqlite: IExternalSQLite, db: Long) {
+        listOf("NaN", "Infinity", "-Infinity", "1e400").forEach { value ->
+            expectError(
+                sqlite,
+                db,
+                "SELECT vec1_from_json('[$value,0]')",
+                SQL_ERROR,
+                "vector elements must be finite"
+            )
+        }
+    }
+
+    private fun probeNonFiniteVector(sqlite: IExternalSQLite, db: Long) {
+        createQuantizedTable(sqlite, db)
+        rejectNonFiniteVectorInputs(sqlite, db)
+        acceptFiniteVectorBoundaries(sqlite, db)
+        rejectNonFinitePersistedVector(sqlite, db)
+    }
+
+    private fun createQuantizedTable(sqlite: IExternalSQLite, db: Long) {
+        val zeroVector = List(8) { "0" }.joinToString(prefix = "[", postfix = "]")
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE c(x) AS (" +
+                    "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<8" +
+                    ") INSERT INTO t(rowid,vector) " +
+                    "SELECT x,vec1_from_json('$zeroVector') FROM c"
+            ) == SQL_OK
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(cmd,vector) " +
+                    "SELECT 'rebuild',vec1_train(vector,'{\"nbucket\":2}') FROM t"
+            ) == SQL_OK
+        )
+    }
+
+    private fun rejectNonFiniteVectorInputs(sqlite: IExternalSQLite, db: Long) {
+        val statements = listOf(
+            "INSERT INTO t(vector) VALUES(?)",
+            "SELECT rowid FROM t WHERE cmd=? AND arg=1",
+            "SELECT vec1_train(?)",
+            "SELECT vec1_l2_distance(?, zeroblob(32))",
+            "SELECT vec1_to_json(?)"
+        )
+        val expected = ExpectedSqlError(SQL_ERROR, "vector elements must be finite")
+        listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY).forEach { value ->
+            val vector = vectorBytes(value, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+            statements.forEach { expectBlobError(sqlite, db, it, vector, expected) }
+        }
+    }
+
+    private fun acceptFiniteVectorBoundaries(sqlite: IExternalSQLite, db: Long) {
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(vector) VALUES(?)",
+            vectorBytes(Float.MAX_VALUE, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(vector) VALUES(?)",
+            vectorBytes(Float.MIN_VALUE, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+    }
+
+    private fun rejectNonFinitePersistedVector(sqlite: IExternalSQLite, db: Long) {
+        executeBlob(
+            sqlite,
+            db,
+            "UPDATE t_base SET vector=? WHERE id=1",
+            vectorBytes(Float.NaN, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+        )
+        expectError(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd) VALUES('rebuild')",
+            SQL_CORRUPT,
+            "non-finite vector in t_base"
+        )
+    }
+
+    private fun probeNonFiniteModel(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        expectBlobError(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            nonFiniteCentroidModel(),
+            ExpectedSqlError(SQL_CORRUPT, "non-finite value in model centroid section")
+        )
+    }
+
     private fun createQuantizedTableWithCorruptBase(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
         executeBlob(
@@ -379,6 +491,31 @@ internal object Vec1SecurityProbeMain {
         }.array()
     }
 
+    private fun nonFiniteCentroidModel(): ByteArray {
+        val model = ByteArray(24 + 4 * SIZEOF_F32)
+        ByteBuffer.wrap(model).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX)
+            putInt(2)
+            putInt(0)
+            putInt(2)
+            putInt(VEC1_DISTANCE_L2)
+        }
+        ByteBuffer.wrap(model).order(ByteOrder.nativeOrder()).apply {
+            position(24)
+            putFloat(Float.NaN)
+            putFloat(0f)
+            putFloat(0f)
+            putFloat(0f)
+        }
+        return model
+    }
+
+    private fun vectorBytes(vararg values: Float): ByteArray =
+        ByteBuffer.allocate(values.size * SIZEOF_F32).order(ByteOrder.nativeOrder()).apply {
+            values.forEach { putFloat(it) }
+        }.array()
+
     private fun validIndexBlob(): ByteArray =
         ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(0)
@@ -395,6 +532,54 @@ internal object Vec1SecurityProbeMain {
             check(sqlite.step(statement) == SQL_DONE)
         } finally {
             sqlite.finalize(statement)
+        }
+    }
+
+    private fun expectBlobError(
+        sqlite: IExternalSQLite,
+        db: Long,
+        sql: String,
+        blob: ByteArray,
+        expected: ExpectedSqlError
+    ) {
+        val statement = prepare(sqlite, db, sql)
+        try {
+            check(sqlite.bindBlob(statement, 1, blob, blob.size) == SQL_OK)
+            expectStatementError(sqlite, db, statement, expected.code, expected.message)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun expectError(
+        sqlite: IExternalSQLite,
+        db: Long,
+        sql: String,
+        expectedCode: Int,
+        message: String
+    ) {
+        val statement = prepare(sqlite, db, sql)
+        try {
+            expectStatementError(sqlite, db, statement, expectedCode, message)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun expectStatementError(
+        sqlite: IExternalSQLite,
+        db: Long,
+        statement: Long,
+        expectedCode: Int,
+        message: String
+    ) {
+        val result = sqlite.step(statement)
+        check(result != SQL_ROW && result != SQL_DONE) { "Malformed vec1 input was accepted" }
+        check(sqlite.errorCode(db) == expectedCode) {
+            "Expected SQLite error $expectedCode, got $result: ${sqlite.errorMessage(db)}"
+        }
+        check(sqlite.errorMessage(db).contains(message)) {
+            "Expected '$message', got: ${sqlite.errorMessage(db)}"
         }
     }
 
