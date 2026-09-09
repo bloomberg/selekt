@@ -55,6 +55,10 @@ internal class Vec1InputsTest {
         runProbe("rowid-list-validation")
 
     @Test
+    fun `vec1 shadow tables are protected by defensive mode`() =
+        runProbe("defensive-shadow-tables")
+
+    @Test
     fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
 
     @Test
@@ -150,6 +154,7 @@ internal object Vec1SecurityProbeMain {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
+                "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
                 "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
@@ -261,6 +266,32 @@ internal object Vec1SecurityProbeMain {
         putInt(nEntry)
         putInt(nTombstone)
     }.array()
+
+    private fun probeDefensiveShadowTables(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        check(sqlite.exec(db, "CREATE TABLE ordinary(value INTEGER)") == SQL_OK)
+        check(sqlite.exec(db, "INSERT INTO ordinary VALUES(1)") == SQL_OK)
+        check(sqlite.exec(db, "CREATE TABLE t_not_shadow(value INTEGER)") == SQL_OK)
+        check(sqlite.exec(db, "INSERT INTO t_not_shadow VALUES(1)") == SQL_OK)
+        check(sqlite.databaseConfig(db, SQLiteDbConfig.DEFENSIVE.code, 1) == SQL_OK)
+        listOf("config", "base", "idx", "model", "meta").forEach { suffix ->
+            val table = "t_$suffix"
+            val result = sqlite.exec(db, "UPDATE $table SET rowid=rowid")
+            check(result != SQL_OK) { "Defensive mode allowed an update to $table" }
+            check(sqlite.errorMessage(db).contains("table $table may not be modified")) {
+                "Unexpected defensive-mode error for $table: ${sqlite.errorMessage(db)}"
+            }
+        }
+        check(sqlite.exec(db, "UPDATE ordinary SET value=2") == SQL_OK)
+        check(sqlite.exec(db, "UPDATE t_not_shadow SET value=2") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector) VALUES(1, vec1_from_json('[1,2]'))"
+            ) == SQL_OK
+        )
+        expectSingleRow(sqlite, db, "SELECT rowid FROM t WHERE rowid=1")
+    }
 
     private fun probeTruncatedMetadata(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, tag)") == SQL_OK)
