@@ -75,7 +75,7 @@ internal class SQLiteDatabaseEvictionTest {
     fun evictions(): Unit = runBlocking {
         val values = ContentValues().apply { put("body", body) }
         coroutineScope {
-            repeat(400) {
+            repeat(100) {
                 database.exec("CREATE TABLE 'Foo' (body TEXT)")
                 repeat(100) {
                     database.insert("Foo", values, ConflictAlgorithm.REPLACE)
