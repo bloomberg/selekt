@@ -27,19 +27,22 @@ struct Slice {
 };
 
 std::array<Slice, 3> splitInput(const std::byte* data, std::size_t size) {
-    if (size < 4) return {{{data, size}, {data + size, 0}, {data + size, 0}}};
-    const std::size_t payload = size - 4;
+    if (size < 5) return {{{data, size}, {data + size, 0}, {data + size, 0}}};
+    const std::size_t payload = size - 5;
+    // Model blobs may exceed 64 KiB, so reserve three bytes for their size.
     const std::size_t modelSize = std::min(
-        (std::to_integer<std::size_t>(data[0]) << 8) | std::to_integer<std::size_t>(data[1]),
+        (std::to_integer<std::size_t>(data[0]) << 16) |
+            (std::to_integer<std::size_t>(data[1]) << 8) |
+            std::to_integer<std::size_t>(data[2]),
         payload
     );
     const std::size_t afterModel = payload - modelSize;
     const std::size_t indexSize = std::min(
-        (std::to_integer<std::size_t>(data[2]) << 8) | std::to_integer<std::size_t>(data[3]),
+        (std::to_integer<std::size_t>(data[3]) << 8) | std::to_integer<std::size_t>(data[4]),
         afterModel
     );
-    return {{{data + 4, modelSize}, {data + 4 + modelSize, indexSize},
-        {data + 4 + modelSize + indexSize, afterModel - indexSize}}};
+    return {{{data + 5, modelSize}, {data + 5 + modelSize, indexSize},
+        {data + 5 + modelSize + indexSize, afterModel - indexSize}}};
 }
 
 void bindBlobAndStep(sqlite3* database, const char* sql, Slice blob) {
