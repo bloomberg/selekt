@@ -56,6 +56,10 @@ internal class Vec1InputsTest {
         runProbe("rowid-list-validation")
 
     @Test
+    fun `vec1 validates list IDs before deriving metadata rowids`() =
+        runProbe("metadata-list-id")
+
+    @Test
     fun `vec1 shadow tables are protected by defensive mode`() =
         runProbe("defensive-shadow-tables")
 
@@ -163,6 +167,7 @@ internal object Vec1SecurityProbeMain {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
+                "metadata-list-id" -> probeMetadataListId(sqlite, db)
                 "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
                 "streaming-buckets" -> probeStreamingBuckets(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
@@ -265,6 +270,50 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.finalize(count)
         }
+    }
+
+    private fun probeMetadataListId(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, tag)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector, tag) " +
+                    "VALUES(1, vec1_from_json('[1,2,3,4]'), 7)"
+            ) == SQL_OK
+        )
+        val query =
+            "SELECT rowid FROM t " +
+                "WHERE cmd=vec1_from_json('[1,2,3,4]') AND arg=1 AND tag=7"
+        check(sqlite.exec(db, "UPDATE t_idx SET id=-1 WHERE id=1") == SQL_OK)
+        check(sqlite.exec(db, "UPDATE t_meta SET id=-256 WHERE id=256") == SQL_OK)
+        expectError(sqlite, db, query, SQL_CORRUPT, "invalid index-list id: -1")
+        check(sqlite.exec(db, "UPDATE t_idx SET id=1 WHERE id=-1") == SQL_OK)
+        check(sqlite.exec(db, "UPDATE t_meta SET id=256 WHERE id=-256") == SQL_OK)
+        val maxListId = Long.MAX_VALUE ushr VEC1_META_COLUMN_BITS
+        val maxMetaId = maxListId shl VEC1_META_COLUMN_BITS
+        check(sqlite.exec(db, "UPDATE t_idx SET id=$maxListId WHERE id=1") == SQL_OK)
+        check(sqlite.exec(db, "UPDATE t_meta SET id=$maxMetaId WHERE id=256") == SQL_OK)
+        expectSingleRow(sqlite, db, query)
+        val overflowingListId = maxListId + 1
+        check(
+            sqlite.exec(
+                db,
+                "UPDATE t_idx SET id=$overflowingListId WHERE id=$maxListId"
+            ) == SQL_OK
+        )
+        expectError(
+            sqlite,
+            db,
+            query,
+            SQL_CORRUPT,
+            "invalid index-list id: $overflowingListId"
+        )
     }
 
     private fun indexHeader(

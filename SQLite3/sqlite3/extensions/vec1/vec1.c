@@ -6013,6 +6013,30 @@ static int vec1AnnBuildLUT(
 
 
 /*
+** Derive the %_meta rowid for metadata column iMeta of %_idx list iId.
+** List IDs must leave VEC1_META_COLUMN_BITS available in a signed rowid.
+*/
+static int vec1MetaRowid(
+  Vec1Tab *pTab,
+  i64 iId,
+  int iMeta,
+  i64 *piMetaId
+){
+  const u64 iMax = (u64)VEC1_LARGEST_INT64 / VEC1_MAX_META_COLUMNS;
+  u64 iMetaId;
+
+  assert( iMeta>=0 && iMeta<VEC1_MAX_META_COLUMNS );
+  if( iId<0 || (u64)iId>iMax ){
+    vec1VtabError(pTab, "vec1: invalid index-list id: %lld", iId);
+    return VEC1_CORRUPT;
+  }
+  iMetaId = (u64)iId * VEC1_MAX_META_COLUMNS + (u64)iMeta;
+  assert( iMetaId<=(u64)VEC1_LARGEST_INT64 );
+  *piMetaId = (i64)iMetaId;
+  return SQLITE_OK;
+}
+
+/*
 ** Read an entry from the %_meta table into buffer pBuf.
 **
 ** Return SQLITE_OK if successful, or an SQLite error code otherwise.
@@ -6024,12 +6048,14 @@ static int vec1ReadMeta(
   int iMeta                       /* Index of meta-column */
 ){
   sqlite3_stmt *pStmt = 0;
-  int rc = vec1GetSql(pTab, VEC1_SQL_READ_META, &pStmt);
-
-  assert( iMeta>=0 && iMeta<VEC1_MAX_META_COLUMNS );
+  i64 iMetaId = 0;
+  int rc = vec1MetaRowid(pTab, iId, iMeta, &iMetaId);
 
   if( rc==SQLITE_OK ){
-    i64 iMetaId = (iId << VEC1_META_COLUMN_BITS) + iMeta;
+    rc = vec1GetSql(pTab, VEC1_SQL_READ_META, &pStmt);
+  }
+
+  if( rc==SQLITE_OK ){
     pBuf->n = 0;
     sqlite3_bind_int64(pStmt, 1, iMetaId);
     if( SQLITE_ROW==sqlite3_step(pStmt) ){
@@ -8352,11 +8378,13 @@ static int vec1WriteMetaBlob(
   int iMeta                       /* Index of meta-column */
 ){
   sqlite3_stmt *pStmt = 0;
-  int rc = vec1GetSql(pTab, VEC1_SQL_WRITE_META, &pStmt);
+  i64 iMetaId = 0;
+  int rc = vec1MetaRowid(pTab, iId, iMeta, &iMetaId);
 
-  assert( iMeta>=0 && iMeta<VEC1_MAX_META_COLUMNS );
   if( rc==SQLITE_OK ){
-    i64 iMetaId = (iId << VEC1_META_COLUMN_BITS) + iMeta;
+    rc = vec1GetSql(pTab, VEC1_SQL_WRITE_META, &pStmt);
+  }
+  if( rc==SQLITE_OK ){
     sqlite3_bind_int64(pStmt, 1, iMetaId);
     sqlite3_bind_blob(pStmt, 2, pBuf->a, pBuf->n, SQLITE_STATIC);
     sqlite3_step(pStmt);
