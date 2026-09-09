@@ -28,6 +28,8 @@ internal class RowLimitedCursor(
     private val cursor: ICursor,
     private val maximumRows: Int
 ) : ICursor by cursor {
+    private var closed = false
+    private var resourcesReleased = false
     private var forwardPosition = -1
     private var forwardOnRow = false
     private var forwardExhausted = false
@@ -38,6 +40,16 @@ internal class RowLimitedCursor(
 
     override val count: Int
         get() = minOf(cursor.count, maximumRows)
+
+    override fun close() {
+        if (closed) {
+            return
+        }
+        closed = true
+        releaseResources()
+    }
+
+    override fun isClosed() = closed
 
     override fun getBlob(index: Int): ByteArray? {
         checkOnRow()
@@ -128,6 +140,7 @@ internal class RowLimitedCursor(
         if (forwardExhausted || forwardPosition + 1 >= maximumRows) {
             forwardOnRow = false
             forwardExhausted = true
+            releaseResources()
             return false
         }
         return cursor.moveToNext().also { moved ->
@@ -186,5 +199,13 @@ internal class RowLimitedCursor(
         } else {
             check(!cursor.isBeforeFirst() && !cursor.isAfterLast()) { "Cursor does not identify a row." }
         }
+    }
+
+    private fun releaseResources() {
+        if (resourcesReleased) {
+            return
+        }
+        resourcesReleased = true
+        cursor.close()
     }
 }

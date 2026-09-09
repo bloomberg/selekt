@@ -857,6 +857,7 @@ internal class SQLConnectionTest {
             }
             verify(this@run, never()).finalize(eq(cursorStatementPointer))
             assertFalse(cursor.moveToNext())
+            verify(this@run, times(1)).finalize(eq(cursorStatementPointer))
             cursor.close()
             verify(this@run, times(1)).finalize(eq(cursorStatementPointer))
         }

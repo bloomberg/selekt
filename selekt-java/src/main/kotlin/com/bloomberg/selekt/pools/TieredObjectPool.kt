@@ -23,17 +23,39 @@ import java.io.Closeable
  */
 internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal constructor(
     private val primaryPool: SingleObjectPool<K, T>,
-    private val secondaryPool: IObjectPool<K, T>
+    private val secondaryPool: CommonObjectPool<K, T>?
 ) : Closeable {
     override fun close() {
-        secondaryPool.use {
+        try {
             primaryPool.close()
+        } finally {
+            secondaryPool?.close()
         }
     }
 
-    fun borrowObject() = secondaryPool.borrowObject()
+    fun borrowObject() = if (secondaryPool == null) {
+        primaryPool.borrowObject()
+    } else {
+        secondaryPool.borrowObject()
+    }
 
-    fun borrowObject(key: K) = secondaryPool.borrowObject(key)
+    fun borrowObject(key: K) = if (secondaryPool == null) {
+        primaryPool.borrowObject(key)
+    } else {
+        secondaryPool.borrowObject(key)
+    }
+
+    fun borrowSecondaryObject() = if (secondaryPool == null) {
+        primaryPool.borrowObject()
+    } else {
+        secondaryPool.borrowObjectStrict()
+    }
+
+    fun borrowSecondaryObject(key: K) = if (secondaryPool == null) {
+        primaryPool.borrowObject(key)
+    } else {
+        secondaryPool.borrowObjectStrict(key)
+    }
 
     fun borrowPrimaryObject() = primaryPool.borrowObject()
 
@@ -41,13 +63,13 @@ internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal construc
         try {
             primaryPool.clear(priority)
         } finally {
-            secondaryPool.clear(priority)
+            secondaryPool?.clear(priority)
         }
     }
 
     fun returnObject(obj: T) = if (obj.isPrimary) {
         primaryPool.returnObject(obj)
     } else {
-        secondaryPool.returnObject(obj)
+        checkNotNull(secondaryPool).returnObject(obj)
     }
 }

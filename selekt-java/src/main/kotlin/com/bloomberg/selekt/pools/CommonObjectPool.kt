@@ -69,9 +69,19 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         evict()
     }
 
-    override fun borrowObject() = internalBorrowObject { null }
+    override fun borrowObject() = internalBorrowObject(true) { null }
 
-    override fun borrowObject(key: K) = internalBorrowObject {
+    override fun borrowObject(key: K) = internalBorrowObject(true) {
+        idleObjects.pollFirst {
+            it.matches(key)
+        }
+    }
+
+    @JvmSynthetic
+    internal fun borrowObjectStrict() = internalBorrowObject(false) { null }
+
+    @JvmSynthetic
+    internal fun borrowObjectStrict(key: K) = internalBorrowObject(false) {
         idleObjects.pollFirst {
             it.matches(key)
         }
@@ -79,7 +89,10 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     @Suppress("Detekt.ReturnCount")
     @Throws(InterruptedException::class)
-    private inline fun internalBorrowObject(preferred: () -> T?): T {
+    private inline fun internalBorrowObject(
+        allowPrimaryFallback: Boolean,
+        preferred: () -> T?
+    ): T {
         lock.withLockInterruptibly {
             while (!isClosed.get()) {
                 preferred()?.let {
@@ -93,7 +106,9 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                     attemptScheduleEviction()
                     return@withLockInterruptibly Unit
                 }
-                otherPool.borrowObjectOrNull()?.let { return it }
+                if (allowPrimaryFallback) {
+                    otherPool.borrowObjectOrNull()?.let { return it }
+                }
                 do {
                     available.await()
                 } while (idleObjects.isEmpty && count == configuration.maxTotal)

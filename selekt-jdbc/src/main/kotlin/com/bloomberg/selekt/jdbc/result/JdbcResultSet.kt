@@ -284,12 +284,19 @@ internal class JdbcResultSet(
     override fun next(): Boolean {
         checkClosed()
         return try {
-            cursor.moveToNext()
+            cursor.moveToNext().also {
+                if (!it) {
+                    onExhausted()
+                }
+            }
         } catch (e: OperationCancelledException) {
+            onExhausted()
             throw SQLExceptionMapper.mapCancellation(e)
         } catch (e: SQLException) {
+            onExhausted()
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
+            onExhausted()
             if (e.message?.contains("interrupt", ignoreCase = true) == true) {
                 throw SQLExceptionMapper.mapCancellation(e)
             }
@@ -305,6 +312,10 @@ internal class JdbcResultSet(
         }
         cursor.close()
         (statement as? JdbcStatement)?.onResultSetClosed(this)
+    }
+
+    private fun onExhausted() {
+        (statement as? JdbcStatement)?.onResultSetClosed(this, exhausted = true)
     }
 
     override fun wasNull(): Boolean = wasNull

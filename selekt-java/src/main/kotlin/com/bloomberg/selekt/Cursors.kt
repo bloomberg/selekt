@@ -205,10 +205,13 @@ private fun startPositionFor(
 
 @NotThreadSafe
 internal class ForwardCursor(
-    private val statement: SQLPreparedStatement,
+    statement: SQLPreparedStatement,
     private val onClose: (() -> Unit)? = null
 ) : ICursor {
     private var closed = false
+    private var exhausted = false
+    private var resourcesReleased = false
+    private var statement: SQLPreparedStatement? = statement
 
     private val columnNames = statement.columnNames
 
@@ -222,11 +225,7 @@ internal class ForwardCursor(
             return
         }
         closed = true
-        if (onClose != null) {
-            onClose()
-        } else {
-            statement.close()
-        }
+        releaseResources()
     }
 
     override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }
@@ -235,18 +234,18 @@ internal class ForwardCursor(
 
     override fun columnNames() = columnNames
 
-    override fun getBlob(index: Int) = statement.columnBlob(index)
+    override fun getBlob(index: Int) = statement().columnBlob(index)
 
-    override fun getDouble(index: Int) = statement.columnDouble(index)
+    override fun getDouble(index: Int) = statement().columnDouble(index)
 
-    override fun getInt(index: Int) = statement.columnInt(index)
+    override fun getInt(index: Int) = statement().columnInt(index)
 
-    override fun getLong(index: Int) = statement.columnLong(index)
+    override fun getLong(index: Int) = statement().columnLong(index)
 
-    override fun getString(index: Int) = statement.columnString(index)
+    override fun getString(index: Int) = statement().columnString(index)
 
-    override fun getTextBytes(index: Int) = if (statement.columnType(index) == SQL_TEXT) {
-        statement.columnBlob(index)
+    override fun getTextBytes(index: Int) = if (statement().columnType(index) == SQL_TEXT) {
+        statement().columnBlob(index)
     } else {
         null
     }
@@ -264,7 +263,7 @@ internal class ForwardCursor(
 
     override fun isLast() = throw UnsupportedOperationException()
 
-    override fun isNull(index: Int) = SQL_NULL == statement.columnType(index)
+    override fun isNull(index: Int) = SQL_NULL == statement().columnType(index)
 
     override fun move(offset: Int) = throw UnsupportedOperationException()
 
@@ -272,7 +271,25 @@ internal class ForwardCursor(
 
     override fun moveToLast() = throw UnsupportedOperationException()
 
-    override fun moveToNext() = SQL_ROW == statement.step()
+    override fun moveToNext(): Boolean {
+        check(!closed) { "Cursor is closed." }
+        if (exhausted) {
+            return false
+        }
+        return try {
+            if (SQL_ROW == statement().step()) {
+                true
+            } else {
+                exhausted = true
+                releaseResources()
+                false
+            }
+        } catch (failure: Throwable) {
+            exhausted = true
+            runCatching(::releaseResources).exceptionOrNull()?.let(failure::addSuppressed)
+            throw failure
+        }
+    }
 
     override fun moveToPosition(position: Int) = throw UnsupportedOperationException()
 
@@ -280,5 +297,21 @@ internal class ForwardCursor(
 
     override fun position() = throw UnsupportedOperationException()
 
-    override fun type(index: Int) = ColumnType.toColumnType(statement.columnType(index))
+    override fun type(index: Int) = ColumnType.toColumnType(statement().columnType(index))
+
+    private fun statement() = checkNotNull(statement) { "Cursor no longer identifies a row." }
+
+    private fun releaseResources() {
+        if (resourcesReleased) {
+            return
+        }
+        resourcesReleased = true
+        val statement = checkNotNull(statement)
+        this.statement = null
+        if (onClose != null) {
+            onClose()
+        } else {
+            statement.close()
+        }
+    }
 }

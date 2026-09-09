@@ -35,6 +35,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
 import kotlin.test.fail
 import kotlin.test.assertEquals
@@ -140,6 +141,29 @@ internal class CommonObjectPoolTest {
     fun sameSingleObjectForNewKey() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         assertSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must return the same object.")
+    }
+
+    @Test
+    fun strictBorrowWaitsForSecondaryInsteadOfFallingBackToPrimary() = pool.run {
+        val borrowed = MutableList(configuration.maxTotal) { borrowObject() }
+        val waitingExecutor = Executors.newSingleThreadExecutor()
+        val waiting = waitingExecutor.submit<PooledObject> { borrowObjectStrict("key") }
+        try {
+            assertFailsWith<TimeoutException> {
+                waiting.get(100L, TimeUnit.MILLISECONDS)
+            }
+            verifyNoInteractions(other)
+
+            val returned = borrowed.removeLast()
+            returnObject(returned)
+            val acquired = waiting.get(5L, TimeUnit.SECONDS)
+            assertSame(returned, acquired)
+            returnObject(acquired)
+        } finally {
+            waiting.cancel(true)
+            borrowed.forEach(::returnObject)
+            waitingExecutor.shutdownNow()
+        }
     }
 
     @Test

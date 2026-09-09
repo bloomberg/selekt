@@ -379,6 +379,45 @@ internal class JdbcStatementTest {
     }
 
     @Test
+    fun exhaustedResultSetDeactivatesCancellationSignalWithoutClosingResultSet() {
+        val sql = "SELECT * FROM users"
+        lateinit var signal: CancellationSignal
+        whenever(
+            mockDatabase.queryForwardOnly(eq(sql), eq(emptyArray()), any<CancellationSignal>())
+        ) doAnswer {
+            signal = it.getArgument(2)
+            mockCursor
+        }
+        whenever(mockCursor.moveToNext()) doReturn false
+
+        val resultSet = statement.executeQuery(sql)
+        assertFalse(resultSet.next())
+        assertFalse(resultSet.isClosed)
+        statement.cancel()
+        assertFalse(signal.isCancelled)
+        resultSet.close()
+    }
+
+    @Test
+    fun failedResultSetDeactivatesCancellationSignal() {
+        val sql = "SELECT * FROM users"
+        lateinit var signal: CancellationSignal
+        whenever(
+            mockDatabase.queryForwardOnly(eq(sql), eq(emptyArray()), any<CancellationSignal>())
+        ) doAnswer {
+            signal = it.getArgument(2)
+            mockCursor
+        }
+        whenever(mockCursor.moveToNext()) doThrow IllegalStateException("step failed")
+
+        val resultSet = statement.executeQuery(sql)
+        assertFailsWith<SQLException> { resultSet.next() }
+        statement.cancel()
+        assertFalse(signal.isCancelled)
+        resultSet.close()
+    }
+
+    @Test
     fun getMoreResults(): Unit = statement.run {
         assertFalse(getMoreResults())
         assertFalse(getMoreResults(Statement.CLOSE_CURRENT_RESULT))
