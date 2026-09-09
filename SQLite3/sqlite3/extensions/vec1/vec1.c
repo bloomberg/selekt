@@ -6220,23 +6220,44 @@ static int vec1FilterToIntOp(
       /* All text and blob values are greater than all 1-byte ints */
       iVal = iMax+10;
     }else if( pFilter->eType==SQLITE_FLOAT ){
-      iVal = (i64)pFilter->fVal;
-      if( (double)iVal!=pFilter->fVal ){
-        if( pFilter->op==VEC1_OP_EQ || pFilter->op==VEC1_OP_IS ){
-          iVal = iMin-10;
-        }else if( pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_GE ){
-          iVal = iVal+1;
+      double fVal = pFilter->fVal;
+      if( !isfinite(fVal) ){
+        if( isnan(fVal) ){
+          res = 0;
+        }else if( fVal>0.0 ){
+          res = (pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_LE);
+        }else{
+          res = (pFilter->op==VEC1_OP_GT || pFilter->op==VEC1_OP_GE);
+        }
+      }else{
+        if( pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_GE ){
+          fVal = ceil(fVal);
+        }else if( pFilter->op==VEC1_OP_GT || pFilter->op==VEC1_OP_LE ){
+          fVal = floor(fVal);
+        }
+
+        if( (pFilter->op==VEC1_OP_EQ || pFilter->op==VEC1_OP_IS)
+         && fVal!=floor(fVal)
+        ){
+          res = 0;
+        }else if( fVal<(double)iMin ){
+          res = (pFilter->op==VEC1_OP_GT || pFilter->op==VEC1_OP_GE);
+        }else if( fVal>(double)iMax ){
+          res = (pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_LE);
+        }else{
+          rval = (int)fVal;
+          op = (pFilter->op==VEC1_OP_IS ? VEC1_OP_EQ : pFilter->op);
         }
       }
-    }
-
-    if( iVal<iMin ){
-      res = (pFilter->op==VEC1_OP_GT || pFilter->op==VEC1_OP_GE);
-    }else if( iVal>iMax ){
-      res = (pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_LE);
     }else{
-      rval = (int)iVal;
-      op = (pFilter->op==VEC1_OP_IS ? VEC1_OP_EQ : pFilter->op);
+      if( iVal<iMin ){
+        res = (pFilter->op==VEC1_OP_GT || pFilter->op==VEC1_OP_GE);
+      }else if( iVal>iMax ){
+        res = (pFilter->op==VEC1_OP_LT || pFilter->op==VEC1_OP_LE);
+      }else{
+        rval = (int)iVal;
+        op = (pFilter->op==VEC1_OP_IS ? VEC1_OP_EQ : pFilter->op);
+      }
     }
   }
 
@@ -7192,13 +7213,15 @@ static int vec1LoadConfig(Vec1Tab *pTab){
 }
 
 static int vec1InterpretNProbe(Vec1Tab *pTab, double fVal){
-  int nProbe;
+  int nBucket = (int)pTab->mod.hdr.nBucket;
+  int nProbe = 1;
+  if( nBucket<=0 || !isfinite(fVal) || fVal<=0.0 ) return 1;
+  if( fVal>=(double)nBucket ) return nBucket;
   if( fVal>=1.0 ){
     nProbe = (int)fVal;
   }else{
-    nProbe = (int)(fVal * pTab->mod.hdr.nBucket);
+    nProbe = (int)(fVal * nBucket);
   }
-  nProbe = MIN(nProbe, (int)pTab->mod.hdr.nBucket);
   nProbe = MAX(nProbe, 1);
   return nProbe;
 }
@@ -7217,6 +7240,15 @@ static int vec1ParseQueryParamCb(
   UNUSED_PARAMETER(zVal);
 
   if( 0==sqlite3_stricmp("nprobe", zOpt) ){
+    if( (eType!=SQLITE_INTEGER && eType!=SQLITE_FLOAT)
+     || !isfinite(fVal)
+     || fVal<=0.0
+    ){
+      *pzErr = sqlite3_mprintf(
+          "vec1: nprobe requires a finite numeric value larger than 0.0"
+      );
+      return SQLITE_ERROR;
+    }
     pQuery->nProbe = vec1InterpretNProbe(pQuery->pTab, fVal);
   }
 
@@ -7224,6 +7256,7 @@ static int vec1ParseQueryParamCb(
     if( eType==SQLITE_INTEGER && iVal>=1 && iVal<=INT_MAX ){
       pQuery->K = iVal;
     }else if( eType==SQLITE_FLOAT
+          && isfinite(fVal)
           && fVal>=1.0
           && fVal<=(double)INT_MAX
           && fVal==(double)(i64)fVal
@@ -7238,10 +7271,22 @@ static int vec1ParseQueryParamCb(
   }
 
   if( 0==sqlite3_stricmp("streaming", zOpt) ){
-    pQuery->bStreaming = ((int)fVal) ? 1 : 0;
+    if( (eType!=SQLITE_INTEGER && eType!=SQLITE_FLOAT) || !isfinite(fVal) ){
+      *pzErr = sqlite3_mprintf(
+          "vec1: streaming requires a finite numeric value"
+      );
+      return SQLITE_ERROR;
+    }
+    pQuery->bStreaming = (fVal!=0.0);
   }
 
   if( 0==sqlite3_stricmp("nprobe_slack", zOpt) ){
+    if( (eType!=SQLITE_INTEGER && eType!=SQLITE_FLOAT) || !isfinite(fVal) ){
+      *pzErr = sqlite3_mprintf(
+          "vec1: nprobe_slack requires a finite numeric value"
+      );
+      return SQLITE_ERROR;
+    }
     pQuery->nProbeSlack = fVal;
   }
 
@@ -10790,8 +10835,10 @@ static void vec1ConfigFunc(
   }else if( 0==sqlite3_stricmp(zParam, "nprobe") ){
     if( nVal==2 ){
       double fNew = sqlite3_value_double(aVal[1]);
-      if( fNew<=0.0 ){
-        vec1ResultErrorF(pCtx, "vec1: nprobe requires a value larger than 0.0");
+      if( !isfinite(fNew) || fNew<=0.0 ){
+        vec1ResultErrorF(
+            pCtx, "vec1: nprobe requires a finite value larger than 0.0"
+        );
         return;
       }
       pList->nProbeArg = fNew;
