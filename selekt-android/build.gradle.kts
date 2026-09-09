@@ -72,6 +72,7 @@ dependencies {
     testImplementation(libs.androidx.room.runtime)
     testImplementation(libs.androidx.room.ktx)
     testImplementation(libs.androidx.sqlite)
+    testImplementation(libs.archunit)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(projects.selektAndroidSqlcipher)
     testRuntimeOnly(libs.robolectric.android.all)
