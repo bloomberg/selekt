@@ -26,6 +26,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFailsWith
@@ -380,6 +381,24 @@ internal class SQLDatabaseTest {
         whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
         database.query("SELECT 1", emptyArray(), signal)
         verify(sqlite).progressHandler(eq(DB), eq(0), isNull())
+    }
+
+    @Test
+    fun exhaustingForwardQueryClearsProgressHandlerWithoutClosingCursor() {
+        database.transact { }
+        val signal = CancellationSignal(500)
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
+
+        val cursor = database.queryForwardOnly("SELECT 1", emptyArray(), signal)
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(500), any<SQLProgressHandler>())
+        verify(sqlite, never()).progressHandler(eq(DB), eq(0), isNull())
+
+        assertFalse(cursor.moveToNext())
+        assertFalse(cursor.isClosed())
+        verify(sqlite, times(1)).progressHandler(eq(DB), eq(0), isNull())
+        cursor.close()
     }
 
     private companion object {

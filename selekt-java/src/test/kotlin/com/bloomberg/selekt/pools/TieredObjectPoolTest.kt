@@ -53,6 +53,22 @@ internal class TieredObjectPoolTest {
     }
 
     @Test
+    fun borrowStrictSecondaryObjectKeyed() {
+        val key = "key"
+        pool.borrowSecondaryObject(key)
+        verifyNoInteractions(singleObjectPool)
+        verify(commonObjectPool, times(1)).borrowObjectStrict(same(key))
+    }
+
+    @Test
+    fun borrowStrictSecondaryObjectUsesPrimaryForSingleObjectPool() {
+        val key = "key"
+        TieredObjectPool(singleObjectPool, null).borrowSecondaryObject(key)
+        verify(singleObjectPool, times(1)).borrowObject(same(key))
+        verifyNoInteractions(commonObjectPool)
+    }
+
+    @Test
     fun close() {
         pool.close()
         verify(singleObjectPool, times(1)).close()

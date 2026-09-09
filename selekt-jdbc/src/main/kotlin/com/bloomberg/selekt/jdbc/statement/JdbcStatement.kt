@@ -552,13 +552,15 @@ open class JdbcStatement internal constructor(
 
     internal fun hasOpenResultSet(): Boolean = currentResultSet?.isClosed == false
 
-    internal fun onResultSetClosed(resultSet: ResultSet) {
+    internal fun onResultSetClosed(resultSet: ResultSet, exhausted: Boolean = false) {
         val wasCurrent = currentResultSet === resultSet
         if (wasCurrent) {
-            currentResultSet = null
+            if (!exhausted) {
+                currentResultSet = null
+            }
             deactivateCancellationSignal()
         }
-        if (!dependentResultSets.remove(resultSet) || dependentResultSets.isNotEmpty()) {
+        if (exhausted || !dependentResultSets.remove(resultSet) || dependentResultSets.isNotEmpty()) {
             return
         }
         if (!closeOnCompletion || closingDependentResultSets || isClosed) {

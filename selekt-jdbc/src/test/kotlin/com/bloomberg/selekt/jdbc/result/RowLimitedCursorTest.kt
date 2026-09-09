@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.result
 
 import com.bloomberg.selekt.ICursor
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
@@ -25,6 +26,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 internal class RowLimitedCursorTest {
@@ -78,5 +81,26 @@ internal class RowLimitedCursorTest {
         assertTrue(limited.moveToLast())
         assertEquals(2, limited.position())
         assertTrue(limited.isLast())
+    }
+
+    @Test
+    fun forwardLimitReleasesUnderlyingCursorWithoutLogicallyClosingWrapper() {
+        val cursor = mock<ICursor> {
+            whenever(it.isForwardOnly) doReturn true
+            whenever(it.moveToNext()) doReturn true
+        }
+        val limited = RowLimitedCursor(cursor, 2)
+
+        assertTrue(limited.moveToNext())
+        assertTrue(limited.moveToNext())
+        assertFalse(limited.moveToNext())
+        assertFalse(limited.isClosed())
+        verify(cursor, times(1)).close()
+        assertFailsWith<IllegalStateException> { limited.getString(0) }
+
+        assertFalse(limited.moveToNext())
+        limited.close()
+        assertTrue(limited.isClosed())
+        verify(cursor, times(1)).close()
     }
 }

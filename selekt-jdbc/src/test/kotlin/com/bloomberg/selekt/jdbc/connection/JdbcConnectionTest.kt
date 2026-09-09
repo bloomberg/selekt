@@ -33,6 +33,7 @@ import java.util.Properties
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.test.assertNotSame
@@ -1561,6 +1562,101 @@ internal class JdbcConnectionTest {
                 }
             }
         } finally {
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
+    }
+
+    @Suppress("Detekt.NestedBlockDepth")
+    @Test
+    fun exhaustingForwardCursorReleasesConnectionBeforeResultSetClose() {
+        val tempFile = File.createTempFile("selekt-exhausted-cursor-release-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=1"
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            DriverManager.getConnection(url).use { reader ->
+                reader.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('row1')")
+                }
+                DriverManager.getConnection(url).use { writer ->
+                    reader.createStatement().use { statement ->
+                        statement.executeQuery("SELECT * FROM test").use { resultSet ->
+                            assertTrue(resultSet.next())
+                            assertFalse(resultSet.next())
+                            assertFalse(resultSet.isClosed)
+
+                            val write = executor.submit<Int> {
+                                writer.createStatement().use {
+                                    it.executeUpdate("INSERT INTO test (value) VALUES ('row2')")
+                                }
+                            }
+                            assertEquals(1, write.get(5L, TimeUnit.SECONDS))
+                            assertFalse(resultSet.isClosed)
+                        }
+                    }
+                }
+            }
+        } finally {
+            executor.shutdownNow()
+            tempFile.delete()
+            File("${tempFile.absolutePath}-wal").delete()
+            File("${tempFile.absolutePath}-shm").delete()
+        }
+    }
+
+    @Suppress("Detekt.LongMethod", "Detekt.NestedBlockDepth")
+    @Test
+    fun saturatedForwardCursorReadersDoNotBorrowWritablePrimary() {
+        val tempFile = File.createTempFile("selekt-strict-reader-pool-test-", ".db").apply(File::deleteOnExit)
+        val url = "jdbc:sqlite:${tempFile.absolutePath}?journalMode=WAL&busyTimeout=2000&poolSize=2"
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            DriverManager.getConnection(url).use { setup ->
+                setup.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+                    statement.execute("INSERT INTO test (value) VALUES ('row1')")
+                    statement.execute("INSERT INTO test (value) VALUES ('row2')")
+                }
+            }
+            DriverManager.getConnection(url).use { firstReader ->
+                DriverManager.getConnection(url).use { secondReader ->
+                    DriverManager.getConnection(url).use { writer ->
+                        firstReader.createStatement().use { firstStatement ->
+                            firstStatement.executeQuery("SELECT * FROM test").use { firstResultSet ->
+                                assertTrue(firstResultSet.next())
+                                val secondStarted = CountDownLatch(1)
+                                val secondQuery = executor.submit<Boolean> {
+                                    secondStarted.countDown()
+                                    secondReader.createStatement().use { statement ->
+                                        statement.executeQuery("SELECT * FROM test").use { resultSet ->
+                                            resultSet.next()
+                                        }
+                                    }
+                                }
+                                assertTrue(secondStarted.await(5L, TimeUnit.SECONDS))
+                                assertFailsWith<TimeoutException> {
+                                    secondQuery.get(200L, TimeUnit.MILLISECONDS)
+                                }
+
+                                val primaryWrite = executor.submit<Boolean> {
+                                    writer.createStatement().use {
+                                        it.execute("CREATE TEMP TABLE writer_probe (id INTEGER)")
+                                    }
+                                    true
+                                }
+                                assertTrue(primaryWrite.get(5L, TimeUnit.SECONDS))
+
+                                firstResultSet.close()
+                                assertTrue(secondQuery.get(5L, TimeUnit.SECONDS))
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            executor.shutdownNow()
             tempFile.delete()
             File("${tempFile.absolutePath}-wal").delete()
             File("${tempFile.absolutePath}-shm").delete()

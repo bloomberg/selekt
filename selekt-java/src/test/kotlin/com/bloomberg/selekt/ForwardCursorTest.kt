@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -257,6 +258,62 @@ internal class ForwardCursorTest {
             assertEquals("abc", getString(0))
             assertFalse(moveToNext())
         }
+    }
+
+    @Test
+    fun exhaustionReleasesResourcesWithoutClosingCursor() {
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("bar")
+            whenever(step()) doReturn SQL_DONE
+        }
+        var releaseCount = 0
+        val cursor = ForwardCursor(statement) { releaseCount += 1 }
+
+        assertFalse(cursor.moveToNext())
+        assertFalse(cursor.isClosed())
+        assertEquals(1, releaseCount)
+        assertFalse(cursor.moveToNext())
+        assertEquals(1, releaseCount)
+
+        cursor.close()
+        assertTrue(cursor.isClosed())
+        assertEquals(1, releaseCount)
+        verify(statement, times(1)).step()
+    }
+
+    @Test
+    fun terminalFailureReleasesResourcesAndPreservesFailure() {
+        val failure = IllegalStateException("step failed")
+        val cleanupFailure = IllegalArgumentException("cleanup failed")
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("bar")
+            whenever(step()) doThrow failure
+        }
+        var releaseCount = 0
+        val cursor = ForwardCursor(statement) {
+            releaseCount += 1
+            throw cleanupFailure
+        }
+
+        val thrown = assertFailsWith<IllegalStateException> { cursor.moveToNext() }
+        assertSame(failure, thrown)
+        assertSame(cleanupFailure, thrown.suppressed.single())
+        assertEquals(1, releaseCount)
+        assertFalse(cursor.isClosed())
+        assertFalse(cursor.moveToNext())
+        assertEquals(1, releaseCount)
+    }
+
+    @Test
+    fun gettersCannotUseReleasedStatement() {
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("bar")
+            whenever(step()) doReturn SQL_DONE
+        }
+        val cursor = ForwardCursor(statement)
+
+        assertFalse(cursor.moveToNext())
+        assertFailsWith<IllegalStateException> { cursor.getString(0) }
     }
 
     @Test

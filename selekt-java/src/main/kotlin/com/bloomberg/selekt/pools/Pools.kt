@@ -32,7 +32,7 @@ internal fun <K : Any, T : IPooledObject<K>> createObjectPool(
     configuration.evictionIntervalMillis
 ).let {
     when (configuration.maxTotal) {
-        1 -> TieredObjectPool(it, it)
+        1 -> TieredObjectPool(it, null)
         else -> TieredObjectPool(
             it,
             CommonObjectPool(factory, executor, configuration.copy(maxTotal = configuration.maxTotal - 1), it)

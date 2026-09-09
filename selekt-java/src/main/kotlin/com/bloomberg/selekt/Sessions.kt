@@ -180,7 +180,7 @@ internal class SQLSession(
         signal: CancellationSignal? = null,
         block: CloseableSQLExecutor.(() -> Unit) -> ForwardCursor
     ): ForwardCursor {
-        val executor = retain(false, sql)
+        val executor = retainSecondary(sql)
         return runCatching {
             signal?.let {
                 executor.setProgressHandler(it.instructionCount) {
@@ -542,6 +542,11 @@ internal open class Session<K : Any, T : IPooledObject<K>>(
         key: K,
         permits: Int = 1
     ) = retain(primary, permits) { pool.borrowObject(key) }
+
+    protected fun retainSecondary(
+        key: K,
+        permits: Int = 1
+    ) = retain(false, permits) { pool.borrowSecondaryObject(key) }
 
     protected fun release(permits: Int = 1) = obj!!.release(permits)
 

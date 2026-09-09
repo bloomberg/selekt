@@ -92,6 +92,18 @@ internal class JdbcResultSetTest {
             assertTrue(next())
             assertFalse(next())
         }
+        verify(mockStatement).onResultSetClosed(resultSet, exhausted = true)
+        assertFalse(resultSet.isClosed)
+    }
+
+    @Test
+    fun nextFailureNotifiesStatementOfExhaustion() {
+        whenever(mockCursor.moveToNext()) doThrow IllegalStateException("step failed")
+
+        assertFailsWith<SQLException> { resultSet.next() }
+
+        verify(mockStatement).onResultSetClosed(resultSet, exhausted = true)
+        assertFalse(resultSet.isClosed)
     }
 
     @Test
