@@ -4367,7 +4367,6 @@ static int vec1DecodeModel(
 #define VEC1_META_4BYTEMAX   +2147483646
 #define VEC1_META_4BYTENULL  +2147483647
 
-typedef struct Vec1Tab Vec1Tab;
 typedef struct Vec1Csr Vec1Csr;
 
 /*
