@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 1.3.2
+
+* Snapshot and clear SupportSQLiteOpenHelperFactory.
+* Avoid argument copies in JDBC prepared execution.
+* Release streaming cursor resources on exhaustion.
+* Fix vec1 heap overflow.
+* Fix vec1 model codebook bounds.
+* Reject non-finite vectors safely in vec1.
+* Reject residual vec1 models without valid buckets.
+* Fix vec1 padded PQ query over-read.
+* Removed the redundant Vec1Tab typedef.
+* Validate vec1 numeric conversions.
+* Zero unused vec1 PQ block slots.
+
 ## Version 1.3.1
 
 * Stream read-only auto-commit JDBC queries.
