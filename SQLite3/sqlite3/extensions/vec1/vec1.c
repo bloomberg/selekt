@@ -2388,6 +2388,8 @@ static int vec1Ann1KMeans(
   int nThread = p ? p->nThread : 1;
   int iNext = 0;
 
+  if( nThread<1 || nThread>VEC1_MAX_NTHREAD ) return SQLITE_ERROR;
+
   /* Allocate array of jobs. We use this even if there are no worker 
   ** threads - in that case allocate an array of 1. Each job object
   ** is used for both K-Means++ intialization and for each iteration
@@ -2727,9 +2729,9 @@ static int vec1Ann1TrainCfg(
         break;
 
       case 3:  /* nthread */
-        rc = vec1ConfigInt(eType, iVal, 0, VEC1_MAX_NTHREAD, 0, zOpt, pz);
+        rc = vec1ConfigInt(eType, iVal, 1, VEC1_MAX_NTHREAD, 0, zOpt, pz);
 #if VEC1_THREADS
-        p->nThread = (int)iVal;
+        if( rc==SQLITE_OK ) p->nThread = (int)iVal;
 #endif
         break;
 
@@ -4032,6 +4034,14 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   if( p==0 ) return;
 
   if( p->rc!=SQLITE_OK ) goto train_final_out;
+
+  if( p->nThread<1 || p->nThread>VEC1_MAX_NTHREAD ){
+    vec1ResultErrorF(pCtx,
+        "vec1: nthread requires an integer value between 1 and %d",
+        VEC1_MAX_NTHREAD
+    );
+    goto train_final_out;
+  }
 
   if( p->tv.nVec==0 ){
     vec1ResultErrorF(pCtx,
@@ -11047,8 +11057,10 @@ static void vec1ConfigFunc(
 
   if( 0==sqlite3_stricmp(zParam, "nthread") ){
     if( nVal==2 ){
-      int nNew = sqlite3_value_int(aVal[1]);
-      if( nNew<1 || nNew>VEC1_MAX_NTHREAD ){
+      i64 nNew = sqlite3_value_int64(aVal[1]);
+      if( sqlite3_value_type(aVal[1])!=SQLITE_INTEGER
+       || nNew<1 || nNew>VEC1_MAX_NTHREAD
+      ){
         vec1ResultErrorF(pCtx, "vec1: "
             "nthread requires an integer value between 1 and %d",
             VEC1_MAX_NTHREAD
@@ -11056,7 +11068,7 @@ static void vec1ConfigFunc(
         return;
       }
 #if VEC1_THREADS
-      pList->nThread = nNew;
+      pList->nThread = (int)nNew;
 #endif
     }
     sqlite3_result_int(pCtx, pList->nThread);

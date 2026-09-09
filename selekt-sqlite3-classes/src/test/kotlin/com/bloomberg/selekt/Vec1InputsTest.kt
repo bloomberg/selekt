@@ -104,6 +104,9 @@ internal class Vec1InputsTest {
     fun `vec1 training rejects non-finite aggregate input`() = runProbe("non-finite-training")
 
     @Test
+    fun `vec1 enforces thread count types and bounds`() = runProbe("training-thread-count")
+
+    @Test
     fun `vec1 rejects non-finite model sections`() = runProbe("non-finite-model")
 
     @Test
@@ -185,6 +188,7 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
                 "non-finite-training" -> probeNonFiniteTraining(sqlite, db)
+                "training-thread-count" -> probeTrainingThreadCount(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
@@ -676,6 +680,53 @@ internal object Vec1SecurityProbeMain {
                 vectorBytes(value, value, value, value, value, value, value, value),
                 expected
             )
+        }
+    }
+
+    private fun probeTrainingThreadCount(sqlite: IExternalSQLite, db: Long) {
+        listOf("0", "-1", "129", "1.5", "\"2\"").forEach { value ->
+            expectError(
+                sqlite,
+                db,
+                "SELECT vec1_train(vec1_from_json('[1,2]'), " +
+                    "'{\"nthread\":$value}')",
+                SQL_ERROR,
+                "nthread must be set to an integer value between 1 and 128"
+            )
+        }
+        listOf("0", "-1", "129", "1.5", "'2'", "NULL", "X'01'").forEach { value ->
+            expectError(
+                sqlite,
+                db,
+                "SELECT vec1_config('nthread', $value)",
+                SQL_ERROR,
+                "nthread requires an integer value between 1 and 128"
+            )
+        }
+        val maximum = prepare(sqlite, db, "SELECT vec1_config('nthread', 128)")
+        try {
+            check(sqlite.step(maximum) == SQL_ROW)
+            check(sqlite.columnInt64(maximum, 0) == 128L)
+            check(sqlite.step(maximum) == SQL_DONE)
+        } finally {
+            sqlite.finalize(maximum)
+        }
+        check(sqlite.exec(db, "SELECT vec1_config('nthread', 1)") == SQL_OK)
+        val training = prepare(
+            sqlite,
+            db,
+            "WITH RECURSIVE c(x) AS (" +
+                "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<8" +
+                ") SELECT length(vec1_train(" +
+                "vec1_from_json('['||x||','||(x%3)||']')," +
+                "'{\"nbucket\":2,\"nthread\":2}')) FROM c"
+        )
+        try {
+            check(sqlite.step(training) == SQL_ROW)
+            check(sqlite.columnInt64(training, 0) > 0)
+            check(sqlite.step(training) == SQL_DONE)
+        } finally {
+            sqlite.finalize(training)
         }
     }
 
