@@ -4496,6 +4496,20 @@ static char *vec1DropShadowSchema(const char *zDb, const char *zTab){
   );
 }
 
+/*
+** Return true if zName is the suffix of a shadow table owned by vec1.
+*/
+static int vec1ShadowName(const char *zName){
+  static const char *azName[] = {
+    "config", "base", "idx", "model", "meta"
+  };
+  unsigned int ii;
+  for(ii=0; ii<sizeof(azName)/sizeof(azName[0]); ii++){
+    if( sqlite3_stricmp(zName, azName[ii])==0 ) return 1;
+  }
+  return 0;
+}
+
 typedef struct Vec1Config Vec1Config;
 struct Vec1Config {
   i64 iModelVersion;
@@ -10978,7 +10992,7 @@ static int initExtension(
     vec1SavepointMethod,  /* xSavepoint */
     vec1ReleaseMethod,    /* xRelease */
     vec1RollbackToMethod, /* xRollbackTo */
-    0,                    /* xShadowName */
+    vec1ShadowName,       /* xShadowName */
     vec1IntegrityMethod   /* xIntegrity */
   };
   
