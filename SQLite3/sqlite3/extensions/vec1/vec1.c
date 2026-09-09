@@ -441,17 +441,35 @@ static void vec1NormalizeVector(float *aElem, int nElem){
 ** Initialize a new, existing, heap object. 
 */
 static int vec1HeapInit(Vec1AnnHeap *p, i64 nMax, int bStreaming){
-  i64 nAlloc = (bStreaming ? VEC1_INITIAL_STREAMING_ALLOC : nMax);
+  i64 nAlloc = 0;
+  sqlite3_uint64 nByte = 0;
+
+  p->nRes = 0;
+  p->nMax = nMax;
+  p->nAlloc = 0;
+  p->rc = SQLITE_OK;
+  p->bStreaming = bStreaming;
+  p->fMin = INFINITY;
+
+  if( nMax<0 || nMax>INT_MAX ){
+    return SQLITE_TOOBIG;
+  }
+  if( nMax==0 ){
+    p->aRes = 0;
+    return SQLITE_OK;
+  }
+
+  nAlloc = (bStreaming ? VEC1_INITIAL_STREAMING_ALLOC : nMax);
   nAlloc = MAX(nAlloc, nMax);
-  p->aRes = (Vec1AnnResult *)sqlite3_malloc64(sizeof(Vec1AnnResult) * nAlloc);
+  if( (u64)nAlloc>((u64)-1)/sizeof(Vec1AnnResult) ){
+    return SQLITE_TOOBIG;
+  }
+  nByte = (sqlite3_uint64)nAlloc * sizeof(Vec1AnnResult);
+  p->aRes = (Vec1AnnResult *)sqlite3_malloc64(nByte);
   if( p->aRes==0 ){
     return SQLITE_NOMEM;
   }
-  p->nRes = 0;
-  p->nMax = nMax;
   p->nAlloc = nAlloc;
-  p->bStreaming = bStreaming;
-  p->fMin = INFINITY;
   return SQLITE_OK;
 }
 
@@ -501,6 +519,8 @@ static void vec1HeapBubbleDown(Vec1AnnHeap *p){
 ** entry with the largest fDist value seen so far is discarded.
 */
 static void vec1HeapInsert(Vec1AnnHeap *p, sqlite3_int64 iRowid, double fDist){
+  if( p->rc!=SQLITE_OK || p->nMax<=0 ) return;
+
   if( p->nRes<p->nMax ){
     p->aRes[p->nRes].iRowid = iRowid;
     p->aRes[p->nRes].fDist = fDist;
@@ -509,12 +529,25 @@ static void vec1HeapInsert(Vec1AnnHeap *p, sqlite3_int64 iRowid, double fDist){
   }else if( p->bStreaming ){
 
     if( p->nRes>=p->nAlloc ){
-      i64 nNew = p->nAlloc * 2;
+      i64 nNew;
+      sqlite3_uint64 nByte;
       Vec1AnnResult *aNew = 0;
-      if( p->rc==SQLITE_OK ){
-        i64 nByte = nNew*sizeof(Vec1AnnResult);
-        aNew = (Vec1AnnResult*)sqlite3_realloc64(p->aRes, nByte);
+
+      if( p->nAlloc>=INT_MAX ){
+        p->rc = SQLITE_TOOBIG;
+        return;
       }
+      if( p->nAlloc>INT_MAX/2 ){
+        nNew = INT_MAX;
+      }else{
+        nNew = p->nAlloc * 2;
+      }
+      if( (u64)nNew>((u64)-1)/sizeof(Vec1AnnResult) ){
+        p->rc = SQLITE_TOOBIG;
+        return;
+      }
+      nByte = (sqlite3_uint64)nNew * sizeof(Vec1AnnResult);
+      aNew = (Vec1AnnResult*)sqlite3_realloc64(p->aRes, nByte);
       if( aNew==0 ){
         p->rc = SQLITE_NOMEM;
         return;
@@ -7065,15 +7098,27 @@ static int vec1ParseQueryParamCb(
 ){
   Vec1Query *pQuery = (Vec1Query*)pCtx;
 
-  UNUSED_PARAMETER2(iVal, eType);
-  UNUSED_PARAMETER2(pzErr, zVal);
+  UNUSED_PARAMETER(zVal);
 
   if( 0==sqlite3_stricmp("nprobe", zOpt) ){
     pQuery->nProbe = vec1InterpretNProbe(pQuery->pTab, fVal);
   }
 
   if( 0==sqlite3_stricmp("K", zOpt) ){
-    pQuery->K = (i64)fVal;
+    if( eType==SQLITE_INTEGER && iVal>=1 && iVal<=INT_MAX ){
+      pQuery->K = iVal;
+    }else if( eType==SQLITE_FLOAT
+          && fVal>=1.0
+          && fVal<=(double)INT_MAX
+          && fVal==(double)(i64)fVal
+    ){
+      pQuery->K = (i64)fVal;
+    }else{
+      *pzErr = sqlite3_mprintf(
+          "vec1: K must be an integer between 1 and %d", INT_MAX
+      );
+      return SQLITE_ERROR;
+    }
   }
 
   if( 0==sqlite3_stricmp("streaming", zOpt) ){
@@ -7254,10 +7299,14 @@ static int vec1SetupKANNQuery(
   if( rc==SQLITE_OK && idxStr[0]==VEC1_OP_PARAMS ){
     sqlite3_value *pVal = argv[iArg++];
     if( sqlite3_value_numeric_type(pVal)==SQLITE_INTEGER ){
-      p->K = sqlite3_value_int(pVal);
-      if( p->K<=0 ){
-        vec1VtabError(pTab, "vec1: K must be greater than 0 (have %d)", p->K);
+      i64 iK = sqlite3_value_int64(pVal);
+      if( iK<1 || iK>INT_MAX ){
+        vec1VtabError(
+            pTab, "vec1: K must be an integer between 1 and %d", INT_MAX
+        );
         rc = SQLITE_ERROR;
+      }else{
+        p->K = iK;
       }
     }else{
       assert( pTab->base.zErrMsg==0 );
