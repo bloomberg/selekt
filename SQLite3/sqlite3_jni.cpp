@@ -44,6 +44,17 @@ namespace {
 
     constexpr std::uint32_t SECRET_ALLOCATION_MAGIC = 0x534c4b54; // "SLKT"
 
+    // Secret pointers may cross connection and thread boundaries. Every registry access must hold this mutex.
+    struct SecretAllocationRegistry {
+        std::mutex mutex;
+        std::unordered_map<void*, std::uint32_t> allocations;
+    };
+
+    SecretAllocationRegistry& secretAllocationRegistry() {
+        static SecretAllocationRegistry registry;
+        return registry;
+    }
+
     void* pointerFromJLong(jlong value) noexcept {
         auto const address = static_cast<std::uintptr_t>(value);
         static_assert(sizeof(address) == sizeof(void*));
@@ -292,7 +303,18 @@ extern "C" void* selekt_secret_alloc(int32_t size) {
         ~capacity
     };
     std::memcpy(allocation.get(), &header, sizeof(header));
-    return allocation.release() + sizeof(SecretAllocationHeader);
+    auto* secret = allocation.get() + sizeof(SecretAllocationHeader);
+    try {
+        auto& registry = secretAllocationRegistry();
+        std::scoped_lock lock(registry.mutex);
+        registry.allocations.emplace(secret, capacity);
+    } catch (...) {
+        // The C allocation contract reports registry allocation failure as nullptr; JNI and FFM translate it to OOME.
+        selekt::secure_zero(allocation.get(), allocationSize);
+        return nullptr;
+    }
+    allocation.release();
+    return secret;
 }
 
 extern "C" int selekt_secret_free(void* p, int32_t size) {
@@ -304,17 +326,54 @@ extern "C" int selekt_secret_free(void* p, int32_t size) {
     }
     auto* allocation = static_cast<unsigned char*>(p) - sizeof(SecretAllocationHeader);
     SecretAllocationHeader header{};
-    std::memcpy(&header, allocation, sizeof(header));
-    if (header.magic != SECRET_ALLOCATION_MAGIC
-        || header.size == 0
-        || header.size > static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max())
-        || header.sizeComplement != ~header.size
-        || static_cast<std::uint32_t>(size) != header.size) {
-        return SQLITE_MISMATCH;
+    {
+        auto& registry = secretAllocationRegistry();
+        std::scoped_lock lock(registry.mutex);
+        auto const registered = registry.allocations.find(p);
+        if (registered == registry.allocations.end()
+            || registered->second != static_cast<std::uint32_t>(size)) {
+            return SQLITE_MISMATCH;
+        }
+        // Establish pointer provenance before dereferencing the adjacent header supplied by the caller.
+        std::memcpy(&header, allocation, sizeof(header));
+        if (header.magic != SECRET_ALLOCATION_MAGIC
+            || header.size == 0
+            || header.size > static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max())
+            || header.sizeComplement != ~header.size
+            || static_cast<std::uint32_t>(size) != header.size) {
+            return SQLITE_MISMATCH;
+        }
+        registry.allocations.erase(registered);
     }
     auto owner = std::unique_ptr<unsigned char[]>{allocation};
     auto const allocationSize = sizeof(SecretAllocationHeader) + static_cast<std::size_t>(header.size);
     selekt::secure_zero(owner.get(), allocationSize);
+    return SQLITE_OK;
+}
+
+extern "C" int selekt_secret_store(
+    void* p,
+    int32_t capacity,
+    const void* source,
+    int32_t length
+) {
+    if (p == nullptr
+        || capacity <= 0
+        || length < 0
+        || length > capacity
+        || (source == nullptr && length > 0)) {
+        return SQLITE_MISMATCH;
+    }
+    auto& registry = secretAllocationRegistry();
+    std::scoped_lock lock(registry.mutex);
+    auto const registered = registry.allocations.find(p);
+    if (registered == registry.allocations.end()
+        || registered->second != static_cast<std::uint32_t>(capacity)) {
+        return SQLITE_MISMATCH;
+    }
+    if (length > 0) {
+        std::memcpy(p, source, static_cast<std::size_t>(length));
+    }
     return SQLITE_OK;
 }
 
@@ -380,7 +439,16 @@ Java_com_bloomberg_selekt_ExternalSQLite_storeSecret(
         throwIndexOutOfBoundsException(env, "storeSecret: length is out of bounds.");
         return;
     }
-    env->GetByteArrayRegion(jsource, 0, length, reinterpret_cast<jbyte*>(static_cast<uintptr_t>(pointer)));
+    try {
+        AutoJSensitiveByteArray source(env, jsource, length);
+        if (selekt_secret_store(pointerFromJLong(pointer), capacity, source.data(), length) != SQLITE_OK) {
+            throwIndexOutOfBoundsException(env, "storeSecret: capacity does not match the allocation size.");
+        }
+    } catch (const JniOutOfMemoryError&) {
+        return;
+    } catch (const JniArrayLengthError&) {
+        return;
+    }
 }
 
 extern "C" JNIEXPORT jstring JNICALL
