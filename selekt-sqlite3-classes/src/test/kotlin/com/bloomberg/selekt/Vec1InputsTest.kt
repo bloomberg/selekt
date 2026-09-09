@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test
 private const val SQL_OPEN_READWRITE = 2
 private const val SQL_OPEN_CREATE = 4
 private const val VEC1_MODEL_INDEX = 1
+private const val VEC1_MODEL_RESIDUAL = 4
 private const val VEC1_DISTANCE_L2 = 1
 private const val VEC1_META_REAL = 8
 private const val VEC1_META_COLUMN_BITS = 8
@@ -65,6 +66,9 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 rejects models whose codebooks exceed fixed encoder capacity`() =
         runProbe("oversized-codebook-model")
+
+    @Test
+    fun `vec1 rejects residual models without buckets`() = runProbe("residual-without-buckets")
 
     @Test
     fun `vec1 rejects non-finite JSON vector elements`() = runProbe("non-finite-json")
@@ -124,6 +128,7 @@ internal object Vec1SecurityProbeMain {
                 "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
                 "oversized-query-k" -> probeOversizedQueryK(sqlite, db)
                 "oversized-codebook-model" -> probeOversizedCodebookModel(sqlite, db)
+                "residual-without-buckets" -> probeResidualModelWithoutBuckets(sqlite, db)
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
@@ -337,6 +342,17 @@ internal object Vec1SecurityProbeMain {
         }
     }
 
+    private fun probeResidualModelWithoutBuckets(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        expectBlobError(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            residualModelWithoutBuckets(),
+            ExpectedSqlError(SQL_CORRUPT, "residual model requires PQ and at least two buckets")
+        )
+    }
+
     private fun probeNonFiniteJson(sqlite: IExternalSQLite, db: Long) {
         listOf("NaN", "Infinity", "-Infinity", "1e400").forEach { value ->
             expectError(
@@ -484,6 +500,20 @@ internal object Vec1SecurityProbeMain {
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(0)
+            putInt(VEC1_DISTANCE_L2)
+        }.array()
+    }
+
+    private fun residualModelWithoutBuckets(): ByteArray {
+        val nElem = 2
+        val nCodebook = 1
+        val modelSize = 24 + nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
             putInt(nElem)
             putInt(nCodebook)
             putInt(0)
