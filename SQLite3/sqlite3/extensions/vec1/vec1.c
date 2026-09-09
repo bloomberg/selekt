@@ -8515,6 +8515,25 @@ static int vec1ListBuilderLoad(
   return rc;
 }
 
+/* Zero unused PQ slots in the final block before it is persisted. */
+static void vec1ListBuilderZeroPadding(Vec1ListBuilder *p, int nEntry){
+  int nUsed = nEntry % VEC1_PQ_BLOCKSIZE;
+  if( p->bBlocked && nUsed>0 ){
+    int nBlock = VEC1_PQ_BLOCKSIZE * p->nVectorSize;
+    u8 *aBlock;
+    int ii;
+
+    assert( p->bufData.n>=nBlock );
+    aBlock = &p->bufData.a[p->bufData.n-nBlock];
+    for(ii=0; ii<p->nVectorSize; ii++){
+      memset(
+          &aBlock[ii*VEC1_PQ_BLOCKSIZE+nUsed], 0,
+          VEC1_PQ_BLOCKSIZE-nUsed
+      );
+    }
+  }
+}
+
 static int vec1ListBuilderFlush(Vec1ListBuilder *p){
   int rc = SQLITE_OK;
   if( p->bufRowid.n>0 ){
@@ -8525,6 +8544,7 @@ static int vec1ListBuilderFlush(Vec1ListBuilder *p){
     u8 *aBlob = 0;
     int nBlob = 0;
 
+    vec1ListBuilderZeroPadding(p, nEntry);
     nBlob = VEC1_LIST_SZHDR + p->bufRowid.n + p->bufData.n;
     aBlob = (u8*)sqlite3_malloc(nBlob);
     if( aBlob==0 ){
@@ -8755,16 +8775,19 @@ static int vec1ListBuilderAdd(
   ** buffer grows by depends on whether it is blocked or not.  */
   if( rc==SQLITE_OK ) rc = vec1BufferGrow(&p->bufRowid, p->szRowid);
   if( rc==SQLITE_OK ){
-    int nReq = 0;
     if( p->bBlocked ){
       int nEntry = (p->bufRowid.n / p->szRowid);
       if( (nEntry % VEC1_PQ_BLOCKSIZE)==0 ){
-        p->bufData.n += (VEC1_PQ_BLOCKSIZE * p->nVectorSize);
+        int nReq = VEC1_PQ_BLOCKSIZE * p->nVectorSize;
+        rc = vec1BufferGrow(&p->bufData, nReq);
+        if( rc==SQLITE_OK ){
+          memset(&p->bufData.a[p->bufData.n], 0, nReq);
+          p->bufData.n += nReq;
+        }
       }
     }else{
-      nReq = p->nVectorSize;
+      rc = vec1BufferGrow(&p->bufData, p->nVectorSize);
     }
-    rc = vec1BufferGrow(&p->bufData, nReq);
   }
 
   if( rc==SQLITE_OK ){
