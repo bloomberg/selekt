@@ -5206,31 +5206,50 @@ static void vec1FlatIterNext(Vec1FlatIter *pIter){
   }
 }
 
+typedef struct Vec1IdxLayout Vec1IdxLayout;
+struct Vec1IdxLayout {
+  int nEntry;
+  int nTombstone;
+  int szRowid;
+  int nRowid;
+};
+
 /*
-** nBlob byte buffer aBlob[] contains a list read from the %_idx table.
-** This function returns zero if the list size matches the embedded
-** number-of-entries field, and so the list may be accessed safely without
-** bounds checking, or non-zero otherwise.
+** aHdr[] contains the VEC1_LIST_SZHDR-byte header of a list read from the
+** %_idx table, whose complete size is nBlob bytes. This function returns
+** zero if the list layout is valid and every size used by downstream list
+** readers fits in a signed int, or non-zero otherwise.
+**
+** If pOut is not NULL, populate it with the validated, safely narrowed
+** layout values.
 */
-static int vec1CheckIdxSize(Vec1Tab *p, const u8 *aBlob, int nBlob){
+static int vec1CheckIdxLayout(
+  Vec1Tab *p,
+  const u8 *aHdr,
+  int nBlob,
+  Vec1IdxLayout *pOut
+){
   u64 nEntry;
   u64 nExpected;
+  u64 nRowid;
   u64 szRowid;
   u64 nTombstone;
   u32 flags;
 
-  if( aBlob==0 || nBlob<VEC1_LIST_SZHDR ) return 1;
+  if( aHdr==0 || nBlob<VEC1_LIST_SZHDR ) return 1;
 
-  flags = vec1GetU32(&aBlob[0]);
-  nEntry = (u64)vec1GetU32(&aBlob[4]);
-  nTombstone = (u64)vec1GetU32(&aBlob[8]);
+  flags = vec1GetU32(&aHdr[0]);
+  nEntry = (u64)vec1GetU32(&aHdr[4]);
+  nTombstone = (u64)vec1GetU32(&aHdr[8]);
   szRowid = ((flags & VEC1_LIST_64BIT) ? 8 : 4);
 
   /* Downstream list iterators use signed int counts, sizes and offsets. */
+  if( flags & ~(VEC1_LIST_64BIT | VEC1_LIST_SORTED) ) return 1;
   if( nEntry>(u64)INT_MAX ) return 1;
   if( nTombstone>nEntry ) return 1;
-  if( p->mod.hdr.nCodebook<0 ) return 1;
-  nExpected = (u64)VEC1_LIST_SZHDR + nEntry*szRowid;
+  if( p->mod.hdr.nCodebook>VEC1_MAX_CODESIZE ) return 1;
+  nRowid = nEntry*szRowid;
+  nExpected = (u64)VEC1_LIST_SZHDR + nRowid;
 
   if( p->mod.hdr.nCodebook>0 ){
     u64 nBlk = (nEntry + VEC1_PQ_BLOCKSIZE - 1) / VEC1_PQ_BLOCKSIZE;
@@ -5246,7 +5265,23 @@ static int vec1CheckIdxSize(Vec1Tab *p, const u8 *aBlob, int nBlob){
   }
 
   /* This also proves every positive component and downstream offset fits. */
-  return nExpected>(u64)INT_MAX || nExpected!=(u64)nBlob;
+  if( nExpected>(u64)INT_MAX || nExpected!=(u64)nBlob ) return 1;
+
+  if( pOut ){
+    pOut->nEntry = (int)nEntry;
+    pOut->nTombstone = (int)nTombstone;
+    pOut->szRowid = (int)szRowid;
+    pOut->nRowid = (int)nRowid;
+  }
+  return 0;
+}
+
+/*
+** nBlob byte buffer aBlob[] contains a complete list read from the %_idx
+** table. Return zero if it is safe for downstream list readers to access.
+*/
+static int vec1CheckIdxSize(Vec1Tab *p, const u8 *aBlob, int nBlob){
+  return vec1CheckIdxLayout(p, aBlob, nBlob, 0);
 }
 
 static int vec1FlatIterStart(
@@ -7844,10 +7879,7 @@ static int vec1FindByRowid(
   }
 
   while( rc==SQLITE_OK && SQLITE_ROW==sqlite3_step(pSearch) ){
-    int nEntry = 0;
-    u32 nTombstone = 0;
-    u32 flags = 0;
-    int szRowid = 4;
+    Vec1IdxLayout layout;
     i64 iIdx = sqlite3_column_int64(pSearch, 0);
 
     rc = sqlite3_blob_open(
@@ -7855,36 +7887,39 @@ static int vec1FindByRowid(
     );
     if( rc==SQLITE_OK ){
       u8 a[VEC1_LIST_SZHDR];
-      rc = sqlite3_blob_read(pBlob, a, VEC1_LIST_SZHDR, 0);
-      flags = vec1GetU32(&a[0]);
-      nEntry = (int)vec1GetU32(&a[4]);
-      nTombstone = vec1GetU32(&a[8]);
-      if( flags & VEC1_LIST_64BIT ) szRowid = 8;
+      int nBlob = sqlite3_blob_bytes(pBlob);
+      if( nBlob<VEC1_LIST_SZHDR ){
+        rc = VEC1_CORRUPT;
+      }else{
+        rc = sqlite3_blob_read(pBlob, a, VEC1_LIST_SZHDR, 0);
+      }
+      if( rc==SQLITE_OK && vec1CheckIdxLayout(pTab, a, nBlob, &layout) ){
+        rc = VEC1_CORRUPT;
+      }
     }
     if( rc==SQLITE_OK ){
-      buf.n = 0;
-      rc = vec1BufferGrow(&buf, VEC1_LIST_SZHDR+szRowid*nEntry);
+      rc = vec1BufferSize(&buf, layout.nRowid);
     }
-    if( rc==SQLITE_OK ){
+    if( rc==SQLITE_OK && layout.nRowid>0 ){
       rc = sqlite3_blob_read(
-          pBlob, &buf.a[VEC1_LIST_SZHDR], nEntry*szRowid, VEC1_LIST_SZHDR
+          pBlob, buf.a, layout.nRowid, VEC1_LIST_SZHDR
       );
     }
 
     if( rc==SQLITE_OK ){
       int ii;
-      for(ii=0; ii<nEntry; ii++){
+      for(ii=0; ii<layout.nEntry; ii++){
         i64 iRead = 0;
-        if( szRowid==4 ){
-          iRead = vec1GetU32(&buf.a[VEC1_LIST_SZHDR + ii*szRowid]);
+        if( layout.szRowid==4 ){
+          iRead = vec1GetU32(&buf.a[ii*layout.szRowid]);
         }else{
-          iRead = vec1GetU64(&buf.a[VEC1_LIST_SZHDR + ii*szRowid]);
+          iRead = vec1GetU64(&buf.a[ii*layout.szRowid]);
         }
         if( iRead==iRowid ){
           pOut->iEntry = ii;
-          pOut->nEntry = nEntry;
-          pOut->nTombstone = nTombstone;
-          pOut->szRowid = szRowid;
+          pOut->nEntry = layout.nEntry;
+          pOut->nTombstone = layout.nTombstone;
+          pOut->szRowid = layout.szRowid;
           pOut->pBlob = pBlob;
           pOut->iIdx = iIdx;
           pBlob = 0;

@@ -100,9 +100,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
         "INSERT INTO shadow_fuzz(cmd, arg) VALUES('rebuild', ?1)",
         {VALID_MODEL.data(), VALID_MODEL.size()}
     );
+    selekt::fuzz::executeSql(
+        database.get(),
+        "INSERT INTO shadow_fuzz(rowid, vector, tag) "
+        "VALUES(1, vec1_from_json('[1,2,3,4]'), 1.0)"
+    );
     bindBlobAndStep(
         database.get(),
-        "INSERT INTO shadow_fuzz_idx VALUES(1, 0, 1, 1, ?1)",
+        "UPDATE shadow_fuzz_idx SET val=?1 WHERE id=1",
         slices[1]
     );
     bindBlobAndStep(
@@ -112,9 +117,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
     );
     selekt::fuzz::executeSql(
         database.get(),
-        "SELECT rowid FROM shadow_fuzz "
+        "SELECT rowid, vector FROM shadow_fuzz "
         "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1 AND tag=1.0; "
-        "PRAGMA integrity_check; SELECT * FROM vec1cat"
+        "SELECT vector FROM shadow_fuzz WHERE rowid=1; "
+        "PRAGMA integrity_check; DELETE FROM shadow_fuzz WHERE rowid=1; "
+        "SELECT * FROM vec1cat"
     );
     return 0;
 }

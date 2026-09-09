@@ -51,6 +51,10 @@ internal class Vec1InputsTest {
     fun `vec1 rejects an index entry count that overflows signed sizes`() = runProbe("index-overflow")
 
     @Test
+    fun `vec1 validates incremental index blobs before rowid lookup and delete`() =
+        runProbe("rowid-list-validation")
+
+    @Test
     fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
 
     @Test
@@ -145,6 +149,7 @@ internal object Vec1SecurityProbeMain {
             when (args.single()) {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
+                "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
                 "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
@@ -203,6 +208,59 @@ internal object Vec1SecurityProbeMain {
                 "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1"
         )
     }
+
+    private fun probeRowidListValidation(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector) VALUES(1, vec1_from_json('[1,2,3,4]'))"
+            ) == SQL_OK
+        )
+        val malformedLists = listOf(
+            indexHeader(flags = 0, nEntry = 0x40000000, nTombstone = 0),
+            indexHeader(flags = VEC1_LIST_64_BIT, nEntry = 0x20000000, nTombstone = 0),
+            indexHeader(flags = 0, nEntry = Int.MIN_VALUE, nTombstone = 0),
+            indexHeader(flags = 0, nEntry = 1, nTombstone = 2, size = 32),
+            indexHeader(flags = 0, nEntry = 1, nTombstone = 0),
+            indexHeader(flags = 0, nEntry = 1, nTombstone = 0, size = 16),
+            validIndexBlob() + 0.toByte(),
+            indexHeader(flags = 4, nEntry = 1, nTombstone = 0, size = 32)
+        )
+        malformedLists.forEach { blob ->
+            executeBlob(sqlite, db, "UPDATE t_idx SET val=? WHERE id=1", blob)
+            expectCorrupt(sqlite, db, "SELECT vector FROM t WHERE rowid=1")
+            expectCorrupt(sqlite, db, "DELETE FROM t WHERE rowid=1")
+            expectSingleRow(sqlite, db, "SELECT rowid FROM t WHERE rowid=1")
+        }
+        executeBlob(sqlite, db, "UPDATE t_idx SET val=? WHERE id=1", validIndexBlob())
+        expectSingleRow(sqlite, db, "SELECT rowid FROM t WHERE vector IS NOT NULL AND rowid=1")
+        check(sqlite.exec(db, "DELETE FROM t WHERE rowid=1") == SQL_OK)
+        val count = prepare(sqlite, db, "SELECT count(*) FROM t")
+        try {
+            check(sqlite.step(count) == SQL_ROW)
+            check(sqlite.columnInt64(count, 0) == 0L)
+        } finally {
+            sqlite.finalize(count)
+        }
+    }
+
+    private fun indexHeader(
+        flags: Int,
+        nEntry: Int,
+        nTombstone: Int,
+        size: Int = VEC1_LIST_HEADER_SIZE
+    ): ByteArray = ByteBuffer.allocate(size).order(ByteOrder.BIG_ENDIAN).apply {
+        putInt(flags)
+        putInt(nEntry)
+        putInt(nTombstone)
+    }.array()
 
     private fun probeTruncatedMetadata(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, tag)") == SQL_OK)
