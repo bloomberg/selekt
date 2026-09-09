@@ -1849,11 +1849,18 @@ static int vec1JobQueueAddJob(
 /*
 ** When accumulating training data, allocate space in chunks of 
 ** VEC1_TRAINING_SZCHUNK. Allow at most VEC1_TRAINING_MAXCHUNK chunks of
-** training data. With default values, the limit is 64GiB of training
-** vectors.
+** training data. With default values, the chunk limit is 64GiB of training
+** vectors. The number of vectors is separately limited to the range of the
+** signed counters used by the training algorithms.
 */
 #define VEC1_TRAINING_MAXCHUNK 1024
 #define VEC1_TRAINING_SZCHUNK  (64*1024*1024)
+#ifndef VEC1_TRAINING_MAXVECTOR
+# define VEC1_TRAINING_MAXVECTOR INT_MAX
+#endif
+#if VEC1_TRAINING_MAXVECTOR<1 || VEC1_TRAINING_MAXVECTOR>INT_MAX
+# error "VEC1_TRAINING_MAXVECTOR must be between 1 and INT_MAX"
+#endif
 
 /* 
 ** Training vectors collected by xStep() are stored in an instance 
@@ -2403,7 +2410,7 @@ static int vec1Ann1KMeans(
       nSampleElem * nK * sizeof_f32 +       /* aSum[] */
       nK * sizeof(int)                      /* aCount[] */
   );
-  nByte += sizeof_f32 * pVec->nVec;         /* aMin[] used by KMeans++ */
+  nByte += (i64)sizeof_f32 * pVec->nVec;    /* aMin[] used by KMeans++ */
   nByte += nSampleElem * nK * sizeof_f32;   /* Main thread aSum[] */
   nByte += nK * sizeof(int);                /* Main thread aCount[] */
   aKJob = (KMeansJob*)sqlite3_malloc64(nByte);
@@ -2898,6 +2905,10 @@ static void vec1TrainStep(
     if( p->rc!=SQLITE_OK ) return;
   }
 
+  if( p->tv.nVec>=VEC1_TRAINING_MAXVECTOR ){
+    sqlite3_result_error(pCtx, "vec1_train: too much training data", -1);
+    return;
+  }
   iChunk = p->tv.nVec/p->tv.nVecPerChunk;
   if( iChunk>=VEC1_TRAINING_MAXCHUNK ){
     sqlite3_result_error(pCtx, "vec1_train: too much training data", -1);
@@ -2966,7 +2977,8 @@ static void vec1CodebookWork(void *pCtx){
     pVec->nElem = p->nCodeElem;
     pVec->nVec = pJob->pTrain->nVec;
     pVec->nVecPerChunk = (VEC1_TRAINING_SZCHUNK / nBytePerVec);
-    pVec->nChunk = (pVec->nVec+pVec->nVecPerChunk-1) / pVec->nVecPerChunk;
+    pVec->nChunk = pVec->nVec / pVec->nVecPerChunk;
+    if( (pVec->nVec % pVec->nVecPerChunk)!=0 ) pVec->nChunk++;
 
     /* If the training vector size is not an integer multiple of the 
     ** sub-vector size and this is the rightmost sub-vector (the one that
