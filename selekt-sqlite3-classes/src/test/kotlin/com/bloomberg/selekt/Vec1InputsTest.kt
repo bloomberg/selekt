@@ -55,6 +55,10 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 train rejects an oversized OPQ model without overflowing`() = runProbe("oversized-opq-model")
 
+    @Test
+    fun `vec1 rejects an ANN result count that overflows its heap allocation`() =
+        runProbe("oversized-query-k")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -101,6 +105,7 @@ internal object Vec1SecurityProbeMain {
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
                 "truncated-base-integrity" -> probeTruncatedBaseIntegrity(sqlite, db)
                 "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
+                "oversized-query-k" -> probeOversizedQueryK(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -218,6 +223,47 @@ internal object Vec1SecurityProbeMain {
                 "Expected SQLITE_TOOBIG, got $result: ${sqlite.errorMessage(db)}"
             }
             check(sqlite.errorMessage(db).contains("rotation section too large"))
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeOversizedQueryK(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE c(x) AS (" +
+                    "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<300" +
+                    ") INSERT INTO t(rowid,vector) " +
+                    "SELECT x,vec1_from_json('[0,0]') FROM c"
+            ) == SQL_OK
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(cmd,vector) " +
+                    "SELECT 'rebuild',vec1_train(vector) FROM t"
+            ) == SQL_OK
+        )
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT count(*) FROM t " +
+                "WHERE cmd=vec1_from_json('[0,0]') " +
+                "AND arg='{\"K\":1152921504606847232}'"
+        )
+        try {
+            val result = sqlite.step(statement)
+            check(result != SQL_ROW && result != SQL_DONE) { "Oversized ANN K was accepted" }
+            check(sqlite.errorCode(db) == SQL_ERROR) {
+                "Expected SQLITE_ERROR, got $result: ${sqlite.errorMessage(db)}"
+            }
+            check(
+                sqlite.errorMessage(db).contains(
+                    "vec1: K must be an integer between 1 and 2147483647"
+                )
+            )
         } finally {
             sqlite.finalize(statement)
         }
