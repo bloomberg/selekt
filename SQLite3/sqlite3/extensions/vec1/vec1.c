@@ -5731,6 +5731,7 @@ static const float *vec1TransformInputVector(
   const float *aInput
 ){
   const float *aRet = aInput;
+  int nPadded = pMod->hdr.nCodebook * pMod->nCodeElem;
   if( (pMod->hdr.flags & VEC1_MODEL_ROTATE) ){
     vec1RotateVector(pMod->hdr.nElem, pMod->aRotation, aInput, aTmp);
     if( pMod->hdr.eDistance==VEC1_DISTANCE_COS ){
@@ -5744,11 +5745,14 @@ static const float *vec1TransformInputVector(
     aRet = aTmp;
   }
 
-  if( aRet!=aTmp
-   && pMod->hdr.nCodebook>0 
-   && (pMod->hdr.nCodebook*pMod->nCodeElem)!=pMod->hdr.nElem
-  ){
-    memcpy(aTmp, aRet, pMod->hdr.nElem * sizeof_f32);
+  if( pMod->hdr.nCodebook>0 && nPadded!=pMod->hdr.nElem ){
+    if( aRet!=aTmp ){
+      memcpy(aTmp, aRet, pMod->hdr.nElem * sizeof_f32);
+    }
+    memset(
+        &aTmp[pMod->hdr.nElem], 0,
+        (nPadded - pMod->hdr.nElem) * sizeof_f32
+    );
     aRet = aTmp;
   }
 
@@ -5761,7 +5765,9 @@ static const float *vec1TransformInputVector(
 */
 static int vec1TransformRequired(const Vec1Model *pMod){
   Vec1ModelHeader const *p = &pMod->hdr;
-  return (p->flags & VEC1_MODEL_ROTATE) || (p->eDistance==VEC1_DISTANCE_COS);
+  return (p->flags & VEC1_MODEL_ROTATE)
+      || (p->eDistance==VEC1_DISTANCE_COS)
+      || (p->nCodebook>0 && p->nCodebook*pMod->nCodeElem!=p->nElem);
 }
 
 
