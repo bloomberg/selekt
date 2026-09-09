@@ -266,14 +266,15 @@ internal class ExternalSQLite(
         if (capacity < 0 || length > capacity) {
             throw IndexOutOfBoundsException("storeSecret: length is out of bounds.")
         }
-        MemorySegment.copy(
-            source,
-            0,
-            MemorySegment.ofAddress(pointer).reinterpret(capacity.toLong()),
-            JAVA_BYTE,
-            0,
+        val result = selekt_secret_store.invoke(
+            MemorySegment.ofAddress(pointer),
+            capacity,
+            MemorySegment.ofArray(source),
             length
-        )
+        ) as Int
+        if (result != SQL_OK) {
+            throw IndexOutOfBoundsException("storeSecret: capacity does not match the allocation size.")
+        }
     }
 
     override fun bindBlob(statement: StatementHandle, index: Int, blob: ByteArray, length: Int): SQLCode {
@@ -1592,6 +1593,11 @@ internal class ExternalSQLite(
         private val selekt_secret_free: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_free").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)
+        )
+        private val selekt_secret_store: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_secret_store").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT),
+            criticalOption
         )
         private val selekt_secret_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_key").orElseThrow(),

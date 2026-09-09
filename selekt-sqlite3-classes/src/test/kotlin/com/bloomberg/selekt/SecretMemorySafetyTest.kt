@@ -34,6 +34,9 @@ internal class SecretMemorySafetyTest {
     @Test
     fun `freeSecret rejects a mismatched size without corrupting memory`() = runProbe("mismatched")
 
+    @Test
+    fun `storeSecret rejects an inflated capacity without corrupting memory`() = runProbe("store-capacity")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -66,6 +69,10 @@ internal object SecretMemorySafetyProbeMain {
     @JvmStatic
     fun main(args: Array<String>) {
         require(args.size == 1)
+        if (args.single() == "store-capacity") {
+            probeInflatedStoreCapacity()
+            return
+        }
         val invalidSize = when (args.single()) {
             "negative" -> -1
             "zero" -> 0
@@ -79,5 +86,18 @@ internal object SecretMemorySafetyProbeMain {
             "Expected IllegalArgumentException, got ${failure?.javaClass?.name ?: "no exception"}"
         }
         sqlite.freeSecret(pointer, SECRET_SIZE)
+    }
+
+    private fun probeInflatedStoreCapacity() {
+        val sqlite = externalSQLiteSingleton()
+        val pointer = sqlite.allocateSecret(1)
+        val failure = runCatching {
+            sqlite.storeSecret(pointer, SECRET_SIZE, ByteArray(SECRET_SIZE), SECRET_SIZE)
+        }.exceptionOrNull()
+        check(failure is IndexOutOfBoundsException) {
+            "Expected IndexOutOfBoundsException, got ${failure?.javaClass?.name ?: "no exception"}"
+        }
+        sqlite.storeSecret(pointer, 1, byteArrayOf(0x5a), 1)
+        sqlite.freeSecret(pointer, 1)
     }
 }
