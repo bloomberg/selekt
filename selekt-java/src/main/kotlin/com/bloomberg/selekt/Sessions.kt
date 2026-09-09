@@ -164,14 +164,43 @@ internal class SQLSession(
     fun executeForForwardCursor(
         sql: String,
         bindArgs: Array<out Any?>
+    ): ForwardCursor = acquireForwardCursor(sql) { onClose ->
+        executeForForwardCursor(sql, bindArgs, onClose)
+    }
+
+    fun executeForForwardCursor(
+        sql: String,
+        bindArgs: ParameterRow
+    ): ForwardCursor = acquireForwardCursor(sql) { onClose ->
+        executeForForwardCursor(sql, bindArgs, onClose)
+    }
+
+    private inline fun acquireForwardCursor(
+        sql: String,
+        signal: CancellationSignal? = null,
+        block: CloseableSQLExecutor.(() -> Unit) -> ForwardCursor
     ): ForwardCursor {
         val executor = retain(false, sql)
         return runCatching {
-            executor.executeForForwardCursor(sql, bindArgs) {
+            signal?.let {
+                executor.setProgressHandler(it.instructionCount) {
+                    if (it.isCancelled) { 1 } else { 0 }
+                }
+            }
+            executor.block {
+                if (signal != null) {
+                    runCatching { executor.setProgressHandler(0, null) }
+                }
                 release()
             }
         }.getOrElse {
+            if (signal != null) {
+                runCatching { executor.setProgressHandler(0, null) }
+            }
             release()
+            if (signal?.isCancelled == true && (it as? SelektSQLException)?.code == SQL_INTERRUPT) {
+                throw OperationCancelledException("Operation was cancelled.")
+            }
             throw it
         }
     }
@@ -202,24 +231,16 @@ internal class SQLSession(
         sql: String,
         bindArgs: Array<out Any?>,
         signal: CancellationSignal
-    ): ForwardCursor {
-        val executor = retain(false, sql)
-        return runCatching {
-            executor.setProgressHandler(signal.instructionCount) {
-                if (signal.isCancelled) { 1 } else { 0 }
-            }
-            executor.executeForForwardCursor(sql, bindArgs) {
-                runCatching { executor.setProgressHandler(0, null) }
-                release()
-            }
-        }.getOrElse {
-            runCatching { executor.setProgressHandler(0, null) }
-            release()
-            if (signal.isCancelled && (it as? SelektSQLException)?.code == SQL_INTERRUPT) {
-                throw OperationCancelledException("Operation was cancelled.")
-            }
-            throw it
-        }
+    ): ForwardCursor = acquireForwardCursor(sql, signal) { onClose ->
+        executeForForwardCursor(sql, bindArgs, onClose)
+    }
+
+    fun executeForForwardCursorWithSignal(
+        sql: String,
+        bindArgs: ParameterRow,
+        signal: CancellationSignal
+    ): ForwardCursor = acquireForwardCursor(sql, signal) { onClose ->
+        executeForForwardCursor(sql, bindArgs, onClose)
     }
 
     override fun endTransaction(): Unit = state.run {

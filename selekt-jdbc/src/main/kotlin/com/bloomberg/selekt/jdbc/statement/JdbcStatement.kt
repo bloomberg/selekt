@@ -20,6 +20,7 @@ import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.OperationCancelledException
+import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -197,6 +198,26 @@ open class JdbcStatement internal constructor(
         // A read-only manual transaction deliberately materialises its result. Keeping a streaming
         // SQLite statement open there would pin a WAL snapshot beyond this call and can block a
         // FULL checkpoint. Auto-commit read-only queries have no such transaction-lifetime contract.
+        val shouldStream = resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
+            (!connection.isReadOnly || connection.autoCommit)
+        if (shouldStream) {
+            database.queryForwardOnly(sql, args, signal)
+        } else if (maxRows > 0) {
+            database.queryUpTo(sql, args, maxRows, signal)
+        } else {
+            database.query(sql, args, signal)
+        }
+    }
+
+    protected fun queryWithSignal(
+        sql: String,
+        args: ParameterRow,
+        signal: CancellationSignal,
+        isReadOnly: Boolean
+    ): ICursor = connection.withSession {
+        if (connection.isReadOnly && !isReadOnly) {
+            connection.checkWritable()
+        }
         val shouldStream = resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
             (!connection.isReadOnly || connection.autoCommit)
         if (shouldStream) {
@@ -496,6 +517,20 @@ open class JdbcStatement internal constructor(
         signal: CancellationSignal
     ): ICursor {
         val cursor = queryWithSignal(sql, args, signal)
+        return if (maxRows > 0) {
+            RowLimitedCursor(cursor, maxRows)
+        } else {
+            cursor
+        }
+    }
+
+    protected fun queryWithMaxRows(
+        sql: String,
+        args: ParameterRow,
+        signal: CancellationSignal,
+        isReadOnly: Boolean
+    ): ICursor {
+        val cursor = queryWithSignal(sql, args, signal, isReadOnly)
         return if (maxRows > 0) {
             RowLimitedCursor(cursor, maxRows)
         } else {

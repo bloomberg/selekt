@@ -75,12 +75,15 @@ internal class JdbcPreparedStatementTest {
     private lateinit var preparedStatement: JdbcPreparedStatement
 
     @BeforeEach
+    @Suppress("Detekt.LongMethod")
     fun setUp() {
         database = mock<SQLDatabase> {
             whenever(it.prepare(any())) doAnswer { invocation ->
-                val parameterCount = invocation.getArgument<String>(0).count { character -> character == '?' }
+                val statementSql = invocation.getArgument<String>(0)
+                val parameterCount = statementSql.count { character -> character == '?' }
                 mock<ISQLRawStatement> {
                     whenever(it.parameterCount) doReturn parameterCount
+                    whenever(it.isReadOnly) doReturn statementSql.trimStart().startsWith("SELECT", ignoreCase = true)
                 }
             }
             whenever(it.queryForwardOnly(any<String>(), any<Array<Any?>>())) doAnswer { invocation ->
@@ -105,6 +108,42 @@ internal class JdbcPreparedStatementTest {
                     invocation.getArgument<Array<Any?>>(1)
                 )
             }
+            whenever(
+                it.queryForwardOnly(any<String>(), any<ParameterRow>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<ParameterRow>(1).materialized()
+                )
+            }
+            whenever(
+                it.query(any<String>(), any<ParameterRow>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<ParameterRow>(1).materialized()
+                )
+            }
+            whenever(
+                it.queryUpTo(any<String>(), any<ParameterRow>(), any<Int>(), any<CancellationSignal>())
+            ) doAnswer { invocation ->
+                it.query(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<ParameterRow>(1).materialized()
+                )
+            }
+            whenever(it.executePreparedUpdateDelete(any<String>(), any<ParameterRow>())) doAnswer { invocation ->
+                it.compileStatement(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<ParameterRow>(1).materialized()
+                ).use(ISQLStatement::executeUpdateDelete)
+            }
+            whenever(it.executePreparedInsert(any<String>(), any<ParameterRow>())) doAnswer { invocation ->
+                it.compileStatement(
+                    invocation.getArgument<String>(0),
+                    invocation.getArgument<ParameterRow>(1).materialized()
+                ).use(ISQLStatement::executeInsert)
+            }
         }
         cursor = mock<ICursor> {
             whenever(it.isForwardOnly) doReturn true
@@ -115,6 +154,14 @@ internal class JdbcPreparedStatementTest {
         val sql = "SELECT * FROM users WHERE id = ? AND name = ?"
         preparedStatement = JdbcPreparedStatement(connection, database, sql)
     }
+
+    private fun ParameterRow.materialized() = arrayOfNulls<Any>(size).also(::materializeTo)
+
+    private fun updateStatement() = JdbcPreparedStatement(
+        connection,
+        database,
+        "UPDATE users SET name = ? WHERE id = ?"
+    )
 
     @AfterEach
     fun tearDown() {
@@ -136,15 +183,11 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun readOnlyForwardOnlyQueryStreams() {
-        val compiledStatement = mock<ISQLStatement> {
-            whenever(it.isReadOnly) doReturn true
-        }
         connection.isReadOnly = true
-        whenever(database.compileStatement(eq(preparedStatement.sql), any<Array<Any?>>())) doReturn compiledStatement
         whenever(
             database.queryForwardOnly(
                 eq(preparedStatement.sql),
-                any<Array<Any?>>(),
+                any<ParameterRow>(),
                 any<CancellationSignal>()
             )
         ) doReturn cursor
@@ -156,7 +199,7 @@ internal class JdbcPreparedStatementTest {
 
         verify(database).queryForwardOnly(
             eq(preparedStatement.sql),
-            any<Array<Any?>>(),
+            any<ParameterRow>(),
             any<CancellationSignal>()
         )
         verify(database, never()).query(
@@ -279,10 +322,12 @@ internal class JdbcPreparedStatementTest {
         val mockStatement = mock<ISQLStatement>()
         whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn mockStatement
         whenever(mockStatement.executeUpdateDelete()) doReturn 2
-        assertEquals(2, preparedStatement.apply {
-            setInt(1, 42)
-            setString(2, "updated")
-        }.executeUpdate())
+        updateStatement().use { statement ->
+            assertEquals(2, statement.apply {
+                setString(1, "updated")
+                setInt(2, 42)
+            }.executeUpdate())
+        }
         verify(database).compileStatement(any<String>(), any<Array<Any?>>())
         verify(mockStatement).executeUpdateDelete()
         verify(mockStatement).close()
@@ -376,10 +421,10 @@ internal class JdbcPreparedStatementTest {
         whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn mockStatement
         whenever(mockStatement.executeUpdateDelete()) doThrow RuntimeException("Update failed")
         assertFailsWith<SQLException> {
-            preparedStatement.apply {
+            updateStatement().apply {
                 setInt(1, 42)
                 setString(2, "test")
-            }.executeUpdate()
+            }.use { it.executeUpdate() }
         }
         verify(mockStatement).close()
     }
@@ -621,14 +666,16 @@ internal class JdbcPreparedStatementTest {
             whenever(it.executeUpdateDelete()) doReturn 1
         }
         whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn mockStatement
-        val resultOne = preparedStatement.apply {
-            setInt(1, 1)
-            setString(2, "first")
+        val statement = updateStatement()
+        val resultOne = statement.apply {
+            setString(1, "first")
+            setInt(2, 1)
         }.executeUpdate()
-        val resultTwo = preparedStatement.apply {
-            setInt(1, 2)
-            setString(2, "second")
+        val resultTwo = statement.apply {
+            setString(1, "second")
+            setInt(2, 2)
         }.executeUpdate()
+        statement.close()
         assertEquals(1, resultOne)
         assertEquals(1, resultTwo)
         verify(database, times(2)).compileStatement(any<String>(), any<Array<Any?>>())
@@ -1390,19 +1437,18 @@ internal class JdbcPreparedStatementTest {
         .get(target) as T?
 
     @Test
-    fun clearParametersNullsOutMaterializedArgsScratchArray() {
+    fun clearParametersScrubsParameterRowWithoutMaterializedScratchArray() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         preparedStatement.setInt(1, 42)
         preparedStatement.setString(2, "sensitive-parameter-value")
         preparedStatement.executeQuery()
-        val before = assertNotNull(readField<Array<Any?>>(preparedStatement, "materializedArgs"))
-        assertTrue(
-            before.any { it != null },
-            "sanity: executeQuery should have materialized at least one non-null arg"
-        )
         preparedStatement.clearParameters()
-        readField<Array<Any?>>(preparedStatement, "materializedArgs")!!.forEach {
-            assertNull(it, "clearParameters must null out every slot of materializedArgs")
+        val row = assertNotNull(readField<ParameterRow>(preparedStatement, "parameterRow"))
+        assertTrue(row.tags.all { it == 0.toByte() })
+        assertTrue(row.ints.all { it == 0 })
+        assertTrue(row.objects.all { it == null })
+        assertFailsWith<NoSuchFieldException> {
+            preparedStatement.javaClass.getDeclaredField("materializedArgs")
         }
     }
 }

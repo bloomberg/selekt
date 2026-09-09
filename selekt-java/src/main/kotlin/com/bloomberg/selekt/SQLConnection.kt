@@ -128,11 +128,20 @@ internal class SQLConnection(
         sql: String,
         bindArgs: Array<out Any?>
     ) = withPreparedStatement(sql, bindArgs) {
-        if (SQL_DONE == step()) {
-            sqlite.changes(databaseHandle)
-        } else {
-            -1
-        }
+        changedRowCount()
+    }
+
+    override fun executeForChangedRowCount(
+        sql: String,
+        bindArgs: ParameterRow
+    ) = withPreparedStatement(sql, bindArgs) {
+        changedRowCount()
+    }
+
+    private fun SQLPreparedStatement.changedRowCount() = if (SQL_DONE == step()) {
+        sqlite.changes(databaseHandle)
+    } else {
+        -1
     }
 
     override fun executeBatchForChangedRowCount(
@@ -220,7 +229,25 @@ internal class SQLConnection(
         windowSize: Int,
         countAllRows: Boolean
     ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
-        if (sqlite.capabilities.useNativeCursorWindow) {
+        cursorWindowPage(startPosition, windowSize, countAllRows)
+    }
+
+    override fun executeForCursorWindow(
+        sql: String,
+        bindArgs: ParameterRow,
+        startPosition: Int,
+        windowSize: Int,
+        countAllRows: Boolean
+    ): PreparedCursorWindow = withPreparedStatement(sql, bindArgs) {
+        PreparedCursorWindow(columnNames, cursorWindowPage(startPosition, windowSize, countAllRows))
+    }
+
+    private fun SQLPreparedStatement.cursorWindowPage(
+        startPosition: Int,
+        windowSize: Int,
+        countAllRows: Boolean
+    ): CursorWindowPage {
+        return if (sqlite.capabilities.useNativeCursorWindow) {
             NativeCursorWindow(
                 fillCursorWindow(startPosition, windowSize, countAllRows),
                 sqlite,
@@ -269,25 +296,51 @@ internal class SQLConnection(
         val statement = acquirePreparedStatement(sql)
         return runCatching {
             statement.bindArguments(bindArgs)
-            ForwardCursor(statement) {
-                try {
-                    releasePreparedStatement(statement)
-                } finally {
-                    additionalOnClose?.invoke()
-                }
-            }
+            forwardCursor(statement, additionalOnClose)
         }.getOrElse {
             releasePreparedStatement(statement)
             throw it
         }
     }
 
-    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
-        if (SQL_DONE == step() && sqlite.changes(databaseHandle) > 0) {
-            sqlite.lastInsertRowId(databaseHandle)
-        } else {
-            -1L
+    override fun executeForForwardCursor(
+        sql: String,
+        bindArgs: ParameterRow,
+        additionalOnClose: (() -> Unit)?
+    ): ForwardCursor {
+        val statement = acquirePreparedStatement(sql)
+        return runCatching {
+            statement.bindRow(bindArgs)
+            forwardCursor(statement, additionalOnClose)
+        }.getOrElse {
+            releasePreparedStatement(statement)
+            throw it
         }
+    }
+
+    private fun forwardCursor(
+        statement: SQLPreparedStatement,
+        additionalOnClose: (() -> Unit)?
+    ) = ForwardCursor(statement) {
+        try {
+            releasePreparedStatement(statement)
+        } finally {
+            additionalOnClose?.invoke()
+        }
+    }
+
+    override fun executeForLastInsertedRowId(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
+        lastInsertedRowId()
+    }
+
+    override fun executeForLastInsertedRowId(sql: String, bindArgs: ParameterRow) = withPreparedStatement(sql, bindArgs) {
+        lastInsertedRowId()
+    }
+
+    private fun SQLPreparedStatement.lastInsertedRowId() = if (SQL_DONE == step() && sqlite.changes(databaseHandle) > 0) {
+        sqlite.lastInsertRowId(databaseHandle)
+    } else {
+        -1L
     }
 
     override fun executeForInt(sql: String, bindArgs: Array<out Any?>) = withPreparedStatement(sql, bindArgs) {
@@ -382,6 +435,17 @@ internal class SQLConnection(
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
             bindArguments(bindArgs)
+            block()
+        }
+    }
+
+    private inline fun <R> withPreparedStatement(
+        sql: String,
+        bindArgs: ParameterRow,
+        crossinline block: SQLPreparedStatement.() -> R
+    ) = withPreparedStatement(sql) {
+        sqlite.withScopedArena {
+            bindRow(bindArgs)
             block()
         }
     }

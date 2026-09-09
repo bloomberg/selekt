@@ -18,7 +18,6 @@ package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ChunkedParameterRows
-import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
@@ -117,15 +116,16 @@ internal open class JdbcPreparedStatement(
     resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
-    private val parameterCount = try {
+    private val preparation = try {
         connection.withSession {
-            database.prepare(sql).use { it.parameterCount }
+            database.prepare(sql).use { it.parameterCount to it.isReadOnly }
         }
     } catch (e: Exception) {
         throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
     }
+    private val parameterCount = preparation.first
+    private val readOnly = preparation.second
     private val parameterRow = ParameterRow(parameterCount)
-    private val materializedArgs = arrayOfNulls<Any>(parameterCount)
     private val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     private var totalBatchCount = 0
     private var successArray: IntArray? = null
@@ -141,7 +141,6 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         return runCatching {
             closeCurrentResultSet()
-            parameterRow.materializeTo(materializedArgs)
             val signal = activateCancellationSignal()
             runCatching {
                 executeRead(signal)
@@ -162,13 +161,9 @@ internal open class JdbcPreparedStatement(
         connection.checkWritable()
         return try {
             closeCurrentResultSet()
-            parameterRow.materializeTo(materializedArgs)
             val signal = activateCancellationSignal()
             try {
-                withCancellation(signal, primary = true) {
-                    connection.ensureTransaction()
-                    compileStatement(sql, materializedArgs).use(::executeUpdate)
-                }
+                executeWrite(signal)
             } catch (e: OperationCancelledException) {
                 throw SQLExceptionMapper.mapCancellation(e)
             } finally {
@@ -194,7 +189,6 @@ internal open class JdbcPreparedStatement(
 
     private fun executeInternal(): Boolean {
         closeCurrentResultSet()
-        parameterRow.materializeTo(materializedArgs)
         val signal = activateCancellationSignal()
         var signalHandedOff = false
         try {
@@ -209,22 +203,17 @@ internal open class JdbcPreparedStatement(
     }
 
     private fun executeWithSignal(signal: CancellationSignal): Boolean {
-        val statement = connection.withSession {
-            database.compileStatement(sql, materializedArgs)
-        }
-        if (statement.isReadOnly) {
-            statement.close()
+        if (readOnly) {
             executeRead(signal)
             return true
         }
-        statement.use {
-            executeWrite(it, signal)
-        }
+        connection.checkWritable()
+        executeWrite(signal)
         return false
     }
 
     private fun executeRead(signal: CancellationSignal): ResultSet {
-        val cursor = queryWithMaxRows(sql, materializedArgs, signal)
+        val cursor = queryWithMaxRows(sql, parameterRow, signal, readOnly)
         return trackResultSet(
             JdbcResultSet(
                 cursor,
@@ -236,25 +225,22 @@ internal open class JdbcPreparedStatement(
         )
     }
 
-    private fun executeWrite(statement: ISQLStatement, signal: CancellationSignal) {
-        connection.checkWritable()
-        try {
+    private fun executeWrite(signal: CancellationSignal): Int {
+        return try {
             withCancellation(signal, primary = true) {
                 connection.ensureTransaction()
-                executeUpdate(statement)
+                executeBoundUpdate()
             }
         } catch (e: OperationCancelledException) {
             throw SQLExceptionMapper.mapCancellation(e)
         }
     }
 
-    private fun executeUpdate(
-        statement: ISQLStatement
-    ): Int = if (!statement.isReadOnly && isInsertSql(sql)) {
-        lastGeneratedKey = statement.executeInsert()
+    private fun executeBoundUpdate(): Int = if (isInsertSql(sql)) {
+        lastGeneratedKey = database.executePreparedInsert(sql, parameterRow)
         1
     } else {
-        statement.executeUpdateDelete().also { _ ->
+        database.executePreparedUpdateDelete(sql, parameterRow).also { _ ->
             lastGeneratedKey = -1L
         }
     }
@@ -283,7 +269,6 @@ internal open class JdbcPreparedStatement(
     override fun clearParameters() {
         checkClosed()
         parameterRow.clear()
-        materializedArgs.fill(null)
     }
 
     override fun addBatch() {
@@ -609,7 +594,8 @@ internal open class JdbcPreparedStatement(
     }
 
     override fun getParameterMetaData(): ParameterMetaData {
-        parameterRow.materializeTo(materializedArgs)
-        return JdbcParameterMetaData(parameterCount, materializedArgs)
+        val parameters = arrayOfNulls<Any>(parameterCount)
+        parameterRow.materializeTo(parameters)
+        return JdbcParameterMetaData(parameterCount, parameters)
     }
 }

@@ -38,6 +38,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.mockito.kotlin.never
+import org.mockito.kotlin.same
 
 private val databaseConfiguration = DatabaseConfiguration(
     evictionDelayMillis = 5_000L,
@@ -418,6 +419,29 @@ internal class SQLConnectionTest {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             assertEquals(-1, it.executeForChangedRowCount("INSERT INTO Foo VALUES (42)"))
         }
+    }
+
+    @Test
+    fun preparedScalarExecutionBindsParameterRowDirectly(): Unit = sqlite.run {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        whenever(bindParameterCount(any<Long>())) doReturn 3
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        whenever(changes(any<Long>())) doReturn 1
+        whenever(lastInsertRowId(any<Long>())) doReturn 7L
+        val row = ParameterRow(3).apply {
+            setInt(0, 42)
+            setLong(1, 43L)
+            setObject(2, "value")
+        }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            assertEquals(1, connection.executeForChangedRowCount("UPDATE Foo SET value=? WHERE id=? OR id=?", row))
+            assertEquals(7L, connection.executeForLastInsertedRowId("INSERT INTO Foo VALUES (?, ?, ?)", row))
+            connection.executeForForwardCursor("SELECT ?, ?, ?", row).close()
+        }
+        verify(this, times(3)).bindRow(eq(StatementHandle(43L)), same(row))
     }
 
     @Test
