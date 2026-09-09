@@ -35,6 +35,9 @@ private const val VEC1_META_REAL = 8
 private const val VEC1_META_TYPE_MASK = 15
 private const val VEC1_META_COLUMN_BITS = 8
 private const val VEC1_PQ_CODEBOOK_SIZE = 256
+private const val VEC1_PQ_BLOCK_SIZE = 16
+private const val VEC1_LIST_HEADER_SIZE = 12
+private const val VEC1_LIST_64_BIT = 1
 private const val VEC1_MAX_CODESIZE = 128
 private const val SIZEOF_F32 = 4
 
@@ -98,6 +101,9 @@ internal class Vec1InputsTest {
     fun `vec1 compares non-finite filters without integer conversion`() =
         runProbe("non-finite-meta-filters")
 
+    @Test
+    fun `vec1 zeroes unused slots in partial PQ blocks`() = runProbe("pq-block-padding")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -154,6 +160,7 @@ internal object Vec1SecurityProbeMain {
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
                 "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
+                "pq-block-padding" -> probePqBlockPadding(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -650,6 +657,55 @@ internal object Vec1SecurityProbeMain {
         }
     }
 
+    private fun probePqBlockPadding(sqlite: IExternalSQLite, db: Long) {
+        val nCodebook = 8
+        listOf(1, 15, 16, 17).forEach { nEntry ->
+            val table = "pq_padding_$nEntry"
+            check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                codebookModel(nCodebook)
+            )
+            check(
+                sqlite.exec(
+                    db,
+                    "WITH RECURSIVE c(x) AS (" +
+                        "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<$nEntry" +
+                        ") INSERT INTO $table(rowid, vector) " +
+                        "SELECT x, vec1_from_json('[0,0]') FROM c"
+                ) == SQL_OK
+            )
+            val blob = readSingleIndexBlob(sqlite, db, table)
+            assertPqPaddingIsZero(blob, nEntry, nCodebook)
+            if (nEntry == 1) {
+                poisonPqPadding(blob, nEntry, nCodebook)
+                executeBlob(sqlite, db, "UPDATE ${table}_idx SET val=?", blob)
+                check(
+                    sqlite.exec(
+                        db,
+                        "INSERT INTO $table(rowid, vector) " +
+                            "VALUES(2, vec1_from_json('[0,0]'))"
+                    ) == SQL_OK
+                )
+                assertPqPaddingIsZero(readSingleIndexBlob(sqlite, db, table), 2, nCodebook)
+            }
+        }
+    }
+
+    private fun readSingleIndexBlob(sqlite: IExternalSQLite, db: Long, table: String): ByteArray {
+        val statement = prepare(sqlite, db, "SELECT val FROM ${table}_idx")
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            val blob = checkNotNull(sqlite.columnBlob(statement, 0))
+            check(sqlite.step(statement) == SQL_DONE)
+            return blob
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
     private fun expectMetadataCount(
         sqlite: IExternalSQLite,
         db: Long,
@@ -693,6 +749,39 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.finalize(statement)
         }
+    }
+
+    private fun assertPqPaddingIsZero(blob: ByteArray, nEntry: Int, nCodebook: Int) {
+        val dataOffset = pqDataOffset(blob, nEntry)
+        val nBlock = (nEntry + VEC1_PQ_BLOCK_SIZE - 1) / VEC1_PQ_BLOCK_SIZE
+        check(blob.size == dataOffset + nBlock * VEC1_PQ_BLOCK_SIZE * nCodebook)
+        val nUsed = nEntry % VEC1_PQ_BLOCK_SIZE
+        if (nUsed == 0) return
+        val blockOffset = dataOffset + (nBlock - 1) * VEC1_PQ_BLOCK_SIZE * nCodebook
+        repeat(nCodebook) { iCodebook ->
+            for (iSlot in nUsed until VEC1_PQ_BLOCK_SIZE) {
+                val offset = blockOffset + iCodebook * VEC1_PQ_BLOCK_SIZE + iSlot
+                check(blob[offset] == 0.toByte()) { "Non-zero PQ padding at offset $offset" }
+            }
+        }
+    }
+
+    private fun poisonPqPadding(blob: ByteArray, nEntry: Int, nCodebook: Int) {
+        val dataOffset = pqDataOffset(blob, nEntry)
+        val nUsed = nEntry % VEC1_PQ_BLOCK_SIZE
+        repeat(nCodebook) { iCodebook ->
+            for (iSlot in nUsed until VEC1_PQ_BLOCK_SIZE) {
+                blob[dataOffset + iCodebook * VEC1_PQ_BLOCK_SIZE + iSlot] = 0x5A
+            }
+        }
+    }
+
+    private fun pqDataOffset(blob: ByteArray, nEntry: Int): Int {
+        val header = ByteBuffer.wrap(blob).order(ByteOrder.BIG_ENDIAN)
+        val flags = header.getInt(0)
+        check(header.getInt(4) == nEntry)
+        val rowidSize = if (flags and VEC1_LIST_64_BIT != 0) Long.SIZE_BYTES else Int.SIZE_BYTES
+        return VEC1_LIST_HEADER_SIZE + nEntry * rowidSize
     }
 
     private fun createQuantizedTableWithCorruptBase(sqlite: IExternalSQLite, db: Long) {
