@@ -435,6 +435,17 @@ static void vec1NormalizeVector(float *aElem, int nElem){
   }
 }
 
+/*
+** Return true if all nElem values in aElem[] are finite.
+*/
+static int vec1FloatArrayIsFinite(const float *aElem, int nElem){
+  int ii;
+  for(ii=0; ii<nElem; ii++){
+    if( !isfinite(aElem[ii]) ) return 0;
+  }
+  return 1;
+}
+
 #define VEC1_INITIAL_STREAMING_ALLOC ((128*1024)/16)
 
 /*
@@ -759,14 +770,18 @@ static void vec1FromJsonFunc(
   while( 1 ){
     char *p2 = 0;
     double rVal = 0.0;
+    float fVal;
 
     while( vec1_isspace(*p) ) p++;
     rVal = strtod(p, &p2);
     if( p==p2 ) goto parse_failed;
 
+    fVal = (float)rVal;
+    if( !isfinite(rVal) || !isfinite(fVal) ) goto non_finite;
+
     p = p2;
     if( nVec>=(nJson/2) ) goto parse_failed;
-    aVec[nVec] = (float)rVal;
+    aVec[nVec] = fVal;
     nVec++;
 
     while( vec1_isspace(*p) ) p++;
@@ -787,6 +802,11 @@ static void vec1FromJsonFunc(
  parse_failed:
   sqlite3_free(aVec);
   sqlite3_result_error(pCtx, "error parsing json vector", -1);
+  return;
+
+ non_finite:
+  sqlite3_free(aVec);
+  sqlite3_result_error(pCtx, "vec1: vector elements must be finite", -1);
 }
 
 /*
@@ -814,6 +834,16 @@ static void vec1ToJsonGeneric(
     return;
   }
   n = n / nBytePerElem;
+  if( a==0 ){
+    sqlite3_result_error_nomem(pCtx);
+    return;
+  }
+  if( eType==VEC1_TYPE_FLOAT32
+   && !vec1FloatArrayIsFinite((const float*)a, n)
+  ){
+    sqlite3_result_error(pCtx, "vec1: vector elements must be finite", -1);
+    return;
+  }
 
   pStr = sqlite3_str_new(db);
   if( eType==VEC1_TYPE_FLOAT32 ){
@@ -1149,6 +1179,16 @@ static void vec1DistanceFuncL2(
     sqlite3_result_error(pCtx, "vec1_l2_distance: bad arguments", -1);
     return;
   }
+  if( n1>0 && (a1==0 || a2==0) ){
+    sqlite3_result_error_nomem(pCtx);
+    return;
+  }
+  if( !vec1FloatArrayIsFinite(a1, n1/sizeof_f32)
+   || !vec1FloatArrayIsFinite(a2, n2/sizeof_f32)
+  ){
+    sqlite3_result_error(pCtx, "vec1: vector elements must be finite", -1);
+    return;
+  }
 
   sqlite3_result_double(pCtx, vec1L2Dist(a1, a2, n1 / sizeof_f32));
 }
@@ -1176,6 +1216,16 @@ static void vec1DistanceFuncCos(
 
   if( n1!=n2 || (n1 % sizeof_f32)!=0 ){
     sqlite3_result_error(pCtx, "vec1_cos_distance: bad arguments", -1);
+    return;
+  }
+  if( n1>0 && (a1==0 || a2==0) ){
+    sqlite3_result_error_nomem(pCtx);
+    return;
+  }
+  if( !vec1FloatArrayIsFinite(a1, n1/sizeof_f32)
+   || !vec1FloatArrayIsFinite(a2, n2/sizeof_f32)
+  ){
+    sqlite3_result_error(pCtx, "vec1: vector elements must be finite", -1);
     return;
   }
 
@@ -1977,7 +2027,7 @@ static int vec1PqBestMatch(
 
   for(ii=0; ii<nCode; ii++){
     double fDist = vec1L2Dist(aSub, &aCodebook[ii*nCodeElem], nCodeElem);
-    if( fDist<fBestDist ){
+    if( iBest<0 || fDist<fBestDist ){
       iBest = ii;
       fBestDist = fDist;
     }
@@ -2046,7 +2096,7 @@ static void vec1PqBestMatchN(
       if( kk<nCodeElem ){
         fDist += vec1L2Dist(&(aaSub[jj])[kk], &aEntry[kk], nCodeElem-kk);
       }
-      if( fDist<afBestDist[jj] ){
+      if( aiBest[jj]<0 || fDist<afBestDist[jj] ){
         afBestDist[jj] = fDist;
         aiBest[jj] = ii;
       }
@@ -2060,7 +2110,7 @@ static void vec1PqBestMatchN(
     for(jj=0; jj<N; jj++){
       const float *aSub = aaSub[jj];
       float fDist = vec1L2Dist(aSub, aEntry, nCodeElem);
-      if( fDist<afBestDist[jj] ){
+      if( aiBest[jj]<0 || fDist<afBestDist[jj] ){
         afBestDist[jj] = fDist;
         aiBest[jj] = ii;
       }
@@ -2742,6 +2792,7 @@ static void vec1TrainStep(
   assert( nArg==1 || nArg==2 );
   int n = 0;
   int iChunk = 0;
+  const float *aVector = 0;
 
   p = (Vec1TrainCtx*)sqlite3_aggregate_context(pCtx, sizeof(*p));
   if( !p ) return;
@@ -2753,6 +2804,15 @@ static void vec1TrainStep(
    || (p->tv.nElem!=0 && p->tv.nElem!=(int)(n/sizeof_f32))
   ){
     sqlite3_result_error(pCtx, "vec1_train: bad argument", -1);
+    return;
+  }
+  aVector = (const float*)sqlite3_value_blob(aArg[0]);
+  if( aVector==0 ){
+    sqlite3_result_error_nomem(pCtx);
+    return;
+  }
+  if( !vec1FloatArrayIsFinite(aVector, n/sizeof_f32) ){
+    sqlite3_result_error(pCtx, "vec1: vector elements must be finite", -1);
     return;
   }
 
@@ -2820,7 +2880,7 @@ static void vec1TrainStep(
   }
 
   /* Append a copy of the vector to Vec1TrainCtx.aVec[]. */
-  memcpy(vec1TrainingVector(&p->tv, p->tv.nVec), sqlite3_value_blob(aArg[0]),n);
+  memcpy(vec1TrainingVector(&p->tv, p->tv.nVec), aVector, n);
   p->tv.nVec++;
 }
 
@@ -4099,6 +4159,25 @@ static int vec1CheckModelSectionSize(
   return SQLITE_OK;
 }
 
+/*
+** Reject a model section containing NaN or infinity.
+*/
+static int vec1CheckModelSectionFinite(
+  const float *aValue,
+  sqlite3_int64 nSize,
+  const char *zSection,
+  char **pzErr
+){
+  int nValue = (int)(nSize/sizeof_f32);
+  if( !vec1FloatArrayIsFinite(aValue, nValue) ){
+    *pzErr = sqlite3_mprintf(
+        "vec1: non-finite value in model %s section", zSection
+    );
+    return SQLITE_CORRUPT_VTAB;
+  }
+  return SQLITE_OK;
+}
+
 static int vec1DecodeModel(
   const u8 *aBlob,
   int nByte,
@@ -4151,6 +4230,8 @@ static int vec1DecodeModel(
     nSize = (sqlite3_int64)nCodebook * pMod->nCodeElem * VEC1_PQ_CODEBOOK_SZ * sizeof_f32;
     rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "codebook", pzErr);
     if( rc!=SQLITE_OK ) return rc;
+    rc = vec1CheckModelSectionFinite(pMod->aModel, nSize, "codebook", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
     pCsr += nSize;
   }
   if( pMod->hdr.nBucket>0 ){
@@ -4160,6 +4241,8 @@ static int vec1DecodeModel(
     nSize = (sqlite3_int64)pMod->hdr.nElem * pMod->hdr.nBucket * sizeof_f32;
     rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "centroid", pzErr);
     if( rc!=SQLITE_OK ) return rc;
+    rc = vec1CheckModelSectionFinite(pMod->aCentroid, nSize, "centroid", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
     pCsr += nSize;
   }
   if( (pMod->hdr.flags & VEC1_MODEL_ROTATE) ){
@@ -4168,6 +4251,8 @@ static int vec1DecodeModel(
     pMod->aRotation = (float*)pCsr;
     nSize = (sqlite3_int64)pMod->hdr.nElem * pMod->hdr.nElem * sizeof_f32;
     rc = vec1CheckModelSectionSize(&iOffset, nSize, nByte, "rotation", pzErr);
+    if( rc!=SQLITE_OK ) return rc;
+    rc = vec1CheckModelSectionFinite(pMod->aRotation, nSize, "rotation", pzErr);
     if( rc!=SQLITE_OK ) return rc;
   }
 
@@ -6667,6 +6752,7 @@ static int vec1EncodeVector(
 
   for(M=0; M<nCodebook; M++){
     float fBestDist = INFINITY;
+    aCode[M] = 0;
     for(K=0; K<VEC1_PQ_CODEBOOK_SZ; K+=VEC1_SIMD_WIDTH){
       int ii;
       float aAcc[VEC1_SIMD_WIDTH];
@@ -6867,6 +6953,11 @@ static int vec1DoKANNBucket(
           if( iRowid==VEC1_TOMBSTONE_64 ) continue;
         }
 
+        if( !vec1FloatArrayIsFinite(aFull, nElem) ){
+          rc = VEC1_CORRUPT;
+          break;
+        }
+
         if( pTab->mod.hdr.eDistance==VEC1_DISTANCE_COS ){
           fDist = vec1CosDist(pQuery->aVector, aFull, nElem);
         }else{
@@ -6914,7 +7005,14 @@ static int vec1DoKANNQuery(Vec1Csr *pCsr){
   assert( vec1TransformRequired(&pTab->mod)==(pQuery->aTransform!=aVector) );
   vec1TransformInputVector(&pTab->mod, pQuery->aTransform, aVector);
 
-  rc = vec1HeapInit(pHeap, pQuery->K, pQuery->bStreaming);
+  if( !vec1FloatArrayIsFinite(pQuery->aTransform, pTab->mod.hdr.nElem) ){
+    vec1VtabError(pTab, "vec1: vector transformation produced non-finite values");
+    rc = SQLITE_ERROR;
+  }
+
+  if( rc==SQLITE_OK ){
+    rc = vec1HeapInit(pHeap, pQuery->K, pQuery->bStreaming);
+  }
 
   VEC1_QINSTR_STOP(pTab, VEC1_QINSTR_INITQUERY);
 
@@ -7172,6 +7270,11 @@ static int vec1VectorSizeError(Vec1Tab *pTab, int nHave){
   return SQLITE_ERROR;
 }
 
+static int vec1VectorValueError(Vec1Tab *pTab){
+  vec1VtabError(pTab, "vec1: vector elements must be finite");
+  return SQLITE_ERROR;
+}
+
 static int vec1FilterArraySize(
   const char *idxStr,
   sqlite3_value **argv,
@@ -7294,8 +7397,14 @@ static int vec1SetupKANNQuery(
   if( nVec!=(pTab->cfg.nElem*sizeof_f32) ){
     rc = vec1VectorSizeError(pTab, nVec);
   }else{
-    const u8 *aBlob = sqlite3_value_blob(argv[0]);
-    memcpy(p->aVector, aBlob, pTab->cfg.nElem * sizeof_f32);
+    const float *aBlob = sqlite3_value_blob(argv[0]);
+    if( aBlob==0 ){
+      rc = SQLITE_NOMEM;
+    }else if( !vec1FloatArrayIsFinite(aBlob, pTab->cfg.nElem) ){
+      rc = vec1VectorValueError(pTab);
+    }else{
+      memcpy(p->aVector, aBlob, pTab->cfg.nElem * sizeof_f32);
+    }
   }
 
   /* Check if parameters where supplied via hidden column "arg". If so,
@@ -7646,6 +7755,9 @@ static int vec1FindByRowid(
   /* Check to see if the index entry for this vector is currently 
   ** in main memory. */
   if( pTab->pWriter ){
+    if( iBucket<0 || iBucket>=pTab->pWriter->nBld ){
+      return SQLITE_CORRUPT_VTAB;
+    }
     Vec1ListBuilder *pBld = &pTab->pWriter->aBld[iBucket];
     int ii;
     for(ii=0; ii<pBld->bufRowid.n; ii+=pBld->szRowid){
@@ -7830,15 +7942,25 @@ static void vec1DistanceStats(sqlite3_context *ctx, Vec1Csr *pCsr){
         rc = VEC1_CORRUPT;
       }else if( aVec==0 ){
         rc = SQLITE_NOMEM;
+      }else if( !vec1FloatArrayIsFinite(aVec, nElem) ){
+        rc = VEC1_CORRUPT;
       }else{
         aTransform = vec1TransformInputVector(pMod, pTab->aTmpVec, aVec);
+        if( !vec1FloatArrayIsFinite(aTransform, nElem) ){
+          rc = VEC1_CORRUPT;
+        }
         fNorm = vec1VectorNorm2(aTransform, nElem);
   
         /* Find bucket and coarse error if applicable. */
-        if( pMod->hdr.nBucket>1 ){
+        if( rc==SQLITE_OK && pMod->hdr.nBucket>1 ){
           iBucket = vec1PqBestMatch(
               pMod->aCentroid, pMod->hdr.nBucket, aVec, nElem, &fCoarseError
           );
+          if( iBucket<0 || iBucket>=(int)pMod->hdr.nBucket ){
+            rc = VEC1_CORRUPT;
+          }
+        }
+        if( rc==SQLITE_OK && pMod->hdr.nBucket>1 ){
           if( aTransform!=pTab->aTmpVec ){
             memcpy(pTab->aTmpVec, aTransform, nElem*sizeof_f32);
             aTransform = pTab->aTmpVec;
@@ -7847,7 +7969,7 @@ static void vec1DistanceStats(sqlite3_context *ctx, Vec1Csr *pCsr){
         }
   
         /* Find reconstruction error if applicable. */
-        if( pMod->hdr.nCodebook>0 ){
+        if( rc==SQLITE_OK && pMod->hdr.nCodebook>0 ){
           u8 aPQ[VEC1_MAX_CODESIZE];
           rc = vec1PqEncodeVector(
               pMod, aTransform, aPQ, sizeof(aPQ), &fReconError
@@ -8683,12 +8805,17 @@ static int vec1QuantizeVector(
   int iBucket = 0;
 
   aVec = vec1TransformInputVector(pMod, aTmp, aVector);
+  if( !vec1FloatArrayIsFinite(aVec, pMod->hdr.nElem) ){
+    return SQLITE_ERROR;
+  }
   if( nBucket>1 ){
     int nElem = pMod->hdr.nElem;
     iBucket = vec1PqBestMatch(pMod->aCentroid, nBucket, aVec, nElem, 0);
+    if( iBucket<0 || iBucket>=nBucket ) return SQLITE_ERROR;
     if( pMod->hdr.nCodebook>0 && (pMod->hdr.flags & VEC1_MODEL_RESIDUAL) ){
       vec1Sub(aTmp, aVec, &pMod->aCentroid[iBucket*nElem], nElem);
       aVec = aTmp;
+      if( !vec1FloatArrayIsFinite(aVec, nElem) ) return SQLITE_ERROR;
     }
   }
 
@@ -8719,6 +8846,13 @@ static int vec1WriterVector(
     rc = vec1QuantizeVector(
         pMod, p->aResidual, aVector, &iBld, p->aPQ, sizeof(p->aPQ)
     );
+  }
+  if( rc==SQLITE_OK && (iBld<0 || iBld>=p->nBld) ){
+    rc = SQLITE_CORRUPT_VTAB;
+  }
+  if( rc!=SQLITE_OK ){
+    vec1VtabError(pTab, "vec1: unable to select a vector bucket");
+    return rc;
   }
 
   if( rc==SQLITE_OK && pMod->hdr.nCodebook>0 ){
@@ -8963,6 +9097,10 @@ static int vec1WriterMetaFromArray(
   int iBucket,                    /* Bucket to write to */
   sqlite3_value **apMeta          /* Meta values associated with prev vector */
 ){
+  if( iBucket<0 || iBucket>=pWriter->nBld ){
+    vec1VtabError(pWriter->pTab, "vec1: invalid vector bucket: %d", iBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
   Vec1ListBuilder *p = &pWriter->aBld[iBucket];
   int ii;
   int rc = SQLITE_OK;
@@ -9047,6 +9185,10 @@ static int vec1WriterMetaFromStmt(
   int iBucket,                    /* Bucket to write to */
   sqlite3_stmt *pStmt
 ){
+  if( iBucket<0 || iBucket>=pWriter->nBld ){
+    vec1VtabError(pWriter->pTab, "vec1: invalid vector bucket: %d", iBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
   Vec1ListBuilder *p = &pWriter->aBld[iBucket];
   int ii;
   int rc = SQLITE_OK;
@@ -9075,6 +9217,10 @@ static int vec1WriterMetaFromPacked(
 ){
   int ii;
   int iOff = *piOff;
+  if( iBucket<0 || iBucket>=pWriter->nBld ){
+    vec1VtabError(pWriter->pTab, "vec1: invalid vector bucket: %d", iBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
   for(ii=0; ii<pWriter->pTab->nMeta; ii++){
     Vec1MetaBuilder *pTo = &pWriter->aBld[iBucket].aMeta[ii];
     int n = vec1MetaValueSize(&pBuf->a[iOff]);
@@ -9108,6 +9254,10 @@ static int vec1WriterQuantized(
   int iBucket,
   const u8 *aStore
 ){
+  if( iBucket<0 || iBucket>=pWriter->nBld ){
+    vec1VtabError(pWriter->pTab, "vec1: invalid vector bucket: %d", iBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
   return vec1ListBuilderAdd(&pWriter->aBld[iBucket], iRowid, aStore);
 }
 
@@ -9189,6 +9339,9 @@ static int vec1QuantizeJobFinish(void *pCtx, int rcin){
 
   assert( bBucketBase==0 || p->pModel->hdr.nCodebook==0 );
   if( rc==SQLITE_OK ) rc = p->rc;
+  if( rc!=SQLITE_OK ){
+    vec1VtabError(p->pWriter->pTab, "vec1: unable to select a vector bucket");
+  }
 
   for(ii=0; rc==SQLITE_OK && ii<p->nVector; ii++){
     int iBucket = p->aBucket[ii];
@@ -9299,6 +9452,13 @@ static int vec1RebuildIndex(Vec1Tab *pTab, int nThread){
       rc = SQLITE_ERROR;
       vec1VtabError(
         pTab, "vec1: unexpected vector size in %q_base: %d", pTab->zName, nVec
+      );
+    }else if( aVec==0 ){
+      rc = SQLITE_NOMEM;
+    }else if( !vec1FloatArrayIsFinite(aVec, nElem) ){
+      rc = SQLITE_CORRUPT_VTAB;
+      vec1VtabError(
+          pTab, "vec1: non-finite vector in %q_base", pTab->zName
       );
     }else{
       if( bZeroBase ){
@@ -9676,14 +9836,25 @@ static int vec1DeleteByRowid(Vec1Tab *pTab, i64 iRowid){
           rc = VEC1_CORRUPT;
         }else if( aVec==0 ){
           rc = SQLITE_NOMEM;
+        }else if( !vec1FloatArrayIsFinite(
+                      (const float*)aVec, pTab->cfg.nElem
+        ) ){
+          rc = VEC1_CORRUPT;
         }else{
           aTransform = vec1TransformInputVector(
               &pTab->mod, pTab->aTmpVec, (const float*)aVec
           );
-          iBucket = vec1PqBestMatch(
-              pTab->mod.aCentroid, pTab->mod.hdr.nBucket, 
-              aTransform, pTab->cfg.nElem, 0
-          );
+          if( !vec1FloatArrayIsFinite(aTransform, pTab->cfg.nElem) ){
+            rc = VEC1_CORRUPT;
+          }else{
+            iBucket = vec1PqBestMatch(
+                pTab->mod.aCentroid, pTab->mod.hdr.nBucket,
+                aTransform, pTab->cfg.nElem, 0
+            );
+            if( iBucket<0 || iBucket>=(int)pTab->mod.hdr.nBucket ){
+              rc = VEC1_CORRUPT;
+            }
+          }
         }
       }
     }
@@ -9817,6 +9988,13 @@ static int vec1UpdateMethod(
     }else if( nVec!=pTab->cfg.nElem*sizeof_f32 ){
       rc = vec1VectorSizeError(pTab, nVec);
     }
+    if( rc==SQLITE_OK && aVec==0 ){
+      rc = SQLITE_NOMEM;
+    }else if( rc==SQLITE_OK
+           && !vec1FloatArrayIsFinite(aVec, nVec/sizeof_f32)
+    ){
+      rc = vec1VectorValueError(pTab);
+    }
 
     /* If there is an index (i.e. not index:"none"), then allocate an
     ** index writer. */
@@ -9841,6 +10019,9 @@ static int vec1UpdateMethod(
             &pTab->mod, p->aResidual, aVec, &iBucket,
             p->aPQ, sizeof(p->aPQ)
         );
+        if( rc!=SQLITE_OK ){
+          vec1VtabError(pTab, "vec1: unable to select a vector bucket");
+        }
       }
 
       if( rc==SQLITE_OK ) *pRowid = 0;
@@ -10194,11 +10375,24 @@ static int vec1IntegrityMethod(
             }else if( aBaseVec==0 ){
               rc = SQLITE_NOMEM;
               goto integrity_failed;
+            }else if( !vec1FloatArrayIsFinite(
+                          (const float*)aBaseVec, nElem
+            ) ){
+              const char *zFmt =
+                  "%s: vector in %%_base row %lld contains non-finite values";
+              zErr = sqlite3_mprintf(zFmt, zTabName, iRowid);
+              goto integrity_failed;
             }
 
             aTransform = vec1TransformInputVector(
                 &pTab->mod, pTab->aTmpVec, (const float*)aBaseVec
             );
+            if( !vec1FloatArrayIsFinite(aTransform, nElem) ){
+              const char *zFmt =
+                  "%s: transformed vector from row %lld is non-finite";
+              zErr = sqlite3_mprintf(zFmt, zTabName, iRowid);
+              goto integrity_failed;
+            }
 
             /* Check the vector is in the right bucket. */
             if( pMod->hdr.nBucket>0 ){
