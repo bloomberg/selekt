@@ -73,6 +73,7 @@ dependencies {
     jmhImplementation(libs.xerial.sqlite.jdbc)
     implementation(libs.slf4j.api)
     testImplementation(platform(libs.exposed.bom))
+    testImplementation(libs.archunit)
     testImplementation(libs.exposed.core)
     testImplementation(libs.exposed.jdbc)
     testImplementation(libs.jazzer.junit)
