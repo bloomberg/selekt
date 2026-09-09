@@ -4067,7 +4067,8 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
 
   /* Write the model header into the output buffer. */
   flags = VEC1_MODEL_INDEX 
-        | ((p->nBucket>1 && p->bResidual) ? VEC1_MODEL_RESIDUAL : 0)
+        | ((p->nCodebook>0 && p->nBucket>1 && p->bResidual)
+            ? VEC1_MODEL_RESIDUAL : 0)
         | (p->bOpq ? VEC1_MODEL_ROTATE : 0);
   vec1HeaderWrite(aByte, flags, 
       p->tv.nElem, p->nCodebook, p->nBucket, p->eDistance
@@ -4218,6 +4219,14 @@ static int vec1DecodeModel(
   }
   if( pMod->hdr.nBucket>1000000 ){
     *pzErr = sqlite3_mprintf("vec1: invalid nBucket value: %u", pMod->hdr.nBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
+  if( (pMod->hdr.flags & VEC1_MODEL_RESIDUAL)
+   && (pMod->hdr.nCodebook==0 || pMod->hdr.nBucket<2)
+  ){
+    *pzErr = sqlite3_mprintf(
+        "vec1: residual model requires PQ and at least two buckets"
+    );
     return SQLITE_CORRUPT_VTAB;
   }
 
