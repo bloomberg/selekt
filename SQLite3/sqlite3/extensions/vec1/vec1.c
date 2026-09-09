@@ -7139,13 +7139,16 @@ static int vec1DoKANNQuery(Vec1Csr *pCsr){
     i64 nSort = pHeap->nRes;
     if( pQuery->bStreaming ){
       nSort = MIN(nSort, pQuery->K);
-      pQuery->nBucket = pTab->mod.hdr.nBucket - pQuery->nProbe;
+      pQuery->nBucket = 0;
       pQuery->nOrigRes = (int)MAX(16, pHeap->nRes);
-      if( pQuery->nBucket>0 ){
-        int nCopy = sizeof(Vec1BucketResult) * pQuery->nProbe;
-        memcpy(aBucket, &aBucket[pQuery->nBucket], nCopy);
-        pQuery->aBucket = aBucket;
-        aBucket = 0;
+      if( pTab->mod.hdr.nBucket>0 ){
+        pQuery->nBucket = (int)pTab->mod.hdr.nBucket - iProbe;
+        if( pQuery->nBucket>0 ){
+          size_t nCopy = sizeof(Vec1BucketResult) * (size_t)pQuery->nBucket;
+          memmove(aBucket, &aBucket[iProbe], nCopy);
+          pQuery->aBucket = aBucket;
+          aBucket = 0;
+        }
       }
     }
     rc = vec1AnnResultSort(pHeap->aRes, nSort);

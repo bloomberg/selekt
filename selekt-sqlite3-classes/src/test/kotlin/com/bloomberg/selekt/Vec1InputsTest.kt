@@ -42,6 +42,7 @@ private const val VEC1_MAX_CODESIZE = 128
 private const val SIZEOF_F32 = 4
 
 private data class ExpectedSqlError(val code: Int, val message: String)
+private data class StreamingTable(val name: String, val bucketCount: Int)
 
 internal class Vec1InputsTest {
     @Test
@@ -57,6 +58,10 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 shadow tables are protected by defensive mode`() =
         runProbe("defensive-shadow-tables")
+
+    @Test
+    fun `vec1 streaming scans every bucket exactly once across probe ratios`() =
+        runProbe("streaming-buckets")
 
     @Test
     fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
@@ -155,6 +160,7 @@ internal object Vec1SecurityProbeMain {
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
                 "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
+                "streaming-buckets" -> probeStreamingBuckets(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
                 "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
@@ -291,6 +297,78 @@ internal object Vec1SecurityProbeMain {
             ) == SQL_OK
         )
         expectSingleRow(sqlite, db, "SELECT rowid FROM t WHERE rowid=1")
+    }
+
+    private fun probeStreamingBuckets(sqlite: IExternalSQLite, db: Long) {
+        listOf(
+            4 to listOf(1, 2, 3, 4),
+            8 to listOf(1, 4, 5, 7, 8)
+        ).forEach { (nBucket, probeCounts) ->
+            val table = "streaming_$nBucket"
+            val streamingTable = StreamingTable(table, nBucket)
+            check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                flatBucketModel(nBucket)
+            )
+
+            var rowid = 1
+            repeat(nBucket) { bucket ->
+                repeat(2) { offset ->
+                    check(
+                        sqlite.exec(
+                            db,
+                            "INSERT INTO $table(rowid, vector) " +
+                                "VALUES($rowid, vec1_from_json('[${bucket * 100},$offset]'))"
+                        ) == SQL_OK
+                    )
+                    rowid++
+                }
+            }
+
+            probeCounts.forEach { nProbe ->
+                assertStreamingCoverage(sqlite, db, streamingTable, nProbe, null)
+            }
+            assertStreamingCoverage(sqlite, db, streamingTable, probeCounts.last(), 0.01)
+        }
+    }
+
+    private fun assertStreamingCoverage(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: StreamingTable,
+        nProbe: Int,
+        nProbeSlack: Double?
+    ) {
+        val slack = nProbeSlack?.let { ",\"nprobe_slack\":$it" }.orEmpty()
+        val config = "{\"K\":1,\"nprobe\":$nProbe,\"streaming\":1$slack}"
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT rowid FROM ${table.name} " +
+                "WHERE cmd=vec1_from_json('[0,0]') AND arg='$config'"
+        )
+        try {
+            val rowids = mutableSetOf<Long>()
+            var result = sqlite.step(statement)
+            while (result == SQL_ROW) {
+                val rowid = sqlite.columnInt64(statement, 0)
+                check(rowids.add(rowid)) {
+                    "Duplicate streaming rowid $rowid for ${table.bucketCount} buckets, " +
+                        "nprobe=$nProbe"
+                }
+                result = sqlite.step(statement)
+            }
+            check(result == SQL_DONE) { sqlite.errorMessage(db) }
+            check(rowids == (1L..table.bucketCount * 2L).toSet()) {
+                "Incomplete streaming results for ${table.bucketCount} buckets, " +
+                    "nprobe=$nProbe: $rowids"
+            }
+        } finally {
+            sqlite.finalize(statement)
+        }
     }
 
     private fun probeTruncatedMetadata(sqlite: IExternalSQLite, db: Long) {
@@ -898,6 +976,22 @@ internal object Vec1SecurityProbeMain {
             putInt(0)
             putInt(0)
             putInt(1)
+        }.array()
+
+    private fun flatBucketModel(nBucket: Int): ByteArray =
+        ByteBuffer.allocate(24 + nBucket * 2 * SIZEOF_F32).apply {
+            order(ByteOrder.BIG_ENDIAN)
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX)
+            putInt(2)
+            putInt(0)
+            putInt(nBucket)
+            putInt(VEC1_DISTANCE_L2)
+            order(ByteOrder.nativeOrder())
+            repeat(nBucket) { bucket ->
+                putFloat(bucket * 100f)
+                putFloat(0f)
+            }
         }.array()
 
     private fun quantizedModel(): ByteArray {
