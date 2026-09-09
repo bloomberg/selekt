@@ -108,6 +108,10 @@ internal class Vec1InputsTest {
     @Test
     fun `vec1 zeroes unused slots in partial PQ blocks`() = runProbe("pq-block-padding")
 
+    @Test
+    fun `vec1 training restricts progress callbacks to function names`() =
+        runProbe("progress-callback-name")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -166,6 +170,7 @@ internal object Vec1SecurityProbeMain {
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
                 "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
                 "pq-block-padding" -> probePqBlockPadding(sqlite, db)
+                "progress-callback-name" -> probeProgressCallbackName(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -750,6 +755,62 @@ internal object Vec1SecurityProbeMain {
                 assertPqPaddingIsZero(readSingleIndexBlob(sqlite, db, table), 2, nCodebook)
             }
         }
+    }
+
+    private fun probeProgressCallbackName(sqlite: IExternalSQLite, db: Long) {
+        val valid = prepare(
+            sqlite,
+            db,
+            "SELECT length(vec1_train(" +
+                "vec1_from_json('[1,2]'), '{\"progress\":\"printf\"}'))"
+        )
+        try {
+            check(sqlite.step(valid) == SQL_ROW)
+            check(sqlite.columnInt64(valid, 0) > 0)
+            check(sqlite.step(valid) == SQL_DONE)
+        } finally {
+            sqlite.finalize(valid)
+        }
+        val invalidNames = listOf(
+            "audit_side_effect(), printf",
+            "printf()",
+            "printf --",
+            "printf/*x*/",
+            "main.printf",
+            "\"printf\"",
+            " printf",
+            "printf ",
+            "",
+            "1printf"
+        )
+        invalidNames.forEach { name ->
+            val jsonName = name.replace("\\", "\\\\").replace("\"", "\\\"")
+            expectError(
+                sqlite,
+                db,
+                "SELECT vec1_train(vec1_from_json('[1,2]'), " +
+                    "'{\"progress\":\"$jsonName\"}')",
+                SQL_ERROR,
+                "progress requires a valid function name"
+            )
+        }
+        listOf("1", "1.5", "true", "false", "[]", "{}").forEach { value ->
+            expectError(
+                sqlite,
+                db,
+                "SELECT vec1_train(vec1_from_json('[1,2]'), " +
+                    "'{\"progress\":$value}')",
+                SQL_ERROR,
+                "progress requires a valid function name"
+            )
+        }
+        expectError(
+            sqlite,
+            db,
+            "SELECT vec1_train(vec1_from_json('[1,2]'), '{\"progress\":null}')",
+            SQL_ERROR,
+            "null value in json object"
+        )
     }
 
     private fun readSingleIndexBlob(sqlite: IExternalSQLite, db: Long, table: String): ByteArray {

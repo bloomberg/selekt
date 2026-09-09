@@ -2641,6 +2641,41 @@ static int vec1ConfigDistance(
   return rc;
 }
 
+static int vec1ConfigProgress(
+  Vec1TrainCtx *p,
+  int eType,
+  const char *zVal,
+  char **pzErr
+){
+  int ii;
+  char *zNew;
+
+  if( eType!=SQLITE_TEXT || zVal[0]==0
+   || !((zVal[0]>='A' && zVal[0]<='Z')
+     || (zVal[0]>='a' && zVal[0]<='z')
+     || zVal[0]=='_')
+  ){
+    *pzErr = sqlite3_mprintf("vec1: progress requires a valid function name");
+    return *pzErr ? SQLITE_ERROR : SQLITE_NOMEM;
+  }
+  for(ii=1; zVal[ii]; ii++){
+    if( !((zVal[ii]>='A' && zVal[ii]<='Z')
+       || (zVal[ii]>='a' && zVal[ii]<='z')
+       || (zVal[ii]>='0' && zVal[ii]<='9')
+       || zVal[ii]=='_')
+    ){
+      *pzErr = sqlite3_mprintf("vec1: progress requires a valid function name");
+      return *pzErr ? SQLITE_ERROR : SQLITE_NOMEM;
+    }
+  }
+
+  zNew = sqlite3_mprintf("%s", zVal);
+  if( zNew==0 ) return SQLITE_NOMEM;
+  sqlite3_free(p->zLogFunction);
+  p->zLogFunction = zNew;
+  return SQLITE_OK;
+}
+
 
 static int vec1Ann1TrainCfg(
   void *pCtx,
@@ -2707,9 +2742,7 @@ static int vec1Ann1TrainCfg(
         break;
 
       case 6: {  /* progress */
-        sqlite3_free(p->zLogFunction);
-        p->zLogFunction = sqlite3_mprintf("%s", zVal);
-        if( p->zLogFunction==0 ) rc = SQLITE_NOMEM;
+        rc = vec1ConfigProgress(p, eType, zVal, pz);
         break;
       }
 
@@ -3940,7 +3973,7 @@ static void vec1TrainFindResiduals(
 
 static void vec1TrainPrepareLog(Vec1TrainCtx *p){
   if( p->zLogFunction ){
-    char *zSql = sqlite3_mprintf("SELECT %s(?, ?)", p->zLogFunction);
+    char *zSql = sqlite3_mprintf("SELECT \"%w\"(?, ?)", p->zLogFunction);
     if( zSql==0 ){
       sqlite3_result_error_nomem(p->pCtx);
       p->rc = SQLITE_NOMEM;
