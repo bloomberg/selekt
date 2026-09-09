@@ -74,6 +74,9 @@ internal class Vec1InputsTest {
         runProbe("non-finite-vector")
 
     @Test
+    fun `vec1 training rejects non-finite aggregate input`() = runProbe("non-finite-training")
+
+    @Test
     fun `vec1 rejects non-finite model sections`() = runProbe("non-finite-model")
 
     private fun runProbe(mode: String) {
@@ -126,6 +129,7 @@ internal object Vec1SecurityProbeMain {
                 "oversized-codebook-model" -> probeOversizedCodebookModel(sqlite, db)
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
+                "non-finite-training" -> probeNonFiniteTraining(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 else -> error("Unknown probe")
             }
@@ -389,6 +393,22 @@ internal object Vec1SecurityProbeMain {
         listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY).forEach { value ->
             val vector = vectorBytes(value, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             statements.forEach { expectBlobError(sqlite, db, it, vector, expected) }
+        }
+    }
+
+    private fun probeNonFiniteTraining(sqlite: IExternalSQLite, db: Long) {
+        val sql = "WITH RECURSIVE c(x) AS (" +
+            "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<512" +
+            ") SELECT length(vec1_train(?,'{\"codesize\":8}')) FROM c"
+        val expected = ExpectedSqlError(SQL_ERROR, "vector elements must be finite")
+        listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY).forEach { value ->
+            expectBlobError(
+                sqlite,
+                db,
+                sql,
+                vectorBytes(value, value, value, value, value, value, value, value),
+                expected
+            )
         }
     }
 
