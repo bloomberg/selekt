@@ -560,6 +560,23 @@ internal class ExternalSQLiteTest {
         }
 
     @Test
+    fun `statement handle reuses ASCII storage`() =
+        withStatement("SELECT ?") { statement ->
+            val handle = sqlite.newStatementHandle(statement)
+            val utf8TextParameters = BooleanArray(2)
+            assertEquals(SQL_OK, sqlite.bindText(handle, 1, "first", utf8TextParameters))
+            assertEquals(SQL_MISMATCH, sqlite.bindTextAscii(handle, 1, "café"))
+            assertEquals(SQL_ROW, sqlite.step(handle))
+            assertEquals("first", sqlite.columnText(handle, 0))
+            assertEquals(SQL_OK, sqlite.reset(handle))
+
+            val maximumDirectText = "x".repeat(DIRECT_ASCII_BIND_BOUNDARIES.min())
+            assertEquals(SQL_OK, sqlite.bindText(handle, 1, maximumDirectText, utf8TextParameters))
+            assertEquals(SQL_ROW, sqlite.step(handle))
+            assertEquals(maximumDirectText, sqlite.columnText(handle, 0))
+        }
+
+    @Test
     fun `ASCII text binding preserves direct and bulk boundary behaviour`() = withStatement("SELECT ?") { statement ->
         DIRECT_ASCII_BIND_BOUNDARIES.flatMap { boundary ->
             listOf(boundary - 1, boundary, boundary + 1)

@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.benchmarks;
 
 import com.bloomberg.selekt.IExternalSQLite;
+import com.bloomberg.selekt.StatementHandle;
 import kotlin.jvm.functions.Function0;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -54,7 +55,9 @@ public class ExternalSQLiteAsciiBindBenchmark {
     private File databaseFile;
     private long database;
     private long statement;
+    private StatementHandle statementHandle;
     private Function0<Integer> bindAsciiBatch;
+    private Function0<Integer> bindAsciiUnscopedStatementHandleBatch;
     private Function0<Integer> bindUtf8Batch;
 
     @Setup(Level.Trial)
@@ -67,9 +70,22 @@ public class ExternalSQLiteAsciiBindBenchmark {
         final long[] statementHolder = new long[1];
         SQLITE.prepareV2(database, sql, sql.length(), statementHolder);
         statement = statementHolder[0];
+        statementHandle = SQLITE.newStatementHandle(statement);
         final String text = "x".repeat(textLength);
         bindAsciiBatch = bindBatch(text, true);
+        bindAsciiUnscopedStatementHandleBatch = bindStatementHandleBatch(text);
         bindUtf8Batch = bindBatch(text, false);
+    }
+
+    private Function0<Integer> bindStatementHandleBatch(String text) {
+        final boolean[] utf8TextParameters = new boolean[2];
+        return () -> {
+            int result = 0;
+            for (int i = 0; i < BINDS_PER_OPERATION; i++) {
+                result |= SQLITE.bindText(statementHandle, 1, text, utf8TextParameters);
+            }
+            return result;
+        };
     }
 
     private Function0<Integer> bindBatch(String text, boolean ascii) {
@@ -100,6 +116,16 @@ public class ExternalSQLiteAsciiBindBenchmark {
     @Benchmark
     public int bindAsciiBatch() {
         return SQLITE.withScopedArena(bindAsciiBatch);
+    }
+
+    @Benchmark
+    public int bindAsciiUnscopedPointerBatch() {
+        return bindAsciiBatch.invoke();
+    }
+
+    @Benchmark
+    public int bindAsciiUnscopedStatementHandleBatch() {
+        return bindAsciiUnscopedStatementHandleBatch.invoke();
     }
 
     @Benchmark
