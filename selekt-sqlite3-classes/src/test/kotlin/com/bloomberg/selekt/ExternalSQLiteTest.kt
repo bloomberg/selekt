@@ -46,6 +46,7 @@ internal class ExternalSQLiteTest {
         const val SQL_BLOB = 4
         const val SQL_NULL = 5
         const val KEY_SIZE = 32
+        val DIRECT_ASCII_BIND_BOUNDARIES = intArrayOf(64, 256)
     }
 
     @TempDir
@@ -557,6 +558,40 @@ internal class ExternalSQLiteTest {
             assertEquals(SQL_ROW, sqlite.step(statement))
             assertEquals(retained, sqlite.columnText(statement, 0))
         }
+
+    @Test
+    fun `ASCII text binding preserves direct and bulk boundary behaviour`() = withStatement("SELECT ?") { statement ->
+        DIRECT_ASCII_BIND_BOUNDARIES.flatMap { boundary ->
+            listOf(boundary - 1, boundary, boundary + 1)
+        }.distinct().forEach { length ->
+            val ascii = "a".repeat(length)
+            assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, ascii))
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals(ascii, sqlite.columnText(statement, 0))
+            assertEquals(SQL_OK, sqlite.reset(statement))
+        }
+        val retained = "retained"
+        assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, retained))
+        DIRECT_ASCII_BIND_BOUNDARIES.forEach { boundary ->
+            listOf(boundary - 1, boundary).forEach { asciiPrefixLength ->
+                val unicode = "a".repeat(asciiPrefixLength) + "é"
+                assertEquals(SQL_MISMATCH, sqlite.bindTextAscii(statement, 1, unicode))
+            }
+        }
+        assertEquals(SQL_ROW, sqlite.step(statement))
+        assertEquals(retained, sqlite.columnText(statement, 0))
+        assertEquals(SQL_OK, sqlite.reset(statement))
+        DIRECT_ASCII_BIND_BOUNDARIES.forEach { boundary ->
+            listOf(boundary - 1, boundary).forEach { asciiPrefixLength ->
+                val malformed = "a".repeat(asciiPrefixLength) + "\uD800"
+                val expected = malformed.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8)
+                assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, malformed))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(expected, sqlite.columnText(statement, 0))
+                assertEquals(SQL_OK, sqlite.reset(statement))
+            }
+        }
+    }
 
     @Test
     fun `empty text remains distinct from SQL null`() = withStatement("SELECT ?, NULL") { statement ->

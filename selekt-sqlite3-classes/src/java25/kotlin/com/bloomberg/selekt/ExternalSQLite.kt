@@ -677,6 +677,18 @@ internal class ExternalSQLite(
     }
 
     private fun bindTextAscii(statement: MemorySegment, index: Int, value: String): SQLCode {
+        if (value.length <= DIRECT_ASCII_BIND_MAX_LENGTH) {
+            return withSlab { slab ->
+                val text = slab.allocateFromAscii(value) ?: return@withSlab SQL_MISMATCH
+                sqlite3_bind_text.invoke(
+                    statement,
+                    index,
+                    text,
+                    value.length,
+                    sqliteTransient
+                ) as Int
+            }
+        }
         val bytes = value.toByteArray(Charsets.UTF_8)
         // For well-formed UTF-16, UTF-8 byte length equals UTF-16 length only for ASCII.
         // String.toByteArray replaces malformed surrogates with one-byte '?', matching bindText.
@@ -1473,6 +1485,7 @@ internal class ExternalSQLite(
     private external fun nativeInit(softHeapLimit: Long)
 
     companion object {
+        private const val DIRECT_ASCII_BIND_MAX_LENGTH = 64
         private const val INITIAL_CALLBACK_DEPTH = 4
         private const val SQLITE_NULL = 5
 
