@@ -21,6 +21,8 @@ import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout.JAVA_BYTE
 
+private const val FIRST_NON_ASCII_CODE_POINT = 0x80
+
 internal class SlabArena(
     capacity: Long = DEFAULT_CAPACITY
 ) : AutoCloseable {
@@ -70,17 +72,9 @@ internal class SlabArena(
             grow(needed)
         }
         val segment = slab.asSlice(offset, needed)
-        for (i in 0 until length) {
-            val character = value[i]
-            val byte = when {
-                character.code < 0x80 -> character.code.toByte()
-                character.isHighSurrogate() && i + 1 < length && value[i + 1].isLowSurrogate() -> return null
-                character.isSurrogate() -> '?'.code.toByte()
-                else -> return null
-            }
-            segment.set(JAVA_BYTE, i.toLong(), byte)
+        if (!segment.copyFromAscii(value)) {
+            return null
         }
-        segment.set(JAVA_BYTE, length.toLong(), 0)
         offset += needed
         return segment
     }
@@ -120,4 +114,29 @@ internal class SlabArena(
     companion object {
         private const val DEFAULT_CAPACITY = 4_096L
     }
+}
+
+/**
+ * Copies [value] until its first non-ASCII-compatible code unit. Contents are unspecified when this returns false and
+ * must not be passed to SQLite.
+ */
+internal fun MemorySegment.copyFromAscii(value: String): Boolean {
+    var asciiCompatible = true
+    var i = 0
+    while (i < value.length && asciiCompatible) {
+        val character = value[i]
+        when {
+            character.code < FIRST_NON_ASCII_CODE_POINT -> set(JAVA_BYTE, i.toLong(), character.code.toByte())
+            character.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
+                asciiCompatible = false
+            }
+            character.isSurrogate() -> set(JAVA_BYTE, i.toLong(), '?'.code.toByte())
+            else -> asciiCompatible = false
+        }
+        ++i
+    }
+    if (asciiCompatible) {
+        set(JAVA_BYTE, value.length.toLong(), 0)
+    }
+    return asciiCompatible
 }
