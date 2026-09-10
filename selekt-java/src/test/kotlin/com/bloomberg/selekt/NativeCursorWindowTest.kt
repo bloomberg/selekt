@@ -23,7 +23,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -36,7 +35,7 @@ import kotlin.test.fail
 private const val SLOT_SIZE_BYTES = 1 + Long.SIZE_BYTES
 
 private fun payloadSize(value: Any?): Int = when (value) {
-    is String -> value.toByteArray(StandardCharsets.UTF_8).size
+    is String -> value.toByteArray(Charsets.UTF_8).size
     is ByteArray -> value.size
     null, is Long, is Double -> 0
     else -> error("Unsupported value type: ${value.javaClass}.")
@@ -71,7 +70,7 @@ private fun cursorWindowBuffer(vararg rows: List<Any?>, totalCount: Int = rows.s
                         put(slotOffset, SQL_FLOAT.toByte())
                         putDouble(slotOffset + 1, value)
                     }
-                    is String -> value.toByteArray(StandardCharsets.UTF_8).let {
+                    is String -> value.toByteArray(Charsets.UTF_8).let {
                         put(slotOffset, SQL_TEXT.toByte())
                         putInt(slotOffset + 1, it.size)
                         putInt(slotOffset + 1 + Int.SIZE_BYTES, offset)

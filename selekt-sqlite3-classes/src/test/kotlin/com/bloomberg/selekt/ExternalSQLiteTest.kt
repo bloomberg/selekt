@@ -26,6 +26,7 @@ import kotlin.math.abs
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -234,7 +235,7 @@ internal class ExternalSQLiteTest {
             val statement = statementHolder[0]
             try {
                 assertEquals(SQL_ROW, sqlite.step(statement))
-                assertTrue(sqlite.columnText(statement, 0).startsWith("version "))
+                assertTrue(checkNotNull(sqlite.columnText(statement, 0)).startsWith("version "))
             } finally {
                 sqlite.finalize(statement)
             }
@@ -514,7 +515,7 @@ internal class ExternalSQLiteTest {
             "SELECT ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
             val statement = statementHolder[0]
             try {
-                val text = "Hello 世界 🌍 Привет"
+                val text = "Hello\u0000 世界 🌍 Привет"
                 assertEquals(SQL_OK, sqlite.bindText(statement, 1, text))
                 assertEquals(SQL_ROW, sqlite.step(statement))
                 val result = sqlite.columnText(statement, 0)
@@ -526,6 +527,284 @@ internal class ExternalSQLiteTest {
             }
         } finally {
             sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `ASCII text binding covers ASCII and Unicode boundaries without changing rejected bindings`() =
+        withStatement("SELECT ?") { statement ->
+            val handle = sqlite.newStatementHandle(statement)
+            listOf("\u0000", "\u007F", "ascii\u0000text").forEach { ascii ->
+                assertEquals(SQL_OK, sqlite.bindTextAscii(handle, 1, ascii), ascii)
+                assertEquals(SQL_ROW, sqlite.step(statement), ascii)
+                assertEquals(ascii, sqlite.columnText(statement, 0), ascii)
+                assertEquals(SQL_OK, sqlite.reset(statement), ascii)
+            }
+            val retained = "retained"
+            assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, retained))
+            listOf(
+                "\u0080",
+                "\u07FF",
+                "\u0800",
+                "\uFFFF",
+                "\uD800\uDC00",
+                "\uD83C\uDF0D",
+                "\uDBFF\uDFFF",
+                "ascii café suffix"
+            ).forEach { unicode ->
+                assertEquals(SQL_MISMATCH, sqlite.bindTextAscii(statement, 1, unicode), unicode)
+            }
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals(retained, sqlite.columnText(statement, 0))
+        }
+
+    @Test
+    fun `empty text remains distinct from SQL null`() = withStatement("SELECT ?, NULL") { statement ->
+        assertEquals(SQL_OK, sqlite.bindText(statement, 1, ""))
+        assertEquals(SQL_ROW, sqlite.step(statement))
+        assertEquals("", sqlite.columnText(statement, 0))
+        assertNull(sqlite.columnText(statement, 1))
+        assertEquals(SQL_OK, sqlite.reset(statement))
+        assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, ""))
+        assertEquals(SQL_ROW, sqlite.step(statement))
+        assertEquals("", sqlite.columnText(statement, 0))
+    }
+
+    @Test
+    fun `malformed surrogates bind identically through ASCII and UTF-8 paths`() =
+        withStatement("SELECT ?") { statement ->
+            listOf(
+                "high-min \uD800 surrogate",
+                "high-max \uDBFF surrogate",
+                "low-min \uDC00 surrogate",
+                "low-max \uDFFF surrogate",
+                "reversed \uDC00\uD800 pair"
+            ).forEach { malformed ->
+                val expected = malformed.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8)
+                assertEquals(SQL_OK, sqlite.bindText(statement, 1, malformed), malformed)
+                assertEquals(SQL_ROW, sqlite.step(statement), malformed)
+                assertEquals(expected, sqlite.columnText(statement, 0), malformed)
+                assertEquals(SQL_OK, sqlite.reset(statement), malformed)
+                assertEquals(SQL_OK, sqlite.bindTextAscii(statement, 1, malformed), malformed)
+                assertEquals(SQL_ROW, sqlite.step(statement), malformed)
+                assertEquals(expected, sqlite.columnText(statement, 0), malformed)
+                assertEquals(SQL_OK, sqlite.reset(statement), malformed)
+            }
+        }
+
+    @Test
+    fun `adaptive text binding retains independent modes and error transitions`() =
+        withStatement("SELECT ?, ?") { statement ->
+            val handle = sqlite.newStatementHandle(statement)
+            val utf8TextParameters = BooleanArray(3)
+            assertEquals(SQL_OK, sqlite.bindText(handle, 1, "café", utf8TextParameters))
+            assertTrue(utf8TextParameters[1])
+            assertEquals(SQL_OK, sqlite.bindText(handle, 2, "ascii", utf8TextParameters))
+            assertFalse(utf8TextParameters[2])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("café", sqlite.columnText(statement, 0))
+            assertEquals("ascii", sqlite.columnText(statement, 1))
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            assertEquals(SQL_OK, sqlite.bindText(handle, 1, "ascii later", utf8TextParameters))
+            assertTrue(utf8TextParameters[1])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("ascii later", sqlite.columnText(statement, 0))
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            val asciiErrorModes = BooleanArray(1)
+            assertEquals(SQL_RANGE, sqlite.bindText(handle, 0, "ascii", asciiErrorModes))
+            assertFalse(asciiErrorModes[0])
+            assertEquals(SQL_RANGE, sqlite.bindText(handle, 0, "café", asciiErrorModes))
+            assertTrue(asciiErrorModes[0])
+        }
+
+    @Test
+    fun `adaptive array rows use ASCII and permanent UTF-8 modes on each runtime`() =
+        withStatement("SELECT ?, ?") { statement ->
+            val handle = sqlite.newStatementHandle(statement)
+            val utf8TextParameters = BooleanArray(3)
+            assertEquals(
+                SQL_OK,
+                sqlite.bindRow(handle, arrayOf("café", "ascii"), utf8TextParameters)
+            )
+            assertTrue(utf8TextParameters[1])
+            assertFalse(utf8TextParameters[2])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("café", sqlite.columnText(statement, 0))
+            assertEquals("ascii", sqlite.columnText(statement, 1))
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            assertEquals(
+                SQL_OK,
+                sqlite.bindRow(handle, arrayOf("ascii later", "still ascii"), utf8TextParameters)
+            )
+            assertTrue(utf8TextParameters[1])
+            assertFalse(utf8TextParameters[2])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("ascii later", sqlite.columnText(statement, 0))
+            assertEquals("still ascii", sqlite.columnText(statement, 1))
+        }
+
+    @Test
+    fun `typed rows bind every tag and object case through long overload`() =
+        withStatement("SELECT ?, ?, ?, ?, ?, ?, ?") { statement ->
+            val fixture = TypedRowFixture()
+            assertEquals(SQL_OK, bindTyped(statement, fixture))
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals(7, sqlite.columnInt(statement, 0))
+            assertEquals(8L, sqlite.columnInt64(statement, 1))
+            assertEquals(2.5, sqlite.columnDouble(statement, 2))
+            assertEquals("café", sqlite.columnText(statement, 3))
+            assertContentEquals(fixture.blob, sqlite.columnBlob(statement, 4))
+            assertEquals(SQL_NULL, sqlite.columnType(statement, 5))
+            assertEquals(SQL_NULL, sqlite.columnType(statement, 6))
+        }
+
+    @Test
+    fun `adaptive typed rows cover ASCII mismatch and retained UTF-8 modes`() =
+        withStatement("SELECT ?, ?, ?, ?, ?, ?, ?") { statement ->
+            val fixture = TypedRowFixture()
+            val handle = sqlite.newStatementHandle(statement)
+            val utf8TextParameters = BooleanArray(fixture.tags.size + 1)
+
+            assertEquals(SQL_OK, bindTyped(handle, fixture, utf8TextParameters))
+            assertTrue(utf8TextParameters[4])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("café", sqlite.columnText(statement, 3))
+            assertContentEquals(fixture.blob, sqlite.columnBlob(statement, 4))
+
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            fixture.objects[3] = "ascii after UTF-8"
+            assertEquals(SQL_OK, bindTyped(handle, fixture, utf8TextParameters))
+            assertTrue(utf8TextParameters[4])
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals("ascii after UTF-8", sqlite.columnText(statement, 3))
+
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            val asciiModes = BooleanArray(fixture.tags.size + 1)
+            fixture.objects[3] = "ascii"
+            assertEquals(SQL_OK, bindTyped(handle, fixture, asciiModes))
+            assertFalse(asciiModes[4])
+        }
+
+    @Test
+    fun `typed row binding stops on native error`() =
+        withStatement("SELECT ?, ?, ?, ?, ?, ?, ?") { statement ->
+            assertEquals(
+                SQL_RANGE,
+                sqlite.bindRowTyped(
+                    statement,
+                    ByteArray(8) { 1 },
+                    IntArray(8),
+                    LongArray(8),
+                    DoubleArray(8),
+                    arrayOfNulls<Any>(8),
+                    8
+                )
+            )
+        }
+
+    private class TypedRowFixture {
+        val tags = byteArrayOf(1, 2, 3, 4, 4, 4, 0)
+        val ints = intArrayOf(7, 0, 0, 0, 0, 0, 0)
+        val longs = longArrayOf(0, 8, 0, 0, 0, 0, 0)
+        val doubles = doubleArrayOf(0.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0)
+        val blob = byteArrayOf(9, 10)
+        val objects = arrayOfNulls<Any>(tags.size).also {
+            it[3] = "café"
+            it[4] = blob
+            it[5] = Any()
+        }
+    }
+
+    private fun bindTyped(statement: Long, fixture: TypedRowFixture) = sqlite.bindRowTyped(
+        statement,
+        fixture.tags,
+        fixture.ints,
+        fixture.longs,
+        fixture.doubles,
+        fixture.objects,
+        fixture.tags.size
+    )
+
+    private fun bindTyped(
+        statement: StatementHandle,
+        fixture: TypedRowFixture,
+        utf8TextParameters: BooleanArray
+    ) = sqlite.bindRowTyped(
+        statement,
+        fixture.tags,
+        fixture.ints,
+        fixture.longs,
+        fixture.doubles,
+        fixture.objects,
+        fixture.tags.size,
+        utf8TextParameters
+    )
+
+    @Test
+    fun `columnText preserves SQL nulls and embedded nulls and decodes standard UTF-8`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT CAST(X'610062F09F8C8D63' AS TEXT), CAST(X'61FF62' AS TEXT), NULL"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals("a\u0000b🌍c", sqlite.columnText(statement, 0))
+                assertEquals("a\uFFFDb", sqlite.columnText(statement, 1))
+                assertNull(sqlite.columnText(statement, 2))
+                val handle = sqlite.newStatementHandle(statement)
+                assertEquals("a\u0000b🌍c", sqlite.columnText(handle, 0))
+                assertEquals("a\uFFFDb", sqlite.columnText(handle, 1))
+                assertNull(sqlite.columnText(handle, 2))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `databaseConfig supports every boolean operation accepted by the native bridge`() =
+        withDatabase { db ->
+            (1002..1019).forEach { operation ->
+                assertEquals(
+                    SQL_OK,
+                    sqlite.databaseConfig(db, operation, -1),
+                    operation.toString()
+                )
+            }
+        }
+
+    @Test
+    fun `databaseConfig rejects unsupported operations`() = withDatabase { db ->
+        val result = runCatching { sqlite.databaseConfig(db, Int.MAX_VALUE, -1) }
+        result.onSuccess { assertEquals(SQL_ERROR, it) }
+        result.onFailure { assertIs<IllegalArgumentException>(it) }
+    }
+
+    private inline fun withDatabase(block: (Long) -> Unit) {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            block(db)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    private inline fun withStatement(sql: String, block: (Long) -> Unit) = withDatabase { db ->
+        val statementHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.toByteArray(Charsets.UTF_8).size, statementHolder))
+        val statement = statementHolder[0]
+        try {
+            block(statement)
+        } finally {
+            sqlite.finalize(statement)
         }
     }
 

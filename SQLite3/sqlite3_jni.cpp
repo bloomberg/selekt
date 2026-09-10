@@ -558,28 +558,38 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindParameterIndex(
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_bloomberg_selekt_ExternalSQLite_bindText(
+Java_com_bloomberg_selekt_ExternalSQLite_bindTextUtf8(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
     jint index,
-    jstring jvalue
+    jbyteArray jvalue
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    auto value = env->GetStringUTFChars(jvalue, nullptr);
+    auto const length = env->GetArrayLength(jvalue);
+    if (length > sqlite3_limit(sqlite3_db_handle(statement), SQLITE_LIMIT_LENGTH, -1)) {
+        return SQLITE_TOOBIG;
+    }
+    auto const allocationSize = static_cast<sqlite3_uint64>(length) + 1U;
+    auto* value = sqlite3_malloc64(allocationSize);
     if (value == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
-    auto result = sqlite3_bind_text(
+    env->GetByteArrayRegion(jvalue, 0, length, static_cast<jbyte*>(value));
+    if (env->ExceptionCheck()) {
+        sqlite3_free(value);
+        // Preserve the pending Java exception: JNI propagates it and Java ignores this return value.
+        return SQLITE_ERROR;
+    }
+    static_cast<std::byte*>(value)[length] = std::byte{0};
+    return sqlite3_bind_text64(
         statement,
         index,
-        value,
-        env->GetStringUTFLength(jvalue),
-        SQLITE_TRANSIENT
+        static_cast<const char*>(value),
+        static_cast<sqlite3_uint64>(length),
+        sqlite3_free,
+        SQLITE_UTF8
     );
-    env->ReleaseStringUTFChars(jvalue, value);
-    return result;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -954,16 +964,17 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnName(
     return name != nullptr ? env->NewStringUTF(name) : nullptr;
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_bloomberg_selekt_ExternalSQLite_columnText(
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnTextBytes(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
     jint index
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    auto text = reinterpret_cast<const char*>(sqlite3_column_text(statement, index));
-    return text != nullptr ? env->NewStringUTF(text) : nullptr;
+    auto text = sqlite3_column_text(statement, index);
+    auto length = sqlite3_column_bytes(statement, index);
+    return text != nullptr ? newByteArray(env, text, length) : nullptr;
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -1142,6 +1153,13 @@ static bool isBooleanDbConfigOp(int op) {
     }
 }
 
+extern "C" JNIEXPORT int selekt_database_config(sqlite3* db, int op, int value) {
+    if (!isBooleanDbConfigOp(op)) {
+        return SQLITE_ERROR;
+    }
+    return sqlite3_db_config(db, op, value, nullptr);
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_databaseConfig(
     JNIEnv* env,
@@ -1156,7 +1174,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseConfig(
         throwIllegalArgumentException(env, msg);
         return SQLITE_ERROR;
     }
-    return sqlite3_db_config(reinterpret_cast<sqlite3*>(jdb), static_cast<int>(op), static_cast<int>(value), nullptr);
+    return selekt_database_config(
+        reinterpret_cast<sqlite3*>(jdb),
+        static_cast<int>(op),
+        static_cast<int>(value)
+    );
 }
 
 extern "C" JNIEXPORT jint JNICALL

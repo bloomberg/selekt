@@ -21,6 +21,9 @@ import java.nio.ByteBuffer
 
 private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
 
+private fun unsupportedBindArgument(arg: Any, position: Int): Nothing =
+    throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
+
 /**
  * @since 0.27.0
  */
@@ -46,8 +49,9 @@ data class BlobHandle(
 @Suppress(
     "Detekt.ComplexInterface",
     "Detekt.LongParameterList",
-    "Detekt.TooManyFunctions"
-) // Mirrors the SQLite3 C-api.
+    "Detekt.TooManyFunctions",
+    "kotlin:S107"
+) // Mirrors SQLite's C API; typed binding uses parallel arrays to avoid allocating per-row wrappers.
 interface IExternalSQLite {
     fun newDatabaseHandle(pointer: Long): DatabaseHandle = DatabaseHandle(pointer)
 
@@ -127,6 +131,9 @@ interface IExternalSQLite {
         name: String
     ): Int = bindParameterIndex(statement.pointer, name)
 
+    /**
+     * Binds [value] as standard UTF-8 with an explicit byte length, preserving embedded NUL characters.
+     */
     fun bindText(statement: Long, index: Int, value: String): SQLCode
 
     fun bindText(
@@ -134,6 +141,47 @@ interface IExternalSQLite {
         index: Int,
         value: String
     ): SQLCode = bindText(statement.pointer, index, value)
+
+    /**
+     * Attempts to bind [value] while validating and copying it as ASCII.
+     *
+     * Returns [SQL_MISMATCH] without changing the binding when [value] contains a non-ASCII character.
+     */
+    fun bindTextAscii(
+        statement: Long,
+        index: Int,
+        value: String
+    ): SQLCode
+
+    fun bindTextAscii(
+        statement: StatementHandle,
+        index: Int,
+        value: String
+    ): SQLCode = bindTextAscii(statement.pointer, index, value)
+
+    fun bindText(
+        statement: StatementHandle,
+        index: Int,
+        value: String,
+        utf8TextParameters: BooleanArray
+    ): SQLCode = bindTextAdaptively(statement.pointer, index, value, utf8TextParameters)
+
+    private fun bindTextAdaptively(
+        statement: Long,
+        index: Int,
+        value: String,
+        utf8TextParameters: BooleanArray
+    ): SQLCode = if (utf8TextParameters[index]) {
+        bindText(statement, index, value)
+    } else {
+        val asciiResult = bindTextAscii(statement, index, value)
+        if (asciiResult == SQL_MISMATCH) {
+            utf8TextParameters[index] = true
+            bindText(statement, index, value)
+        } else {
+            asciiResult
+        }
+    }
 
     fun bindZeroBlob(statement: Long, index: Int, length: Int): SQLCode
 
@@ -151,34 +199,36 @@ interface IExternalSQLite {
      *
      * @param args values to bind at 1-based positions.
      */
-    fun bindRow(statement: Long, args: Array<out Any?>): SQLCode {
-        args.forEachByPosition { arg, position ->
-            val result = when (arg) {
-                is String -> bindText(statement, position, arg)
-                is Int -> bindInt(statement, position, arg)
-                null -> bindNull(statement, position)
-                is Long -> bindInt64(statement, position, arg)
-                is Double -> bindDouble(statement, position, arg)
-                is ByteArray -> bindBlob(statement, position, arg, arg.size)
-                else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
-            }
-            if (result != SQL_OK) {
-                return result
-            }
-        }
-        return SQL_OK
-    }
+    fun bindRow(statement: Long, args: Array<out Any?>): SQLCode =
+        bindRowInternal(statement, args, null)
 
-    fun bindRow(statement: StatementHandle, args: Array<out Any?>): SQLCode {
+    fun bindRow(statement: StatementHandle, args: Array<out Any?>): SQLCode =
+        bindRow(statement.pointer, args)
+
+    fun bindRow(
+        statement: StatementHandle,
+        args: Array<out Any?>,
+        utf8TextParameters: BooleanArray
+    ): SQLCode = bindRowInternal(statement.pointer, args, utf8TextParameters)
+
+    private fun bindRowInternal(
+        statement: Long,
+        args: Array<out Any?>,
+        utf8TextParameters: BooleanArray?
+    ): SQLCode {
         args.forEachByPosition { arg, position ->
             val result = when (arg) {
-                is String -> bindText(statement, position, arg)
+                is String -> if (utf8TextParameters == null) {
+                    bindText(statement, position, arg)
+                } else {
+                    bindTextAdaptively(statement, position, arg, utf8TextParameters)
+                }
                 is Int -> bindInt(statement, position, arg)
                 null -> bindNull(statement, position)
                 is Long -> bindInt64(statement, position, arg)
                 is Double -> bindDouble(statement, position, arg)
                 is ByteArray -> bindBlob(statement, position, arg, arg.size)
-                else -> throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
+                else -> unsupportedBindArgument(arg, position)
             }
             if (result != SQL_OK) {
                 return result
@@ -195,29 +245,7 @@ interface IExternalSQLite {
         doubles: DoubleArray,
         objects: Array<out Any?>,
         size: Int
-    ): SQLCode {
-        for (i in 0 until size) {
-            val position = i + 1
-            val result = when (tags[i]) {
-                1.toByte() -> bindInt(statement, position, ints[i])
-                2.toByte() -> bindInt64(statement, position, longs[i])
-                3.toByte() -> bindDouble(statement, position, doubles[i])
-                4.toByte() -> {
-                    val obj = objects[i]
-                    when (obj) {
-                        is String -> bindText(statement, position, obj)
-                        is ByteArray -> bindBlob(statement, position, obj, obj.size)
-                        else -> bindNull(statement, position)
-                    }
-                }
-                else -> bindNull(statement, position)
-            }
-            if (result != SQL_OK) {
-                return result
-            }
-        }
-        return SQL_OK
-    }
+    ): SQLCode = bindRowTypedInternal(statement, tags, ints, longs, doubles, objects, size, null)
 
     fun bindRowTyped(
         statement: StatementHandle,
@@ -227,6 +255,37 @@ interface IExternalSQLite {
         doubles: DoubleArray,
         objects: Array<out Any?>,
         size: Int
+    ): SQLCode = bindRowTyped(statement.pointer, tags, ints, longs, doubles, objects, size)
+
+    fun bindRowTyped(
+        statement: StatementHandle,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int,
+        utf8TextParameters: BooleanArray
+    ): SQLCode = bindRowTypedInternal(
+        statement.pointer,
+        tags,
+        ints,
+        longs,
+        doubles,
+        objects,
+        size,
+        utf8TextParameters
+    )
+
+    private fun bindRowTypedInternal(
+        statement: Long,
+        tags: ByteArray,
+        ints: IntArray,
+        longs: LongArray,
+        doubles: DoubleArray,
+        objects: Array<out Any?>,
+        size: Int,
+        utf8TextParameters: BooleanArray?
     ): SQLCode {
         for (i in 0 until size) {
             val position = i + 1
@@ -234,14 +293,7 @@ interface IExternalSQLite {
                 1.toByte() -> bindInt(statement, position, ints[i])
                 2.toByte() -> bindInt64(statement, position, longs[i])
                 3.toByte() -> bindDouble(statement, position, doubles[i])
-                4.toByte() -> {
-                    val obj = objects[i]
-                    when (obj) {
-                        is String -> bindText(statement, position, obj)
-                        is ByteArray -> bindBlob(statement, position, obj, obj.size)
-                        else -> bindNull(statement, position)
-                    }
-                }
+                4.toByte() -> bindObject(statement, position, objects[i], utf8TextParameters)
                 else -> bindNull(statement, position)
             }
             if (result != SQL_OK) {
@@ -249,6 +301,21 @@ interface IExternalSQLite {
             }
         }
         return SQL_OK
+    }
+
+    private fun bindObject(
+        statement: Long,
+        position: Int,
+        value: Any?,
+        utf8TextParameters: BooleanArray?
+    ): SQLCode = when (value) {
+        is String -> if (utf8TextParameters == null) {
+            bindText(statement, position, value)
+        } else {
+            bindTextAdaptively(statement, position, value, utf8TextParameters)
+        }
+        is ByteArray -> bindBlob(statement, position, value, value.size)
+        else -> bindNull(statement, position)
     }
 
     fun blobBytes(blob: Long): Int
@@ -382,12 +449,17 @@ interface IExternalSQLite {
         index: Int
     ): String = columnName(statement.pointer, index)
 
-    fun columnText(statement: Long, index: Int): String
+    /**
+     * Returns the column decoded as standard UTF-8 using SQLite's explicit byte length.
+     *
+     * Embedded NUL characters are preserved and SQL `NULL` is returned as `null`.
+     */
+    fun columnText(statement: Long, index: Int): String?
 
     fun columnText(
         statement: StatementHandle,
         index: Int
-    ): String = columnText(statement.pointer, index)
+    ): String? = columnText(statement.pointer, index)
 
     fun columnType(statement: Long, index: Int): SQLDataType
 

@@ -19,11 +19,13 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -31,6 +33,7 @@ import org.mockito.stubbing.Answer
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private const val POINTER = 42L
@@ -192,7 +195,70 @@ internal class SQLPreparedStatementTest {
         SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (:name)", sqlite, CommonThreadLocalRandom)
             .bind(":name", "test")
         verify(sqlite, times(1)).bindParameterIndex(eq(STATEMENT), eq(":name"))
-        verify(sqlite, times(1)).bindText(eq(STATEMENT), eq(1), eq("test"))
+        verify(sqlite, times(1)).bindText(eq(STATEMENT), eq(1), eq("test"), any())
+    }
+
+    @Test
+    fun bindStringReusesEncodingModesAcrossParameters() {
+        val sqlite = mock<SQLite> {
+            whenever(it.bindParameterCount(any<StatementHandle>())) doReturn 2
+        }
+        val statement = SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (?, ?)", sqlite, CommonThreadLocalRandom)
+        statement.bind(1, "first")
+        statement.bind(1, "second")
+        statement.bind(2, "third")
+        val modes = argumentCaptor<BooleanArray>()
+        verify(sqlite, times(3)).bindText(eq(STATEMENT), any(), any(), modes.capture())
+        assertSame(modes.allValues[0], modes.allValues[1])
+        assertSame(modes.allValues[0], modes.allValues[2])
+    }
+
+    @Test
+    fun bindParameterRowReusesEncodingModes() {
+        val sqlite = mock<SQLite> {
+            whenever(it.bindParameterCount(any<StatementHandle>())) doReturn 1
+        }
+        val statement = SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (?)", sqlite, CommonThreadLocalRandom)
+        val row = ParameterRow(1).apply { setObject(0, "text") }
+        statement.bindRow(row)
+        statement.bindRow(row)
+        val modes = argumentCaptor<BooleanArray>()
+        verify(sqlite, times(2)).bindRow(eq(STATEMENT), same(row), modes.capture())
+        assertSame(modes.allValues[0], modes.allValues[1])
+    }
+
+    @Test
+    fun bindArrayRowReusesEncodingModes() {
+        val sqlite = mock<SQLite> {
+            whenever(it.bindParameterCount(any<StatementHandle>())) doReturn 1
+        }
+        val statement = SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (?)", sqlite, CommonThreadLocalRandom)
+        statement.bindRow(arrayOf("first"))
+        statement.bindRow(arrayOf("second"))
+        val modes = argumentCaptor<BooleanArray>()
+        verify(sqlite, times(2)).bindRow(eq(STATEMENT), any<Array<out Any?>>(), modes.capture())
+        assertSame(modes.allValues[0], modes.allValues[1])
+    }
+
+    @Test
+    fun textEncodingModesSurviveResetAndClearingBindings() {
+        val sqlite = mock<SQLite> {
+            whenever(it.bindParameterCount(any<StatementHandle>())) doReturn 1
+            whenever(it.bindText(any<StatementHandle>(), any(), any(), any())) doAnswer {
+                (it.arguments[3] as BooleanArray)[1] = true
+                SQL_OK
+            }
+        }
+        val statement = SQLPreparedStatement(STATEMENT, "INSERT INTO t VALUES (?)", sqlite, CommonThreadLocalRandom)
+        statement.bind(1, "café")
+        statement.reset()
+        statement.resetAndClearBindings()
+        statement.clearBindings()
+        statement.bind(1, "ascii later")
+        val modes = argumentCaptor<BooleanArray>()
+        verify(sqlite, times(2)).bindText(eq(STATEMENT), eq(1), any(), modes.capture())
+        assertSame(modes.allValues[0], modes.allValues[1])
+        assertTrue(modes.secondValue[1])
     }
 
     @Test

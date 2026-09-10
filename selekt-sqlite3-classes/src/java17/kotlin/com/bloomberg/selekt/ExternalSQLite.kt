@@ -70,7 +70,21 @@ internal class ExternalSQLite(
 
     external override fun bindParameterIndex(statement: Long, name: String): Int
 
-    external override fun bindText(statement: Long, index: Int, value: String): SQLCode
+    override fun bindText(statement: Long, index: Int, value: String): SQLCode =
+        bindTextUtf8(statement, index, value.toByteArray(Charsets.UTF_8))
+
+    override fun bindTextAscii(statement: Long, index: Int, value: String): SQLCode {
+        val bytes = value.toByteArray(Charsets.UTF_8)
+        // For well-formed UTF-16, UTF-8 byte length equals UTF-16 length only for ASCII.
+        // String.toByteArray replaces malformed surrogates with one-byte '?', matching bindText.
+        return if (bytes.size == value.length) {
+            bindTextUtf8(statement, index, bytes)
+        } else {
+            SQL_MISMATCH
+        }
+    }
+
+    private external fun bindTextUtf8(statement: Long, index: Int, value: ByteArray): SQLCode
 
     external override fun bindZeroBlob(statement: Long, index: Int, length: Int): SQLCode
 
@@ -126,7 +140,10 @@ internal class ExternalSQLite(
 
     external override fun columnName(statement: Long, index: Int): String
 
-    external override fun columnText(statement: Long, index: Int): String
+    override fun columnText(statement: Long, index: Int): String? =
+        columnTextBytes(statement, index)?.toString(Charsets.UTF_8)
+
+    private external fun columnTextBytes(statement: Long, index: Int): ByteArray?
 
     external override fun columnType(statement: Long, index: Int): SQLDataType
 

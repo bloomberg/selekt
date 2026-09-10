@@ -27,6 +27,8 @@ import org.mockito.kotlin.whenever
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 internal class IExternalSQLiteTest {
     private val statement = 0xCAFEL
@@ -134,6 +136,141 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `adaptive text binding permanently fails over per parameter`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(any<Long>(), any(), any())).thenAnswer {
+            if ((it.arguments[2] as String).all { character -> character.code < 0x80 }) {
+                SQL_OK
+            } else {
+                SQL_MISMATCH
+            }
+        }
+        val utf8TextParameters = BooleanArray(3)
+        assertEquals(SQL_OK, sqlite.bindText(statementHandle, 2, "ascii", utf8TextParameters))
+        assertFalse(utf8TextParameters[2])
+        assertEquals(SQL_OK, sqlite.bindText(statementHandle, 1, "café", utf8TextParameters))
+        assertTrue(utf8TextParameters[1])
+        assertEquals(SQL_OK, sqlite.bindText(statementHandle, 1, "ascii again", utf8TextParameters))
+        verify(sqlite).bindTextAscii(statement, 2, "ascii")
+        verify(sqlite).bindTextAscii(statement, 1, "café")
+        verify(sqlite, never()).bindTextAscii(statement, 1, "ascii again")
+        verify(sqlite).bindText(statement, 1, "café")
+        verify(sqlite).bindText(statement, 1, "ascii again")
+    }
+
+    @Test
+    fun `adaptive text binding returns ASCII errors without changing mode`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(statement, 1, "ascii")).thenReturn(SQL_BUSY)
+        val utf8TextParameters = BooleanArray(2)
+        assertEquals(SQL_BUSY, sqlite.bindText(statementHandle, 1, "ascii", utf8TextParameters))
+        assertFalse(utf8TextParameters[1])
+        verify(sqlite, never()).bindText(statement, 1, "ascii")
+    }
+
+    @Test
+    fun `adaptive text binding keeps UTF-8 mode when fallback fails`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(statement, 1, "café")).thenReturn(SQL_MISMATCH)
+        whenever(sqlite.bindText(statement, 1, "café")).thenReturn(SQL_ERROR)
+        whenever(sqlite.bindText(statement, 1, "ascii later")).thenReturn(SQL_OK)
+        val utf8TextParameters = BooleanArray(2)
+        assertEquals(SQL_ERROR, sqlite.bindText(statementHandle, 1, "café", utf8TextParameters))
+        assertTrue(utf8TextParameters[1])
+        assertEquals(SQL_OK, sqlite.bindText(statementHandle, 1, "ascii later", utf8TextParameters))
+        verify(sqlite).bindTextAscii(statement, 1, "café")
+        verify(sqlite, never()).bindTextAscii(statement, 1, "ascii later")
+    }
+
+    @Test
+    fun `adaptive array row binding retains independent parameter modes`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(any<Long>(), any(), any())).thenAnswer {
+            if ((it.arguments[2] as String).all { character -> character.code < 0x80 }) {
+                SQL_OK
+            } else {
+                SQL_MISMATCH
+            }
+        }
+        val utf8TextParameters = BooleanArray(3)
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRow(statementHandle, arrayOf("café", "ascii"), utf8TextParameters)
+        )
+        assertTrue(utf8TextParameters[1])
+        assertFalse(utf8TextParameters[2])
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRow(statementHandle, arrayOf("ascii later", "still ascii"), utf8TextParameters)
+        )
+
+        verify(sqlite, never()).bindTextAscii(statement, 1, "ascii later")
+        verify(sqlite).bindTextAscii(statement, 2, "still ascii")
+        verify(sqlite).bindText(statement, 1, "ascii later")
+    }
+
+    @Test
+    fun `adaptive array row binding stops at first error without changing later modes`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(statement, 1, "first")).thenReturn(SQL_ERROR)
+        val utf8TextParameters = BooleanArray(3)
+        assertEquals(
+            SQL_ERROR,
+            sqlite.bindRow(statementHandle, arrayOf("first", "second"), utf8TextParameters)
+        )
+        assertFalse(utf8TextParameters[1])
+        assertFalse(utf8TextParameters[2])
+        verify(sqlite, never()).bindTextAscii(statement, 2, "second")
+    }
+
+    @Test
+    fun `adaptive typed row binding retains independent parameter modes`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(any<Long>(), any(), any())).thenAnswer {
+            if ((it.arguments[2] as String).all { character -> character.code < 0x80 }) {
+                SQL_OK
+            } else {
+                SQL_MISMATCH
+            }
+        }
+        val tags = byteArrayOf(4, 4)
+        val utf8TextParameters = BooleanArray(3)
+        val firstRow = arrayOf<Any?>("café", "ascii")
+        val secondRow = arrayOf<Any?>("ascii again", "still ascii")
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRowTyped(
+                statementHandle,
+                tags,
+                IntArray(2),
+                LongArray(2),
+                DoubleArray(2),
+                firstRow,
+                2,
+                utf8TextParameters
+            )
+        )
+        assertTrue(utf8TextParameters[1])
+        assertFalse(utf8TextParameters[2])
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRowTyped(
+                statementHandle,
+                tags,
+                IntArray(2),
+                LongArray(2),
+                DoubleArray(2),
+                secondRow,
+                2,
+                utf8TextParameters
+            )
+        )
+        verify(sqlite, never()).bindTextAscii(statement, 1, "ascii again")
+        verify(sqlite).bindTextAscii(statement, 2, "still ascii")
+        verify(sqlite).bindText(statement, 1, "ascii again")
+    }
+
+    @Test
     fun `bindRowTyped with long statement binds all mapped types`() {
         val sqlite = handleAwareMock()
         val blob = byteArrayOf(9)
@@ -173,6 +310,60 @@ internal class IExternalSQLiteTest {
         verify(sqlite).bindText(statement, 4, "typed")
         verify(sqlite).bindBlob(statement, 5, blob, 1)
         verify(sqlite).bindNull(statement, 6)
+    }
+
+    @Test
+    fun `adaptive typed row binding handles every tag and object case`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindTextAscii(statement, 4, "ascii")).thenReturn(SQL_OK)
+        val blob = byteArrayOf(12, 13)
+        val tags = byteArrayOf(1, 2, 3, 4, 4, 4, 0)
+        val objects = arrayOfNulls<Any>(tags.size).also {
+            it[3] = "ascii"
+            it[4] = blob
+            it[5] = Any()
+        }
+        val utf8TextParameters = BooleanArray(tags.size + 1)
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRowTyped(
+                statementHandle,
+                tags,
+                intArrayOf(7, 0, 0, 0, 0, 0, 0),
+                longArrayOf(0, 8, 0, 0, 0, 0, 0),
+                doubleArrayOf(0.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0),
+                objects,
+                tags.size,
+                utf8TextParameters
+            )
+        )
+        verify(sqlite).bindInt(statement, 1, 7)
+        verify(sqlite).bindInt64(statement, 2, 8)
+        verify(sqlite).bindDouble(statement, 3, 2.5)
+        verify(sqlite).bindTextAscii(statement, 4, "ascii")
+        verify(sqlite).bindBlob(statement, 5, blob, blob.size)
+        verify(sqlite).bindNull(statement, 6)
+        verify(sqlite).bindNull(statement, 7)
+    }
+
+    @Test
+    fun `adaptive typed row binding stops at first error`() {
+        val sqlite = handleAwareMock()
+        whenever(sqlite.bindInt(statement, 1, 7)).thenReturn(SQL_ERROR)
+        assertEquals(
+            SQL_ERROR,
+            sqlite.bindRowTyped(
+                statementHandle,
+                byteArrayOf(1, 2),
+                intArrayOf(7, 0),
+                longArrayOf(0, 8),
+                DoubleArray(2),
+                arrayOfNulls<Any>(2),
+                2,
+                BooleanArray(3)
+            )
+        )
+        verify(sqlite, never()).bindInt64(statement, 2, 8)
     }
 
     @Test
@@ -281,6 +472,16 @@ internal class IExternalSQLiteTest {
         }
         sqlite.bindText(statementHandle, 1, "hi")
         verify(sqlite).bindText(statement, 1, "hi")
+    }
+
+    @Test
+    fun `bindTextAscii with StatementHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { bindTextAscii(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
+            on { bindTextAscii(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
+        }
+        assertEquals(SQL_OK, sqlite.bindTextAscii(statementHandle, 1, "ascii"))
+        verify(sqlite).bindTextAscii(statement, 1, "ascii")
     }
 
     @Test
@@ -874,10 +1075,17 @@ internal class IExternalSQLiteTest {
         on { bindDouble(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
         on { bindNull(any<Long>(), any()) }.thenReturn(SQL_OK)
         on { bindBlob(any<Long>(), any(), any(), any()) }.thenReturn(SQL_OK)
+        on { bindRow(any<Long>(), any()) }.thenCallRealMethod()
         on { bindRow(any<StatementHandle>(), any()) }.thenCallRealMethod()
+        on { bindRow(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
         on { bindRowTyped(any<Long>(), any(), any(), any(), any(), any(), any()) }.thenCallRealMethod()
         on { bindRowTyped(any<StatementHandle>(), any(), any(), any(), any(), any(), any()) }.thenCallRealMethod()
+        on {
+            bindRowTyped(any<StatementHandle>(), any(), any(), any(), any(), any(), any(), any())
+        }.thenCallRealMethod()
         on { bindText(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
+        on { bindTextAscii(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
+        on { bindText(any<StatementHandle>(), any(), any(), any()) }.thenCallRealMethod()
         on { bindInt(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
         on { bindInt64(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
         on { bindDouble(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
