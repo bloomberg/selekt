@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 1.4.1
+
+* Reuse prepared statement buffers for Java 25 ASCII binds.
+* Reduce Java 25 BLOB bind allocations with scoped slab copies.
+
 ## Version 1.4.0
 
 * Avoid heap allocations for short ASCII binds.
