@@ -17,6 +17,7 @@ com.bloomberg.selekt.commons
 com.bloomberg.selekt.exceptions
 com.bloomberg.selekt.pools
 module:selekt-jdbc
+com.bloomberg.selekt.jdbc
 com.bloomberg.selekt.jdbc.driver
 com.bloomberg.selekt.jdbc.statement
 module:selekt-sqlite3-api
