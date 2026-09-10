@@ -19,6 +19,8 @@ package com.bloomberg.selekt
 import com.bloomberg.selekt.commons.loadLibrary
 import java.nio.ByteBuffer
 
+private const val DIRECT_ASCII_BIND_MAX_LENGTH = 256
+
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
 fun externalSQLiteSingleton(
@@ -74,6 +76,9 @@ internal class ExternalSQLite(
         bindTextUtf8(statement, index, value.toByteArray(Charsets.UTF_8))
 
     override fun bindTextAscii(statement: Long, index: Int, value: String): SQLCode {
+        if (value.length <= DIRECT_ASCII_BIND_MAX_LENGTH) {
+            return bindTextAsciiDirect(statement, index, value)
+        }
         val bytes = value.toByteArray(Charsets.UTF_8)
         // For well-formed UTF-16, UTF-8 byte length equals UTF-16 length only for ASCII.
         // String.toByteArray replaces malformed surrogates with one-byte '?', matching bindText.
@@ -83,6 +88,8 @@ internal class ExternalSQLite(
             SQL_MISMATCH
         }
     }
+
+    private external fun bindTextAsciiDirect(statement: Long, index: Int, value: String): SQLCode
 
     private external fun bindTextUtf8(statement: Long, index: Int, value: ByteArray): SQLCode
 

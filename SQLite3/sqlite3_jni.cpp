@@ -16,6 +16,7 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -36,6 +37,8 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 #endif
 
 namespace {
+    constexpr jsize DIRECT_ASCII_BIND_MAX_LENGTH = 256;
+
     struct SecretAllocationHeader {
         std::uint32_t magic;
         std::uint32_t size;
@@ -555,6 +558,64 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindParameterIndex(
     auto result = sqlite3_bind_parameter_index(statement, name);
     env->ReleaseStringUTFChars(jname, name);
     return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_bindTextAsciiDirect(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index,
+    jstring jvalue
+) {
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    auto const length = env->GetStringLength(jvalue);
+    if (length > DIRECT_ASCII_BIND_MAX_LENGTH) {
+        return SQLITE_MISUSE;
+    }
+    auto const* characters = env->GetStringCritical(jvalue, nullptr);
+    if (characters == nullptr) {
+        if (!env->ExceptionCheck()) {
+            throwOutOfMemoryError(env, "GetStringCritical");
+        }
+        return SQLITE_NOMEM;
+    }
+    std::array<std::byte, DIRECT_ASCII_BIND_MAX_LENGTH + 1> bytes{};
+    bool asciiCompatible = true;
+    jsize i = 0;
+    while (i < length && asciiCompatible) {
+        auto const character = characters[i];
+        if (character < 0x80U) {
+            bytes[static_cast<std::size_t>(i)] = static_cast<std::byte>(character);
+        } else if (character >= 0xD800U && character <= 0xDFFFU) {
+            auto const isSurrogatePair = character <= 0xDBFFU
+                && i + 1 < length
+                && characters[i + 1] >= 0xDC00U
+                && characters[i + 1] <= 0xDFFFU;
+            if (isSurrogatePair) {
+                asciiCompatible = false;
+            } else {
+                bytes[static_cast<std::size_t>(i)] = std::byte{'?'};
+            }
+        } else {
+            asciiCompatible = false;
+        }
+        ++i;
+    }
+    env->ReleaseStringCritical(jvalue, characters);
+    if (!asciiCompatible) {
+        return SQLITE_MISMATCH;
+    }
+    bytes[static_cast<std::size_t>(length)] = std::byte{0};
+    auto const* text = static_cast<const char*>(static_cast<const void*>(bytes.data()));
+    return sqlite3_bind_text64(
+        statement,
+        index,
+        text,
+        static_cast<sqlite3_uint64>(length),
+        SQLITE_TRANSIENT,
+        SQLITE_UTF8
+    );
 }
 
 extern "C" JNIEXPORT jint JNICALL
