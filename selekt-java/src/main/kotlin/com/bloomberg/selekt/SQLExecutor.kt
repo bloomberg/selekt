@@ -68,6 +68,12 @@ internal interface SQLExecutor : BatchSQLExecutor {
         countAllRows: Boolean = true
     ): PreparedCursorWindow
 
+    fun executeForCursorWindows(
+        sql: String,
+        bindArgs: Array<out Any?>,
+        windowSize: Int
+    ): CursorWindowPage
+
     fun executeForForwardCursor(
         sql: String,
         bindArgs: Array<out Any?>,

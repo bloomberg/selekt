@@ -24,13 +24,8 @@ import kotlin.math.roundToLong
 /**
  * A window of rows returned by a fill operation, carrying position and row-count metadata.
  *
- * On the first fill (`countAllRows=true`), `count` is the total number of rows in the entire
- * result set, determined by stepping through all rows during the initial fill.
- *
- * On a refill (`countAllRows=false`), `count` is stale or a sentinel ([NOT_COUNTED] = -1) and
- * should not be read. Only `window` and `startPosition` are meaningful on a refill.
- * [WindowedCursor] ignores refill pages' `count` and retains the original count from the first
- * page.
+ * A fully materialised page has `count == window.numberOfRows()`. A bounded single-window fill
+ * can report the total result count separately, or use [NOT_COUNTED] when it stops early.
  */
 internal data class CursorWindowPage(
     val window: ICursorWindow,
@@ -149,6 +144,105 @@ internal class SimpleCursorWindow : ICursorWindow {
 
     @Suppress("NOTHING_TO_INLINE")
     private inline fun append(value: Any?) = rows.last().add(value)
+}
+
+/**
+ * Presents fixed-size cursor-window segments as one immutable, randomly accessible window.
+ */
+@NotThreadSafe
+@Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
+internal class SegmentedCursorWindow(
+    windows: List<ICursorWindow>,
+    private val segmentSize: Int
+) : ICursorWindow {
+    private val windows = windows.toList()
+    private var closed = false
+
+    private val rowCount: Int
+
+    init {
+        require(segmentSize > 0) { "Segment size must be positive." }
+        require(windows.isNotEmpty()) { "At least one cursor-window segment is required." }
+        windows.dropLast(1).forEach {
+            require(it.numberOfRows() == segmentSize) { "Only the final cursor-window segment may be partial." }
+        }
+        val lastSize = windows.last().numberOfRows()
+        require(lastSize in 1..segmentSize) { "The final cursor-window segment must contain rows." }
+        val total = (windows.size - 1L) * segmentSize + lastSize
+        require(total <= Int.MAX_VALUE) { "Cursor row count exceeds Int.MAX_VALUE." }
+        rowCount = total.toInt()
+    }
+
+    override fun allocateRow(): Boolean = immutable()
+
+    override fun clear(): Unit = immutable()
+
+    override fun close() {
+        if (closed) {
+            return
+        }
+        closed = true
+        var failure: Throwable? = null
+        windows.forEach { window ->
+            try {
+                window.close()
+            } catch (closeFailure: Throwable) {
+                failure?.addSuppressed(closeFailure) ?: run { failure = closeFailure }
+            }
+        }
+        failure?.let { throw it }
+    }
+
+    override fun getBlob(row: Int, column: Int) = read(row, column, ICursorWindow::getBlob)
+
+    override fun getDouble(row: Int, column: Int) = read(row, column, ICursorWindow::getDouble)
+
+    override fun getFloat(row: Int, column: Int) = read(row, column, ICursorWindow::getFloat)
+
+    override fun getInt(row: Int, column: Int) = read(row, column, ICursorWindow::getInt)
+
+    override fun getLong(row: Int, column: Int) = read(row, column, ICursorWindow::getLong)
+
+    override fun getShort(row: Int, column: Int) = read(row, column, ICursorWindow::getShort)
+
+    override fun getString(row: Int, column: Int) = read(row, column, ICursorWindow::getString)
+
+    override fun getTextBytes(row: Int, column: Int) = read(row, column, ICursorWindow::getTextBytes)
+
+    override fun isNull(row: Int, column: Int) = read(row, column, ICursorWindow::isNull)
+
+    override fun numberOfRows() = rowCount
+
+    override fun put(value: ByteArray?): Boolean = immutable()
+
+    override fun put(value: Double): Boolean = immutable()
+
+    override fun put(value: Float): Boolean = immutable()
+
+    override fun put(value: Int): Boolean = immutable()
+
+    override fun put(value: Long): Boolean = immutable()
+
+    override fun put(value: Short): Boolean = immutable()
+
+    override fun put(value: String): Boolean = immutable()
+
+    override fun putNull(): Boolean = immutable()
+
+    override fun type(row: Int, column: Int) = read(row, column, ICursorWindow::type)
+
+    private inline fun <R> read(row: Int, column: Int, block: ICursorWindow.(Int, Int) -> R): R {
+        check(!closed) { "Cursor window is closed." }
+        if (row !in 0 until rowCount) {
+            throw IndexOutOfBoundsException("Row $row is outside a cursor window containing $rowCount rows.")
+        }
+        val segment = row / segmentSize
+        return windows[segment].block(row - segment * segmentSize, column)
+    }
+
+    private fun immutable(): Nothing = throw UnsupportedOperationException(
+        "SegmentedCursorWindow is immutable."
+    )
 }
 
 @Suppress("Detekt.ComplexInterface", "Detekt.MethodOverloading", "Detekt.TooManyFunctions")

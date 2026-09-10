@@ -753,12 +753,8 @@ class SQLDatabase(
 
     private fun query(query: SQLQuery): ICursor = pledge {
         val (information, page) = query.fill(cursorWindowSize)
-        if (page.count <= cursorWindowSize) {
-            WindowedCursor(information.columnNames, page)
-        } else {
-            val refill = query.refiller(cursorWindowSize)
-            WindowedCursor(information.columnNames, page) { startPosition -> pledge { refill(startPosition) } }
-        }
+        check(page.count == page.window.numberOfRows()) { "Scrollable query was not fully materialised." }
+        WindowedCursor(information.columnNames, page)
     }
 
     private fun queryUpTo(query: SQLQuery, maximumRows: Int): ICursor = pledge {

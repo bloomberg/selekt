@@ -162,7 +162,7 @@ internal class SelektDriverTest {
         }
         find { it.name == "cursorWindowSize" }.let {
             assertNotNull(it)
-            assertEquals("Maximum rows retained by a cursor window", it.description)
+            assertEquals("Maximum rows per materialised cursor-window segment", it.description)
             assertFalse(it.required)
             assertEquals("1024", it.value)
         }
