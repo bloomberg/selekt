@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.4.0
+
+* Avoid heap allocations for short ASCII binds.
+* Materialize scrollable cursors in one pass.
+* Add bounded-memory incremental BLOB batch writes.
+
 ## Version 1.3.3
 
 * Validate index blobs before rowid lookup in vec1.
