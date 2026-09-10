@@ -653,8 +653,14 @@ internal class ExternalSQLite(
         length: Int
     ): SQLCode = if (length == 0) {
         sqlite3_bind_zeroblob.invoke(statement, index, 0) as Int
+    } else if (length <= BLOB_SLAB_THRESHOLD) {
+        withSlab { slab ->
+            val segment = slab.allocate(length.toLong())
+            MemorySegment.copy(blob, 0, segment, JAVA_BYTE, 0, length)
+            sqlite3_bind_blob_offheap.invoke(statement, index, segment, length, sqliteTransient) as Int
+        }
     } else {
-        sqlite3_bind_blob.invoke(statement, index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
+        sqlite3_bind_blob_onheap.invoke(statement, index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
     }
 
     private fun bindText(
@@ -1555,6 +1561,7 @@ internal class ExternalSQLite(
 
     companion object {
         private const val DIRECT_ASCII_BIND_MAX_LENGTH = 64
+        private const val BLOB_SLAB_THRESHOLD = 2_048
         // sqlite3_bind_text receives an explicit byte count, but retaining a trailing NUL also satisfies its text contract.
         private const val ASCII_BIND_BUFFER_SIZE = DIRECT_ASCII_BIND_MAX_LENGTH + 1
         private const val INITIAL_CALLBACK_DEPTH = 4
@@ -1579,7 +1586,12 @@ internal class ExternalSQLite(
 
         private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
-        private val sqlite3_bind_blob: MethodHandle = linker.downcallHandle(
+        private val sqlite3_bind_blob_offheap: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
+            criticalNoHeapOption
+        )
+        private val sqlite3_bind_blob_onheap: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
             criticalOption

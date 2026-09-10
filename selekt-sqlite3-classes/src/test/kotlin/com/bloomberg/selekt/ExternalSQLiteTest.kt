@@ -46,6 +46,7 @@ internal class ExternalSQLiteTest {
         const val SQL_BLOB = 4
         const val SQL_NULL = 5
         const val KEY_SIZE = 32
+        const val BLOB_SLAB_THRESHOLD = 2_048
         val DIRECT_ASCII_BIND_BOUNDARIES = intArrayOf(64, 256)
     }
 
@@ -503,6 +504,19 @@ internal class ExternalSQLiteTest {
             }
         } finally {
             sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `bindBlob preserves values at native slab boundary`() {
+        val atBoundary = ByteArray(BLOB_SLAB_THRESHOLD) { it.toByte() }
+        val aboveBoundary = ByteArray(BLOB_SLAB_THRESHOLD + 1) { it.toByte() }
+        withStatement("SELECT ?, ?") { statement ->
+            assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, atBoundary, atBoundary.size))
+            assertEquals(SQL_OK, sqlite.bindBlob(statement, 2, aboveBoundary, aboveBoundary.size))
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertContentEquals(atBoundary, sqlite.columnBlob(statement, 0))
+            assertContentEquals(aboveBoundary, sqlite.columnBlob(statement, 1))
         }
     }
 
