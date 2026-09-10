@@ -96,6 +96,12 @@ internal interface SQLExecutor : BatchSQLExecutor {
 
     fun executeForString(sql: String, bindArgs: Array<out Any?> = EMPTY_ARRAY): String?
 
+    fun executeStreamingBlobBatch(
+        batch: StreamingBlobBatch,
+        rows: Iterable<StreamingBlobRow>,
+        cancellationSignal: CancellationSignal?
+    ): Int
+
     fun executeWithRetry(sql: String): Int
 
     fun prepare(sql: String): SQLStatementInformation

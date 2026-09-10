@@ -40,7 +40,10 @@ internal class SQLBlob(
         check(blob.pointer != NULL)
     }
 
-    val size: Int by lazy(LazyThreadSafetyMode.NONE) { sqlite.blobBytes(blob) }
+    private var cachedSize: Int? = null
+
+    val size: Int
+        get() = cachedSize ?: sqlite.blobBytes(blob).also { cachedSize = it }
 
     override fun close() {
         sqlite.blobClose(blob)
@@ -57,6 +60,7 @@ internal class SQLBlob(
 
     fun reopen(row: Long) {
         sqlite.blobReopen(blob, row)
+        cachedSize = null
     }
 
     fun write(

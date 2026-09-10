@@ -186,7 +186,9 @@ internal class SQLDatabaseMemoryTest {
         query(false, "Foo", arrayOf("bar"), "", emptyArray(), null, null, null, null).use {
             assertEquals(1, it.count)
             assertTrue(it.moveToFirst())
-            assertContentEquals(byteArrayOf(), it.getBlob(0))
+            val blob = it.getBlob(0)
+            assertContentEquals(byteArrayOf(), blob)
+            assertSame(blob, it.getBlob(0))
         }
     }
 
