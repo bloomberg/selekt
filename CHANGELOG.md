@@ -1,6 +1,19 @@
 Change Log
 ==========
 
+## Version 1.3.3
+
+* Validate index blobs before rowid lookup in vec1.
+* In vec1 protect shadow tables in defensive mode.
+* Validate vec1 progress callback names.
+* Preserve unscanned buckets during streaming in vec1.
+* Validate vec1 list IDs before encoding metadata rowids.
+* Bound and linearly group vec1 metadata filters.
+* Prevent vec1 training vector counter overflow.
+* Validate thread count types and bounds in vec1.
+* Validate native secret capacity before storing bytes.
+* Optimistic ASCII binding, preserve length-aware UTF-8 text across SQLite runtimes.
+
 ## Version 1.3.2
 
 * Snapshot and clear SupportSQLiteOpenHelperFactory.
