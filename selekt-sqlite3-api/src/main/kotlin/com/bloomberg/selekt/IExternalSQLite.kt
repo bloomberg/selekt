@@ -93,8 +93,7 @@ interface IExternalSQLite {
         statement: StatementHandle,
         index: Int,
         value: Double
-    ): SQLCode =
-        bindDouble(statement.pointer, index, value)
+    ): SQLCode = bindDouble(statement.pointer, index, value)
 
     fun bindInt(statement: Long, index: Int, value: Int): SQLCode
 
@@ -189,8 +188,7 @@ interface IExternalSQLite {
         statement: StatementHandle,
         index: Int,
         length: Int
-    ): SQLCode =
-        bindZeroBlob(statement.pointer, index, length)
+    ): SQLCode = bindZeroBlob(statement.pointer, index, length)
 
     fun <T> withScopedArena(block: () -> T): T = block()
 
@@ -199,11 +197,9 @@ interface IExternalSQLite {
      *
      * @param args values to bind at 1-based positions.
      */
-    fun bindRow(statement: Long, args: Array<out Any?>): SQLCode =
-        bindRowInternal(statement, args, null)
+    fun bindRow(statement: Long, args: Array<out Any?>): SQLCode = bindRowInternal(statement, args, null)
 
-    fun bindRow(statement: StatementHandle, args: Array<out Any?>): SQLCode =
-        bindRow(statement.pointer, args)
+    fun bindRow(statement: StatementHandle, args: Array<out Any?>): SQLCode = bindRow(statement.pointer, args)
 
     fun bindRow(
         statement: StatementHandle,
@@ -477,8 +473,11 @@ interface IExternalSQLite {
 
     fun commitHook(db: Long, enabled: Boolean, listener: SQLCommitListener?): SQLCode
 
-    fun commitHook(db: DatabaseHandle, enabled: Boolean, listener: SQLCommitListener?): SQLCode =
-        commitHook(db.pointer, enabled, listener)
+    fun commitHook(
+        db: DatabaseHandle,
+        enabled: Boolean,
+        listener: SQLCommitListener?
+    ): SQLCode = commitHook(db.pointer, enabled, listener)
 
     fun databaseConfig(db: Long, op: Int, value: Int): Int
 
@@ -583,8 +582,11 @@ interface IExternalSQLite {
      */
     fun keyConventionallyAt(db: Long, pointer: Long, length: Int): SQLCode
 
-    fun keyConventionallyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
-        keyConventionallyAt(db.pointer, pointer, length)
+    fun keyConventionallyAt(
+        db: DatabaseHandle,
+        pointer: Long,
+        length: Int
+    ): SQLCode = keyConventionallyAt(db.pointer, pointer, length)
 
     fun keywordCount(): Int
 
@@ -607,13 +609,15 @@ interface IExternalSQLite {
         sql: String,
         length: Int,
         statementHolder: LongArray
-    ): SQLCode =
-        prepareV2(db.pointer, sql, length, statementHolder)
+    ): SQLCode = prepareV2(db.pointer, sql, length, statementHolder)
 
     fun progressHandler(db: Long, instructionCount: Int, handler: SQLProgressHandler?)
 
-    fun progressHandler(db: DatabaseHandle, instructionCount: Int, handler: SQLProgressHandler?) =
-        progressHandler(db.pointer, instructionCount, handler)
+    fun progressHandler(
+        db: DatabaseHandle,
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) = progressHandler(db.pointer, instructionCount, handler)
 
     fun rawKey(db: Long, key: ByteArray, length: Int): SQLCode
 
@@ -628,8 +632,11 @@ interface IExternalSQLite {
      */
     fun rawKeyAt(db: Long, pointer: Long, length: Int): SQLCode
 
-    fun rawKeyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
-        rawKeyAt(db.pointer, pointer, length)
+    fun rawKeyAt(
+        db: DatabaseHandle,
+        pointer: Long,
+        length: Int
+    ): SQLCode = rawKeyAt(db.pointer, pointer, length)
 
     fun rekey(db: Long, key: ByteArray, length: Int): SQLCode
 
@@ -644,8 +651,11 @@ interface IExternalSQLite {
      */
     fun rekeyAt(db: Long, pointer: Long, length: Int): SQLCode
 
-    fun rekeyAt(db: DatabaseHandle, pointer: Long, length: Int): SQLCode =
-        rekeyAt(db.pointer, pointer, length)
+    fun rekeyAt(
+        db: DatabaseHandle,
+        pointer: Long,
+        length: Int
+    ): SQLCode = rekeyAt(db.pointer, pointer, length)
 
     fun releaseMemory(bytes: Int): Int
 
@@ -677,8 +687,7 @@ interface IExternalSQLite {
         statement: StatementHandle,
         options: Int,
         reset: Boolean
-    ): Int =
-        statementStatus(statement.pointer, options, reset)
+    ): Int = statementStatus(statement.pointer, options, reset)
 
     fun step(statement: Long): SQLCode
 
