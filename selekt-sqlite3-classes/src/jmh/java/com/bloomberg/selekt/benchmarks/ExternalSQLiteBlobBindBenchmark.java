@@ -18,7 +18,6 @@ package com.bloomberg.selekt.benchmarks;
 
 import com.bloomberg.selekt.ExternalSQLiteKt;
 import com.bloomberg.selekt.IExternalSQLite;
-import com.bloomberg.selekt.StatementHandle;
 import kotlin.jvm.functions.Function0;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -26,6 +25,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -41,29 +41,26 @@ import java.util.concurrent.TimeUnit;
 
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {"-Xms2g", "-Xmx2g"})
 @Warmup(iterations = 2, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 4, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class ExternalSQLiteAsciiBindBenchmark {
-    private static final int BINDS_PER_OPERATION = 1_000;
+public class ExternalSQLiteBlobBindBenchmark {
+    private static final int BINDS_PER_INVOCATION = 100;
     private static final int SQL_OPEN_READWRITE_OR_CREATE = 0x00000006;
     private static final IExternalSQLite SQLITE = ExternalSQLiteKt.externalSQLiteSingleton();
 
-    @Param({"8", "32", "40", "48", "56", "64", "72", "80", "96", "128", "256", "512", "1024", "2048", "4096"})
-    int textLength;
+    @Param({"16", "64", "2048", "4096", "8192", "16384", "32768", "65536", "131072", "262144"})
+    int blobSize;
 
     private File databaseFile;
     private long database;
     private long statement;
-    private StatementHandle statementHandle;
-    private Function0<Integer> bindAsciiBatch;
-    private Function0<Integer> bindAsciiUnscopedStatementHandleBatch;
-    private Function0<Integer> bindUtf8Batch;
+    private Function0<Integer> bindBatch;
 
     @Setup(Level.Trial)
     public void setUp() throws IOException {
-        databaseFile = Files.createTempFile("selekt-ascii-bind", ".db").toFile();
+        databaseFile = Files.createTempFile("selekt-blob-bind", ".db").toFile();
         final long[] databaseHolder = new long[1];
         SQLITE.openV2(databaseFile.getAbsolutePath(), SQL_OPEN_READWRITE_OR_CREATE, databaseHolder);
         database = databaseHolder[0];
@@ -71,31 +68,11 @@ public class ExternalSQLiteAsciiBindBenchmark {
         final long[] statementHolder = new long[1];
         SQLITE.prepareV2(database, sql, sql.length(), statementHolder);
         statement = statementHolder[0];
-        statementHandle = SQLITE.newStatementHandle(statement);
-        final String text = "x".repeat(textLength);
-        bindAsciiBatch = bindBatch(text, true);
-        bindAsciiUnscopedStatementHandleBatch = bindStatementHandleBatch(text);
-        bindUtf8Batch = bindBatch(text, false);
-    }
-
-    private Function0<Integer> bindStatementHandleBatch(String text) {
-        final boolean[] utf8TextParameters = new boolean[2];
-        return () -> {
+        final byte[] blob = new byte[blobSize];
+        bindBatch = () -> {
             int result = 0;
-            for (int i = 0; i < BINDS_PER_OPERATION; i++) {
-                result |= SQLITE.bindText(statementHandle, 1, text, utf8TextParameters);
-            }
-            return result;
-        };
-    }
-
-    private Function0<Integer> bindBatch(String text, boolean ascii) {
-        return () -> {
-            int result = 0;
-            for (int i = 0; i < BINDS_PER_OPERATION; i++) {
-                result |= ascii
-                    ? SQLITE.bindTextAscii(statement, 1, text)
-                    : SQLITE.bindText(statement, 1, text);
+            for (int i = 0; i < BINDS_PER_INVOCATION; i++) {
+                result |= SQLITE.bindBlob(statement, 1, blob, blob.length);
             }
             return result;
         };
@@ -115,22 +92,8 @@ public class ExternalSQLiteAsciiBindBenchmark {
     }
 
     @Benchmark
-    public int bindAsciiBatch() {
-        return SQLITE.withScopedArena(bindAsciiBatch);
-    }
-
-    @Benchmark
-    public int bindAsciiUnscopedPointerBatch() {
-        return bindAsciiBatch.invoke();
-    }
-
-    @Benchmark
-    public int bindAsciiUnscopedStatementHandleBatch() {
-        return bindAsciiUnscopedStatementHandleBatch.invoke();
-    }
-
-    @Benchmark
-    public int bindUtf8Batch() {
-        return SQLITE.withScopedArena(bindUtf8Batch);
+    @OperationsPerInvocation(BINDS_PER_INVOCATION)
+    public int bindBlob() {
+        return SQLITE.withScopedArena(bindBatch);
     }
 }
