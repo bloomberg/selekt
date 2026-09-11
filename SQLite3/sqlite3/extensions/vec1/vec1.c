@@ -4755,6 +4755,7 @@ struct Vec1Query {
   float *aTransform;              /* Vector to query NN of */
 
   /* Used by streaming queries only */
+  i64 iModelVersion;              /* Model generation used by aBucket */
   int nBucket;                    /* Size of aBucket array */ 
   Vec1BucketResult *aBucket;      /* Remaining buckets for streaming queries */
   int nOrigRes;                   /* Number of original results */
@@ -5465,6 +5466,11 @@ static int vec1StreamingNext(Vec1Csr *pCsr){
     Vec1Buffer a = {0,0,0};
     Vec1Buffer b = {0,0,0};
     Vec1Buffer c = {0,0,0};
+
+    if( pQuery->iModelVersion!=pQuery->pTab->cfg.iModelVersion ){
+      vec1VtabError(pQuery->pTab, "vec1: model changed during streaming query");
+      return SQLITE_ABORT;
+    }
 
     do {
       int iBest = 0;
@@ -7006,6 +7012,14 @@ static int vec1DoKANNBucket(
   int rc = SQLITE_OK;
   float *aDist = 0;
 
+  if( (pTab->mod.hdr.nBucket==0 && iBucket!=-1)
+   || (pTab->mod.hdr.nBucket>0
+       && (iBucket<0 || (u32)iBucket>=pTab->mod.hdr.nBucket))
+  ){
+    vec1VtabError(pTab, "vec1: invalid query bucket: %d", iBucket);
+    return SQLITE_CORRUPT_VTAB;
+  }
+
   if( iBucket<0 ){
     rc = vec1GetSql(pTab, VEC1_SQL_SCAN_IDX, &pScanIdx);
   }else{
@@ -7031,8 +7045,9 @@ static int vec1DoKANNBucket(
     VEC1_QINSTR_START(pTab, VEC1_QINSTR_LUT);
     if( pTab->mod.hdr.flags & VEC1_MODEL_RESIDUAL ){
       float *aTmp = pTab->aTmpVec;
-      assert( iBucket>=0 && pTab->mod.hdr.nBucket>1 );
-      vec1Sub(aTmp, aEncode, &pTab->mod.aCentroid[iBucket*nElem], nElem);
+      size_t iCentroid = (size_t)iBucket * (size_t)nElem;
+      assert( iBucket>=0 && (u32)iBucket<pTab->mod.hdr.nBucket );
+      vec1Sub(aTmp, aEncode, &pTab->mod.aCentroid[iCentroid], nElem);
       aEncode = aTmp;
     }
     vec1AnnBuildLUT(pTab, aEncode, aDist);
@@ -7221,6 +7236,7 @@ static int vec1DoKANNQuery(Vec1Csr *pCsr){
     i64 nSort = pHeap->nRes;
     if( pQuery->bStreaming ){
       nSort = MIN(nSort, pQuery->K);
+      pQuery->iModelVersion = pTab->cfg.iModelVersion;
       pQuery->nBucket = 0;
       pQuery->nOrigRes = (int)MAX(16, pHeap->nRes);
       if( pTab->mod.hdr.nBucket>0 ){
