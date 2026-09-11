@@ -64,6 +64,8 @@ listOf(
             kotlin {
                 srcDir("src/$variantName/kotlin")
             }
+            compileClasspath += sourceSets.main.get().output
+            runtimeClasspath += sourceSets.main.get().output
         }
     }
     configurations["${variantName}CompileOnly"].extendsFrom(configurations.compileOnly.get())
@@ -87,6 +89,9 @@ listOf(
         kotlinJavaToolchain.toolchain.use(javaToolchains.launcherFor {
             languageVersion.set(JavaLanguageVersion.of(it.target))
         })
+    }
+    tasks.named<Jar>("${variantName}Jar") {
+        from(sourceSets.main.get().output)
     }
 }
 
@@ -122,7 +127,7 @@ listOf(
             kotlin {
                 srcDir(sourceSets["test"].kotlin.srcDirs)
             }
-            compileClasspath += sourceSets[variantName].output + sourceSets["test"].output
+            compileClasspath += sourceSets[variantName].output + sourceSets["test"].output + sourceSets.main.get().output
             runtimeClasspath += output + compileClasspath
             resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
         }

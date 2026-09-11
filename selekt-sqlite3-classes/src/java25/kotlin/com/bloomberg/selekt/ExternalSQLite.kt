@@ -68,6 +68,7 @@ internal class ExternalSQLite(
     loader: () -> Unit
 ) : IExternalSQLite, INativeCursorWindowSQLite {
     private val callbackRegistryLock = ReentrantLock()
+    private val cursorWindowOwnership = CursorWindowOwnershipRegistry()
     @GuardedBy("callbackRegistryLock")
     private val activeListeners = mutableMapOf<Long, CommitHookRegistration>()
     @GuardedBy("callbackRegistryLock")
@@ -1177,10 +1178,14 @@ internal class ExternalSQLite(
                 }
                 null
             } else {
+                val size = outSize.get(JAVA_LONG, 0L)
                 try {
-                    buffer.reinterpret(outSize.get(JAVA_LONG, 0L)).asByteBuffer()
+                    cursorWindowOwnership.register(buffer.reinterpret(size).asByteBuffer())
                 } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
-                    selekt_free_cursor_window.invoke(buffer)
+                    val result = selekt_free_cursor_window.invoke(buffer, size) as Int
+                    if (result != SQL_OK) {
+                        throwable.addSuppressed(IllegalStateException("Native cursor window ownership is inconsistent."))
+                    }
                     throw throwable
                 }
             }
@@ -1194,8 +1199,16 @@ internal class ExternalSQLite(
     }
 
     override fun freeCursorWindow(buffer: ByteBuffer) {
-        val baseBuffer = buffer.duplicate().apply { clear() }
-        selekt_free_cursor_window.invoke(MemorySegment.ofBuffer(baseBuffer))
+        val ownedBuffer = cursorWindowOwnership.consume(buffer)
+        val baseBuffer = ownedBuffer.duplicate().apply { clear() }
+        check(
+            selekt_free_cursor_window.invoke(
+                MemorySegment.ofBuffer(baseBuffer),
+                ownedBuffer.capacity().toLong()
+            ) as Int == SQL_OK
+        ) {
+            "Native cursor window ownership is inconsistent."
+        }
     }
 
     override fun getAutocommit(
@@ -1967,7 +1980,7 @@ internal class ExternalSQLite(
         )
         private val selekt_free_cursor_window: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_free_cursor_window").orElseThrow(),
-            FunctionDescriptor.ofVoid(ADDRESS),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_LONG),
             criticalNoHeapOption
         )
         private val sqlite3_stmt_busy: MethodHandle = linker.downcallHandle(

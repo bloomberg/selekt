@@ -19,9 +19,13 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Collections
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 import kotlin.math.abs
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -191,6 +195,94 @@ internal class ExternalSQLiteTest {
                 } finally {
                     nativeSQLite.freeCursorWindow(buffer)
                 }
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `native cursor window rejects buffers without live exact ownership on every backend`() {
+        val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "ownership.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.prepareV2(db, "SELECT 1", 8, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                val buffer = assertNotNull(nativeSQLite.fillCursorWindow(statement, 0, 1, true))
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(ByteBuffer.allocate(16))
+                }
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(ByteBuffer.allocateDirect(16))
+                }
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(buffer.duplicate())
+                }
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(buffer.asReadOnlyBuffer())
+                }
+                buffer.position(1)
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(buffer.slice())
+                }
+
+                nativeSQLite.freeCursorWindow(buffer)
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(buffer)
+                }
+
+                assertEquals(SQL_OK, sqlite.reset(statement))
+                val replacement = assertNotNull(nativeSQLite.fillCursorWindow(statement, 0, 1, true))
+                assertFailsWith<IllegalArgumentException> {
+                    nativeSQLite.freeCursorWindow(buffer)
+                }
+                nativeSQLite.freeCursorWindow(replacement)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `native cursor window ownership is consumed atomically on every backend`() {
+        val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "concurrent-ownership.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.prepareV2(db, "SELECT 1", 8, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                val buffer = assertNotNull(nativeSQLite.fillCursorWindow(statement, 0, 1, true))
+                val ready = CountDownLatch(2)
+                val start = CountDownLatch(1)
+                val failures = Collections.synchronizedList(mutableListOf<Throwable?>())
+                val threads = List(2) {
+                    thread {
+                        ready.countDown()
+                        start.await()
+                        failures += runCatching { nativeSQLite.freeCursorWindow(buffer) }.exceptionOrNull()
+                    }
+                }
+                val readyInTime = ready.await(5, TimeUnit.SECONDS)
+                start.countDown()
+                assertTrue(readyInTime)
+                threads.forEach {
+                    it.join(5_000)
+                    assertFalse(it.isAlive)
+                }
+
+                assertEquals(1, failures.count { it == null })
+                assertEquals(1, failures.count { it is IllegalArgumentException })
             } finally {
                 sqlite.finalize(statement)
             }
