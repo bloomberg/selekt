@@ -68,6 +68,34 @@ internal class Vec1InputsTest {
         runProbe("streaming-buckets")
 
     @Test
+    fun `vec1 aborts streaming refill after a smaller model rebuild`() =
+        runProbe("streaming-smaller-model")
+
+    @Test
+    fun `vec1 aborts streaming refill after a same-sized model rebuild`() =
+        runProbe("streaming-same-size-model")
+
+    @Test
+    fun `vec1 aborts streaming refill after a residual model rebuild`() =
+        runProbe("streaming-residual-model")
+
+    @Test
+    fun `vec1 aborts a later refill after a model rebuild`() =
+        runProbe("streaming-delayed-rebuild")
+
+    @Test
+    fun `vec1 aborts the original trained residual model rebuild proof`() =
+        runProbe("streaming-trained-rebuild")
+
+    @Test
+    fun `vec1 permits materialized streaming results after a model rebuild`() =
+        runProbe("streaming-materialized-rebuild")
+
+    @Test
+    fun `vec1 rejects an invalid saved streaming bucket independently of generation`() =
+        runProbe("streaming-invalid-bucket")
+
+    @Test
     fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
 
     @Test
@@ -177,6 +205,17 @@ internal object Vec1SecurityProbeMain {
                 "metadata-list-id" -> probeMetadataListId(sqlite, db)
                 "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
                 "streaming-buckets" -> probeStreamingBuckets(sqlite, db)
+                "streaming-smaller-model" ->
+                    assertStreamingModelRebuildAborts(sqlite, db, "smaller_rebuild", flatBucketModel(2), 1)
+                "streaming-same-size-model" ->
+                    assertStreamingModelRebuildAborts(sqlite, db, "same_size_rebuild", flatBucketModel(8), 1)
+                "streaming-residual-model" ->
+                    assertStreamingModelRebuildAborts(sqlite, db, "residual_rebuild", residualBucketModel(2), 1)
+                "streaming-delayed-rebuild" ->
+                    assertStreamingModelRebuildAborts(sqlite, db, "delayed_rebuild", flatBucketModel(8), 5)
+                "streaming-trained-rebuild" -> assertTrainedResidualModelRebuildAborts(sqlite, db)
+                "streaming-materialized-rebuild" -> assertMaterializedStreamingQuerySurvivesRebuild(sqlite, db)
+                "streaming-invalid-bucket" -> assertInvalidStreamingBucketIsRejected(sqlite, db)
                 "truncated-meta" -> probeTruncatedMetadata(sqlite, db)
                 "truncated-base-delete" -> probeTruncatedBaseDelete(sqlite, db)
                 "truncated-base-distance" -> probeTruncatedBaseDistance(sqlite, db)
@@ -433,6 +472,168 @@ internal object Vec1SecurityProbeMain {
             sqlite.finalize(statement)
         }
     }
+
+    private fun assertStreamingModelRebuildAborts(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        replacementModel: ByteArray,
+        rowsBeforeRebuild: Int
+    ) {
+        createStreamingTable(sqlite, db, table)
+        val statement = prepareStreamingQuery(sqlite, db, table, 1)
+        try {
+            repeat(rowsBeforeRebuild) {
+                check(sqlite.step(statement) == SQL_ROW)
+            }
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                replacementModel
+            )
+            expectStatementError(
+                sqlite,
+                db,
+                statement,
+                SQL_ABORT,
+                "model changed during streaming query"
+            )
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun assertTrainedResidualModelRebuildAborts(sqlite: IExternalSQLite, db: Long) {
+        val table = "trained_residual_rebuild"
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            flatBucketModel(8)
+        )
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE c(x) AS (" +
+                    "VALUES(1) UNION ALL SELECT x+1 FROM c WHERE x<600" +
+                    ") INSERT INTO $table(rowid,vector) " +
+                    "SELECT x,vec1_from_json('[' || ((x%8)*100) || ',0]') FROM c"
+            ) == SQL_OK
+        )
+        val statement = prepareStreamingQuery(sqlite, db, table, 1)
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            check(
+                sqlite.exec(
+                    db,
+                    "INSERT INTO $table(cmd,vector) " +
+                        "SELECT 'rebuild',vec1_train(vector,'{\"nbucket\":2,\"codesize\":8}') FROM $table"
+                ) == SQL_OK
+            )
+            var result = sqlite.step(statement)
+            while (result == SQL_ROW) {
+                result = sqlite.step(statement)
+            }
+            check(result != SQL_DONE) { "Streaming query completed after a trained model rebuild" }
+            check(sqlite.errorCode(db) == SQL_ABORT) {
+                "Expected SQLite error $SQL_ABORT, got $result: ${sqlite.errorMessage(db)}"
+            }
+            check(sqlite.errorMessage(db).contains("model changed during streaming query"))
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun assertMaterializedStreamingQuerySurvivesRebuild(sqlite: IExternalSQLite, db: Long) {
+        val table = "materialized_rebuild"
+        createStreamingTable(sqlite, db, table)
+        val statement = prepareStreamingQuery(sqlite, db, table, 8)
+        try {
+            val rowids = mutableSetOf<Long>()
+            check(sqlite.step(statement) == SQL_ROW)
+            check(rowids.add(sqlite.columnInt64(statement, 0)))
+            // All buckets have been scanned, so the saved results no longer depend on the model.
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                flatBucketModel(2)
+            )
+            var result = sqlite.step(statement)
+            while (result == SQL_ROW) {
+                check(rowids.add(sqlite.columnInt64(statement, 0)))
+                result = sqlite.step(statement)
+            }
+            check(result == SQL_DONE) { sqlite.errorMessage(db) }
+            check(rowids == (1L..16L).toSet()) { "Materialized streaming results changed: $rowids" }
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun assertInvalidStreamingBucketIsRejected(sqlite: IExternalSQLite, db: Long) {
+        val table = "invalid_saved_bucket"
+        createStreamingTable(sqlite, db, table)
+        val statement = prepareStreamingQuery(sqlite, db, table, 1)
+        try {
+            check(sqlite.step(statement) == SQL_ROW)
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                flatBucketModel(2)
+            )
+            // Restore the cursor's generation while retaining the smaller model to exercise the bounds guard itself.
+            check(sqlite.exec(db, "UPDATE ${table}_config SET val=1 WHERE id=0") == SQL_OK)
+            expectSingleRow(
+                sqlite,
+                db,
+                "SELECT rowid FROM $table WHERE cmd=vec1_from_json('[0,0]') AND arg=1"
+            )
+            expectStatementError(
+                sqlite,
+                db,
+                statement,
+                SQL_CORRUPT,
+                "invalid query bucket"
+            )
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun createStreamingTable(sqlite: IExternalSQLite, db: Long, table: String) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            flatBucketModel(8)
+        )
+        var rowid = 1
+        repeat(8) { bucket ->
+            repeat(2) { offset ->
+                check(
+                    sqlite.exec(
+                        db,
+                        "INSERT INTO $table(rowid, vector) " +
+                            "VALUES($rowid, vec1_from_json('[${bucket * 100},$offset]'))"
+                    ) == SQL_OK
+                )
+                ++rowid
+            }
+        }
+    }
+
+    private fun prepareStreamingQuery(sqlite: IExternalSQLite, db: Long, table: String, nProbe: Int): Long = prepare(
+        sqlite,
+        db,
+        "SELECT rowid FROM $table " +
+            "WHERE cmd=vec1_from_json('[700,0]') " +
+            "AND arg='{\"K\":1,\"nprobe\":$nProbe,\"streaming\":1}'"
+    )
 
     private fun probeTruncatedMetadata(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, tag)") == SQL_OK)
@@ -1216,6 +1417,27 @@ internal object Vec1SecurityProbeMain {
                 putFloat(0f)
             }
         }.array()
+
+    private fun residualBucketModel(nBucket: Int): ByteArray {
+        val nElem = 2
+        val nCodebook = 1
+        val codebookSize = nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        return ByteBuffer.allocate(24 + codebookSize + nBucket * nElem * SIZEOF_F32).apply {
+            order(ByteOrder.BIG_ENDIAN)
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(nBucket)
+            putInt(VEC1_DISTANCE_L2)
+            position(24 + codebookSize)
+            order(ByteOrder.nativeOrder())
+            repeat(nBucket) { bucket ->
+                putFloat(bucket * 100f)
+                putFloat(0f)
+            }
+        }.array()
+    }
 
     private fun quantizedModel(): ByteArray {
         val nElem = 4
