@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 1.4.2
+
+* Abort streaming cursors after vec1 model rebuild.
+* Wipe reusable native transfer buffers.
+* Validate native secret capacity before key access.
+* Validate cursor window ownership before native free.
+* Bound vec1 metadata buffers and block accounting.
+
 ## Version 1.4.1
 
 * Reuse prepared statement buffers for Java 25 ASCII binds.
