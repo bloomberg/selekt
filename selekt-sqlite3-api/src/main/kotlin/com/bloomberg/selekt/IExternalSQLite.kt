@@ -771,5 +771,10 @@ interface INativeCursorWindowSQLite {
         countAllRows: Boolean
     ): ByteBuffer? = fillCursorWindow(statement.pointer, startRow, maxRows, countAllRows)
 
+    /**
+     * Releases the exact buffer instance returned by [fillCursorWindow].
+     *
+     * Each returned buffer may be released once. Foreign buffers and derived views are rejected.
+     */
     fun freeCursorWindow(buffer: ByteBuffer)
 }

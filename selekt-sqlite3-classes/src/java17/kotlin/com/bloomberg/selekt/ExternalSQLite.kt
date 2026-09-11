@@ -35,6 +35,8 @@ internal class ExternalSQLite(
     configuration: SQLiteConfiguration,
     loader: () -> Unit
 ) : IExternalSQLite, INativeCursorWindowSQLite {
+    private val cursorWindowOwnership = CursorWindowOwnershipRegistry()
+
     init {
         loader()
         nativeInit(configuration.softHeapLimit)
@@ -185,7 +187,24 @@ internal class ExternalSQLite(
 
     external override fun extendedResultCodes(db: Long, onOff: Int): Int
 
-    external override fun fillCursorWindow(
+    override fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean
+    ): ByteBuffer? = fillCursorWindowNative(statement, startRow, maxRows, countAllRows)?.let { buffer ->
+        try {
+            cursorWindowOwnership.register(buffer)
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+            val result = freeCursorWindowNative(buffer)
+            if (result != SQL_OK) {
+                failure.addSuppressed(IllegalStateException("Native cursor window ownership is inconsistent."))
+            }
+            throw failure
+        }
+    }
+
+    private external fun fillCursorWindowNative(
         statement: Long,
         startRow: Int,
         maxRows: Int,
@@ -194,7 +213,14 @@ internal class ExternalSQLite(
 
     external override fun finalize(statement: Long): SQLCode
 
-    external override fun freeCursorWindow(buffer: ByteBuffer)
+    override fun freeCursorWindow(buffer: ByteBuffer) {
+        val ownedBuffer = cursorWindowOwnership.consume(buffer)
+        check(freeCursorWindowNative(ownedBuffer) == SQL_OK) {
+            "Native cursor window ownership is inconsistent."
+        }
+    }
+
+    private external fun freeCursorWindowNative(buffer: ByteBuffer): SQLCode
 
     external override fun getAutocommit(db: Long): Int
 
