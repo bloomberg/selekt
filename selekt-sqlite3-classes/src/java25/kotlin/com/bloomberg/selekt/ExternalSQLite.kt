@@ -80,9 +80,14 @@ internal class ExternalSQLite(
         var asciiText: MemorySegment? = MemorySegment.ofArray(ByteArray(ASCII_BIND_BUFFER_SIZE))
             private set
 
+        fun wipeAsciiText() {
+            asciiText?.fill(0)
+        }
+
         fun release() {
             // Heap-backed segments are GC-managed rather than closeable. Drop the reference when SQLite destroys the
             // statement so a retained, closed statement wrapper cannot retain its buffer.
+            wipeAsciiText()
             asciiText = null
         }
     }
@@ -253,6 +258,10 @@ internal class ExternalSQLite(
         else -> MemorySegment.ofAddress(statement.pointer)
     }
 
+    private fun StatementHandle.wipeAsciiText() {
+        (attachment as? StatementAttachment)?.wipeAsciiText()
+    }
+
     private fun blobSegment(blob: BlobHandle): MemorySegment =
         (blob.attachment as? MemorySegment) ?: MemorySegment.ofAddress(blob.pointer)
 
@@ -364,8 +373,11 @@ internal class ExternalSQLite(
         length: Int
     ): SQLCode = sqlite3_bind_zeroblob.invoke(statementSegment(statement), index, length) as Int
 
-    override fun clearBindings(statement: StatementHandle): SQLCode =
+    override fun clearBindings(statement: StatementHandle): SQLCode = try {
         sqlite3_clear_bindings.invoke(statementSegment(statement)) as Int
+    } finally {
+        statement.wipeAsciiText()
+    }
 
     override fun finalize(statement: StatementHandle): SQLCode = try {
         withCallbackFailurePropagation {
@@ -410,8 +422,12 @@ internal class ExternalSQLite(
         sqlite3_reset.invoke(statementSegment(statement)) as Int
     }
 
-    override fun resetAndClearBindings(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
-        sqlite3_reset_and_clear_bindings.invoke(statementSegment(statement)) as Int
+    override fun resetAndClearBindings(statement: StatementHandle): SQLCode = try {
+        withCallbackFailurePropagation {
+            sqlite3_reset_and_clear_bindings.invoke(statementSegment(statement)) as Int
+        }
+    } finally {
+        statement.wipeAsciiText()
     }
 
     override fun step(statement: StatementHandle): SQLCode = withCallbackFailurePropagation {
@@ -762,16 +778,20 @@ internal class ExternalSQLite(
         index: Int,
         value: String,
         text: MemorySegment
-    ): SQLCode = if (text.copyFromAscii(value)) {
-        sqlite3_bind_text.invoke(
-            statement,
-            index,
-            text,
-            value.length,
-            sqliteTransient
-        ) as Int
-    } else {
-        SQL_MISMATCH
+    ): SQLCode = try {
+        if (text.copyFromAscii(value)) {
+            sqlite3_bind_text.invoke(
+                statement,
+                index,
+                text,
+                value.length,
+                sqliteTransient
+            ) as Int
+        } else {
+            SQL_MISMATCH
+        }
+    } finally {
+        text.fill(0)
     }
 
     private fun columnBlob(statement: MemorySegment, index: Int): ByteArray? {
