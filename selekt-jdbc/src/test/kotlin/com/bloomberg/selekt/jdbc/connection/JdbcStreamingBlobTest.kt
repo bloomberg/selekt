@@ -71,6 +71,25 @@ internal class JdbcStreamingBlobTest {
     }
 
     @Test
+    fun transferBufferIsWipedAfterSuccessfulStreaming() {
+        val databaseFile = File(tempDir, "wiped-streaming-buffer.db")
+        val input = BufferCapturingInputStream(byteArrayOf(1, 2, 3, 4))
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use {
+                it.executeUpdate("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
+            }
+            assertEquals(
+                1,
+                connection.unwrap(SelektConnection::class.java).insertBlobs(
+                    batch(2),
+                    listOf(StreamingBlobRow(arrayOf(null, null), 4, input))
+                )
+            )
+        }
+        assertTrue(input.transferBuffer.all { it == 0.toByte() })
+    }
+
+    @Test
     @Suppress("Detekt.NestedBlockDepth")
     fun reusesBlobHandleAcrossGeneratedAndExplicitRowsOfDifferentSizes() {
         val databaseFile = File(tempDir, "varying-blob.db")
@@ -144,10 +163,12 @@ internal class JdbcStreamingBlobTest {
             connection.createStatement().use {
                 it.executeUpdate("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
             }
+            var transferBuffer: ByteArray? = null
             val input = object : ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)) {
                 private var reads = 0
 
                 override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
+                    transferBuffer = bytes
                     if (++reads > 1) {
                         throw IOException("source failed")
                     }
@@ -161,6 +182,7 @@ internal class JdbcStreamingBlobTest {
                 )
             }
             assertEquals(0, connection.rowCount())
+            assertTrue(checkNotNull(transferBuffer).all { it == 0.toByte() })
         }
     }
 
@@ -320,5 +342,13 @@ internal class JdbcStreamingBlobTest {
             closed = true
             super.close()
         }
+    }
+
+    private class BufferCapturingInputStream(payload: ByteArray) : ByteArrayInputStream(payload) {
+        lateinit var transferBuffer: ByteArray
+            private set
+
+        override fun read(bytes: ByteArray, offset: Int, length: Int): Int =
+            super.read(bytes, offset, length).also { transferBuffer = bytes }
     }
 }

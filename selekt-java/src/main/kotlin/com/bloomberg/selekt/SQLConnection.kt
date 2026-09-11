@@ -449,6 +449,7 @@ internal class SQLConnection(
             throw failure
         } finally {
             bindArguments.fill(null)
+            transferBuffer.fill(0)
         }
         blob?.close()
         completed
