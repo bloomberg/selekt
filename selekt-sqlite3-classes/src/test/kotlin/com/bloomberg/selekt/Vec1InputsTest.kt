@@ -160,6 +160,18 @@ internal class Vec1InputsTest {
     fun `vec1 training restricts progress callbacks to function names`() =
         runProbe("progress-callback-name")
 
+    @Test
+    fun `vec1 includes metadata in incremental list block accounting`() =
+        runProbe("metadata-block-insert")
+
+    @Test
+    fun `vec1 includes metadata in direct rebuild list block accounting`() =
+        runProbe("metadata-block-direct-rebuild")
+
+    @Test
+    fun `vec1 bounds packed metadata and includes it in rebuild list block accounting`() =
+        runProbe("metadata-block-packed-rebuild")
+
     private fun runProbe(mode: String) {
         val command = mutableListOf(
             Path.of(System.getProperty("java.home"), "bin", "java").toString()
@@ -235,6 +247,9 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
                 "pq-block-padding" -> probePqBlockPadding(sqlite, db)
                 "progress-callback-name" -> probeProgressCallbackName(sqlite, db)
+                "metadata-block-insert" -> probeMetadataBlockInsert(sqlite, db)
+                "metadata-block-direct-rebuild" -> probeMetadataBlockDirectRebuild(sqlite, db)
+                "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
                 else -> error("Unknown probe")
             }
         } finally {
@@ -251,6 +266,113 @@ internal object Vec1SecurityProbeMain {
             sqlite.finalize(statement)
         }
     }
+
+    private fun probeMetadataBlockInsert(sqlite: IExternalSQLite, db: Long) {
+        val table = "metadata_insert"
+        createMetadataTable(sqlite, db, table)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        insertMetadataRows(sqlite, db, table, "[0,0,0,0]")
+        assertMetadataRowsArePartitioned(sqlite, db, table)
+    }
+
+    private fun probeMetadataBlockDirectRebuild(sqlite: IExternalSQLite, db: Long) {
+        val table = "metadata_direct_rebuild"
+        createMetadataTable(sqlite, db, table)
+        insertMetadataRows(sqlite, db, table, "[0,0,0,0]")
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        assertMetadataRowsArePartitioned(sqlite, db, table)
+    }
+
+    private fun probeMetadataBlockPackedRebuild(sqlite: IExternalSQLite, db: Long) {
+        val table = "metadata_packed_rebuild"
+        createMetadataTable(sqlite, db, table)
+        insertMetadataRows(sqlite, db, table, "[0,0]")
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            flatBucketModel(2)
+        )
+        assertMetadataRowsArePartitioned(sqlite, db, table)
+    }
+
+    private fun createMetadataTable(sqlite: IExternalSQLite, db: Long, table: String) {
+        check(
+            sqlite.exec(
+                db,
+                "CREATE VIRTUAL TABLE $table USING vec1(vector, tag, payload)"
+            ) == SQL_OK
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('blocksize', 1024)"
+            ) == SQL_OK
+        )
+    }
+
+    private fun insertMetadataRows(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        vector: String
+    ) {
+        check(sqlite.exec(db, "BEGIN") == SQL_OK)
+        try {
+            repeat(4) { index ->
+                executeText(
+                    sqlite,
+                    db,
+                    "INSERT INTO $table(rowid, vector, tag, payload) " +
+                        "VALUES(${index + 1}, vec1_from_json('$vector'), ?, zeroblob(600))",
+                    metadataTag(index)
+                )
+            }
+            check(sqlite.exec(db, "COMMIT") == SQL_OK)
+        } catch (failure: Throwable) {
+            sqlite.exec(db, "ROLLBACK")
+            throw failure
+        }
+    }
+
+    private fun assertMetadataRowsArePartitioned(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String
+    ) {
+        val listCount = queryLong(sqlite, db, "SELECT count(*) FROM ${table}_idx")
+        check(listCount > 1)
+        check(queryLong(sqlite, db, "SELECT count(*) FROM ${table}_meta") == listCount * 2)
+
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT rowid, tag, length(payload) FROM $table ORDER BY rowid"
+        )
+        try {
+            repeat(4) { index ->
+                check(sqlite.step(statement) == SQL_ROW)
+                check(sqlite.columnInt64(statement, 0) == (index + 1).toLong())
+                check(sqlite.columnText(statement, 1) == metadataTag(index))
+                check(sqlite.columnInt(statement, 2) == 600)
+            }
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun metadataTag(index: Int): String = index.toString() + "x".repeat(599)
 
     private fun probeIndexOverflow(sqlite: IExternalSQLite, db: Long) {
         check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
@@ -1522,6 +1644,28 @@ internal object Vec1SecurityProbeMain {
         try {
             check(sqlite.bindBlob(statement, 1, blob, blob.size) == SQL_OK)
             check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun executeText(sqlite: IExternalSQLite, db: Long, sql: String, text: String) {
+        val statement = prepare(sqlite, db, sql)
+        try {
+            check(sqlite.bindText(statement, 1, text) == SQL_OK)
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private fun queryLong(sqlite: IExternalSQLite, db: Long, sql: String): Long {
+        val statement = prepare(sqlite, db, sql)
+        return try {
+            check(sqlite.step(statement) == SQL_ROW)
+            sqlite.columnInt64(statement, 0).also {
+                check(sqlite.step(statement) == SQL_DONE)
+            }
         } finally {
             sqlite.finalize(statement)
         }
