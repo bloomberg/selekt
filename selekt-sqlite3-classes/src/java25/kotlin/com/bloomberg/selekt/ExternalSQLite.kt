@@ -238,6 +238,24 @@ internal class ExternalSQLite(
         require(key.size == length) { "Key array size must match the declared length." }
     }
 
+    private fun requireRegisteredSecret(result: SQLCode): SQLCode {
+        require(result != SQL_MISMATCH) {
+            "Secret pointer must reference a live allocation whose size matches the key length."
+        }
+        return result
+    }
+
+    private fun registeredRawKey(db: Long, pointer: Long, length: Int): SQLCode {
+        requireRawKeyLength(length)
+        return requireRegisteredSecret(
+            selekt_secret_key.invoke(
+                MemorySegment.ofAddress(db),
+                MemorySegment.ofAddress(pointer),
+                length
+            ) as Int
+        )
+    }
+
     private fun requireArrayLength(operation: String, arraySize: Int, length: Int) {
         if (length !in 0..arraySize) {
             throw IndexOutOfBoundsException("$operation: length is out of bounds.")
@@ -1205,7 +1223,7 @@ internal class ExternalSQLite(
         return withSlab { slab ->
             val segment = slab.allocateFromBytes(key)
             try {
-                selekt_secret_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
+                selekt_raw_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
             } finally {
                 segment.fill(0)
             }
@@ -1216,14 +1234,7 @@ internal class ExternalSQLite(
         db: Long,
         pointer: Long,
         length: Int
-    ): SQLCode {
-        requireRawKeyLength(length)
-        return selekt_secret_key.invoke(
-            MemorySegment.ofAddress(db),
-            MemorySegment.ofAddress(pointer),
-            length
-        ) as Int
-    }
+    ): SQLCode = registeredRawKey(db, pointer, length)
 
     override fun keywordCount(): Int = sqlite3_keyword_count.invoke() as Int
 
@@ -1337,7 +1348,7 @@ internal class ExternalSQLite(
         return withSlab { slab ->
             val segment = slab.allocateFromBytes(key)
             try {
-                selekt_secret_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
+                selekt_raw_key.invoke(MemorySegment.ofAddress(db), segment, length) as Int
             } finally {
                 segment.fill(0)
             }
@@ -1348,14 +1359,7 @@ internal class ExternalSQLite(
         db: Long,
         pointer: Long,
         length: Int
-    ): SQLCode {
-        requireRawKeyLength(length)
-        return selekt_secret_key.invoke(
-            MemorySegment.ofAddress(db),
-            MemorySegment.ofAddress(pointer),
-            length
-        ) as Int
-    }
+    ): SQLCode = registeredRawKey(db, pointer, length)
 
     override fun rekey(
         db: Long,
@@ -1379,11 +1383,18 @@ internal class ExternalSQLite(
         db: Long,
         pointer: Long,
         length: Int
-    ): SQLCode = selekt_secret_rekey.invoke(
-        MemorySegment.ofAddress(db),
-        MemorySegment.ofAddress(pointer),
-        length
-    ) as Int
+    ): SQLCode {
+        if (length != 0) {
+            requireRawKeyLength(length)
+        }
+        return requireRegisteredSecret(
+            selekt_secret_rekey.invoke(
+                MemorySegment.ofAddress(db),
+                MemorySegment.ofAddress(pointer),
+                length
+            ) as Int
+        )
+    }
 
     override fun releaseMemory(
         bytes: Int
@@ -1847,6 +1858,11 @@ internal class ExternalSQLite(
         )
         private val selekt_secret_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_key").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val selekt_raw_key: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_raw_key").orElseThrow(),
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
             criticalNoHeapOption
         )

@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -23,6 +24,9 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 private const val SECRET_SIZE = 32
+private const val SQL_OPEN_READWRITE = 2
+private const val SQL_OPEN_CREATE = 4
+private const val SQL_OPEN_READWRITE_OR_CREATE = SQL_OPEN_READWRITE or SQL_OPEN_CREATE
 
 internal class SecretMemorySafetyTest {
     @Test
@@ -36,6 +40,30 @@ internal class SecretMemorySafetyTest {
 
     @Test
     fun `storeSecret rejects an inflated capacity without corrupting memory`() = runProbe("store-capacity")
+
+    @Test
+    fun `pointer key APIs reject an undersized secret allocation`() = runProbe("key-undersized")
+
+    @Test
+    fun `pointer key APIs reject an oversized secret allocation`() = runProbe("key-oversized")
+
+    @Test
+    fun `pointer key APIs reject an unknown pointer`() = runProbe("key-unknown")
+
+    @Test
+    fun `pointer key APIs reject a freed pointer`() = runProbe("key-freed")
+
+    @Test
+    fun `pointer key APIs reject a null pointer for a non-empty key`() = runProbe("key-null")
+
+    @Test
+    fun `pointer key APIs reject invalid non-empty key lengths`() = runProbe("key-invalid-length")
+
+    @Test
+    fun `pointer key APIs accept a live exactly sized secret allocation`() = runProbe("key-valid")
+
+    @Test
+    fun `rekeyAt delegates a zero length null pointer without validating it`() = runProbe("rekey-empty")
 
     private fun runProbe(mode: String) {
         val command = mutableListOf(
@@ -69,11 +97,22 @@ internal object SecretMemorySafetyProbeMain {
     @JvmStatic
     fun main(args: Array<String>) {
         require(args.size == 1)
-        if (args.single() == "store-capacity") {
-            probeInflatedStoreCapacity()
-            return
+        when (val mode = args.single()) {
+            "store-capacity" -> probeInflatedStoreCapacity()
+            "key-undersized" -> probeAllocationCapacity(1)
+            "key-oversized" -> probeAllocationCapacity(SECRET_SIZE * 2)
+            "key-unknown" -> probeInvalidKeyPointer(1L)
+            "key-freed" -> probeFreedKeyPointer()
+            "key-null" -> probeInvalidKeyPointer(0L)
+            "key-invalid-length" -> probeInvalidKeyLength()
+            "key-valid" -> probeValidKeyPointer()
+            "rekey-empty" -> probeEmptyRekey()
+            else -> probeInvalidFreeSize(mode)
         }
-        val invalidSize = when (args.single()) {
+    }
+
+    private fun probeInvalidFreeSize(mode: String) {
+        val invalidSize = when (mode) {
             "negative" -> -1
             "zero" -> 0
             "mismatched" -> SECRET_SIZE + 1
@@ -99,5 +138,100 @@ internal object SecretMemorySafetyProbeMain {
         }
         sqlite.storeSecret(pointer, 1, byteArrayOf(0x5a), 1)
         sqlite.freeSecret(pointer, 1)
+    }
+
+    private fun probeAllocationCapacity(capacity: Int) {
+        val sqlite = externalSQLiteSingleton()
+        val pointer = sqlite.allocateSecret(capacity)
+        try {
+            assertPointerKeyConsumersReject(sqlite, pointer, SECRET_SIZE)
+        } finally {
+            // Rejection must leave a live allocation registered and freeable at its true capacity.
+            sqlite.freeSecret(pointer, capacity)
+        }
+    }
+
+    private fun probeInvalidKeyPointer(pointer: Long) {
+        assertPointerKeyConsumersReject(externalSQLiteSingleton(), pointer, SECRET_SIZE)
+    }
+
+    private fun probeFreedKeyPointer() {
+        val sqlite = externalSQLiteSingleton()
+        val pointer = sqlite.allocateSecret(SECRET_SIZE)
+        sqlite.freeSecret(pointer, SECRET_SIZE)
+        assertPointerKeyConsumersReject(sqlite, pointer, SECRET_SIZE)
+    }
+
+    private fun probeInvalidKeyLength() {
+        val sqlite = externalSQLiteSingleton()
+        val pointer = sqlite.allocateSecret(1)
+        try {
+            assertPointerKeyConsumersReject(sqlite, pointer, 1)
+        } finally {
+            sqlite.freeSecret(pointer, 1)
+        }
+    }
+
+    private fun probeValidKeyPointer() {
+        val sqlite = externalSQLiteSingleton()
+        val pointer = sqlite.allocateSecret(SECRET_SIZE)
+        try {
+            sqlite.storeSecret(pointer, SECRET_SIZE, ByteArray(SECRET_SIZE) { 0x5a }, SECRET_SIZE)
+            withDatabase(sqlite) { db ->
+                check(sqlite.keyConventionallyAt(db, pointer, SECRET_SIZE) == SQL_OK)
+            }
+            withDatabase(sqlite) { db ->
+                check(sqlite.rawKeyAt(db, pointer, SECRET_SIZE) == SQL_OK)
+            }
+            withDatabase(sqlite) { db ->
+                val initialKey = ByteArray(SECRET_SIZE) { 0x11 }
+                check(sqlite.keyConventionally(db, initialKey, SECRET_SIZE) == SQL_OK)
+                check(sqlite.exec(db, "CREATE TABLE keyed (value INTEGER)") == SQL_OK)
+                check(sqlite.rekeyAt(db, pointer, SECRET_SIZE) == SQL_OK)
+            }
+        } finally {
+            sqlite.freeSecret(pointer, SECRET_SIZE)
+        }
+    }
+
+    private fun probeEmptyRekey() {
+        val sqlite = externalSQLiteSingleton()
+        withDatabase(sqlite) { db ->
+            val initialKey = ByteArray(SECRET_SIZE) { 0x11 }
+            check(sqlite.keyConventionally(db, initialKey, SECRET_SIZE) == SQL_OK)
+            check(sqlite.exec(db, "CREATE TABLE keyed (value INTEGER)") == SQL_OK)
+            sqlite.rekeyAt(db, 0L, 0)
+        }
+    }
+
+    private fun assertPointerKeyConsumersReject(sqlite: IExternalSQLite, pointer: Long, length: Int) {
+        withDatabase(sqlite) { db ->
+            val consumers = listOf<(Long, Long, Int) -> SQLCode>(
+                sqlite::keyConventionallyAt,
+                sqlite::rawKeyAt,
+                sqlite::rekeyAt
+            )
+            consumers.forEach { consumer ->
+                val failure = runCatching { consumer(db, pointer, length) }.exceptionOrNull()
+                check(failure is IllegalArgumentException) {
+                    "Expected IllegalArgumentException, got ${failure?.javaClass?.name ?: "no exception"}"
+                }
+            }
+        }
+    }
+
+    private inline fun withDatabase(sqlite: IExternalSQLite, block: (Long) -> Unit) {
+        val path = Files.createTempFile("selekt-secret-memory-", ".db")
+        val holder = LongArray(1)
+        try {
+            check(sqlite.openV2(path.toString(), SQL_OPEN_READWRITE_OR_CREATE, holder) == SQL_OK)
+            try {
+                block(holder.single())
+            } finally {
+                check(sqlite.closeV2(holder.single()) == SQL_OK)
+            }
+        } finally {
+            Files.deleteIfExists(path)
+        }
     }
 }

@@ -38,6 +38,9 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 
 namespace {
     constexpr jsize DIRECT_ASCII_BIND_MAX_LENGTH = 256;
+    constexpr std::int32_t RAW_KEY_SIZE = 32;
+    constexpr auto INVALID_SECRET_POINTER_MESSAGE =
+        "Secret pointer must reference a live allocation whose size matches the key length.";
 
     struct SecretAllocationHeader {
         std::uint32_t magic;
@@ -50,7 +53,7 @@ namespace {
     // Secret pointers may cross connection and thread boundaries. Every registry access must hold this mutex.
     struct SecretAllocationRegistry {
         std::mutex mutex;
-        std::unordered_map<void*, std::uint32_t> allocations;
+        std::unordered_map<const unsigned char*, std::uint32_t> allocations;
     };
 
     SecretAllocationRegistry& secretAllocationRegistry() {
@@ -264,6 +267,37 @@ static int rawKeyImpl(sqlite3* db, const void* key, int keyLength) {
     return result;
 }
 
+template <typename Operation>
+static int withRegisteredSecret(
+    const unsigned char* pointer,
+    std::int32_t length,
+    Operation operation
+) {
+    if (pointer == nullptr || length != RAW_KEY_SIZE) {
+        return SQLITE_MISMATCH;
+    }
+    struct SensitiveSnapshot {
+        std::array<unsigned char, RAW_KEY_SIZE> bytes{};
+
+        ~SensitiveSnapshot() {
+            selekt::secure_zero(bytes.data(), bytes.size());
+        }
+    };
+    SensitiveSnapshot snapshot;
+    {
+        auto& registry = secretAllocationRegistry();
+        std::scoped_lock lock(registry.mutex);
+        auto const registered = registry.allocations.find(pointer);
+        if (registered == registry.allocations.end()
+            || registered->second != static_cast<std::uint32_t>(length)) {
+            return SQLITE_MISMATCH;
+        }
+        // Keep freeSecret from invalidating the allocation while its contents are copied.
+        std::memcpy(snapshot.bytes.data(), pointer, snapshot.bytes.size());
+    }
+    return operation(snapshot.bytes.data(), length);
+}
+
 static jint rawKey(
     JNIEnv* env,
     jlong jdb,
@@ -327,17 +361,18 @@ extern "C" int selekt_secret_free(void* p, int32_t size) {
     if (p == nullptr) {
         return SQLITE_OK;
     }
-    auto* allocation = static_cast<unsigned char*>(p) - sizeof(SecretAllocationHeader);
+    unsigned char* allocation = nullptr;
     SecretAllocationHeader header{};
     {
         auto& registry = secretAllocationRegistry();
         std::scoped_lock lock(registry.mutex);
-        auto const registered = registry.allocations.find(p);
+        auto const registered = registry.allocations.find(static_cast<const unsigned char*>(p));
         if (registered == registry.allocations.end()
             || registered->second != static_cast<std::uint32_t>(size)) {
             return SQLITE_MISMATCH;
         }
         // Establish pointer provenance before dereferencing the adjacent header supplied by the caller.
+        allocation = static_cast<unsigned char*>(p) - sizeof(SecretAllocationHeader);
         std::memcpy(&header, allocation, sizeof(header));
         if (header.magic != SECRET_ALLOCATION_MAGIC
             || header.size == 0
@@ -369,7 +404,7 @@ extern "C" int selekt_secret_store(
     }
     auto& registry = secretAllocationRegistry();
     std::scoped_lock lock(registry.mutex);
-    auto const registered = registry.allocations.find(p);
+    auto const registered = registry.allocations.find(static_cast<const unsigned char*>(p));
     if (registered == registry.allocations.end()
         || registered->second != static_cast<std::uint32_t>(capacity)) {
         return SQLITE_MISMATCH;
@@ -380,18 +415,54 @@ extern "C" int selekt_secret_store(
     return SQLITE_OK;
 }
 
-extern "C" int selekt_secret_key(sqlite3* db, const void* key, int32_t length) {
-    if (length != 32) {
-        return SQLITE_ERROR;
+extern "C" int selekt_secret_key(sqlite3* db, const unsigned char* key, int32_t length) {
+    return withRegisteredSecret(
+        key,
+        length,
+        [db](const unsigned char* snapshot, std::int32_t snapshotLength) {
+            return rawKeyImpl(db, snapshot, snapshotLength);
+        }
+    );
+}
+
+extern "C" int selekt_raw_key(sqlite3* db, const unsigned char* key, int32_t length) {
+    if (key == nullptr || length != RAW_KEY_SIZE) {
+        return SQLITE_MISMATCH;
     }
     return rawKeyImpl(db, key, length);
 }
 
-extern "C" int selekt_secret_rekey(sqlite3* db, const void* key, int32_t length) {
+extern "C" int selekt_secret_rekey(sqlite3* db, const unsigned char* key, int32_t length) {
     if (length == 0) {
         return sqlite3_rekey(db, nullptr, 0);
     }
-    return sqlite3_rekey(db, key, length);
+    return withRegisteredSecret(
+        key,
+        length,
+        [db](const unsigned char* snapshot, std::int32_t snapshotLength) {
+            return sqlite3_rekey(db, snapshot, snapshotLength);
+        }
+    );
+}
+
+static jint registeredSecretResult(JNIEnv* env, int result) {
+    if (result == SQLITE_MISMATCH) {
+        throwIllegalArgumentException(env, INVALID_SECRET_POINTER_MESSAGE);
+        return SQLITE_ERROR;
+    }
+    return result;
+}
+
+static jint registeredRawKey(JNIEnv* env, jlong jdb, jlong pointer, jint length) {
+    if (length != RAW_KEY_SIZE) {
+        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
+        return SQLITE_ERROR;
+    }
+    return registeredSecretResult(env, selekt_secret_key(
+        static_cast<sqlite3*>(pointerFromJLong(jdb)),
+        static_cast<const unsigned char*>(pointerFromJLong(pointer)),
+        length
+    ));
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -1449,11 +1520,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_keyConventionallyAt(
     jlong pointer,
     jint length
 ) {
-    if (length != 32) {
-        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
-        return SQLITE_ERROR;
-    }
-    return selekt_secret_key(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
+    return registeredRawKey(env, jdb, pointer, length);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -1628,11 +1695,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_rawKeyAt(
     jlong pointer,
     jint length
 ) {
-    if (length != 32) {
-        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
-        return SQLITE_ERROR;
-    }
-    return selekt_secret_key(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
+    return registeredRawKey(env, jdb, pointer, length);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -1664,7 +1727,15 @@ Java_com_bloomberg_selekt_ExternalSQLite_rekeyAt(
     jlong pointer,
     jint length
 ) {
-    return selekt_secret_rekey(reinterpret_cast<sqlite3*>(jdb), reinterpret_cast<const void*>(static_cast<uintptr_t>(pointer)), length);
+    if (length != 0 && length != RAW_KEY_SIZE) {
+        throwIllegalArgumentException(env, "Key must be 32 bytes in size.");
+        return SQLITE_ERROR;
+    }
+    return registeredSecretResult(env, selekt_secret_rekey(
+        static_cast<sqlite3*>(pointerFromJLong(jdb)),
+        static_cast<const unsigned char*>(pointerFromJLong(pointer)),
+        length
+    ));
 }
 
 extern "C" JNIEXPORT jint JNICALL
