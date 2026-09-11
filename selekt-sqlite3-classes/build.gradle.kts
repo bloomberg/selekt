@@ -43,6 +43,10 @@ java {
     withSourcesJar()
 }
 
+tasks.named<Javadoc>("javadoc") {
+    enabled = false
+}
+
 (components["java"] as AdhocComponentWithVariants).run {
     withVariantsFromConfiguration(configurations["apiElements"]) { skip() }
     withVariantsFromConfiguration(configurations["runtimeElements"]) { skip() }
