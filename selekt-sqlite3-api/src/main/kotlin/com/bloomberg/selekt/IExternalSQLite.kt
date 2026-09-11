@@ -60,6 +60,8 @@ interface IExternalSQLite {
     fun newBlobHandle(pointer: Long): BlobHandle = BlobHandle(pointer)
 
     /**
+     * Allocates [size] bytes of native memory for sensitive data.
+     *
      * @since 0.36.0
      */
     fun allocateSecret(size: Int): Long
@@ -578,6 +580,11 @@ interface IExternalSQLite {
         keyConventionally(db.pointer, key, length)
 
     /**
+     * Applies a conventional 32-byte raw key held in native secret memory.
+     *
+     * [pointer] must reference a live allocation returned by [allocateSecret] with a size of exactly 32 bytes, and
+     * [length] must be 32.
+     *
      * @since 0.36.0
      */
     fun keyConventionallyAt(db: Long, pointer: Long, length: Int): SQLCode
@@ -628,6 +635,11 @@ interface IExternalSQLite {
     ): SQLCode = rawKey(db.pointer, key, length)
 
     /**
+     * Applies a 32-byte raw key held in native secret memory.
+     *
+     * [pointer] must reference a live allocation returned by [allocateSecret] with a size of exactly 32 bytes, and
+     * [length] must be 32.
+     *
      * @since 0.36.0
      */
     fun rawKeyAt(db: Long, pointer: Long, length: Int): SQLCode
@@ -647,6 +659,12 @@ interface IExternalSQLite {
     ): SQLCode = rekey(db.pointer, key, length)
 
     /**
+     * Replaces the database key with a 32-byte key held in native secret memory.
+     *
+     * For a non-empty key, [pointer] must reference a live allocation returned by [allocateSecret] with a size of
+     * exactly 32 bytes, and [length] must be 32. A [length] of zero clears encryption and does not dereference
+     * [pointer].
+     *
      * @since 0.36.0
      */
     fun rekeyAt(db: Long, pointer: Long, length: Int): SQLCode
