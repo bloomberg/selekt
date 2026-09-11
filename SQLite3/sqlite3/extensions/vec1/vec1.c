@@ -587,17 +587,27 @@ static void vec1HeapInsert(Vec1AnnHeap *p, sqlite3_int64 iRowid, double fDist){
 ** Ensure there is room in the buffer for another nByte bytes of data. That
 ** is, make sure the allocated size is at least (pBuf->n + nByte).
 **
-** Return SQLITE_OK if successful, or SQLITE_NOMEM if an OOM error is
+** Return SQLITE_OK if successful, SQLITE_TOOBIG if the requested size cannot
+** be represented by Vec1Buffer, or SQLITE_NOMEM if an OOM error is
 ** encountered.
 */
 static int vec1BufferGrow(Vec1Buffer *pBuf, sqlite3_int64 nByte){
-  if( pBuf->n+nByte>pBuf->nAlloc ){
+  sqlite3_int64 nReq;
+
+  if( nByte<0 || pBuf->n<0 || pBuf->nAlloc<0 ) return SQLITE_TOOBIG;
+  nReq = (sqlite3_int64)pBuf->n + nByte;
+  if( nReq>INT_MAX ) return SQLITE_TOOBIG;
+
+  if( nReq>pBuf->nAlloc ){
     sqlite3_int64 nNew = pBuf->nAlloc;
     unsigned char *aNew = 0;
 
-    if( nNew==0 ) nNew = nByte + 100;
-    while( nNew < (pBuf->n + nByte) ){
-      nNew = nNew * 2;
+    if( nNew==0 ){
+      nNew = nReq;
+      if( nNew<=INT_MAX-100 ) nNew += 100;
+    }
+    while( nNew<nReq ){
+      nNew = nNew>INT_MAX/2 ? nReq : nNew*2;
     }
     aNew = sqlite3_realloc64(pBuf->a, nNew);
     if( aNew==0 ){
@@ -615,6 +625,9 @@ static int vec1BufferGrow(Vec1Buffer *pBuf, sqlite3_int64 nByte){
 ** bytes of space allocated.
 */
 static int vec1BufferSize(Vec1Buffer *pBuf, sqlite3_int64 nByte){
+  if( nByte<0 || nByte>INT_MAX || pBuf->n<0 || pBuf->nAlloc<0 ){
+    return SQLITE_TOOBIG;
+  }
   if( nByte>pBuf->nAlloc ){
     u8 *aNew = sqlite3_realloc64(pBuf->a, nByte);
     if( aNew==0 ){
@@ -624,6 +637,20 @@ static int vec1BufferSize(Vec1Buffer *pBuf, sqlite3_int64 nByte){
     pBuf->nAlloc = (int)nByte;
   }
   return SQLITE_OK;
+}
+
+/* Grow pBuf without allowing its logical size to exceed nLimit. */
+static int vec1BufferGrowLimited(
+  Vec1Buffer *pBuf,
+  sqlite3_int64 nByte,
+  int nLimit
+){
+  if( nLimit<0 || nByte<0 || pBuf->n<0
+   || nByte>(sqlite3_int64)nLimit-pBuf->n
+  ){
+    return SQLITE_TOOBIG;
+  }
+  return vec1BufferGrow(pBuf, nByte);
 }
 
 /*
@@ -8559,7 +8586,9 @@ static int vec1WriteMeta(
       p->format = VEC1_META_REAL;
     }
 
-    rc = vec1BufferSize(&buf, VEC1_META_SZHDR + nEntry * szElem);
+    rc = vec1BufferSize(
+        &buf, VEC1_META_SZHDR + (sqlite3_int64)nEntry * szElem
+    );
     if( rc!=SQLITE_OK ) return rc;
 
     while( iIn<p->buf.n && (iOut+szElem)<=buf.nAlloc ){
@@ -8758,6 +8787,19 @@ static int vec1ListBuilderLoad(
   return rc;
 }
 
+/* Return the logical size of the rowids, vectors and metadata accumulated. */
+static sqlite3_int64 vec1ListBuilderSize(const Vec1ListBuilder *p){
+  /* nMeta is capped at 256 and every component is an int, so the complete
+  ** sum is representable by sqlite3_int64. */
+  sqlite3_int64 nByte = (sqlite3_int64)p->bufRowid.n + p->bufData.n;
+  int ii;
+  for(ii=0; ii<p->pTab->nMeta; ii++){
+    int nMeta = p->aMeta[ii].buf.n - VEC1_META_SZHDR;
+    if( nMeta>0 ) nByte += nMeta;
+  }
+  return nByte;
+}
+
 /* Zero unused PQ slots in the final block before it is persisted. */
 static void vec1ListBuilderZeroPadding(Vec1ListBuilder *p, int nEntry){
   int nUsed = nEntry % VEC1_PQ_BLOCKSIZE;
@@ -8845,6 +8887,14 @@ static int vec1ListBuilderFlush(Vec1ListBuilder *p){
     }
   }
   return rc;
+}
+
+/* Flush after a complete row if all of its data exceeds the block budget. */
+static int vec1ListBuilderFlushIfFull(Vec1ListBuilder *p){
+  if( vec1ListBuilderSize(p)>p->pTab->cfg.nBlocksize ){
+    return vec1ListBuilderFlush(p);
+  }
+  return SQLITE_OK;
 }
 
 
@@ -8978,7 +9028,9 @@ static int vec1ListBuilderAdd(
   const u8 *aPQ                   /* Pointer to buffer containing PQ enc. */
 ){
   int rc = SQLITE_OK;
-  int nFinal = 0;
+  sqlite3_int64 nCurrent;
+  sqlite3_int64 nEntry;
+  sqlite3_int64 nFinal;
 
   assert( p->szRowid==4 || p->szRowid==8 );
 
@@ -8989,7 +9041,12 @@ static int vec1ListBuilderAdd(
   ** it is too large or a tombstone value, flush the current list to disk
   ** in that case as well.
   */
-  nFinal = p->bufRowid.n + p->bufData.n + p->szRowid + p->nVectorSize;
+  nCurrent = vec1ListBuilderSize(p);
+  nEntry = (sqlite3_int64)p->szRowid + p->nVectorSize;
+  if( nCurrent<0 || nEntry<0 || nCurrent>VEC1_LARGEST_INT64-nEntry ){
+    return SQLITE_TOOBIG;
+  }
+  nFinal = nCurrent + nEntry;
   if( nFinal>p->pTab->cfg.nBlocksize 
    || (p->szRowid==4 && (iRowid<0 || iRowid>=VEC1_TOMBSTONE_32))
    || (p->szRowid==8 && iRowid==VEC1_TOMBSTONE_64)
@@ -9237,76 +9294,90 @@ static int vec1WriterVector(
 */
 static int vec1AppendMetaValue(
   Vec1Buffer *pBuf,
-  sqlite3_value *pVal
+  sqlite3_value *pVal,
+  int nLimit
 ){
-  int rc = SQLITE_OK;
-  switch( sqlite3_value_type(pVal) ){
+  int eType = sqlite3_value_type(pVal);
+  sqlite3_int64 nRequired;
+  int n = 0;
+  int rc;
+
+  switch( eType ){
+    case SQLITE_NULL:
+      nRequired = 1;
+      break;
+    case SQLITE_INTEGER: {
+      i64 iVal = sqlite3_value_int64(pVal);
+      nRequired = iVal>=0 && iVal<=254 ? 2 :
+          (iVal>=-2147483647 && iVal<=2147483647 ? 5 : 9);
+      break;
+    }
+    case SQLITE_FLOAT:
+      nRequired = 9;
+      break;
+    case SQLITE_TEXT:
+    case SQLITE_BLOB:
+      n = sqlite3_value_bytes(pVal);
+      nRequired = (sqlite3_int64)n + 5;
+      break;
+    default:
+      return SQLITE_MISMATCH;
+  }
+  rc = vec1BufferGrowLimited(pBuf, nRequired, nLimit);
+  if( rc!=SQLITE_OK ) return rc;
+
+  switch( eType ){
     case SQLITE_NULL: {
-      rc = vec1BufferGrow(pBuf, 1);
-      if( rc==SQLITE_OK ){
-        pBuf->a[pBuf->n++] = 0x00;
-      }
+      pBuf->a[pBuf->n++] = 0x00;
       break;
     }
 
     case SQLITE_INTEGER: {
       i64 iVal = sqlite3_value_int64(pVal);
-      rc = vec1BufferGrow(pBuf, 9);
-      if( rc==SQLITE_OK ){
-        if( iVal>=0 && iVal<=254 ){
-          pBuf->a[pBuf->n++] = 0x01;
-          pBuf->a[pBuf->n++] = (iVal & 0xFF);
-        }
-        else if( iVal>=-2147483647 && iVal<=2147483647 ){
-          pBuf->a[pBuf->n++] = 0x02;
-          vec1PutU32(&pBuf->a[pBuf->n], (int)iVal);
-          pBuf->n += 4;
-        }else{
-          pBuf->a[pBuf->n++] = 0x03;
-          vec1PutU64(&pBuf->a[pBuf->n], iVal);
-          pBuf->n += 8;
-        }
+      if( iVal>=0 && iVal<=254 ){
+        pBuf->a[pBuf->n++] = 0x01;
+        pBuf->a[pBuf->n++] = (iVal & 0xFF);
       }
-      break;
-    }
-
-    case SQLITE_FLOAT: {
-      double fVal = sqlite3_value_double(pVal);
-      rc = vec1BufferGrow(pBuf, 9);
-      if( rc==SQLITE_OK ){
-        i64 iVal;
-        memcpy(&iVal, &fVal, sizeof(fVal));
-        pBuf->a[pBuf->n++] = 0x04;
+      else if( iVal>=-2147483647 && iVal<=2147483647 ){
+        pBuf->a[pBuf->n++] = 0x02;
+        vec1PutU32(&pBuf->a[pBuf->n], (int)iVal);
+        pBuf->n += 4;
+      }else{
+        pBuf->a[pBuf->n++] = 0x03;
         vec1PutU64(&pBuf->a[pBuf->n], iVal);
         pBuf->n += 8;
       }
       break;
     }
 
-    case SQLITE_TEXT: {
-      const char *z = (const char*)sqlite3_value_text(pVal);
-      int n = sqlite3_value_bytes(pVal);
-      rc = vec1BufferGrow(pBuf, n+5);
-      if( rc==SQLITE_OK ){
-        pBuf->n += vec1PutVarint(&pBuf->a[pBuf->n], (n*2 + 5));
-        memcpy(&pBuf->a[pBuf->n], z, n);
-        pBuf->n += n;
-      }
+    case SQLITE_FLOAT: {
+      double fVal = sqlite3_value_double(pVal);
+      i64 iVal;
+      memcpy(&iVal, &fVal, sizeof(fVal));
+      pBuf->a[pBuf->n++] = 0x04;
+      vec1PutU64(&pBuf->a[pBuf->n], iVal);
+      pBuf->n += 8;
       break;
     }
 
-    default: {
-      const u8 *z = (const u8*)sqlite3_value_blob(pVal);
-      int n = sqlite3_value_bytes(pVal);
-      rc = vec1BufferGrow(pBuf, n+5);
-      if( rc==SQLITE_OK ){
-        pBuf->n += vec1PutVarint(&pBuf->a[pBuf->n], (n*2 + 6));
-        memcpy(&pBuf->a[pBuf->n], z, n);
-        pBuf->n += n;
+    case SQLITE_TEXT:
+    case SQLITE_BLOB: {
+      const u8 *z;
+      u64 eSerial;
+      if( eType==SQLITE_TEXT ){
+        z = (const u8*)sqlite3_value_text(pVal);
+        eSerial = (u64)n*2 + 5;
+      }else{
+        z = (const u8*)sqlite3_value_blob(pVal);
+        eSerial = (u64)n*2 + 6;
       }
-      assert( sqlite3_value_type(pVal)==SQLITE_BLOB );
+      pBuf->n += vec1PutVarint(&pBuf->a[pBuf->n], eSerial);
+      if( n>0 ) memcpy(&pBuf->a[pBuf->n], z, n);
+      pBuf->n += n;
       break;
     }
+    default:
+      return SQLITE_MISMATCH;
   }
 
   return rc;
@@ -9340,27 +9411,44 @@ static void vec1MetaValueUpdateFlags(const u8 *aMeta, u32 *pFlags){
 ** a list of values in non-generic format (e.g. VEC1_META_1BYTEINT format).
 ** This function converts the list to generic format.
 **
-** Return SQLITE_OK if successful, or an SQLite error code (SQLITE_NOMEM)
-** otherwise.
+** Return SQLITE_OK if successful, or SQLITE_TOOBIG/SQLITE_NOMEM otherwise.
 */
-static int vec1ExpandMetaValue(Vec1MetaBuilder *p){
+static int vec1ExpandMetaValue(Vec1MetaBuilder *p, int nLimit){
   Vec1Buffer orig;
   int rc = SQLITE_OK;
   int bHasNull = 0;
+  sqlite3_int64 nRequired = VEC1_META_SZHDR;
+  int iIn = VEC1_META_SZHDR;
+
+  assert( p->format==VEC1_META_1BYTEINT
+       || p->format==VEC1_META_4BYTEINT
+       || p->format==VEC1_META_REAL
+  );
+
+  while( iIn<p->buf.n ){
+    if( p->format==VEC1_META_1BYTEINT ){
+      nRequired += p->buf.a[iIn]==VEC1_META_1BYTENULL ? 1 : 2;
+      iIn++;
+    }else if( p->format==VEC1_META_4BYTEINT ){
+      nRequired += vec1GetU32(&p->buf.a[iIn])==VEC1_META_4BYTENULL ? 1 : 5;
+      iIn += sizeof_u32;
+    }else{
+      nRequired += vec1GetU64(&p->buf.a[iIn])==VEC1_META_REALNULL ? 1 : 9;
+      iIn += sizeof_f64;
+    }
+  }
+  if( nRequired>nLimit || nRequired>INT_MAX ) return SQLITE_TOOBIG;
 
   memcpy(&orig, &p->buf, sizeof(Vec1Buffer));
   p->buf.a = 0;
   p->buf.n = VEC1_META_SZHDR;
   p->buf.nAlloc = 0;
 
-  assert( p->format==VEC1_META_1BYTEINT 
-       || p->format==VEC1_META_4BYTEINT 
-       || p->format==VEC1_META_REAL 
+  rc = vec1BufferGrowLimited(
+      &p->buf, nRequired-VEC1_META_SZHDR, nLimit
   );
-
-  rc = vec1BufferGrow(&p->buf, (orig.n * 2));
   if( rc==SQLITE_OK ){
-    int iIn = VEC1_META_SZHDR;
+    iIn = VEC1_META_SZHDR;
     int iOut = VEC1_META_SZHDR;
 
     while( iIn<orig.n ){
@@ -9427,6 +9515,7 @@ static int vec1WriterMetaFromArray(
     return SQLITE_CORRUPT_VTAB;
   }
   Vec1ListBuilder *p = &pWriter->aBld[iBucket];
+  int nLimit = sqlite3_limit(pWriter->pTab->db, SQLITE_LIMIT_LENGTH, -1);
   int ii;
   int rc = SQLITE_OK;
   assert( p->pTab!=0 );
@@ -9440,68 +9529,62 @@ static int vec1WriterMetaFromArray(
      || pMeta->format==VEC1_META_REAL 
     ){
       int eType = sqlite3_value_type(pVal);
-
-      rc = vec1BufferGrow(pBuf, sizeof_f64);
-      if( rc!=SQLITE_OK ) continue;
+      int nByte = 0;
 
       if( eType==SQLITE_INTEGER ){
         i64 iVal = sqlite3_value_int64(pVal);
 
         if( pMeta->format==VEC1_META_1BYTEINT ){
           if( iVal>=0 && iVal<=254 ){
-            pBuf->a[pBuf->n++] = (iVal & 0xFF);
-            pVal = 0;
+            nByte = 1;
           }
-        }else{
-          if( iVal>=VEC1_META_4BYTEMIN && iVal<=VEC1_META_4BYTEMAX ){
-            if( pMeta->format==VEC1_META_4BYTEINT ){
-              vec1PutU32(&pBuf->a[pBuf->n], (u32)iVal);
-              pBuf->n += sizeof_u32;
-            }else{
-              double fVal = (double)iVal;
-              u64 v;
-              memcpy(&v, &fVal, sizeof_f64);
-              vec1PutU64(&pBuf->a[pBuf->n], v);
-              pBuf->n += sizeof_f64;
-            }
-            pVal = 0;
-          }
+        }else if( iVal>=VEC1_META_4BYTEMIN && iVal<=VEC1_META_4BYTEMAX ){
+          nByte = pMeta->format==VEC1_META_4BYTEINT ? sizeof_u32 : sizeof_f64;
         }
       }else if( eType==SQLITE_FLOAT && pMeta->format==VEC1_META_REAL ){
-        double fVal = sqlite3_value_double(pVal);
-        u64 v;
-        memcpy(&v, &fVal, sizeof_f64);
-        vec1PutU64(&pBuf->a[pBuf->n], v);
-        pBuf->n += sizeof_f64;
-        pVal = 0;
+        nByte = sizeof_f64;
       }else if( eType==SQLITE_NULL ){
-        rc = vec1BufferGrow(pBuf, sizeof_f64);
+        nByte = pMeta->format==VEC1_META_1BYTEINT ? 1 :
+            (pMeta->format==VEC1_META_4BYTEINT ? sizeof_u32 : sizeof_f64);
+      }
+
+      if( nByte>0 ){
+        rc = vec1BufferGrowLimited(pBuf, nByte, nLimit);
+      }
+      if( rc==SQLITE_OK && nByte>0 ){
         if( pMeta->format==VEC1_META_1BYTEINT ){
-          pBuf->a[pBuf->n++] = (VEC1_META_1BYTENULL & 0xFF);
-        }
-        else if( pMeta->format==VEC1_META_4BYTEINT ){
-          vec1PutU32(&pBuf->a[pBuf->n], (u32)VEC1_META_4BYTENULL);
+          i64 iVal = eType==SQLITE_NULL ? VEC1_META_1BYTENULL :
+              sqlite3_value_int64(pVal);
+          pBuf->a[pBuf->n++] = (iVal & 0xFF);
+        }else if( pMeta->format==VEC1_META_4BYTEINT ){
+          i64 iVal = eType==SQLITE_NULL ? VEC1_META_4BYTENULL :
+              sqlite3_value_int64(pVal);
+          vec1PutU32(&pBuf->a[pBuf->n], (u32)iVal);
           pBuf->n += sizeof_u32;
         }else{
-          vec1PutU64(&pBuf->a[pBuf->n], (u64)VEC1_META_REALNULL);
+          double fVal = eType==SQLITE_NULL ? 0.0 : sqlite3_value_double(pVal);
+          u64 v = VEC1_META_REALNULL;
+          if( eType!=SQLITE_NULL ) memcpy(&v, &fVal, sizeof_f64);
+          vec1PutU64(&pBuf->a[pBuf->n], v);
           pBuf->n += sizeof_f64;
         }
         pVal = 0;
       }
 
-      if( pVal ){
-        rc = vec1ExpandMetaValue(pMeta);
+      if( rc==SQLITE_OK && pVal ){
+        rc = vec1ExpandMetaValue(pMeta, nLimit);
       }
     }
 
-    if( pMeta->format==VEC1_META_GENERIC ){
+    if( rc==SQLITE_OK && pMeta->format==VEC1_META_GENERIC ){
       int iOff = pBuf->n;
-      rc = vec1AppendMetaValue(pBuf, pVal);
+      rc = vec1AppendMetaValue(pBuf, pVal, nLimit);
       if( rc==SQLITE_OK ){
         vec1MetaValueUpdateFlags(&pBuf->a[iOff], &pMeta->flags);
       }
     }
   }
+  if( rc==SQLITE_OK ) rc = vec1ListBuilderFlushIfFull(p);
   return rc;
 }
 
@@ -9515,6 +9598,7 @@ static int vec1WriterMetaFromStmt(
     return SQLITE_CORRUPT_VTAB;
   }
   Vec1ListBuilder *p = &pWriter->aBld[iBucket];
+  int nLimit = sqlite3_limit(pWriter->pTab->db, SQLITE_LIMIT_LENGTH, -1);
   int ii;
   int rc = SQLITE_OK;
   assert( p->pTab!=0 );
@@ -9522,11 +9606,12 @@ static int vec1WriterMetaFromStmt(
     Vec1Buffer *pBuf = &p->aMeta[ii].buf;
     sqlite3_value *pVal = sqlite3_column_value(pStmt, ii+2);
     int iOff = pBuf->n;
-    rc = vec1AppendMetaValue(pBuf, pVal);
+    rc = vec1AppendMetaValue(pBuf, pVal, nLimit);
     if( rc==SQLITE_OK ){
       vec1MetaValueUpdateFlags(&pBuf->a[iOff], &p->aMeta[ii].flags);
     }
   }
+  if( rc==SQLITE_OK ) rc = vec1ListBuilderFlushIfFull(p);
   return rc;
 }
 
@@ -9540,24 +9625,38 @@ static int vec1WriterMetaFromPacked(
   Vec1Buffer *pBuf,
   int *piOff                      /* IN/OUT: Buffer offset */
 ){
+  Vec1ListBuilder *pBld;
+  int anSize[VEC1_MAX_META_COLUMNS];
+  int nLimit = sqlite3_limit(pWriter->pTab->db, SQLITE_LIMIT_LENGTH, -1);
   int ii;
   int iOff = *piOff;
+  int iScan = iOff;
   if( iBucket<0 || iBucket>=pWriter->nBld ){
     vec1VtabError(pWriter->pTab, "vec1: invalid vector bucket: %d", iBucket);
     return SQLITE_CORRUPT_VTAB;
   }
+  pBld = &pWriter->aBld[iBucket];
+
+  /* Preflight all allocations so that failure cannot leave a partial row in
+  ** the destination metadata builders. */
   for(ii=0; ii<pWriter->pTab->nMeta; ii++){
-    Vec1MetaBuilder *pTo = &pWriter->aBld[iBucket].aMeta[ii];
-    int n = vec1MetaValueSize(&pBuf->a[iOff]);
-    int rc = vec1BufferGrow(&pTo->buf, n);
-    vec1MetaValueUpdateFlags(&pBuf->a[iOff], &pTo->flags);
+    Vec1MetaBuilder *pTo = &pBld->aMeta[ii];
+    int rc;
+    anSize[ii] = vec1MetaValueSize(&pBuf->a[iScan]);
+    rc = vec1BufferGrowLimited(&pTo->buf, anSize[ii], nLimit);
     if( rc!=SQLITE_OK ) return rc;
-    memcpy(&pTo->buf.a[pTo->buf.n], &pBuf->a[iOff], n);
-    pTo->buf.n += n;
-    iOff += n;
+    iScan += anSize[ii];
   }
-  *piOff = iOff;
-  return SQLITE_OK;
+
+  for(ii=0; ii<pWriter->pTab->nMeta; ii++){
+    Vec1MetaBuilder *pTo = &pBld->aMeta[ii];
+    vec1MetaValueUpdateFlags(&pBuf->a[iOff], &pTo->flags);
+    memcpy(&pTo->buf.a[pTo->buf.n], &pBuf->a[iOff], anSize[ii]);
+    pTo->buf.n += anSize[ii];
+    iOff += anSize[ii];
+  }
+  *piOff = iScan;
+  return vec1ListBuilderFlushIfFull(pBld);
 }
 
 static int vec1PackMetaValues(
@@ -9567,8 +9666,11 @@ static int vec1PackMetaValues(
 ){
   int ii;
   int rc = SQLITE_OK;
+  int nLimit = sqlite3_limit(pTab->db, SQLITE_LIMIT_LENGTH, -1);
   for(ii=0; rc==SQLITE_OK && ii<pTab->nMeta; ii++){
-    rc = vec1AppendMetaValue(pBuf, sqlite3_column_value(pStmt, 2+ii));
+    rc = vec1AppendMetaValue(
+        pBuf, sqlite3_column_value(pStmt, 2+ii), nLimit
+    );
   }
   return rc;
 }
@@ -9822,7 +9924,10 @@ static int vec1RebuildIndex(Vec1Tab *pTab, int nThread){
         pQJ->nVector++;
         rc = vec1PackMetaValues(pTab, &pQJ->meta, pStmt);
 
-        if( rc==SQLITE_OK && pQJ->nVector==VEC1_QUANTIZE_JOB_SZ ){
+        if( rc==SQLITE_OK
+         && (pQJ->nVector==VEC1_QUANTIZE_JOB_SZ
+          || pQJ->meta.n>pTab->cfg.nBlocksize)
+        ){
           rc = vec1JobQueueAddJob(
               pQueue, vec1QuantizeJob, vec1QuantizeJobFinish, (void*)pQJ
           );
