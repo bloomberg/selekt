@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.4.3
+
+* Reset JDBC prepared statements before returning them to the pool, access allocation-free.
+* Lazily grow vec1 result heaps.
+* Reject sparse JDBC BLOB writes.
+
 ## Version 1.4.2
 
 * Abort streaming cursors after vec1 model rebuild.
