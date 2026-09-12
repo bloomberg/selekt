@@ -1309,6 +1309,63 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun preparedStatementPoolSeparatesResultSetCharacteristics() {
+        val sql = "SELECT 1"
+        val characteristics = listOf(
+            ResultSet.TYPE_FORWARD_ONLY to ResultSet.CLOSE_CURSORS_AT_COMMIT,
+            ResultSet.TYPE_FORWARD_ONLY to ResultSet.HOLD_CURSORS_OVER_COMMIT,
+            ResultSet.TYPE_SCROLL_INSENSITIVE to ResultSet.CLOSE_CURSORS_AT_COMMIT,
+            ResultSet.TYPE_SCROLL_INSENSITIVE to ResultSet.HOLD_CURSORS_OVER_COMMIT
+        )
+        val statements = characteristics.map { (type, holdability) ->
+            connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)
+        }
+        statements.forEach { it.close() }
+
+        characteristics.forEachIndexed { index, (type, holdability) ->
+            val reopened = connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)
+            assertSame(statements[index], reopened)
+            assertEquals(type, reopened.resultSetType)
+            assertEquals(ResultSet.CONCUR_READ_ONLY, reopened.resultSetConcurrency)
+            assertEquals(holdability, reopened.resultSetHoldability)
+        }
+    }
+
+    @Test
+    fun preparedStatementPoolResetsCallerAndExecutionState() {
+        val sql = "INSERT INTO audit_probe DEFAULT VALUES"
+        val preparedStatement = connection.prepareStatement(sql).apply {
+            maxRows = 7
+            maxFieldSize = 8
+            fetchSize = 9
+            queryTimeout = 10
+            isPoolable = true
+            setEscapeProcessing(false)
+            closeOnCompletion()
+            executeUpdate()
+        }
+        preparedStatement.generatedKeys.use { keys ->
+            assertTrue(keys.next())
+            assertEquals(0L, keys.getLong(1))
+        }
+        preparedStatement.close()
+
+        val reopened = connection.prepareStatement(sql)
+        assertSame(preparedStatement, reopened)
+        assertEquals(0, reopened.maxRows)
+        assertEquals(0, reopened.maxFieldSize)
+        assertEquals(0, reopened.fetchSize)
+        assertEquals(0, reopened.queryTimeout)
+        assertFalse(reopened.isPoolable)
+        assertTrue((reopened as JdbcPreparedStatement).escapeProcessing)
+        assertFalse(reopened.isCloseOnCompletion)
+        assertEquals(-1, reopened.updateCount)
+        reopened.generatedKeys.use { keys ->
+            assertFalse(keys.next(), "Generated keys must not cross a pooled-statement boundary")
+        }
+    }
+
+    @Test
     fun preparedStatementPoolReturnsDifferentForDifferentSql() {
         val preparedStatementOne = connection.prepareStatement("SELECT 1") as JdbcPreparedStatement
         preparedStatementOne.close()

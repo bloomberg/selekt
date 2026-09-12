@@ -58,6 +58,20 @@ import org.slf4j.LoggerFactory
 
 private const val MAX_POOLED_STATEMENTS = 32
 
+private data class PreparedStatementPoolKey(
+    val sql: String,
+    val resultSetType: Int,
+    val resultSetConcurrency: Int,
+    val resultSetHoldability: Int
+) {
+    constructor(statement: JdbcPreparedStatement) : this(
+        statement.sql,
+        statement.resultSetType,
+        statement.resultSetConcurrency,
+        statement.resultSetHoldability
+    )
+}
+
 /**
  * @since 0.28.0
  */
@@ -96,7 +110,7 @@ internal class JdbcConnection(
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
     @GuardedBy("poolLock")
-    private val preparedStatementPool = LinkedHashMap<String, JdbcPreparedStatement>()
+    private val preparedStatementPool = LinkedHashMap<PreparedStatementPoolKey, JdbcPreparedStatement>()
     private val poolLock = ReentrantLock()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
@@ -155,8 +169,14 @@ internal class JdbcConnection(
         checkClosed()
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
+        val poolKey = PreparedStatementPoolKey(
+            sql,
+            resultSetType,
+            resultSetConcurrency,
+            resultSetHoldability
+        )
         val pooled = poolLock.withLock {
-            if (closed) { null } else { preparedStatementPool.remove(sql) }
+            if (closed) { null } else { preparedStatementPool.remove(poolKey) }
         }
         return if (pooled != null) {
             pooled.reopen()
@@ -388,19 +408,21 @@ internal class JdbcConnection(
         if (statement.hasOpenResultSet()) {
             return false
         }
+        val poolKey = PreparedStatementPoolKey(statement)
+        statement.onReturned()
         var accepted = false
         var evicted: JdbcPreparedStatement? = null
         if (!closed) {
             poolLock.withLock {
                 if (!closed) {
                     accepted = true
-                    val containsKey = preparedStatementPool.containsKey(statement.sql)
+                    val containsKey = preparedStatementPool.containsKey(poolKey)
                     if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !containsKey) {
                         evicted = preparedStatementPool.entries.iterator().next().also {
                             preparedStatementPool.remove(it.key)
                         }.value
                     }
-                    preparedStatementPool[statement.sql] = statement
+                    preparedStatementPool[poolKey] = statement
                 }
             }
         }
