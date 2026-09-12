@@ -126,7 +126,7 @@ internal open class JdbcPreparedStatement(
     private val parameterCount = preparation.first
     private val readOnly = preparation.second
     private val parameterRow = ParameterRow(parameterCount)
-    private val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
+    private var batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     private var totalBatchCount = 0
     private var successArray: IntArray? = null
 
@@ -247,15 +247,21 @@ internal open class JdbcPreparedStatement(
 
     override fun close() {
         if (!isClosed) {
-            clearParameters()
-            clearBatch()
             closeDependentResultSets()
-            if (connection.returnPreparedStatement(this)) {
-                markClosed()
-            } else {
+            if (!connection.returnPreparedStatement(this)) {
                 super.close()
             }
         }
+    }
+
+    override fun onReturned() {
+        clearParameters()
+        batchRows.clear()
+        batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
+        totalBatchCount = 0
+        successArray?.fill(0)
+        successArray = null
+        super.onReturned()
     }
 
     internal fun reopen() {

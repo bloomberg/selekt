@@ -96,7 +96,7 @@ internal class JdbcConnection(
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
     @GuardedBy("poolLock")
-    private val preparedStatementPool = LinkedHashMap<String, JdbcPreparedStatement>()
+    private var preparedStatementPool: PreparedStatementPool? = null
     private val poolLock = ReentrantLock()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
@@ -156,7 +156,16 @@ internal class JdbcConnection(
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
         val pooled = poolLock.withLock {
-            if (closed) { null } else { preparedStatementPool.remove(sql) }
+            if (closed) {
+                null
+            } else {
+                preparedStatementPool?.take(
+                    sql,
+                    resultSetType,
+                    resultSetConcurrency,
+                    resultSetHoldability
+                )
+            }
         }
         return if (pooled != null) {
             pooled.reopen()
@@ -376,10 +385,11 @@ internal class JdbcConnection(
 
     private fun closePreparedStatementPool() {
         val snapshot = poolLock.withLock {
-            if (preparedStatementPool.isEmpty()) {
+            val pool = preparedStatementPool
+            if (pool == null || pool.isEmpty()) {
                 return
             }
-            ArrayList(preparedStatementPool.values).also { preparedStatementPool.clear() }
+            pool.drain()
         }
         snapshot.forEachCatching(JdbcPreparedStatement::closePooled)
     }
@@ -388,19 +398,17 @@ internal class JdbcConnection(
         if (statement.hasOpenResultSet()) {
             return false
         }
+        statement.onReturned()
         var accepted = false
         var evicted: JdbcPreparedStatement? = null
         if (!closed) {
             poolLock.withLock {
                 if (!closed) {
                     accepted = true
-                    val containsKey = preparedStatementPool.containsKey(statement.sql)
-                    if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !containsKey) {
-                        evicted = preparedStatementPool.entries.iterator().next().also {
-                            preparedStatementPool.remove(it.key)
-                        }.value
+                    val pool = preparedStatementPool ?: PreparedStatementPool(MAX_POOLED_STATEMENTS).also {
+                        preparedStatementPool = it
                     }
-                    preparedStatementPool[statement.sql] = statement
+                    evicted = pool.put(statement)
                 }
             }
         }

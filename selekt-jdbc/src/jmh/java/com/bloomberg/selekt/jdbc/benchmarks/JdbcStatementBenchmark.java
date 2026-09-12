@@ -194,6 +194,17 @@ public class JdbcStatementBenchmark {
     }
 
     @Benchmark
+    public int selektPreparedStatementPoolAccess() throws SQLException {
+        int identity = 0;
+        for (int i = 0; i < operationCount; i++) {
+            try (PreparedStatement statement = selektConnection.prepareStatement(SELECT_SQL)) {
+                identity ^= System.identityHashCode(statement);
+            }
+        }
+        return identity;
+    }
+
+    @Benchmark
     public int selektMixedWorkload() throws SQLException {
         return executeMixedWorkload(selektConnection);
     }

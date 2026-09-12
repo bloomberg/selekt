@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLRawStatement
 import com.bloomberg.selekt.ISQLStatement
@@ -1450,5 +1451,27 @@ internal class JdbcPreparedStatementTest {
         assertFailsWith<NoSuchFieldException> {
             preparedStatement.javaClass.getDeclaredField("materializedArgs")
         }
+    }
+
+    @Test
+    fun returningToPoolScrubsParametersAndReleasesBatchScratchStorage() {
+        val statement = updateStatement()
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
+        statement.apply {
+            setString(1, "batched-sensitive-value")
+            setInt(2, 1)
+            addBatch()
+            executeBatch()
+            setString(1, "pending-sensitive-value")
+            close()
+        }
+
+        val parameterRow = assertNotNull(readField<ParameterRow>(statement, "parameterRow"))
+        assertTrue(parameterRow.tags.all { it == 0.toByte() })
+        assertTrue(parameterRow.objects.all { it == null })
+        val batchRows = assertNotNull(readField<ChunkedParameterRows>(statement, "batchRows"))
+        assertEquals(0, batchRows.size)
+        assertNull(readField<IntArray>(statement, "successArray"))
     }
 }
