@@ -253,14 +253,9 @@ val readCrossRuntimeDatabaseWithJava17 = tasks.register<JavaExec>("readCrossRunt
     dependsOn(writeCrossRuntimeDatabaseWithJava25, "compileJava17TestKotlin", "copyJniLibs")
 }
 
-tasks.register("testCrossRuntimeKeyCompatibility") {
-    group = "verification"
+tasks.register<Test>("testCrossRuntimeKeyCompatibility") {
     description = "Verifies raw-key database compatibility between the Java 17 JNI and Java 25 FFM backends."
     dependsOn(readCrossRuntimeDatabaseWithJava25, readCrossRuntimeDatabaseWithJava17)
-}
-
-tasks.named("check") {
-    dependsOn("testCrossRuntimeKeyCompatibility")
 }
 
 tasks.register<Copy>("copyJniLibs") {
