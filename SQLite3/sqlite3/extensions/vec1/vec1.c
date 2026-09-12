@@ -446,15 +446,13 @@ static int vec1FloatArrayIsFinite(const float *aElem, int nElem){
   return 1;
 }
 
-#define VEC1_INITIAL_STREAMING_ALLOC ((128*1024)/16)
+#define VEC1_INITIAL_HEAP_ALLOC ((128*1024)/sizeof(Vec1AnnResult))
 
 /*
 ** Initialize a new, existing, heap object. 
 */
 static int vec1HeapInit(Vec1AnnHeap *p, i64 nMax, int bStreaming){
-  i64 nAlloc = 0;
-  sqlite3_uint64 nByte = 0;
-
+  p->aRes = 0;
   p->nRes = 0;
   p->nMax = nMax;
   p->nAlloc = 0;
@@ -465,22 +463,42 @@ static int vec1HeapInit(Vec1AnnHeap *p, i64 nMax, int bStreaming){
   if( nMax<0 || nMax>INT_MAX ){
     return SQLITE_TOOBIG;
   }
-  if( nMax==0 ){
-    p->aRes = 0;
-    return SQLITE_OK;
-  }
+  return SQLITE_OK;
+}
 
-  nAlloc = (bStreaming ? VEC1_INITIAL_STREAMING_ALLOC : nMax);
-  nAlloc = MAX(nAlloc, nMax);
-  if( (u64)nAlloc>((u64)-1)/sizeof(Vec1AnnResult) ){
+/*
+** Ensure that the heap can store at least nRequired entries. Result storage
+** is allocated as candidates arrive so that a large K cannot force a large
+** allocation before the query has found any results.
+*/
+static int vec1HeapGrow(Vec1AnnHeap *p, i64 nRequired){
+  i64 nLimit = p->bStreaming ? INT_MAX : p->nMax;
+  i64 nNew = p->nAlloc;
+  sqlite3_uint64 nByte;
+  Vec1AnnResult *aNew;
+
+  if( nRequired<0 || nRequired>nLimit ) return SQLITE_TOOBIG;
+  if( nRequired<=nNew ) return SQLITE_OK;
+
+  if( nNew==0 ){
+    nNew = MIN((i64)VEC1_INITIAL_HEAP_ALLOC, nLimit);
+  }
+  while( nNew<nRequired ){
+    if( nNew>nLimit/2 ){
+      nNew = nLimit;
+    }else{
+      nNew = nNew * 2;
+    }
+  }
+  if( (u64)nNew>((u64)-1)/sizeof(Vec1AnnResult) ){
     return SQLITE_TOOBIG;
   }
-  nByte = (sqlite3_uint64)nAlloc * sizeof(Vec1AnnResult);
-  p->aRes = (Vec1AnnResult *)sqlite3_malloc64(nByte);
-  if( p->aRes==0 ){
-    return SQLITE_NOMEM;
-  }
-  p->nAlloc = nAlloc;
+  nByte = (sqlite3_uint64)nNew * sizeof(Vec1AnnResult);
+  aNew = (Vec1AnnResult*)sqlite3_realloc64(p->aRes, nByte);
+  if( aNew==0 ) return SQLITE_NOMEM;
+
+  p->aRes = aNew;
+  p->nAlloc = nNew;
   return SQLITE_OK;
 }
 
@@ -506,11 +524,11 @@ static void vec1HeapBubbleUp(Vec1AnnHeap *p, int i){
 ** the new root towards the leaves.
 */
 static void vec1HeapBubbleDown(Vec1AnnHeap *p){
-  int idx = 0;
+  i64 idx = 0;
   for(;;){
-    int idxLeft = idx*2 + 1;
-    int idxRight = idxLeft + 1;
-    int idxMax = idx;
+    i64 idxLeft = idx*2 + 1;
+    i64 idxRight = idxLeft + 1;
+    i64 idxMax = idx;
 
     if( idxLeft<p->nMax && p->aRes[idxLeft].fDist>p->aRes[idxMax].fDist ){
       idxMax = idxLeft;
@@ -532,41 +550,17 @@ static void vec1HeapBubbleDown(Vec1AnnHeap *p){
 static void vec1HeapInsert(Vec1AnnHeap *p, sqlite3_int64 iRowid, double fDist){
   if( p->rc!=SQLITE_OK || p->nMax<=0 ) return;
 
+  if( (p->nRes<p->nMax || p->bStreaming) && p->nRes>=p->nAlloc ){
+    p->rc = vec1HeapGrow(p, p->nRes + 1);
+    if( p->rc!=SQLITE_OK ) return;
+  }
+
   if( p->nRes<p->nMax ){
     p->aRes[p->nRes].iRowid = iRowid;
     p->aRes[p->nRes].fDist = fDist;
     vec1HeapBubbleUp(p, (int)p->nRes);
     p->nRes++;
   }else if( p->bStreaming ){
-
-    if( p->nRes>=p->nAlloc ){
-      i64 nNew;
-      sqlite3_uint64 nByte;
-      Vec1AnnResult *aNew = 0;
-
-      if( p->nAlloc>=INT_MAX ){
-        p->rc = SQLITE_TOOBIG;
-        return;
-      }
-      if( p->nAlloc>INT_MAX/2 ){
-        nNew = INT_MAX;
-      }else{
-        nNew = p->nAlloc * 2;
-      }
-      if( (u64)nNew>((u64)-1)/sizeof(Vec1AnnResult) ){
-        p->rc = SQLITE_TOOBIG;
-        return;
-      }
-      nByte = (sqlite3_uint64)nNew * sizeof(Vec1AnnResult);
-      aNew = (Vec1AnnResult*)sqlite3_realloc64(p->aRes, nByte);
-      if( aNew==0 ){
-        p->rc = SQLITE_NOMEM;
-        return;
-      }
-      p->aRes = aNew;
-      p->nAlloc = nNew;
-    }
-
     p->aRes[p->nRes].iRowid = iRowid;
     p->aRes[p->nRes].fDist = fDist;
     if( fDist<p->aRes[0].fDist ){
