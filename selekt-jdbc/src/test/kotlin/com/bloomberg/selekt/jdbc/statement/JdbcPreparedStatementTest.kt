@@ -1454,7 +1454,7 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun returningToPoolScrubsParametersAndReleasesBatchScratchStorage() {
+    fun returningToPoolScrubsParametersAndReusesBatchScratchStorage() {
         val statement = updateStatement()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
@@ -1463,6 +1463,10 @@ internal class JdbcPreparedStatementTest {
             setInt(2, 1)
             addBatch()
             executeBatch()
+        }
+        val batchRowsBeforeClose = assertNotNull(readField<ChunkedParameterRows>(statement, "batchRows"))
+        val batchChunkBeforeClose = assertNotNull(readField<Any>(batchRowsBeforeClose, "firstChunk"))
+        statement.apply {
             setString(1, "pending-sensitive-value")
             close()
         }
@@ -1472,6 +1476,8 @@ internal class JdbcPreparedStatementTest {
         assertTrue(parameterRow.objects.all { it == null })
         val batchRows = assertNotNull(readField<ChunkedParameterRows>(statement, "batchRows"))
         assertEquals(0, batchRows.size)
+        assertSame(batchRowsBeforeClose, batchRows)
+        assertSame(batchChunkBeforeClose, readField<Any>(batchRows, "firstChunk"))
         assertNull(readField<IntArray>(statement, "successArray"))
     }
 }
