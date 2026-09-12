@@ -163,6 +163,11 @@ internal class JdbcParameterMetaDataTest {
     }
 
     @Test
+    fun getParameterTypeUnknownObject(): Unit = JdbcParameterMetaData(1, arrayOf(Any())).run {
+        assertEquals(Types.VARCHAR, getParameterType(1))
+    }
+
+    @Test
     fun getParameterTypeMixed(): Unit = JdbcParameterMetaData(
         4,
         arrayOf(42, "text", 3.14, null)

@@ -21,6 +21,7 @@ import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLRawStatement
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
@@ -417,6 +418,15 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun executeQueryMapsCancellation() {
+        whenever(
+            database.queryForwardOnly(any<String>(), any<Array<Any?>>(), any<CancellationSignal>())
+        ) doThrow OperationCancelledException("cancelled")
+
+        assertFailsWith<SQLException> { preparedStatement.executeQuery() }
+    }
+
+    @Test
     fun executeUpdateWithException() {
         val mockStatement = mock<ISQLStatement>()
         whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn mockStatement
@@ -428,6 +438,16 @@ internal class JdbcPreparedStatementTest {
             }.use { it.executeUpdate() }
         }
         verify(mockStatement).close()
+    }
+
+    @Test
+    fun executeUpdateMapsCancellation() {
+        val cancelled = mock<ISQLStatement> {
+            whenever(it.executeUpdateDelete()) doThrow OperationCancelledException("cancelled")
+        }
+        whenever(database.compileStatement(any<String>(), any<Array<Any?>>())) doReturn cancelled
+
+        assertFailsWith<SQLException> { updateStatement().executeUpdate() }
     }
 
     @Test
@@ -1161,6 +1181,17 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun executeBatchMapsCancellation() {
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doThrow
+            OperationCancelledException("cancelled")
+        JdbcPreparedStatement(connection, database, "UPDATE test SET value=?").run {
+            setInt(1, 1)
+            addBatch()
+            assertFailsWith<SQLException> { executeBatch() }
+        }
+    }
+
+    @Test
     fun largeBatch() {
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 50
@@ -1242,6 +1273,16 @@ internal class JdbcPreparedStatementTest {
         "SELECT * FROM test WHERE blob=?"
     ).run {
         setBlob(1, null as java.io.InputStream?, 0L)
+        clearParameters()
+    }
+
+    @Test
+    fun setBlobWithNullInputStreamAndNoLength(): Unit = JdbcPreparedStatement(
+        connection,
+        database,
+        "SELECT * FROM test WHERE blob=?"
+    ).run {
+        setBlob(1, null as java.io.InputStream?)
         clearParameters()
     }
 

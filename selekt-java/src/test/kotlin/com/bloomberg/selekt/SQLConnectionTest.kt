@@ -569,6 +569,28 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun batchParameterRowsChecksDone(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            SQL_OK
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        whenever(step(any<Long>())) doReturn SQL_ROW
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(
+                -1,
+                it.executeBatchForChangedRowCountRows(
+                    "INSERT INTO Foo VALUES (42)",
+                    listOf(ParameterRow(0))
+                )
+            )
+        }
+    }
+
+    @Test
     fun batchExecuteForChangedRowCountEmptyArrayChecksDone(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
@@ -1012,6 +1034,37 @@ internal class SQLConnectionTest {
             page.window.close()
         }
         verify(this@run, times(5)).step(any<Long>())
+    }
+
+    @Test
+    fun executeForCursorWindowAcceptsParameterRow(): Unit = sqlite.run {
+        stubRowsForCursorWindow(rowCount = 1)
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            connection.executeForCursorWindow(
+                "SELECT * FROM Foo",
+                ParameterRow(0)
+            ).page.window.close()
+        }
+    }
+
+    @Test
+    fun parameterRowForwardCursorReleasesStatementWhenBindingFails(): Unit = sqlite.run {
+        whenever(openV2(any(), any(), any())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 42L
+            SQL_OK
+        }
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        val row = ParameterRow(0)
+        whenever(bindRow(any<StatementHandle>(), same(row), any())) doThrow IllegalStateException("bind failed")
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            assertFailsWith<IllegalStateException> {
+                connection.executeForForwardCursor("SELECT 1", row)
+            }
+        }
+        verify(this@run).resetAndClearBindings(StatementHandle(43L))
     }
 
     @Test

@@ -266,31 +266,10 @@ class SelektDataSource : DataSource {
     override fun isWrapperFor(iface: Class<*>): Boolean = iface.isInstance(this)
 
     private fun buildConnectionURL(): ConnectionURL {
-        val effectiveUrl = if (url.isNotEmpty()) {
-            url
-        } else if (databasePath.isNotEmpty()) {
-            buildUrlFromProperties()
-        } else {
+        if (url.isEmpty()) {
             throw SQLException("No database path or URL specified")
         }
-        return ConnectionURL.parse(effectiveUrl)
-    }
-
-    private fun buildUrlFromProperties(): String {
-        val baseUrl = "jdbc:sqlite:$databasePath"
-        return mutableListOf<String>().apply {
-            add("busyTimeout=$busyTimeout")
-            add("cursorWindowSize=$cursorWindowSize")
-            add("foreignKeys=$foreignKeys")
-            add("journalMode=$journalMode")
-            add("poolSize=$maxPoolSize")
-        }.run {
-            if (isEmpty()) {
-                baseUrl
-            } else {
-                "$baseUrl?${joinToString("&")}"
-            }
-        }
+        return ConnectionURL.parse(url)
     }
 
     private fun buildConnectionProperties(): Properties = Properties().apply {
@@ -348,13 +327,12 @@ class SelektDataSource : DataSource {
     }
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
-        val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: maxPoolSize
-        val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull() ?: busyTimeout
-        val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull()
-            ?: cursorWindowSize
-        val journalModeValue = properties.getProperty(PROPERTY_JOURNAL_MODE)?.let {
-            SQLiteJournalMode.valueOf(it.uppercase())
-        } ?: SQLiteJournalMode.valueOf(journalMode.uppercase())
+        val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE).toInt()
+        val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT).toInt()
+        val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE).toInt()
+        val journalModeValue = SQLiteJournalMode.valueOf(
+            properties.getProperty(PROPERTY_JOURNAL_MODE).uppercase()
+        )
         val baseConfig = journalModeValue.databaseConfiguration
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,

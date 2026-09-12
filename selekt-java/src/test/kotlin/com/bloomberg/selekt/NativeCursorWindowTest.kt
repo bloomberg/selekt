@@ -210,15 +210,22 @@ internal class NativeCursorWindowTest {
 
     @Test
     fun coercesAcrossColumnTypes() {
-        NativeCursorWindow(cursorWindowBuffer(listOf(42L, 3.5, "7")), fakeSQLite(), 3).use {
+        NativeCursorWindow(cursorWindowBuffer(listOf(42L, 3.5, "7", null)), fakeSQLite(), 4).use {
             assertEquals("42", it.getString(0, 0))
             assertEquals(42.0, it.getDouble(0, 0))
             assertEquals(42, it.getInt(0, 0))
+            assertEquals(42.toShort(), it.getShort(0, 0))
+            assertEquals(42.0f, it.getFloat(0, 0))
+            assertFailsWith<IllegalStateException> { it.getBlob(0, 0) }
             assertEquals(4, it.getInt(0, 1))
             assertEquals(4L, it.getLong(0, 1))
             assertEquals("3.5", it.getString(0, 1))
+            assertEquals(7, it.getInt(0, 2))
             assertEquals(7L, it.getLong(0, 2))
             assertEquals(7.0, it.getDouble(0, 2))
+            assertEquals(0, it.getInt(0, 3))
+            assertEquals(0L, it.getLong(0, 3))
+            assertEquals(0.0, it.getDouble(0, 3))
         }
     }
 

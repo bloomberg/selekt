@@ -120,6 +120,11 @@ jmh {
 }
 
 kover {
+    currentProject {
+        instrumentation {
+            disabledForTestTasks.add("integrationTest")
+        }
+    }
     reports {
         filters {
             excludes {

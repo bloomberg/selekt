@@ -86,7 +86,6 @@ import java.sql.SQLNonTransientException
 import java.sql.SQLRecoverableException
 import java.sql.SQLTimeoutException
 import java.sql.SQLTransactionRollbackException
-import java.sql.SQLTransientConnectionException
 import java.sql.SQLTransientException
 
 /**
@@ -139,7 +138,6 @@ internal object SQLExceptionMapper {
             ExceptionType.RECOVERABLE -> SQLRecoverableException(enhancedMessage, sqlState, sqlCode, cause)
             ExceptionType.TIMEOUT -> SQLTimeoutException(enhancedMessage, sqlState, sqlCode, cause)
             ExceptionType.TRANSACTION_ROLLBACK -> SQLTransactionRollbackException(enhancedMessage, sqlState, sqlCode, cause)
-            ExceptionType.TRANSIENT_CONNECTION -> SQLTransientConnectionException(enhancedMessage, sqlState, sqlCode, cause)
             ExceptionType.TRANSIENT -> SQLTransientException(enhancedMessage, sqlState, sqlCode, cause)
             ExceptionType.GENERIC -> SQLException(enhancedMessage, sqlState, sqlCode, cause)
         }
@@ -153,7 +151,6 @@ internal object SQLExceptionMapper {
         RECOVERABLE,
         TIMEOUT,
         TRANSACTION_ROLLBACK,
-        TRANSIENT_CONNECTION,
         TRANSIENT,
         GENERIC
     }

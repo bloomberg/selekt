@@ -31,16 +31,8 @@ internal class JdbcResultSetMetaData(
     private val cursor: ICursor
 ) : ResultSetMetaData {
     companion object {
-        private const val BOOLEAN_DISPLAY_SIZE = 5
-        private const val TINYINT_DISPLAY_SIZE = 4
-        private const val SMALLINT_DISPLAY_SIZE = 6
-        private const val INTEGER_DISPLAY_SIZE = 11
         private const val BIGINT_DISPLAY_SIZE = 20
-        private const val FLOAT_DISPLAY_SIZE = 15
         private const val DOUBLE_DISPLAY_SIZE = 24
-        private const val DATE_DISPLAY_SIZE = 10
-        private const val TIME_DISPLAY_SIZE = 8
-        private const val TIMESTAMP_DISPLAY_SIZE = 23
     }
 
     override fun getColumnCount(): Int = cursor.columnCount
@@ -73,8 +65,7 @@ internal class JdbcResultSetMetaData(
     override fun isSigned(column: Int): Boolean {
         validateColumnIndex(column)
         return when (getColumnType(column)) {
-            Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT,
-            Types.REAL, Types.FLOAT, Types.DOUBLE, Types.NUMERIC, Types.DECIMAL -> true
+            Types.BIGINT, Types.DOUBLE -> true
             else -> false
         }
     }
@@ -82,16 +73,8 @@ internal class JdbcResultSetMetaData(
     override fun getColumnDisplaySize(column: Int): Int {
         validateColumnIndex(column)
         return when (getColumnType(column)) {
-            Types.BOOLEAN -> BOOLEAN_DISPLAY_SIZE
-            Types.TINYINT -> TINYINT_DISPLAY_SIZE
-            Types.SMALLINT -> SMALLINT_DISPLAY_SIZE
-            Types.INTEGER -> INTEGER_DISPLAY_SIZE
             Types.BIGINT -> BIGINT_DISPLAY_SIZE
-            Types.REAL, Types.FLOAT -> FLOAT_DISPLAY_SIZE
             Types.DOUBLE -> DOUBLE_DISPLAY_SIZE
-            Types.DATE -> DATE_DISPLAY_SIZE
-            Types.TIME -> TIME_DISPLAY_SIZE
-            Types.TIMESTAMP -> TIMESTAMP_DISPLAY_SIZE
             else -> Integer.MAX_VALUE
         }
     }

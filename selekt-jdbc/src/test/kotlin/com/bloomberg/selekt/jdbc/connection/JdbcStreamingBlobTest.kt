@@ -90,6 +90,72 @@ internal class JdbcStreamingBlobTest {
     }
 
     @Test
+    fun zeroLengthBulkReadFallsBackToSingleByteRead() {
+        val databaseFile = File(tempDir, "zero-read-streaming-buffer.db")
+        val input = object : ByteArrayInputStream(byteArrayOf(1, 2)) {
+            override fun read(bytes: ByteArray, offset: Int, length: Int): Int = 0
+        }
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use {
+                it.executeUpdate("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
+            }
+            assertEquals(
+                1,
+                connection.unwrap(SelektConnection::class.java).insertBlobs(
+                    batch(1),
+                    listOf(StreamingBlobRow(arrayOf(null, null), 2, input))
+                )
+            )
+        }
+    }
+
+    @Test
+    fun validatesBatchShapeAndInsertedBlobSize() {
+        val databaseFile = File(tempDir, "invalid-batch-shape.db")
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use {
+                it.executeUpdate("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
+            }
+            val selekt = connection.unwrap(SelektConnection::class.java)
+            assertFailsWith<SQLException> {
+                selekt.insertBlobs(
+                    batch().copy(blobParameterIndex = 3),
+                    listOf(StreamingBlobRow(arrayOf(null, null), 1, byteArrayOf(1).inputStream()))
+                )
+            }
+            assertFailsWith<SQLException> {
+                selekt.insertBlobs(
+                    batch(),
+                    listOf(StreamingBlobRow(arrayOf(null), 1, byteArrayOf(1).inputStream()))
+                )
+            }
+            assertFailsWith<SQLException> {
+                selekt.insertBlobs(
+                    batch().copy(insertSql = "INSERT INTO files (id, data) VALUES (?, zeroblob(length(?) + 2))"),
+                    listOf(StreamingBlobRow(arrayOf(null, null), 1, byteArrayOf(1).inputStream()))
+                )
+            }
+        }
+    }
+
+    @Test
+    fun requiresEachStreamingInsertToChangeOneRow() {
+        val databaseFile = File(tempDir, "ignored-streaming-insert.db")
+        DriverManager.getConnection("jdbc:sqlite:${databaseFile.absolutePath}").use { connection ->
+            connection.createStatement().use {
+                it.executeUpdate("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
+                it.executeUpdate("INSERT INTO files VALUES (1, X'01')")
+            }
+            assertFailsWith<SQLException> {
+                connection.unwrap(SelektConnection::class.java).insertBlobs(
+                    batch().copy(insertSql = "INSERT OR IGNORE INTO files (id, data) VALUES (?, ?)"),
+                    listOf(StreamingBlobRow(arrayOf(1L, null), 1, byteArrayOf(2).inputStream(), 1L))
+                )
+            }
+        }
+    }
+
+    @Test
     @Suppress("Detekt.NestedBlockDepth")
     fun reusesBlobHandleAcrossGeneratedAndExplicitRowsOfDifferentSizes() {
         val databaseFile = File(tempDir, "varying-blob.db")

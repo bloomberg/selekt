@@ -27,6 +27,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertContentEquals
+import kotlin.test.assertTrue
 
 internal class SegmentedCursorWindowTest {
     @Test
@@ -94,9 +96,49 @@ internal class SegmentedCursorWindowTest {
     @Test
     fun isImmutable() {
         SegmentedCursorWindow(listOf(window(0, 1)), 4).use {
-            assertFailsWith<UnsupportedOperationException> { it.allocateRow() }
-            assertFailsWith<UnsupportedOperationException> { it.put(42L) }
-            assertFailsWith<UnsupportedOperationException> { it.clear() }
+            listOf<() -> Any?>(
+                { it.allocateRow() },
+                { it.put(byteArrayOf(1)) },
+                { it.put(1.0) },
+                { it.put(1.0f) },
+                { it.put(1) },
+                { it.put(1L) },
+                { it.put(1.toShort()) },
+                { it.put("one") },
+                { it.putNull() },
+                { it.clear() }
+            ).forEach { operation ->
+                assertFailsWith<UnsupportedOperationException> { operation() }
+            }
+        }
+    }
+
+    @Test
+    fun delegatesEveryReaderAndRejectsOutOfRangeRows() {
+        val bytes = byteArrayOf(1, 2)
+        val underlying = SimpleCursorWindow().apply {
+            allocateRow()
+            put(bytes)
+            put(2.5)
+            put(3.5f)
+            put(4)
+            put(5L)
+            put(6.toShort())
+            put("seven")
+            putNull()
+        }
+        SegmentedCursorWindow(listOf(underlying), 1).use { window ->
+            assertContentEquals(bytes, window.getBlob(0, 0))
+            assertEquals(2.5, window.getDouble(0, 1))
+            assertEquals(3.5f, window.getFloat(0, 2))
+            assertEquals(4, window.getInt(0, 3))
+            assertEquals(5L, window.getLong(0, 4))
+            assertEquals(6.toShort(), window.getShort(0, 5))
+            assertEquals("seven", window.getString(0, 6))
+            assertContentEquals("seven".toByteArray(), window.getTextBytes(0, 6))
+            assertTrue(window.isNull(0, 7))
+            assertFailsWith<IndexOutOfBoundsException> { window.getLong(-1, 0) }
+            assertFailsWith<IndexOutOfBoundsException> { window.getLong(1, 0) }
         }
     }
 

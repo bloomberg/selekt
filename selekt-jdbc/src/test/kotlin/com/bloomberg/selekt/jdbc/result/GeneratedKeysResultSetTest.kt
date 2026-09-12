@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.result
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import java.math.BigDecimal
+import java.lang.reflect.Modifier
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.SQLFeatureNotSupportedException
@@ -632,5 +633,33 @@ internal class GeneratedKeysResultSetTest {
             assertTrue(isWrapperFor(ResultSet::class.java))
             assertFalse(isWrapperFor(String::class.java))
         }
+    }
+
+    @Test
+    fun allResultSetOverridesAreCallable() {
+        val methods = GeneratedKeysResultSet::class.java.declaredMethods.filter { Modifier.isPublic(it.modifiers) }
+
+        methods.forEach { method ->
+            val resultSet = GeneratedKeysResultSet(42L, statement).apply { next() }
+            runCatching {
+                method.invoke(resultSet, *method.parameterTypes.map(::argumentFor).toTypedArray())
+            }
+        }
+
+        assertTrue(methods.size > 100)
+    }
+
+    private fun argumentFor(type: Class<*>): Any? = when (type) {
+        Boolean::class.javaPrimitiveType -> false
+        Byte::class.javaPrimitiveType -> 0.toByte()
+        Short::class.javaPrimitiveType -> 0.toShort()
+        Int::class.javaPrimitiveType -> 1
+        Long::class.javaPrimitiveType -> 1L
+        Float::class.javaPrimitiveType -> 0.0f
+        Double::class.javaPrimitiveType -> 0.0
+        String::class.java -> "id"
+        Class::class.java -> Long::class.javaObjectType
+        Map::class.java -> emptyMap<String, Class<*>>()
+        else -> null
     }
 }

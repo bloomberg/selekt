@@ -114,9 +114,7 @@ internal class Mutex {
         isCancellable: Boolean
     ): Boolean {
         val thread = Thread.currentThread()
-        if (!waiters.add(thread)) {
-            return false
-        }
+        waiters.add(thread)
         var remainingNanos = intervalNanos
         val deadlineNanos = System.nanoTime() + intervalNanos
         while (!(isThisHead() && internalTryLock())) {

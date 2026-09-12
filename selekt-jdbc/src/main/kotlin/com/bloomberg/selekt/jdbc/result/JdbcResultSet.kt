@@ -612,19 +612,8 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            try {
-                dateString?.let {
-                    TypeMapping.convertFromSQLite(it, Types.DATE) as? Date
-                }
-            } catch (e: SQLException) {
-                throw SQLExceptionMapper.mapException(e)
-            } catch (e: RuntimeException) {
-                throw SQLExceptionMapper.mapException(
-                    "Error parsing date from column $columnIndex: ${e.message}",
-                    -1,
-                    -1,
-                    e
-                )
+            dateString?.let {
+                TypeMapping.convertFromSQLite(it, Types.DATE) as? Date
             }
         }
     }
@@ -640,19 +629,8 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            try {
-                timeString?.let {
-                    TypeMapping.convertFromSQLite(it, Types.TIME) as? Time
-                }
-            } catch (e: SQLException) {
-                throw SQLExceptionMapper.mapException(e)
-            } catch (e: RuntimeException) {
-                throw SQLExceptionMapper.mapException(
-                    "Error parsing time from column $columnIndex: ${e.message}",
-                    -1,
-                    -1,
-                    e
-                )
+            timeString?.let {
+                TypeMapping.convertFromSQLite(it, Types.TIME) as? Time
             }
         }
     }
@@ -668,19 +646,8 @@ internal class JdbcResultSet(
         return if (wasNull) {
             null
         } else {
-            try {
-                timestampString?.let {
-                    TypeMapping.convertFromSQLite(it, Types.TIMESTAMP) as? Timestamp
-                }
-            } catch (e: SQLException) {
-                throw SQLExceptionMapper.mapException(e)
-            } catch (e: RuntimeException) {
-                throw SQLExceptionMapper.mapException(
-                    "Error parsing timestamp from column $columnIndex: ${e.message}",
-                    -1,
-                    -1,
-                    e
-                )
+            timestampString?.let {
+                TypeMapping.convertFromSQLite(it, Types.TIMESTAMP) as? Timestamp
             }
         }
     }

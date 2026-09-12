@@ -25,6 +25,17 @@ import kotlin.test.assertTrue
 
 internal class ConnectionURLTest {
     @Test
+    fun javaStaticEntryPoints() {
+        val parsed = ConnectionURL::class.java.getMethod("parse", String::class.java)
+            .invoke(null, "jdbc:sqlite:/test.db") as ConnectionURL
+        assertEquals("/test.db", parsed.databasePath)
+        assertTrue(
+            ConnectionURL::class.java.getMethod("isValidUrl", String::class.java)
+                .invoke(null, "jdbc:sqlite:/test.db") as Boolean
+        )
+    }
+
+    @Test
     fun basicURL(): Unit = ConnectionURL.parse("jdbc:sqlite:/path/to/test.db").run {
         assertEquals("/path/to/test.db", databasePath)
         assertTrue(properties.isEmpty)
@@ -53,6 +64,7 @@ internal class ConnectionURLTest {
         assertEquals(5_000, getIntProperty("busyTimeout"))
         assertEquals(0, getIntProperty("nonexistent"))
         assertEquals(42, getIntProperty("nonexistent", 42))
+        assertEquals("fallback", getProperty("missing", "fallback"))
     }
 
     @Test

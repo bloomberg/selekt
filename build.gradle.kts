@@ -244,6 +244,7 @@ kover {
                 classes(
                     "*Test*",
                     "*\$DefaultImpls",
+                    "*.BuildConfig",
                     "*ProbeMain*",
                     "*CrossRuntimeRawKeyMain*",
                     "com.bloomberg.selekt.jvm.*"
@@ -254,7 +255,7 @@ kover {
         verify {
             rule("Minimal coverage") {
                 bound {
-                    minValue = 90
+                    minValue = 98
                     aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                 }
             }

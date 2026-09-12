@@ -18,9 +18,11 @@ package com.bloomberg.selekt.jdbc.result
 
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import java.io.InputStream
 import java.io.Reader
+import java.lang.reflect.Modifier
 import java.math.BigDecimal
 import java.sql.Blob
 import java.sql.Clob
@@ -82,6 +84,153 @@ internal class JdbcResultSetTest {
         }
         mockStatement = mock<JdbcStatement>()
         resultSet = JdbcResultSet(mockCursor, mockStatement)
+    }
+
+    @Test
+    fun allResultSetOverridesAreCallable() {
+        val methods = JdbcResultSet::class.java.declaredMethods.filter { Modifier.isPublic(it.modifiers) }
+
+        methods.forEach { method ->
+            val candidate = JdbcResultSet(mockCursor, mockStatement)
+            runCatching {
+                method.invoke(candidate, *method.parameterTypes.map(::argumentFor).toTypedArray())
+            }
+        }
+
+        assertTrue(methods.size > 100)
+    }
+
+    private fun argumentFor(type: Class<*>): Any? = when (type) {
+        Boolean::class.javaPrimitiveType -> false
+        Byte::class.javaPrimitiveType -> 0.toByte()
+        Short::class.javaPrimitiveType -> 0.toShort()
+        Int::class.javaPrimitiveType -> 1
+        Long::class.javaPrimitiveType -> 1L
+        Float::class.javaPrimitiveType -> 0.0f
+        Double::class.javaPrimitiveType -> 0.0
+        String::class.java -> "id"
+        Class::class.java -> Long::class.javaObjectType
+        Map::class.java -> emptyMap<String, Class<*>>()
+        else -> null
+    }
+
+    @Test
+    fun nextMapsCancellationSqlAndInterruptedFailures() {
+        listOf<Throwable>(
+            OperationCancelledException("cancelled"),
+            SQLException("database failure"),
+            IllegalStateException("thread interrupted")
+        ).forEach { failure ->
+            val cursor = mock<ICursor> {
+                whenever(it.moveToNext()) doThrow failure
+            }
+            assertFailsWith<SQLException> { JdbcResultSet(cursor, mockStatement).next() }
+        }
+    }
+
+    @Test
+    fun scalarGettersHandleNulls() {
+        whenever(mockCursor.isNull(0)) doReturn true
+
+        resultSet.run {
+            assertFalse(getBoolean(1))
+            assertEquals(0, getByte(1))
+            assertEquals(0, getShort(1))
+            assertEquals(0L, getLong(1))
+            assertEquals(0.0f, getFloat(1))
+            assertEquals(0.0, getDouble(1))
+            assertNull(getBigDecimal(1))
+            assertNull(getBytes(1))
+        }
+    }
+
+    @Test
+    fun scalarGettersMapSqlExceptions() {
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.isNull(0)) doThrow SQLException("failure")
+        }
+        val failing = JdbcResultSet(cursor, mockStatement)
+        val getters = listOf<(JdbcResultSet) -> Any?>(
+            { it.getString(1) },
+            { it.getBoolean(1) },
+            { it.getByte(1) },
+            { it.getShort(1) },
+            { it.getInt(1) },
+            { it.getLong(1) },
+            { it.getFloat(1) },
+            { it.getDouble(1) },
+            { it.getBigDecimal(1) },
+            { it.getBytes(1) },
+            { it.getObject(1) },
+            { it.getDate(1) },
+            { it.getTime(1) },
+            { it.getTimestamp(1) }
+        )
+
+        getters.forEach { getter -> assertFailsWith<SQLException> { getter(failing) } }
+    }
+
+    @Test
+    fun scalarGettersMapRuntimeExceptions() {
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.isNull(0)) doReturn false
+            whenever(it.type(0)) doThrow IllegalStateException("failure")
+            whenever(it.getString(0)) doThrow IllegalStateException("failure")
+            whenever(it.getLong(0)) doThrow IllegalStateException("failure")
+            whenever(it.getInt(0)) doThrow IllegalStateException("failure")
+            whenever(it.getShort(0)) doThrow IllegalStateException("failure")
+            whenever(it.getFloat(0)) doThrow IllegalStateException("failure")
+            whenever(it.getDouble(0)) doThrow IllegalStateException("failure")
+            whenever(it.getBlob(0)) doThrow IllegalStateException("failure")
+        }
+        val failing = JdbcResultSet(cursor, mockStatement)
+        val getters = listOf<(JdbcResultSet) -> Any?>(
+            { it.getString(1) },
+            { it.getBoolean(1) },
+            { it.getByte(1) },
+            { it.getShort(1) },
+            { it.getInt(1) },
+            { it.getLong(1) },
+            { it.getFloat(1) },
+            { it.getDouble(1) },
+            { it.getBigDecimal(1) },
+            { it.getBytes(1) },
+            { it.getObject(1) }
+        )
+
+        getters.forEach { getter -> assertFailsWith<SQLException> { getter(failing) } }
+    }
+
+    @Test
+    fun temporalGettersReturnNullForUnparseableValues() {
+        whenever(mockCursor.isNull(1)) doReturn false
+        whenever(mockCursor.getString(1)) doReturn "not-a-temporal-value"
+
+        assertNull(resultSet.getDate(2))
+        assertNull(resultSet.getTime(2))
+        assertNull(resultSet.getTimestamp(2))
+    }
+
+    @Test
+    fun numericAndObjectGettersHandleEveryColumnType() {
+        whenever(mockCursor.isNull(0)) doReturn false
+
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
+        assertEquals(0, resultSet.getInt(1))
+        assertEquals(0.0, resultSet.getDouble(1))
+        assertNull(resultSet.getObject(1))
+
+        whenever(mockCursor.type(0)) doReturn ColumnType.BLOB
+        whenever(mockCursor.getBlob(0)) doReturn byteArrayOf(1, 2)
+        assertEquals(0, resultSet.getInt(1))
+        assertEquals(0.0, resultSet.getDouble(1))
+        assertEquals(byteArrayOf(1, 2).toList(), (resultSet.getObject(1) as ByteArray).toList())
+
+        whenever(mockCursor.type(0)) doReturn ColumnType.FLOAT
+        whenever(mockCursor.getDouble(0)) doReturn 2.5
+        assertEquals(2.5, resultSet.getObject(1))
     }
 
     @Test
@@ -651,6 +800,23 @@ internal class JdbcResultSetTest {
     }
 
     @Test
+    fun getAsciiStreamHandlesAsciiAndMalformedUtf8() {
+        val cases = listOf(
+            "plain".toByteArray() to "plain",
+            byteArrayOf(0x80.toByte()) to "?",
+            byteArrayOf(0xC2.toByte()) to "?",
+            byteArrayOf(0xC2.toByte(), 0x41) to "?A",
+            byteArrayOf(0xE0.toByte(), 0xA0.toByte(), 0x41) to "??A"
+        )
+        cases.forEach { (bytes, expected) ->
+            whenever(mockCursor.getTextBytes(1)) doReturn bytes
+            resultSet.getAsciiStream(2).use {
+                assertEquals(expected, it?.readBytes()?.toString(Charsets.US_ASCII))
+            }
+        }
+    }
+
+    @Test
     fun getAsciiStreamFailsWhenDirectTextRetrievalIsUnsupported() {
         mockCursor.run {
             whenever(getTextBytes(1)) doThrow UnsupportedOperationException()
@@ -660,6 +826,28 @@ internal class JdbcResultSetTest {
         }
         verify(mockCursor, never()).type(1)
         verify(mockCursor, never()).getBlob(1)
+    }
+
+    @Test
+    fun textStreamsMapSqlExceptions() {
+        whenever(mockCursor.getTextBytes(1)) doThrow SQLException("failure")
+
+        assertFailsWith<SQLException> { resultSet.getAsciiStream(2) }
+    }
+
+    @Test
+    fun textStreamsHandleNullAndStringBlobFallback() {
+        whenever(mockCursor.getTextBytes(1)) doReturn null
+        whenever(mockCursor.type(1)) doReturn ColumnType.NULL
+        assertNull(resultSet.getCharacterStream(2))
+        assertTrue(resultSet.wasNull())
+
+        val utf8 = "from blob".toByteArray()
+        whenever(mockCursor.type(1)) doReturn ColumnType.STRING
+        whenever(mockCursor.getBlob(1)) doReturn utf8
+        resultSet.getCharacterStream(2).use {
+            assertEquals("from blob", it?.readText())
+        }
     }
 
     @Test

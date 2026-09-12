@@ -41,6 +41,21 @@ fun externalSQLiteSingleton(
     configuration: SQLiteConfiguration = SQLiteConfiguration()
 ) = ExternalSQLite.Singleton(configuration) {}
 
+internal fun emptyCursorWindow(result: Long): ByteBuffer? = when (result) {
+    -2L -> throw OutOfMemoryError("fillCursorWindow")
+    -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
+    -4L -> error("Unexpected failure while filling cursor window")
+    -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
+    else -> null
+}
+
+internal fun requireSecretPointer(pointer: Long): Long {
+    if (pointer == 0L) {
+        throw OutOfMemoryError("allocateSecret")
+    }
+    return pointer
+}
+
 private val NATIVE_READER: MemorySegment = MemorySegment.ofAddress(0L).reinterpret(Long.MAX_VALUE)
 private const val SQLITE_NULL_TYPE = 5
 
@@ -65,10 +80,10 @@ internal inline fun <T> MemorySegment.useSQLiteAllocation(
 @Suppress("Detekt.LongParameterList", "Detekt.TooManyFunctions")
 internal class ExternalSQLite(
     configuration: SQLiteConfiguration,
-    loader: () -> Unit
+    loader: () -> Unit,
+    private val cursorWindowOwnership: CursorWindowOwnershipRegistry = CursorWindowOwnershipRegistry()
 ) : IExternalSQLite, INativeCursorWindowSQLite {
     private val callbackRegistryLock = ReentrantLock()
-    private val cursorWindowOwnership = CursorWindowOwnershipRegistry()
     @GuardedBy("callbackRegistryLock")
     private val activeListeners = mutableMapOf<Long, CommitHookRegistration>()
     @GuardedBy("callbackRegistryLock")
@@ -190,9 +205,7 @@ internal class ExternalSQLite(
         } catch (nativeFailure: Throwable) {
             val callbackFailure = failures.leave(scope)
             if (callbackFailure != null && callbackFailure !== nativeFailure) {
-                try {
-                    callbackFailure.addSuppressed(nativeFailure)
-                } catch (_: Throwable) { /* Preserve the primary failure. */ }
+                callbackFailure.addSuppressed(nativeFailure)
                 throw callbackFailure
             }
             throw nativeFailure
@@ -307,11 +320,7 @@ internal class ExternalSQLite(
 
     override fun allocateSecret(size: Int): Long {
         require(size > 0) { "Secret size must be positive." }
-        val pointer = (selekt_secret_alloc.invoke(size) as MemorySegment).address()
-        if (pointer == 0L) {
-            throw OutOfMemoryError("allocateSecret")
-        }
-        return pointer
+        return requireSecretPointer((selekt_secret_alloc.invoke(size) as MemorySegment).address())
     }
 
     override fun freeSecret(pointer: Long, size: Int) {
@@ -740,14 +749,9 @@ internal class ExternalSQLite(
                 ) as Int
             }
         }
-        val text = try {
-            allocation.reinterpret(size.toLong() + 1L).also { segment ->
-                MemorySegment.copy(bytes, 0, segment, JAVA_BYTE, 0, size)
-                segment.set(JAVA_BYTE, size.toLong(), 0)
-            }
-        } catch (failure: Throwable) {
-            sqlite3_free.invoke(allocation)
-            throw failure
+        val text = allocation.reinterpret(size.toLong() + 1L).also { segment ->
+            MemorySegment.copy(bytes, 0, segment, JAVA_BYTE, 0, size)
+            segment.set(JAVA_BYTE, size.toLong(), 0)
         }
         return try {
             sqlite3_bind_text.invoke(statement, index, text, size, sqliteFree) as Int
@@ -824,11 +828,7 @@ internal class ExternalSQLite(
                 EMPTY_BYTE_ARRAY
             }
         }
-        return if (blob.address() == 0L) {
-            null
-        } else {
-            blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
-        }
+        return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
     }
 
     private fun columnText(statement: MemorySegment, index: Int): String? {
@@ -1170,13 +1170,7 @@ internal class ExternalSQLite(
                 outSize
             ) as MemorySegment
             if (buffer.address() == 0L) {
-                when (outSize.get(JAVA_LONG, 0L)) {
-                    -2L -> throw OutOfMemoryError("fillCursorWindow")
-                    -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
-                    -4L -> error("Unexpected failure while filling cursor window")
-                    -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
-                }
-                null
+                emptyCursorWindow(outSize.get(JAVA_LONG, 0L))
             } else {
                 val size = outSize.get(JAVA_LONG, 0L)
                 try {
