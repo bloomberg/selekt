@@ -184,74 +184,50 @@ tasks.named<Test>("test") {
     enabled = false
 }
 
-val java17CrossRuntimeDatabase = layout.buildDirectory.file("cross-runtime/java17.db")
-val java25CrossRuntimeDatabase = layout.buildDirectory.file("cross-runtime/java25.db")
-
-val writeCrossRuntimeDatabaseWithJava17 = tasks.register<JavaExec>("writeCrossRuntimeDatabaseWithJava17") {
+fun registerCrossRuntimeDatabaseTask(
+    operation: String,
+    runtimeVersion: Int,
+    runtimeBackend: String,
+    databaseWriterVersion: Int,
+    prerequisite: TaskProvider<JavaExec>? = null
+): TaskProvider<JavaExec> = tasks.register<JavaExec>(
+    "${operation}CrossRuntimeDatabaseWithJava$runtimeVersion"
+) {
     group = "verification"
-    description = "Writes a raw-key database using the Java 17 JNI backend."
-    classpath = sourceSets["java17Test"].runtimeClasspath
+    description = if (operation == "write") {
+        "Writes a raw-key database using the Java $runtimeVersion $runtimeBackend backend."
+    } else {
+        "Reads the Java $databaseWriterVersion raw-key database using the " +
+            "Java $runtimeVersion $runtimeBackend backend."
+    }
+    classpath = sourceSets["java${runtimeVersion}Test"].runtimeClasspath
     mainClass.set("com.bloomberg.selekt.CrossRuntimeRawKeyMainKt")
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(runtimeVersion))
     })
+    if (runtimeVersion >= 25) {
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
+    }
     systemProperty(
         "com.bloomberg.selekt.library_path",
         layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
     )
-    args("write", java17CrossRuntimeDatabase.get().asFile.absolutePath)
-    dependsOn("compileJava17TestKotlin", "copyJniLibs")
+    args(
+        operation,
+        layout.buildDirectory.file("cross-runtime/java$databaseWriterVersion.db").get().asFile.absolutePath
+    )
+    dependsOn("compileJava${runtimeVersion}TestKotlin", "copyJniLibs")
+    prerequisite?.let { dependsOn(it) }
 }
 
-val readCrossRuntimeDatabaseWithJava25 = tasks.register<JavaExec>("readCrossRuntimeDatabaseWithJava25") {
-    group = "verification"
-    description = "Reads the Java 17 raw-key database using the Java 25 FFM backend."
-    classpath = sourceSets["java25Test"].runtimeClasspath
-    mainClass.set("com.bloomberg.selekt.CrossRuntimeRawKeyMainKt")
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    })
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
-    systemProperty(
-        "com.bloomberg.selekt.library_path",
-        layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
-    )
-    args("read", java17CrossRuntimeDatabase.get().asFile.absolutePath)
-    dependsOn(writeCrossRuntimeDatabaseWithJava17, "compileJava25TestKotlin", "copyJniLibs")
-}
-
-val writeCrossRuntimeDatabaseWithJava25 = tasks.register<JavaExec>("writeCrossRuntimeDatabaseWithJava25") {
-    group = "verification"
-    description = "Writes a raw-key database using the Java 25 FFM backend."
-    classpath = sourceSets["java25Test"].runtimeClasspath
-    mainClass.set("com.bloomberg.selekt.CrossRuntimeRawKeyMainKt")
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    })
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
-    systemProperty(
-        "com.bloomberg.selekt.library_path",
-        layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
-    )
-    args("write", java25CrossRuntimeDatabase.get().asFile.absolutePath)
-    dependsOn("compileJava25TestKotlin", "copyJniLibs")
-}
-
-val readCrossRuntimeDatabaseWithJava17 = tasks.register<JavaExec>("readCrossRuntimeDatabaseWithJava17") {
-    group = "verification"
-    description = "Reads the Java 25 raw-key database using the Java 17 JNI backend."
-    classpath = sourceSets["java17Test"].runtimeClasspath
-    mainClass.set("com.bloomberg.selekt.CrossRuntimeRawKeyMainKt")
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    })
-    systemProperty(
-        "com.bloomberg.selekt.library_path",
-        layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
-    )
-    args("read", java25CrossRuntimeDatabase.get().asFile.absolutePath)
-    dependsOn(writeCrossRuntimeDatabaseWithJava25, "compileJava17TestKotlin", "copyJniLibs")
-}
+val writeCrossRuntimeDatabaseWithJava17 = registerCrossRuntimeDatabaseTask("write", 17, "JNI", 17)
+val writeCrossRuntimeDatabaseWithJava25 = registerCrossRuntimeDatabaseTask("write", 25, "FFM", 25)
+val readCrossRuntimeDatabaseWithJava25 = registerCrossRuntimeDatabaseTask(
+    "read", 25, "FFM", 17, writeCrossRuntimeDatabaseWithJava17
+)
+val readCrossRuntimeDatabaseWithJava17 = registerCrossRuntimeDatabaseTask(
+    "read", 17, "JNI", 25, writeCrossRuntimeDatabaseWithJava25
+)
 
 tasks.register<Test>("testCrossRuntimeKeyCompatibility") {
     description = "Verifies raw-key database compatibility between the Java 17 JNI and Java 25 FFM backends."
