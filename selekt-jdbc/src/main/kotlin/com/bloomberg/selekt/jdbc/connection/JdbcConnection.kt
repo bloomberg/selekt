@@ -58,70 +58,6 @@ import org.slf4j.LoggerFactory
 
 private const val MAX_POOLED_STATEMENTS = 32
 
-private const val POOL_KEY_HASH_MULTIPLIER = 31
-
-internal interface PreparedStatementPoolKeyView {
-    val sql: String
-    val resultSetType: Int
-    val resultSetConcurrency: Int
-    val resultSetHoldability: Int
-}
-
-private fun PreparedStatementPoolKeyView.hasSameValuesAs(other: Any?): Boolean =
-    other is PreparedStatementPoolKeyView &&
-        sql == other.sql &&
-        resultSetType == other.resultSetType &&
-        resultSetConcurrency == other.resultSetConcurrency &&
-        resultSetHoldability == other.resultSetHoldability
-
-private fun PreparedStatementPoolKeyView.computeHashCode(): Int {
-    var result = sql.hashCode()
-    result = POOL_KEY_HASH_MULTIPLIER * result + resultSetType
-    result = POOL_KEY_HASH_MULTIPLIER * result + resultSetConcurrency
-    return POOL_KEY_HASH_MULTIPLIER * result + resultSetHoldability
-}
-
-@Suppress("UseDataClass") // Equality also supports the reusable lookup-key implementation.
-internal class PreparedStatementPoolKey(
-    override val sql: String,
-    override val resultSetType: Int,
-    override val resultSetConcurrency: Int,
-    override val resultSetHoldability: Int
-) : PreparedStatementPoolKeyView {
-    private val cachedHashCode = computeHashCode()
-
-    override fun equals(other: Any?): Boolean = hasSameValuesAs(other)
-
-    override fun hashCode(): Int = cachedHashCode
-}
-
-private class PreparedStatementPoolLookupKey : PreparedStatementPoolKeyView {
-    override var sql: String = ""
-    override var resultSetType: Int = 0
-    override var resultSetConcurrency: Int = 0
-    override var resultSetHoldability: Int = 0
-
-    fun set(
-        sql: String,
-        resultSetType: Int,
-        resultSetConcurrency: Int,
-        resultSetHoldability: Int
-    ) {
-        this.sql = sql
-        this.resultSetType = resultSetType
-        this.resultSetConcurrency = resultSetConcurrency
-        this.resultSetHoldability = resultSetHoldability
-    }
-
-    fun clear() {
-        sql = ""
-    }
-
-    override fun equals(other: Any?): Boolean = hasSameValuesAs(other)
-
-    override fun hashCode(): Int = computeHashCode()
-}
-
 /**
  * @since 0.28.0
  */
@@ -160,10 +96,8 @@ internal class JdbcConnection(
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
     @GuardedBy("poolLock")
-    private val preparedStatementPool = LinkedHashMap<PreparedStatementPoolKeyView, JdbcPreparedStatement>()
+    private var preparedStatementPool: PreparedStatementPool? = null
     private val poolLock = ReentrantLock()
-    @GuardedBy("poolLock")
-    private val preparedStatementPoolLookupKey = PreparedStatementPoolLookupKey()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
 
@@ -225,17 +159,12 @@ internal class JdbcConnection(
             if (closed) {
                 null
             } else {
-                preparedStatementPoolLookupKey.set(
+                preparedStatementPool?.take(
                     sql,
                     resultSetType,
                     resultSetConcurrency,
                     resultSetHoldability
                 )
-                try {
-                    preparedStatementPool.remove(preparedStatementPoolLookupKey)
-                } finally {
-                    preparedStatementPoolLookupKey.clear()
-                }
             }
         }
         return if (pooled != null) {
@@ -456,10 +385,11 @@ internal class JdbcConnection(
 
     private fun closePreparedStatementPool() {
         val snapshot = poolLock.withLock {
-            if (preparedStatementPool.isEmpty()) {
+            val pool = preparedStatementPool
+            if (pool == null || pool.isEmpty()) {
                 return
             }
-            ArrayList(preparedStatementPool.values).also { preparedStatementPool.clear() }
+            pool.drain()
         }
         snapshot.forEachCatching(JdbcPreparedStatement::closePooled)
     }
@@ -468,7 +398,6 @@ internal class JdbcConnection(
         if (statement.hasOpenResultSet()) {
             return false
         }
-        val poolKey = statement.poolKey
         statement.onReturned()
         var accepted = false
         var evicted: JdbcPreparedStatement? = null
@@ -476,13 +405,10 @@ internal class JdbcConnection(
             poolLock.withLock {
                 if (!closed) {
                     accepted = true
-                    val containsKey = preparedStatementPool.containsKey(poolKey)
-                    if (preparedStatementPool.size >= MAX_POOLED_STATEMENTS && !containsKey) {
-                        evicted = preparedStatementPool.entries.iterator().next().also {
-                            preparedStatementPool.remove(it.key)
-                        }.value
+                    val pool = preparedStatementPool ?: PreparedStatementPool(MAX_POOLED_STATEMENTS).also {
+                        preparedStatementPool = it
                     }
-                    preparedStatementPool[poolKey] = statement
+                    evicted = pool.put(statement)
                 }
             }
         }
