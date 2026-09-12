@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 description = "Selekt SQLite classes library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     `maven-publish`
     signing

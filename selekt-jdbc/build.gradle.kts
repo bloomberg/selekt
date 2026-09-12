@@ -19,6 +19,7 @@ import me.champeau.jmh.JMHTask
 description = "Selekt JDBC library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     id("com.android.lint")
     alias(libs.plugins.kover)
@@ -27,6 +28,10 @@ plugins {
     signing
     alias(libs.plugins.jmh)
     alias(libs.plugins.detekt)
+}
+
+tasks.named("enrichCycloneDxSbom") {
+    dependsOn(":SQLite3:amalgamateSQLite")
 }
 
 repositories {

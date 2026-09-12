@@ -19,9 +19,14 @@ import java.util.Locale
 description = "Selekt SQLCipher library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     `java-library`
     `maven-publish`
     signing
+}
+
+tasks.named("enrichCycloneDxSbom") {
+    dependsOn(":SQLite3:amalgamateSQLite")
 }
 
 repositories {

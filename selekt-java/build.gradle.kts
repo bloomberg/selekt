@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 description = "Selekt core library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     id("com.android.lint")
     alias(libs.plugins.kover)

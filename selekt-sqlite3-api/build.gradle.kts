@@ -17,6 +17,7 @@
 description = "Selekt SQLite API library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     id("com.android.lint")
     alias(libs.plugins.kover)

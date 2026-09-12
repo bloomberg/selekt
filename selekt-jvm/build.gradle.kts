@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 description = "Selekt SQLite JVM library."
 
 plugins {
+    id("com.bloomberg.selekt.sbom")
     kotlin("jvm")
     id("com.android.lint")
     alias(libs.plugins.kover)
@@ -28,6 +29,10 @@ plugins {
     `maven-publish`
     signing
     alias(libs.plugins.detekt)
+}
+
+tasks.named("enrichCycloneDxSbom") {
+    dependsOn(":SQLite3:amalgamateSQLite")
 }
 
 repositories {
