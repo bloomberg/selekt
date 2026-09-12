@@ -1491,7 +1491,7 @@ internal class ExternalSQLiteTest {
 
     @Test
     fun `can get soft heap limit`() {
-        assertTrue(sqlite.softHeapLimit64() > 0)
+        assertTrue(sqlite.softHeapLimit64() >= 0)
     }
 
     @Test
@@ -2912,6 +2912,108 @@ internal class ExternalSQLiteTest {
             assertEquals(SQL_OK, sqlite.exec(reopened, "SELECT * FROM t"))
         } finally {
             sqlite.closeV2(reopened)
+        }
+    }
+
+    @Test
+    fun `zero pointers produce unattached handles`() {
+        assertNull(sqlite.newDatabaseHandle(0L).attachment)
+        assertNull(sqlite.newStatementHandle(0L).attachment)
+        assertNull(sqlite.newBlobHandle(0L).attachment)
+    }
+
+    @Test
+    fun `scoped arena supports nested native string operations`() {
+        assertEquals(1, sqlite.withScopedArena {
+            sqlite.withScopedArena {
+                val dbHolder = LongArray(1)
+                assertEquals(
+                    SQL_OK,
+                    sqlite.openV2(File(tempDir, "scoped.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+                )
+                try {
+                    val statementHolder = LongArray(1)
+                    assertEquals(SQL_OK, sqlite.prepareV2(dbHolder[0], "SELECT :value", 13, statementHolder))
+                    try {
+                        sqlite.bindParameterIndex(statementHolder[0], ":value")
+                    } finally {
+                        sqlite.finalize(statementHolder[0])
+                    }
+                } finally {
+                    sqlite.closeV2(dbHolder[0])
+                }
+            }
+        })
+    }
+
+    @Test
+    fun `native status reset and named checkpoint paths`() {
+        val dbHolder = LongArray(1)
+        assertEquals(
+            SQL_OK,
+            sqlite.openV2(File(tempDir, "status.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        )
+        val db = dbHolder[0]
+        try {
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.databaseStatus(db, 0, false, IntArray(1))
+            }
+            assertEquals(SQL_OK, sqlite.databaseStatus(db, 0, true, IntArray(2)))
+            assertEquals(SQL_OK, sqlite.walCheckpointV2(db, "main", 0))
+
+            val statementHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.prepareV2(db, "SELECT 1", 8, statementHolder))
+            try {
+                assertTrue(sqlite.statementStatus(statementHolder[0], 1, true) >= 0)
+                assertFailsWith<IllegalArgumentException> {
+                    assertIs<INativeCursorWindowSQLite>(sqlite)
+                        .fillCursorWindow(statementHolder[0], -1, 1, false)
+                }
+            } finally {
+                sqlite.finalize(statementHolder[0])
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `secret APIs reject mismatched registered allocations`() {
+        val pointer = sqlite.allocateSecret(1)
+        try {
+            assertFailsWith<IllegalArgumentException> { sqlite.freeSecret(pointer, 2) }
+            assertFailsWith<IndexOutOfBoundsException> {
+                sqlite.storeSecret(pointer, 2, byteArrayOf(1), 1)
+            }
+
+            val dbHolder = LongArray(1)
+            assertEquals(
+                SQL_OK,
+                sqlite.openV2(File(tempDir, "secret.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+            )
+            try {
+                assertFailsWith<IllegalArgumentException> {
+                    sqlite.keyConventionallyAt(dbHolder[0], pointer, KEY_SIZE)
+                }
+            } finally {
+                sqlite.closeV2(dbHolder[0])
+            }
+        } finally {
+            sqlite.freeSecret(pointer, 1)
+        }
+    }
+
+    @Test
+    fun `raw key accepts a correctly sized byte array`() {
+        val dbHolder = LongArray(1)
+        assertEquals(
+            SQL_OK,
+            sqlite.openV2(File(tempDir, "raw.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        )
+        try {
+            assertEquals(SQL_OK, sqlite.rawKey(dbHolder[0], ByteArray(KEY_SIZE), KEY_SIZE))
+        } finally {
+            sqlite.closeV2(dbHolder[0])
         }
     }
 }

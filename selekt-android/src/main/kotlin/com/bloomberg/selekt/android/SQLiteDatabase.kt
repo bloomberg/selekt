@@ -285,7 +285,7 @@ class SQLiteDatabase private constructor(
      * vacuum mode or if there are no pages on the freelist.
      */
     fun incrementalVacuum() {
-        database.pragma("incremental_vacuum")
+        database.exec("PRAGMA incremental_vacuum")
     }
 
     /**
@@ -297,7 +297,7 @@ class SQLiteDatabase private constructor(
      * @param pages to remove from the freelist.
      */
     fun incrementalVacuum(pages: Int) {
-        database.pragma("incremental_vacuum($pages)")
+        database.exec("PRAGMA incremental_vacuum($pages)")
     }
 
     fun insert(

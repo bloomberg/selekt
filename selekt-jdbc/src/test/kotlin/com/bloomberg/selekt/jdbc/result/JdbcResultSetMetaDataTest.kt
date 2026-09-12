@@ -177,8 +177,10 @@ internal class JdbcResultSetMetaDataTest {
     @Test
     fun wrapperInterface(): Unit = metaData.run {
         assertTrue(isWrapperFor(JdbcResultSetMetaData::class.java))
+        assertTrue(isWrapperFor(ICursor::class.java))
         assertFalse(isWrapperFor(String::class.java))
         assertSame(this, unwrap(JdbcResultSetMetaData::class.java))
+        assertSame(mockCursor, unwrap(ICursor::class.java))
         assertFailsWith<SQLException> {
             unwrap(String::class.java)
         }
@@ -270,5 +272,14 @@ internal class JdbcResultSetMetaDataTest {
                 getColumnName(1)
             }
         }
+    }
+
+    @Test
+    fun scrollableCursorWithoutCurrentRowUsesFallbackType() {
+        whenever(mockCursor.isForwardOnly) doReturn false
+        whenever(mockCursor.position()) doReturn -1
+        whenever(mockCursor.isBeforeFirst()) doReturn true
+
+        assertEquals(Types.VARCHAR, metaData.getColumnType(1))
     }
 }

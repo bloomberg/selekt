@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.statement
 import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLStatement
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.connection.testSharedDatabase
@@ -113,6 +114,31 @@ internal class JdbcStatementTest {
     }
 
     @Test
+    fun executeUpdateMapsCancellation() {
+        val sql = "INSERT INTO users (name) VALUES ('test')"
+        val cancelled = mock<ISQLStatement> {
+            whenever(it.executeInsert()) doThrow OperationCancelledException("cancelled")
+        }
+        whenever(mockDatabase.compileStatement(sql, null)) doReturn cancelled
+
+        assertFailsWith<SQLException> { statement.executeUpdate(sql) }
+    }
+
+    @Test
+    fun executeUpdateOfReadOnlyStatementReportsNoChanges() {
+        val sql = "PRAGMA user_version"
+        val readOnly = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(sql, null)) doReturn readOnly
+
+        assertEquals(0, statement.executeUpdate(sql))
+        assertEquals(-1L, statement.generatedKeys.let { keys ->
+            if (keys.next()) keys.getLong(1) else -1L
+        })
+    }
+
+    @Test
     fun executeWithQuery() {
         val sql = "SELECT COUNT(*) FROM users"
         val readOnlyStatement = mock<ISQLStatement> {
@@ -135,6 +161,18 @@ internal class JdbcStatementTest {
         assertFalse(statement.execute(sql))
         assertNull(statement.resultSet)
         assertEquals(3, statement.updateCount)
+    }
+
+    @Test
+    fun executeMapsCancellationForWrite() {
+        val sql = "UPDATE users SET name = 'updated'"
+        val cancelled = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn false
+            whenever(it.executeUpdateDelete()) doThrow OperationCancelledException("cancelled")
+        }
+        whenever(mockDatabase.compileStatement(sql, null)) doReturn cancelled
+
+        assertFailsWith<SQLException> { statement.execute(sql) }
     }
 
     @Test
@@ -300,6 +338,24 @@ internal class JdbcStatementTest {
             eq(emptyArray<Any?>()),
             any<CancellationSignal>()
         )
+    }
+
+    @Test
+    fun scrollableMaxRowsUsesBoundedBufferedQuery() {
+        val sql = "SELECT * FROM users"
+        val scrollable = JdbcStatement(
+            mockConnection,
+            mockDatabase,
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY
+        ).apply { maxRows = 5 }
+        whenever(
+            mockDatabase.queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
+        ) doReturn mockCursor
+
+        scrollable.executeQuery(sql).close()
+
+        verify(mockDatabase).queryUpTo(eq(sql), eq(emptyArray<Any?>()), eq(5), any<CancellationSignal>())
     }
 
     @Test
@@ -764,6 +820,15 @@ internal class JdbcStatementTest {
                 executeBatch()
             }
         }
+    }
+
+    @Test
+    fun executeBatchMapsCancellation() {
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doThrow
+            OperationCancelledException("cancelled")
+        statement.addBatch("INSERT INTO users VALUES (1)")
+
+        assertFailsWith<SQLException> { statement.executeBatch() }
     }
 
     @Test

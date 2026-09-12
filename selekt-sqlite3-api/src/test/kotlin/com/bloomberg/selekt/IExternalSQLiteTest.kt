@@ -16,6 +16,10 @@
 
 package com.bloomberg.selekt
 
+import java.lang.reflect.Modifier
+import java.lang.invoke.MethodHandles
+import java.nio.ByteBuffer
+import org.mockito.Answers
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -38,6 +42,16 @@ internal class IExternalSQLiteTest {
     private val blob = 0xBEEFL
     private val blobHandle = BlobHandle(blob)
 
+    @Test
+    fun `commit listener accepts commits by default`() {
+        val listener = object : SQLCommitListener {
+            override fun onRollback() = Unit
+        }
+
+        assertEquals(0, listener.onCommit())
+        listener.onRollback()
+    }
+
     private val sqlite = mock<IExternalSQLite> {
         on { bindText(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
         on { bindInt(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
@@ -46,6 +60,76 @@ internal class IExternalSQLiteTest {
         on { bindNull(any<Long>(), any()) }.thenReturn(SQL_OK)
         on { bindBlob(any<Long>(), any(), any(), any()) }.thenReturn(SQL_OK)
         on { bindRow(any<Long>(), any()) }.thenCallRealMethod()
+    }
+
+    @Test
+    fun `all default interface methods are callable`() {
+        val sqlite = mock<IExternalSQLite>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+        val methods = IExternalSQLite::class.java.declaredMethods.filter {
+            Modifier.isPublic(it.modifiers) && it.isDefault
+        }
+
+        methods.forEach { method ->
+            runCatching {
+                MethodHandles.privateLookupIn(IExternalSQLite::class.java, MethodHandles.lookup())
+                    .unreflectSpecial(method, IExternalSQLite::class.java)
+                    .bindTo(sqlite)
+                    .invokeWithArguments(method.parameterTypes.map(::argumentFor))
+            }
+        }
+
+        assertTrue(methods.size > 50)
+    }
+
+    @Test
+    fun `all compatibility default methods are callable`() {
+        val sqlite = mock<IExternalSQLite>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+        val nativeSQLite = mock<INativeCursorWindowSQLite>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+        val compatibilityClasses = listOf(
+            "com.bloomberg.selekt.IExternalSQLite\$DefaultImpls",
+            "com.bloomberg.selekt.INativeCursorWindowSQLite\$DefaultImpls"
+        )
+
+        compatibilityClasses.flatMap { Class.forName(it).declaredMethods.asList() }.forEach { method ->
+            runCatching {
+                method.invoke(
+                    null,
+                    if (method.parameterTypes.first() == INativeCursorWindowSQLite::class.java) nativeSQLite else sqlite,
+                    *method.parameterTypes.drop(1).map(::argumentFor).toTypedArray()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `native cursor handle overload is callable`() {
+        val sqlite = mock<INativeCursorWindowSQLite>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+
+        runCatching { sqlite.fillCursorWindow(statementHandle, 0, 1, false) }
+
+        verify(sqlite).fillCursorWindow(statement, 0, 1, false)
+    }
+
+    private fun argumentFor(type: Class<*>): Any? = when (type) {
+        Boolean::class.javaPrimitiveType -> false
+        Byte::class.javaPrimitiveType -> 0.toByte()
+        Short::class.javaPrimitiveType -> 0.toShort()
+        Int::class.javaPrimitiveType -> 1
+        Long::class.javaPrimitiveType -> 1L
+        Float::class.javaPrimitiveType -> 0.0f
+        Double::class.javaPrimitiveType -> 0.0
+        String::class.java -> "value"
+        ByteArray::class.java -> byteArrayOf(0)
+        IntArray::class.java -> intArrayOf(0, 0)
+        LongArray::class.java -> longArrayOf(0)
+        DoubleArray::class.java -> doubleArrayOf(0.0)
+        BooleanArray::class.java -> booleanArrayOf(false, false)
+        Array<Any>::class.java -> arrayOf<Any?>(null)
+        DatabaseHandle::class.java -> dbHandle
+        StatementHandle::class.java -> statementHandle
+        BlobHandle::class.java -> blobHandle
+        ByteBuffer::class.java -> ByteBuffer.allocate(1)
+        else -> if (type.name == "kotlin.jvm.functions.Function0") { { Unit } } else { null }
     }
 
     @Test

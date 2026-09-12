@@ -125,4 +125,20 @@ internal class SharedDatabaseTest {
         release()
         assertFalse(isOpen())
     }
+
+    @Test
+    fun transactionOwnershipRejectsAnotherOwnerAndCanBeReleased() {
+        val shared = createSharedDatabase()
+        val firstOwner = Any()
+        val secondOwner = Any()
+        shared.synchronizeTransaction(firstOwner, inTransaction = true)
+
+        assertFailsWith<java.sql.SQLException> {
+            shared.synchronizeTransaction(secondOwner, inTransaction = true)
+        }
+
+        shared.releaseTransaction(firstOwner)
+        shared.synchronizeTransaction(secondOwner, inTransaction = true)
+        shared.synchronizeTransaction(secondOwner, inTransaction = false)
+    }
 }

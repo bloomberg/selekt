@@ -198,6 +198,13 @@ internal class JdbcBlobTest {
     }
 
     @Test
+    fun setBytesRejectsInvalidOffset() {
+        val blob = JdbcBlob()
+        assertFailsWith<SQLException> { blob.setBytes(1, testData, -1, 1) }
+        assertFailsWith<SQLException> { blob.setBytes(1, testData, testData.size + 1, 0) }
+    }
+
+    @Test
     fun setBytesRejectsOverflowingOffsetPlusLength() {
         assertFailsWith<SQLException> {
             JdbcBlob().setBytes(1, byteArrayOf(1), 1, Int.MAX_VALUE)
@@ -218,6 +225,7 @@ internal class JdbcBlobTest {
         val stream = blob.setBinaryStream(1)
         stream.write(testData)
         stream.flush()
+        stream.close()
         val result = blob.getBytes(1, testData.size)
         assertEquals(testData.joinToString(",") { it.toString() },
             result.joinToString(",") { it.toString() })

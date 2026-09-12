@@ -38,6 +38,7 @@ internal class JdbcClob(initialContent: String = "") : Clob {
     private var freed = 0
 
     private companion object {
+        @JvmField
         val FREED_UPDATER: AtomicIntegerFieldUpdater<JdbcClob> = AtomicIntegerFieldUpdater.newUpdater(
             JdbcClob::class.java,
             "freed"

@@ -447,6 +447,16 @@ internal class SQLExceptionMapperTest {
     }
 
     @Test
+    fun lockedExtendedCodeDescriptions() {
+        SQLExceptionMapper.mapException("Locked", SQL_LOCKED, SQL_LOCKED_SHARED_CACHE).message!!.run {
+            assertTrue(contains("SQLITE_LOCKED_SHAREDCACHE"))
+        }
+        SQLExceptionMapper.mapException("Locked", SQL_LOCKED, SQL_LOCKED_VTAB).message!!.run {
+            assertTrue(contains("SQLITE_LOCKED_VTAB"))
+        }
+    }
+
+    @Test
     fun unknownExtendedCode() {
         SQLExceptionMapper.mapException("Unknown", SQL_ERROR, -5678).message!!.run {
             assertTrue(contains("SQLITE_UNKNOWN_EXTENDED(-5678)"))

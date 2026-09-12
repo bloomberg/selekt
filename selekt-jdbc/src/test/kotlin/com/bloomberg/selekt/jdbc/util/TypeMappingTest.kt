@@ -73,6 +73,7 @@ internal class TypeMappingTest {
         assertEquals(42, TypeMapping.convertFromSQLite("42", Types.INTEGER))
         assertEquals(0, TypeMapping.convertFromSQLite("invalid", Types.INTEGER))
         assertEquals(42, TypeMapping.convertFromSQLite(42.7, Types.INTEGER))
+        assertEquals(0, TypeMapping.convertFromSQLite(Any(), Types.INTEGER))
     }
 
     @Test
@@ -111,6 +112,8 @@ internal class TypeMappingTest {
             assertTrue(TypeMapping.convertFromSQLite(it, Types.TIMESTAMP) is Timestamp)
         }
         assertNull(TypeMapping.convertFromSQLite("invalid-timestamp", Types.TIMESTAMP))
+        assertNull(TypeMapping.convertFromSQLite("invalidTtimestamp", Types.TIMESTAMP))
+        assertNull(TypeMapping.convertFromSQLite("2025-99-99 25:61:61", Types.TIMESTAMP))
     }
 
     @Test

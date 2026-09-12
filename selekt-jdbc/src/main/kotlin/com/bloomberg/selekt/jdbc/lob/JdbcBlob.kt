@@ -40,6 +40,7 @@ internal class JdbcBlob(
     private var freed = 0
 
     private companion object {
+        @JvmField
         val FREED_UPDATER: AtomicIntegerFieldUpdater<JdbcBlob> = AtomicIntegerFieldUpdater.newUpdater(
             JdbcBlob::class.java,
             "freed"

@@ -26,13 +26,15 @@ import kotlin.io.path.createTempFile
 import kotlin.jvm.Throws
 
 private const val LIBRARY_PATH_KEY = "com.bloomberg.selekt.library_path"
+private const val MAC_OS_NAME = "mac"
+private const val OS_NAME_KEY = "os.name"
+private const val WINDOWS_OS_NAME = "windows"
 
-@Suppress("Detekt.StringLiteralDuplication")
 @JvmSynthetic
-internal fun osNames(systemOsName: String = System.getProperty("os.name")) = systemOsName.lowercase(Locale.US).run {
+internal fun osNames(systemOsName: String = System.getProperty(OS_NAME_KEY)) = systemOsName.lowercase(Locale.US).run {
     when {
-        startsWith("mac") -> listOf("darwin", "mac", "macos", "osx")
-        startsWith("windows") -> listOf("windows")
+        startsWith(MAC_OS_NAME) -> listOf("darwin", MAC_OS_NAME, "macos", "osx")
+        startsWith(WINDOWS_OS_NAME) -> listOf(WINDOWS_OS_NAME)
         else -> listOf(replace("\\s+", "_"))
     }
 }
@@ -53,12 +55,12 @@ internal fun archNames(systemOsArch: String = System.getProperty("os.arch")) = s
 
 @JvmSynthetic
 internal fun platformIdentifiers(
-    systemOsName: String = System.getProperty("os.name"),
-    systemOsArch: String = System.getProperty("os.arch")
+    systemOsName: String = System.getProperty(OS_NAME_KEY),
+    systemOsArch: String = System.getProperty("os.arch"),
+    musl: Boolean = osNames(systemOsName).first().let { it == "linux" || it.contains("linux") } && isMusl()
 ): List<String> {
     val oses = osNames(systemOsName)
     val arches = archNames(systemOsArch)
-    val musl = oses.first().let { it == "linux" || it.contains("linux") } && isMusl()
     return oses.flatMap { os ->
         arches.flatMap { arch ->
             val base = listOf('-', File.separatorChar).map { s -> "$os$s$arch" }
@@ -72,10 +74,10 @@ internal fun platformIdentifiers(
 }
 
 @JvmSynthetic
-internal fun libraryExtensions() = osNames().map {
+internal fun libraryExtensions(systemOsName: String = System.getProperty(OS_NAME_KEY)) = osNames(systemOsName).map {
     when (it) {
-        "darwin", "mac", "osx" -> ".dylib"
-        "windows" -> ".dll"
+        "darwin", MAC_OS_NAME, "osx" -> ".dylib"
+        WINDOWS_OS_NAME -> ".dll"
         else -> ".so"
     }
 }.toSet()

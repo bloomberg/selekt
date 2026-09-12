@@ -19,6 +19,7 @@ package com.bloomberg.selekt.pools
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import java.util.concurrent.ScheduledExecutorService
+import kotlin.test.assertFalse
 
 internal class PoolsKtTest {
     private interface PooledObject : IPooledObject<Any>
@@ -32,5 +33,19 @@ internal class PoolsKtTest {
     @Test
     fun createMultiObjectPool() {
         createObjectPool(mock<IObjectFactory<PooledObject>>(), executor, PoolConfiguration(5_000L, 20_000L, maxTotal = 2))
+    }
+
+    @Test
+    fun pooledObjectLifecycleDefaultsAreNoOps() {
+        val pooled = object : IPooledObject<Unit> {
+            override val isPrimary = false
+            override var tag = false
+            override fun matches(key: Unit) = false
+            override fun releaseMemory() = Unit
+        }
+
+        pooled.onBorrowed()
+        pooled.onReturned()
+        assertFalse(pooled.tag)
     }
 }

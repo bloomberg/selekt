@@ -21,10 +21,46 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertFailsWith
 
 private const val SQL = "SELECT * FROM Foo WHERE bar=?"
 
 internal class SQLQueryTest {
+    @Test
+    fun namedBindingsResolveEverySupportedType() {
+        val args = arrayOfNulls<Any>(6)
+        val query = SQLQuery(
+            mock(),
+            "SELECT :blob, :double, :int, :long, :null, :string",
+            SQLStatementType.SELECT,
+            args
+        )
+        val blob = byteArrayOf(1)
+
+        query.bindBlob(":blob", blob)
+        query.bindDouble(":double", 2.0)
+        query.bindInt(":int", 3)
+        query.bindLong(":long", 4L)
+        query.bindNull(":null")
+        query.bindString(":string", "six")
+
+        assertSame(blob, args[0])
+        assertEquals(listOf(2.0, 3, 4L, null, "six"), args.drop(1))
+    }
+
+    @Test
+    fun unknownNamedBindingFailsWithAvailableNames() {
+        val query = SQLQuery(mock(), "SELECT :known", SQLStatementType.SELECT, arrayOfNulls(1))
+
+        assertFailsWith<IllegalArgumentException> { query.bindInt(":unknown", 1) }
+    }
+
+    @Test
+    fun parameterRowFactoryMaterializesValues() {
+        val row = ParameterRow(1).apply { setLong(0, 42L) }
+        SQLQuery.create(mock(), SQL, SQLStatementType.SELECT, row).clearBindings()
+    }
+
     @Test
     fun bindBlob() {
         val arg = byteArrayOf()

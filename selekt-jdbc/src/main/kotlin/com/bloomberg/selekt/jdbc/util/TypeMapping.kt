@@ -286,12 +286,7 @@ internal object TypeMapping {
     private fun parseDate(dateString: String): Date? = runCatching {
         Date.valueOf(LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE))
     }.getOrElse {
-        runCatching {
-            val timestamp = parseTimestamp(dateString)
-            timestamp?.let { Date(it.time) }
-        }.getOrElse {
-            null
-        }
+        parseTimestamp(dateString)?.let { timestamp -> Date(timestamp.time) }
     }
 
     private fun parseTime(timeString: String): Time? = runCatching {

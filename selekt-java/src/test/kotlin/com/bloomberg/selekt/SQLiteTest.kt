@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.exceptions.SelektSQLException
+import java.lang.reflect.Modifier
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -33,6 +34,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 private const val DB_POINTER = 0xDEADB00BL
 private const val STMT_POINTER = 0xCAFEBABEL
@@ -50,6 +52,65 @@ internal class SQLiteTest {
         on { errorMessage(any<DatabaseHandle>()) }.thenReturn("")
     }
     private val sqlite = SQLite(externalSqlite)
+
+    @Test
+    fun `native-memory database keys can key and rekey`() {
+        val key = DatabaseKey(externalSqlite, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        whenever(
+            externalSqlite.rawKeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        ) doReturn SQL_OK
+        whenever(
+            externalSqlite.rekeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        ) doReturn SQL_OK
+
+        assertEquals(SQL_OK, sqlite.rawKey(DB_POINTER, key))
+        assertEquals(SQL_OK, sqlite.rekey(DB_POINTER, key))
+        key.close()
+    }
+
+    @Test
+    fun `raw blob and statement errors are mapped`() {
+        whenever(externalSqlite.blobClose(BLOB_POINTER)) doReturn SQL_ERROR
+        assertFailsWith<SQLException> { sqlite.blobClose(BLOB_POINTER) }
+
+        whenever(externalSqlite.reset(STMT_POINTER)) doReturn SQL_ERROR
+        whenever(externalSqlite.databaseHandle(STMT_POINTER)) doReturn DB_POINTER
+        assertFailsWith<SQLException> { sqlite.reset(STMT_POINTER) }
+    }
+
+    @Test
+    fun `all public facade methods are callable`() {
+        val methods = SQLite::class.java.declaredMethods.filter { Modifier.isPublic(it.modifiers) }
+
+        methods.forEach { method ->
+            runCatching {
+                method.invoke(sqlite, *method.parameterTypes.map(::argumentFor).toTypedArray())
+            }
+        }
+
+        assertTrue(methods.size > 80)
+    }
+
+    private fun argumentFor(type: Class<*>): Any? = when (type) {
+        Boolean::class.javaPrimitiveType -> false
+        Byte::class.javaPrimitiveType -> 0.toByte()
+        Short::class.javaPrimitiveType -> 0.toShort()
+        Int::class.javaPrimitiveType -> 1
+        Long::class.javaPrimitiveType -> 1L
+        Float::class.javaPrimitiveType -> 0.0f
+        Double::class.javaPrimitiveType -> 0.0
+        String::class.java -> "value"
+        ByteArray::class.java -> byteArrayOf(0)
+        IntArray::class.java -> intArrayOf(0, 0)
+        LongArray::class.java -> longArrayOf(0)
+        BooleanArray::class.java -> booleanArrayOf(false, false)
+        DatabaseHandle::class.java -> DATABASE_HANDLE
+        StatementHandle::class.java -> STATEMENT_HANDLE
+        BlobHandle::class.java -> BLOB_HANDLE
+        DatabaseKey::class.java -> mock<DatabaseKey>()
+        java.nio.ByteBuffer::class.java -> java.nio.ByteBuffer.allocate(1)
+        else -> if (type.name == "kotlin.jvm.functions.Function0") { { Unit } } else { null }
+    }
 
     @Test
     fun `backends without native cursor support fall back safely`() {

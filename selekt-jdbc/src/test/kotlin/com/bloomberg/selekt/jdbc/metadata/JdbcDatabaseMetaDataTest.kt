@@ -272,6 +272,29 @@ internal class JdbcDatabaseMetaDataTest {
     }
 
     @Test
+    fun sqliteTypeMappingsCoverAllDeclaredTypeFamilies() {
+        val methods = listOf(
+            "mapSQLiteTypeToJDBCType",
+            "mapSQLiteTypeToJDBCTypeName",
+            "getColumnSizeForType"
+        ).map { name ->
+            JdbcDatabaseMetaData::class.java.getDeclaredMethod(name, String::class.java).apply {
+                trySetAccessible()
+            }
+        }
+        val declaredTypes = listOf(
+            "INTEGER", "INT", "SMALLINT", "MEDIUMINT", "BIGINT",
+            "REAL", "DOUBLE", "DOUBLE PRECISION", "FLOAT",
+            "NUMERIC", "DECIMAL", "TEXT", "CLOB", "VARCHAR", "CHAR",
+            "CHARACTER", "BLOB", "NULL", "CUSTOM(12)"
+        )
+
+        methods.forEach { method ->
+            declaredTypes.forEach { type -> assertNotNull(method.invoke(metaData, type)) }
+        }
+    }
+
+    @Test
     fun getPrimaryKeys() {
         whenever(mockDatabase.query(any<String>(), any<Array<Any?>>())).doReturn(mock<ICursor>())
         assertNotNull(metaData.getPrimaryKeys(null, null, "users"))
@@ -618,7 +641,7 @@ internal class JdbcDatabaseMetaDataTest {
             var callCount = 0
             val columns = listOf(
                 listOf(0, "int_col", "INTEGER", 0, null, 0),
-                listOf(1, "text_col", "TEXT", 0, null, 0),
+                listOf(1, "text_col", "TEXT", 0, "O'Reilly", 0),
                 listOf(2, "real_col", "REAL", 0, null, 0),
                 listOf(3, "blob_col", "BLOB", 0, null, 0),
                 listOf(4, "numeric_col", "NUMERIC", 0, null, 0),

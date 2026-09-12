@@ -244,6 +244,7 @@ internal class JdbcClobTest {
         val writer = clob.setCharacterStream(1)
         writer.write("Hello, World!")
         writer.flush()
+        writer.close()
         assertEquals("Hello, World!", clob.getSubString(1, 13))
     }
 
@@ -275,12 +276,14 @@ internal class JdbcClobTest {
 
     @Test
     fun setAsciiStreamSingleByte() {
-        val clob = JdbcClob()
+        val clob = JdbcClob("xx")
         val stream = clob.setAsciiStream(1)
         stream.write('H'.code)
         stream.write('i'.code)
+        stream.write('!'.code)
         stream.flush()
-        assertEquals("Hi", clob.getSubString(1, 2))
+        stream.close()
+        assertEquals("Hi!", clob.getSubString(1, 3))
     }
 
     @Test

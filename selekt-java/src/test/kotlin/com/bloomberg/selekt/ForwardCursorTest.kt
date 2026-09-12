@@ -26,14 +26,25 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.Answers
 import org.mockito.stubbing.Answer
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class ForwardCursorTest {
+    @Test
+    fun cursorDefaultAccessors() {
+        val cursor = mock<ICursor>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+        whenever(cursor.getInt(0)) doReturn 42
+
+        assertEquals(42.toShort(), cursor.getShort(0))
+        assertFailsWith<UnsupportedOperationException> { cursor.getTextBytes(0) }
+    }
+
     @Test
     fun columnIndex() {
         val statement = mock<SQLPreparedStatement>().apply {
@@ -130,6 +141,16 @@ internal class ForwardCursorTest {
         assertSame(expected, ForwardCursor(statement).getTextBytes(0))
         verify(statement, times(1)).columnType(eq(0))
         verify(statement, times(1)).columnBlob(eq(0))
+    }
+
+    @Test
+    fun getTextBytesReturnsNullForNonTextColumn() {
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("bar")
+            whenever(columnType(0)) doReturn SQL_INTEGER
+        }
+
+        assertNull(ForwardCursor(statement).getTextBytes(0))
     }
 
     @Test

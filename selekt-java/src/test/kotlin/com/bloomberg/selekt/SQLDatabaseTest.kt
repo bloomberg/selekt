@@ -30,11 +30,14 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFailsWith
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
+import java.io.ByteArrayOutputStream
+import java.util.stream.Stream
 
 private val databaseConfiguration = DatabaseConfiguration(
     busyTimeoutMillis = 2_000,
@@ -145,6 +148,61 @@ internal class SQLDatabaseTest {
     }.also { verifyCommit() }
 
     @Test
+    fun batchCollectionOverloads() {
+        val sql = "INSERT INTO t VALUES (?)"
+        val row = arrayOf<Any?>(1)
+        whenever(sqlite.changes(any<DatabaseHandle>())) doReturn 1
+        whenever(sqlite.changes(any<Long>())) doReturn 1
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.step(any<StatementHandle>())) doReturn SQL_DONE
+
+        assertEquals(0, database.batch(sql, sequenceOf(row)))
+        assertEquals(0, database.batch(sql, listOf(row)))
+        assertEquals(0, database.batch(sql, arrayOf(row)))
+        assertEquals(0, database.batch(sql, listOf(row) as Iterable<Array<out Any?>>))
+        assertEquals(0, database.batch(sql, Stream.of(row)))
+    }
+
+    @Test
+    fun compiledStatementNamedBindingsAndUnknownName() {
+        whenever(sqlite.bindParameterCount(any<StatementHandle>())) doReturn 6
+        whenever(sqlite.bindParameterCount(any<Long>())) doReturn 6
+        val statement = database.compileStatement(
+            "UPDATE t SET a=:blob, b=:double, c=:int, d=:long, e=:null, f=:string"
+        )
+
+        statement.bindBlob(":blob", byteArrayOf(1))
+        statement.bindDouble(":double", 2.0)
+        statement.bindInt(":int", 3)
+        statement.bindLong(":long", 4L)
+        statement.bindNull(":null")
+        statement.bindString(":string", "six")
+        assertFailsWith<IllegalArgumentException> { statement.bindInt(":missing", 7) }
+        statement.close()
+    }
+
+    @Test
+    fun deferredTransactionListenerCommits() {
+        val listener = org.mockito.kotlin.mock<SQLTransactionListener>()
+        database.beginDeferredTransactionWithListener(listener)
+        database.setTransactionSuccessful()
+        database.endTransaction()
+
+        verify(listener).onCommit()
+    }
+
+    @Test
+    fun transactionModesAndListenerModes() {
+        database.transact(SQLiteTransactionMode.DEFERRED) { }
+        database.transact(SQLiteTransactionMode.IMMEDIATE) { }
+
+        val listener = org.mockito.kotlin.mock<SQLTransactionListener>()
+        database.transact(listener = listener, transactionMode = SQLiteTransactionMode.DEFERRED) { }
+        database.transact(listener = listener, transactionMode = SQLiteTransactionMode.IMMEDIATE) { }
+        verify(listener).onCommit()
+    }
+
+    @Test
     fun badNestedTransactionThenGoodTransaction() {
         assertFailsWith<Exception> {
             database.apply {
@@ -196,6 +254,17 @@ internal class SQLDatabaseTest {
     fun rawStatementReleasesConnectionOnClose() {
         database.prepare("SELECT 1").close()
         database.prepare("SELECT 1").close()
+    }
+
+    @Test
+    fun rawStatementIntegerAccessorsAndClosedColumnNames() {
+        whenever(sqlite.columnInt(any<StatementHandle>(), any())) doReturn 42
+        val statement = database.prepare("SELECT ?")
+
+        statement.bindInt(1, 7)
+        assertEquals(42, statement.columnInt(0))
+        statement.close()
+        assertTrue(statement.columnNames().isEmpty())
     }
 
     @Test
@@ -381,6 +450,101 @@ internal class SQLDatabaseTest {
         whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
         database.query("SELECT 1", emptyArray(), signal)
         verify(sqlite).progressHandler(eq(DB), eq(0), isNull())
+    }
+
+    @Test
+    fun cancellableStructuredAndQueryObjectOverloads() {
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
+        val signal = CancellationSignal()
+
+        database.query(
+            distinct = false,
+            table = "items",
+            columns = arrayOf("*"),
+            selection = "",
+            selectionArgs = emptyArray(),
+            groupBy = null,
+            having = null,
+            orderBy = null,
+            limit = null,
+            cancellationSignal = signal
+        ).close()
+        val query = object : ISQLQuery {
+            override val sql = "SELECT 1"
+            override val argCount = 0
+            override fun bindTo(statement: ISQLProgram) = Unit
+        }
+        database.query(query, signal).close()
+    }
+
+    @Test
+    fun parameterRowCancellableQueryOverloads() {
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.step(any<Long>())) doReturn SQL_DONE
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
+        val signal = CancellationSignal()
+        val row = ParameterRow(0)
+
+        database.query("SELECT 1", row, signal).close()
+        database.queryUpTo("SELECT 1", row, 1, signal).close()
+        assertFailsWith<IllegalArgumentException> {
+            database.queryUpTo("SELECT 1", row, 0, signal)
+        }
+    }
+
+    @Test
+    fun boundedArrayQueryHandlesInitiallyWritableStatement() {
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 0
+
+        database.queryUpTo("SELECT 1", emptyArray(), 1, CancellationSignal()).close()
+    }
+
+    @Test
+    fun queryRejectsTooFewAndOutOfRangeBindings() {
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
+        whenever(sqlite.bindParameterCount(any<Long>())) doReturn 2
+        whenever(sqlite.bindParameterCount(any<StatementHandle>())) doReturn 2
+        assertFailsWith<IllegalArgumentException> {
+            database.query("SELECT ?, ?", arrayOf(1)).close()
+        }
+
+        whenever(sqlite.bindParameterCount(any<Long>())) doReturn 1
+        whenever(sqlite.bindParameterCount(any<StatementHandle>())) doReturn 1
+        val query = object : ISQLQuery {
+            override val sql = "SELECT ?"
+            override val argCount = 2
+            override fun bindTo(statement: ISQLProgram) = statement.bindLong(2, 42L)
+        }
+        assertFailsWith<IllegalArgumentException> { database.query(query).close() }
+    }
+
+    @Test
+    fun defaultBlobSchemaOverloads() {
+        whenever(sqlite.newBlobHandle(any<Long>())) doAnswer { BlobHandle(it.getArgument(0)) }
+        whenever(sqlite.blobBytes(any<BlobHandle>())) doReturn 0
+        whenever(
+            sqlite.blobOpen(
+                any<DatabaseHandle>(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any<LongArray>()
+            )
+        ) doAnswer {
+            it.getArgument<LongArray>(6)[0] = 3L
+            SQL_OK
+        }
+        assertEquals(0, database.sizeOfBlob("items", "data", 1))
+        val output = ByteArrayOutputStream()
+        database.readFromBlob("items", "data", 1, 0, 0, output)
+        database.writeToBlob("items", "data", 1, 0, byteArrayOf().inputStream())
+        assertEquals(0, output.size())
     }
 
     @Test

@@ -19,11 +19,20 @@ package com.bloomberg.selekt.jdbc.result
 import com.code_intelligence.jazzer.junit.FuzzTest
 import java.util.stream.Stream
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import org.junit.jupiter.params.provider.MethodSource
 
 @Suppress("MagicNumber")
 internal class Utf8ReaderFuzzTest {
+    @org.junit.jupiter.api.Test
+    fun rejectsInvalidDestinationBounds() {
+        val reader = utf8Reader("text".toByteArray())
+        assertFailsWith<IndexOutOfBoundsException> { reader.read(CharArray(2), -1, 1) }
+        assertFailsWith<IndexOutOfBoundsException> { reader.read(CharArray(2), 0, -1) }
+        assertFailsWith<IndexOutOfBoundsException> { reader.read(CharArray(2), 1, 2) }
+    }
+
     @MethodSource("inputs")
     @FuzzTest
     fun fuzzReader(input: ByteArray) {
@@ -85,7 +94,15 @@ internal class Utf8ReaderFuzzTest {
             byteArrayOf(),
             "ASCII".toByteArray(),
             "£€😀".toByteArray(),
-            byteArrayOf(0xC0.toByte(), 0x80.toByte(), 0xE2.toByte(), 0x82.toByte())
+            byteArrayOf(0xC0.toByte(), 0x80.toByte(), 0xE2.toByte(), 0x82.toByte()),
+            byteArrayOf(0xC2.toByte()),
+            byteArrayOf(0xC2.toByte(), 0x20),
+            byteArrayOf(0xE0.toByte()),
+            byteArrayOf(0xE0.toByte(), 0x80.toByte(), 0x80.toByte()),
+            byteArrayOf(0xED.toByte(), 0xA0.toByte(), 0x80.toByte()),
+            byteArrayOf(0xF0.toByte()),
+            byteArrayOf(0xF0.toByte(), 0x80.toByte(), 0x80.toByte(), 0x80.toByte()),
+            byteArrayOf(0xF4.toByte(), 0x90.toByte(), 0x80.toByte(), 0x80.toByte())
         )
     }
 }

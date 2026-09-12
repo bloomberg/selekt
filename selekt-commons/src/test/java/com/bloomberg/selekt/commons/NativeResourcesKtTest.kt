@@ -76,6 +76,13 @@ internal class NativeResourcesKtTest {
     }
 
     @Test
+    fun muslPlatformIdentifiersPreferMuslAndRetainFallback() {
+        val ids = platformIdentifiers("Linux", "amd64", musl = true)
+        assertTrue("linux-amd64-musl" in ids)
+        assertTrue("linux-amd64" in ids)
+    }
+
+    @Test
     fun archNamesCanonicaliseAArch64() {
         assertEquals(listOf("aarch64", "arm64"), archNames("aarch64"))
         assertEquals(listOf("aarch64", "arm64"), archNames("ARM64"))
@@ -95,6 +102,11 @@ internal class NativeResourcesKtTest {
     @Test
     fun commonLibraryExtension() {
         assertTrue(libraryExtensions().intersect(listOf(".dll", ".dylib", ".so")).isNotEmpty())
+    }
+
+    @Test
+    fun windowsLibraryExtension() {
+        assertEquals(setOf(".dll"), libraryExtensions("Windows 11"))
     }
 
     @Test

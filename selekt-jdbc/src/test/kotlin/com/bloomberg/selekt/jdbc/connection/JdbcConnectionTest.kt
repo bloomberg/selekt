@@ -400,6 +400,17 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun isValidReturnsFalseWhenValidationFails() {
+        val database = mock<SQLDatabase> {
+            whenever(it.exec("SELECT 1")) doThrow RuntimeException("validation failed")
+        }
+        val failingConnection = JdbcConnection(testSharedDatabase(database), connectionURL, properties)
+
+        assertFalse(failingConnection.isValid(0))
+        failingConnection.close()
+    }
+
+    @Test
     fun closedStateIsThreadSafe(): Unit = connection.run {
         (1..10).map {
             Thread {
@@ -470,6 +481,13 @@ internal class JdbcConnectionTest {
                 ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_UPDATABLE
             )
+        }
+    }
+
+    @Test
+    fun createStatementRejectsUnsupportedResultSetType() {
+        assertFailsWith<SQLException> {
+            connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY)
         }
     }
 

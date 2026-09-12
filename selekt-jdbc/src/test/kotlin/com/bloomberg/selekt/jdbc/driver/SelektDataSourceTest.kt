@@ -225,6 +225,18 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun literalEncryptionKeysUseContentEquality() {
+        val first = EncryptionKeySource.Literal(VALID_KEY.toCharArray())
+        val equal = EncryptionKeySource.Literal(VALID_KEY.toCharArray())
+        val different = EncryptionKeySource.Literal("different-32-byte-key-material!!!".toCharArray())
+
+        assertEquals(first, equal)
+        assertEquals(first.hashCode(), equal.hashCode())
+        assertFalse(first == different)
+        assertFalse(first.equals("not a key"))
+    }
+
+    @Test
     fun getConnectionWithUsernamePassword(): Unit = dataSource.run {
         databasePath = File(tempDir, "user-pass.db").absolutePath
         val thrown = assertFailsWith<SQLException> {

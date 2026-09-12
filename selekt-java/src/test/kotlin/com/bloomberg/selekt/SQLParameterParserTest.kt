@@ -155,4 +155,16 @@ internal class SQLParameterParserTest {
             "SELECT * FROM users WHERE name = 'O''Brien' AND age = :age"
         ))
     }
+
+    @Test
+    fun unterminatedQuotedTextAndCommentsContainNoParameters() {
+        listOf(
+            "SELECT ':ignored",
+            "SELECT \"@ignored",
+            "SELECT `\u0024ignored",
+            "SELECT [:ignored",
+            "SELECT 1 -- :ignored",
+            "SELECT 1 /* :ignored"
+        ).forEach { sql -> assertTrue(parseNamedParameters(sql).isEmpty(), sql) }
+    }
 }
