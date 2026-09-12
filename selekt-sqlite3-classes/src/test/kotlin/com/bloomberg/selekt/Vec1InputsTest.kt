@@ -115,6 +115,10 @@ internal class Vec1InputsTest {
         runProbe("oversized-query-k")
 
     @Test
+    fun `vec1 grows a maximum ANN result heap within the configured memory limit`() =
+        runProbe("bounded-query-k")
+
+    @Test
     fun `vec1 rejects models whose codebooks exceed fixed encoder capacity`() =
         runProbe("oversized-codebook-model")
 
@@ -234,6 +238,7 @@ internal object Vec1SecurityProbeMain {
                 "truncated-base-integrity" -> probeTruncatedBaseIntegrity(sqlite, db)
                 "oversized-opq-model" -> probeOversizedOpqModel(sqlite, db)
                 "oversized-query-k" -> probeOversizedQueryK(sqlite, db)
+                "bounded-query-k" -> probeBoundedQueryK(sqlite, db)
                 "oversized-codebook-model" -> probeOversizedCodebookModel(sqlite, db)
                 "residual-without-buckets" -> probeResidualModelWithoutBuckets(sqlite, db)
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
@@ -874,6 +879,44 @@ internal object Vec1SecurityProbeMain {
             )
         } finally {
             sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeBoundedQueryK(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE a(x) AS (" +
+                    "VALUES(0) UNION ALL SELECT x+1 FROM a WHERE x<89" +
+                    "), b(x) AS (" +
+                    "VALUES(0) UNION ALL SELECT x+1 FROM b WHERE x<99" +
+                    ") INSERT INTO t(rowid,vector) " +
+                    "SELECT a.x*100+b.x+1,vec1_from_json('[0,0,0,0]') FROM a,b"
+            ) == SQL_OK
+        )
+        check(sqlite.exec(db, "PRAGMA hard_heap_limit=16777216") == SQL_OK)
+        listOf(0, 1).forEach { streaming ->
+            val statement = prepare(
+                sqlite,
+                db,
+                "SELECT count(*) FROM t " +
+                    "WHERE cmd=vec1_from_json('[0,0,0,0]') " +
+                    "AND arg='{\"K\":2147483647,\"streaming\":$streaming}'"
+            )
+            try {
+                check(sqlite.step(statement) == SQL_ROW) { sqlite.errorMessage(db) }
+                check(sqlite.columnInt64(statement, 0) == 9_000L)
+                check(sqlite.step(statement) == SQL_DONE)
+            } finally {
+                sqlite.finalize(statement)
+            }
         }
     }
 
