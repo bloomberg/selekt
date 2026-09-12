@@ -22,6 +22,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.sql.Blob
 import java.sql.SQLException
+import java.util.Objects
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.concurrent.NotThreadSafe
 
@@ -30,15 +31,15 @@ import javax.annotation.concurrent.NotThreadSafe
  */
 @Suppress("Detekt.StringLiteralDuplication")
 @NotThreadSafe
-internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
+internal class JdbcBlob(
+    initialData: ByteArray = byteArrayOf(),
+    private val maximumLength: Int = Int.MAX_VALUE
+) : Blob {
     private val data = ByteArrayOutputStream()
     @Volatile
     private var freed = 0
 
     private companion object {
-        private const val ZERO_CHUNK_SIZE = 8192
-        private val ZERO_CHUNK = ByteArray(ZERO_CHUNK_SIZE)
-
         val FREED_UPDATER: AtomicIntegerFieldUpdater<JdbcBlob> = AtomicIntegerFieldUpdater.newUpdater(
             JdbcBlob::class.java,
             "freed"
@@ -46,6 +47,9 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
     }
 
     init {
+        require(maximumLength >= initialData.size) {
+            "Maximum length $maximumLength is smaller than initial BLOB length ${initialData.size}"
+        }
         data.write(initialData)
     }
 
@@ -124,23 +128,18 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
             len < 0 || len > bytes.size - offset -> throw SQLException(
                 "Length $len with offset $offset exceeds byte array size ${bytes.size}")
         }
-        if (startIndex.toLong() + len.toLong() > Int.MAX_VALUE.toLong()) {
-            throw SQLException(
-                "Resulting blob size (position=$pos, length=$len) exceeds maximum supported size ${Int.MAX_VALUE}")
+        val endIndex = validatedWriteEndIndex(startIndex, len)
+        if (len == 0) {
+            return 0
         }
         val currentData = data.toByteArray()
-        if (startIndex > currentData.size) {
-            data.reset()
-            data.write(currentData)
-            writeZeroPadding(startIndex - currentData.size)
-            data.write(bytes, offset, len)
-        } else if (startIndex + len <= currentData.size) {
+        if (endIndex <= currentData.size) {
             val newData = currentData.copyOf()
             bytes.copyInto(newData, startIndex, offset, offset + len)
             data.reset()
             data.write(newData)
         } else {
-            val newData = currentData.copyOf(startIndex + len)
+            val newData = currentData.copyOf(endIndex)
             bytes.copyInto(newData, startIndex, offset, offset + len)
             data.reset()
             data.write(newData)
@@ -157,27 +156,35 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
 
             private fun initializeIfNeeded() {
                 if (!initialized) {
-                    initialized = true
-                    val currentData = data.run {
-                        toByteArray().also { data.reset() }
+                    if (currentPos > data.size()) {
+                        throw SQLException(
+                            "Stream position ${currentPos.toLong() + 1L} is out of bounds (length=${data.size()})")
                     }
-                    data.write(currentData, 0, minOf(currentPos, currentData.size))
-                    writeZeroPadding(currentPos - currentData.size)
+                    val currentData = data.toByteArray()
+                    data.reset()
+                    data.write(currentData, 0, currentPos)
+                    initialized = true
                 }
             }
 
             override fun write(b: Int) {
                 checkNotFreed()
+                val endIndex = validatedWriteEndIndex(currentPos, 1)
                 initializeIfNeeded()
                 data.write(b)
-                ++currentPos
+                currentPos = endIndex
             }
 
             override fun write(b: ByteArray, off: Int, len: Int) {
                 checkNotFreed()
+                Objects.checkFromIndexSize(off, len, b.size)
+                if (len == 0) {
+                    return
+                }
+                val endIndex = validatedWriteEndIndex(currentPos, len)
                 initializeIfNeeded()
                 data.write(b, off, len)
-                currentPos += len
+                currentPos = endIndex
             }
 
             override fun flush() = Unit
@@ -218,12 +225,19 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
         if (pos < 1L) {
             throw SQLException("Position must be >= 1 (received $pos)")
         }
-        return (pos - 1L).also {
-            if (it > Int.MAX_VALUE.toLong()) {
-                throw SQLException(
-                    "Position $pos exceeds maximum supported blob index ${Int.MAX_VALUE.toLong() + 1L}")
-            }
-        }.toInt()
+        val currentLength = data.size()
+        if (pos > currentLength.toLong() + 1L) {
+            throw SQLException("Position $pos is out of bounds (length=$currentLength)")
+        }
+        return (pos - 1L).toInt()
+    }
+
+    private fun validatedWriteEndIndex(startIndex: Int, length: Int): Int {
+        val endIndex = startIndex.toLong() + length.toLong()
+        if (endIndex > maximumLength.toLong()) {
+            throw SQLException("Resulting BLOB length $endIndex exceeds maximum supported length $maximumLength")
+        }
+        return endIndex.toInt()
     }
 
     private fun validatedReadIndex(pos: Long, size: Int): Int {
@@ -244,15 +258,6 @@ internal class JdbcBlob(initialData: ByteArray = byteArrayOf()) : Blob {
             throw SQLException("$description length $length exceeds maximum supported length ${Int.MAX_VALUE}")
         }
         return length.toInt()
-    }
-
-    private fun writeZeroPadding(count: Int) {
-        var remaining = count
-        while (remaining > 0) {
-            val chunkSize = minOf(remaining, ZERO_CHUNK_SIZE)
-            data.write(ZERO_CHUNK, 0, chunkSize)
-            remaining -= chunkSize
-        }
     }
 
     internal fun asBytes(): ByteArray {

@@ -335,13 +335,10 @@ internal class JdbcBlobTest {
         JdbcBlob().run {
             setBytes(1, "Hello".toByteArray())
             assertEquals(5L, length())
-
             setBytes(6, ", ".toByteArray())
             assertEquals(7L, length())
-
             setBytes(8, "World!".toByteArray())
             assertEquals(13L, length())
-
             truncate(7)
             assertEquals(7L, length())
         }
@@ -381,22 +378,17 @@ internal class JdbcBlobTest {
         val blob = JdbcBlob(data)
         val worldPattern = "World".toByteArray()
         assertEquals(8L, blob.position(worldPattern, 1))
-
         blob.setBytes(8, "Earth".toByteArray())
         assertEquals(-1L, blob.position(worldPattern, 1))
     }
 
     @Test
-    fun setBytesWithGap() {
-        JdbcBlob("Hi".toByteArray()).apply {
-            setBytes(5, "There".toByteArray())
-        }.asBytes().run {
-            assertEquals(9, size)
-            assertContentEquals("Hi".toByteArray(), copyOfRange(0, 2))
-            assertEquals(0, this[2].toInt()) // null padding
-            assertEquals(0, this[3].toInt()) // null padding
-            assertContentEquals("There".toByteArray(), copyOfRange(4, 9))
+    fun setBytesRejectsGapWithoutChangingContent() {
+        val blob = JdbcBlob("Hi".toByteArray())
+        assertFailsWith<SQLException> {
+            blob.setBytes(4, "There".toByteArray())
         }
+        assertContentEquals("Hi".toByteArray(), blob.asBytes())
     }
 
     @Test
@@ -416,9 +408,106 @@ internal class JdbcBlobTest {
     }
 
     @Test
+    fun setBytesRejectsMaximumSparsePositionEvenForEmptyWrite() {
+        val maximumLength = 16
+        val blob = JdbcBlob(maximumLength = maximumLength)
+        assertFailsWith<SQLException> {
+            blob.setBytes(maximumLength.toLong() + 1L, byteArrayOf())
+        }
+        assertEquals(0L, blob.length())
+    }
+
+    @Test
+    fun setBytesAcceptsEmptyWriteAtEnd() {
+        val blob = JdbcBlob(testData)
+        assertEquals(0, blob.setBytes(testData.size.toLong() + 1L, byteArrayOf()))
+        assertContentEquals(testData, blob.asBytes())
+    }
+
+    @Test
+    fun setBytesChecksGrowthBeforeChangingContent() {
+        val blob = JdbcBlob("abc".toByteArray(), maximumLength = 4)
+        assertFailsWith<SQLException> {
+            blob.setBytes(4, byteArrayOf(1, 2))
+        }
+        assertContentEquals("abc".toByteArray(), blob.asBytes())
+        assertEquals(1, blob.setBytes(4, "d".toByteArray()))
+        assertContentEquals("abcd".toByteArray(), blob.asBytes())
+    }
+
+    @Test
+    fun constructorRejectsMaximumLengthBelowInitialLength() {
+        assertFailsWith<IllegalArgumentException> {
+            JdbcBlob(byteArrayOf(1), maximumLength = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            JdbcBlob(maximumLength = -1)
+        }
+    }
+
+    @Test
     fun setBinaryStreamRejectsPositionExceedingIntMax() {
         val blob = JdbcBlob(testData)
         assertFailsWith<SQLException> { blob.setBinaryStream(Int.MAX_VALUE.toLong() + 2L) }
         assertFailsWith<SQLException> { blob.setBinaryStream(Long.MAX_VALUE) }
+    }
+
+    @Test
+    fun setBinaryStreamRejectsGapBeforeReturningStream() {
+        val blob = JdbcBlob("Hi".toByteArray())
+        assertFailsWith<SQLException> {
+            blob.setBinaryStream(4)
+        }
+        assertContentEquals("Hi".toByteArray(), blob.asBytes())
+    }
+
+    @Test
+    fun setBinaryStreamRejectsMaximumSparsePosition() {
+        val maximumLength = 16
+        val blob = JdbcBlob(maximumLength = maximumLength)
+        assertFailsWith<SQLException> {
+            blob.setBinaryStream(maximumLength.toLong() + 1L)
+        }
+        assertEquals(0L, blob.length())
+    }
+
+    @Test
+    fun setBinaryStreamChecksGrowthBeforeChangingContent() {
+        val blob = JdbcBlob("abc".toByteArray(), maximumLength = 4)
+        val stream = blob.setBinaryStream(4)
+        assertFailsWith<SQLException> {
+            stream.write(byteArrayOf(1, 2))
+        }
+        assertContentEquals("abc".toByteArray(), blob.asBytes())
+        stream.write('d'.code)
+        assertContentEquals("abcd".toByteArray(), blob.asBytes())
+        assertFailsWith<SQLException> { stream.write('e'.code) }
+        assertContentEquals("abcd".toByteArray(), blob.asBytes())
+    }
+
+    @Test
+    fun setBinaryStreamEmptyWriteDoesNotTruncateContent() {
+        val blob = JdbcBlob("abcd".toByteArray())
+        blob.setBinaryStream(2).write(byteArrayOf())
+        assertContentEquals("abcd".toByteArray(), blob.asBytes())
+    }
+
+    @Test
+    fun setBinaryStreamRevalidatesDeferredPosition() {
+        val blob = JdbcBlob("abcd".toByteArray())
+        val stream = blob.setBinaryStream(5)
+        blob.truncate(2)
+        assertFailsWith<SQLException> { stream.write('e'.code) }
+        assertContentEquals("ab".toByteArray(), blob.asBytes())
+    }
+
+    @Test
+    fun setBinaryStreamInvalidRangeDoesNotTruncateContent() {
+        val blob = JdbcBlob("abcd".toByteArray())
+        val stream = blob.setBinaryStream(2)
+        assertFailsWith<IndexOutOfBoundsException> {
+            stream.write(byteArrayOf(1, 2), 1, 2)
+        }
+        assertContentEquals("abcd".toByteArray(), blob.asBytes())
     }
 }
