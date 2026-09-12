@@ -22,6 +22,7 @@ import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
+import com.bloomberg.selekt.jdbc.connection.PreparedStatementPoolKey
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.util.TypeMapping
@@ -116,6 +117,12 @@ internal open class JdbcPreparedStatement(
     resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
+    internal val poolKey = PreparedStatementPoolKey(
+        sql,
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability
+    )
     private val preparation = try {
         connection.withSession {
             database.prepare(sql).use { it.parameterCount to it.isReadOnly }

@@ -58,18 +58,68 @@ import org.slf4j.LoggerFactory
 
 private const val MAX_POOLED_STATEMENTS = 32
 
-private data class PreparedStatementPoolKey(
-    val sql: String,
-    val resultSetType: Int,
-    val resultSetConcurrency: Int,
+private const val POOL_KEY_HASH_MULTIPLIER = 31
+
+internal interface PreparedStatementPoolKeyView {
+    val sql: String
+    val resultSetType: Int
+    val resultSetConcurrency: Int
     val resultSetHoldability: Int
-) {
-    constructor(statement: JdbcPreparedStatement) : this(
-        statement.sql,
-        statement.resultSetType,
-        statement.resultSetConcurrency,
-        statement.resultSetHoldability
-    )
+}
+
+private fun PreparedStatementPoolKeyView.hasSameValuesAs(other: Any?): Boolean =
+    other is PreparedStatementPoolKeyView &&
+        sql == other.sql &&
+        resultSetType == other.resultSetType &&
+        resultSetConcurrency == other.resultSetConcurrency &&
+        resultSetHoldability == other.resultSetHoldability
+
+private fun PreparedStatementPoolKeyView.computeHashCode(): Int {
+    var result = sql.hashCode()
+    result = POOL_KEY_HASH_MULTIPLIER * result + resultSetType
+    result = POOL_KEY_HASH_MULTIPLIER * result + resultSetConcurrency
+    return POOL_KEY_HASH_MULTIPLIER * result + resultSetHoldability
+}
+
+@Suppress("UseDataClass") // Equality also supports the reusable lookup-key implementation.
+internal class PreparedStatementPoolKey(
+    override val sql: String,
+    override val resultSetType: Int,
+    override val resultSetConcurrency: Int,
+    override val resultSetHoldability: Int
+) : PreparedStatementPoolKeyView {
+    private val cachedHashCode = computeHashCode()
+
+    override fun equals(other: Any?): Boolean = hasSameValuesAs(other)
+
+    override fun hashCode(): Int = cachedHashCode
+}
+
+private class PreparedStatementPoolLookupKey : PreparedStatementPoolKeyView {
+    override var sql: String = ""
+    override var resultSetType: Int = 0
+    override var resultSetConcurrency: Int = 0
+    override var resultSetHoldability: Int = 0
+
+    fun set(
+        sql: String,
+        resultSetType: Int,
+        resultSetConcurrency: Int,
+        resultSetHoldability: Int
+    ) {
+        this.sql = sql
+        this.resultSetType = resultSetType
+        this.resultSetConcurrency = resultSetConcurrency
+        this.resultSetHoldability = resultSetHoldability
+    }
+
+    fun clear() {
+        sql = ""
+    }
+
+    override fun equals(other: Any?): Boolean = hasSameValuesAs(other)
+
+    override fun hashCode(): Int = computeHashCode()
 }
 
 /**
@@ -110,8 +160,10 @@ internal class JdbcConnection(
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
     @GuardedBy("poolLock")
-    private val preparedStatementPool = LinkedHashMap<PreparedStatementPoolKey, JdbcPreparedStatement>()
+    private val preparedStatementPool = LinkedHashMap<PreparedStatementPoolKeyView, JdbcPreparedStatement>()
     private val poolLock = ReentrantLock()
+    @GuardedBy("poolLock")
+    private val preparedStatementPoolLookupKey = PreparedStatementPoolLookupKey()
 
     private val _metaData by lazy { JdbcDatabaseMetaData(this, database, connectionURL) }
 
@@ -169,14 +221,22 @@ internal class JdbcConnection(
         checkClosed()
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
-        val poolKey = PreparedStatementPoolKey(
-            sql,
-            resultSetType,
-            resultSetConcurrency,
-            resultSetHoldability
-        )
         val pooled = poolLock.withLock {
-            if (closed) { null } else { preparedStatementPool.remove(poolKey) }
+            if (closed) {
+                null
+            } else {
+                preparedStatementPoolLookupKey.set(
+                    sql,
+                    resultSetType,
+                    resultSetConcurrency,
+                    resultSetHoldability
+                )
+                try {
+                    preparedStatementPool.remove(preparedStatementPoolLookupKey)
+                } finally {
+                    preparedStatementPoolLookupKey.clear()
+                }
+            }
         }
         return if (pooled != null) {
             pooled.reopen()
@@ -408,7 +468,7 @@ internal class JdbcConnection(
         if (statement.hasOpenResultSet()) {
             return false
         }
-        val poolKey = PreparedStatementPoolKey(statement)
+        val poolKey = statement.poolKey
         statement.onReturned()
         var accepted = false
         var evicted: JdbcPreparedStatement? = null
