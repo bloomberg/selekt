@@ -474,7 +474,7 @@ jobs:
     timeout-minutes: 120
     environment: release
     permissions:
-      contents: read
+      contents: write
     env:
       SELEKT_ENABLE_VEC1: 'ON'
       SELEKT_VEC1_ENABLE_X86_AVX2: 'ON'
@@ -567,6 +567,16 @@ jobs:
       - name: 'Build Selekt JVM'
         run: |
           ./gradlew :selekt-jdbc:jar :selekt-jvm:jar ${{ env.SCAN }}
+
+      - name: 'Generate repository CycloneDX SBOM'
+        run: ./gradlew :repositoryCyclonedxBom --no-configuration-cache
+
+      - name: 'Upload SBOM to GitHub release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" \
+          build/reports/cyclonedx/selekt-*.cdx.json \
+          --clobber
 
       - name: 'Publish release to Central Portal'
         if: github.event_name == 'release' && github.event.action == 'published'
