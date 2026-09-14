@@ -1324,6 +1324,8 @@ Platform restrictions are recorded as component properties.</p>
 </div>
 </div>
 </div>
+<p>Selekt may reuse the driver-owned update-count array returned by <code>executeBatch()</code>. Treat the array as read-only and
+copy it before another batch execution or before closing the statement if the counts need to be retained.</p>
 <h3 id="transactions">Transactions</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Kotlin</label><label for="__tabbed_11_2">Java</label></div>
 <div class="tabbed-content">
