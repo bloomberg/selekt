@@ -159,7 +159,7 @@ jobs:
 
       - name: 'Setup Java 17'
         if: "!contains(matrix.platform, 'musl')"
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: ${{ (runner.os == 'Windows' && runner.arch == 'ARM64') && 'microsoft' || 'temurin' }}
           java-version: 17
@@ -419,7 +419,7 @@ jobs:
           submodules: recursive
 
       - name: 'Setup Java 17'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: 17
@@ -533,13 +533,13 @@ jobs:
           submodules: recursive
 
       - name: 'Setup Java 17'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: 17
 
       - name: 'Setup Java 25'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: 25
