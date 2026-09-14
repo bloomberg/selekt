@@ -4285,7 +4285,12 @@ static int vec1DecodeModel(
     return SQLITE_ERROR;
   }
 
-  if( pMod->hdr.nElem==0 || pMod->hdr.nElem>100000 ){
+  if( (pMod->hdr.nElem==0
+       && (pMod->hdr.nCodebook!=0
+           || pMod->hdr.nBucket!=0
+           || (pMod->hdr.flags & (VEC1_MODEL_ROTATE|VEC1_MODEL_RESIDUAL))))
+   || pMod->hdr.nElem>100000
+  ){
     *pzErr = sqlite3_mprintf("vec1: invalid nElem value: %u", pMod->hdr.nElem);
     return SQLITE_CORRUPT_VTAB;
   }
