@@ -161,7 +161,12 @@ internal class ExternalSQLite(
         val dispatcher: ProgressHandlerDispatcher,
         val stub: MemorySegment,
         val arena: Arena
-    )
+    ) {
+        fun close() {
+            dispatcher.delegate = null
+            arena.close()
+        }
+    }
 
     private inner class CommitHookDispatcher(
         private val delegate: SQLCommitListener
@@ -183,10 +188,10 @@ internal class ExternalSQLite(
     }
 
     private inner class ProgressHandlerDispatcher(
-        @Volatile var delegate: SQLProgressHandler
+        @Volatile var delegate: SQLProgressHandler?
     ) : SQLProgressHandler {
         override fun onProgress(): Int = try {
-            delegate.onProgress()
+            delegate?.onProgress() ?: 1
         } catch (failure: Throwable) {
             recordCallbackFailure(failure)
             1
@@ -952,7 +957,7 @@ internal class ExternalSQLite(
         (sqlite3_close_v2.invoke(segment) as Int).also { result ->
             if (result == SQL_OK) {
                 activeListeners.remove(db)?.arena?.close()
-                progressHandlerRegistrations.remove(db)?.arena?.close()
+                progressHandlerRegistrations.remove(db)?.close()
             }
         }
     }
@@ -1362,6 +1367,7 @@ internal class ExternalSQLite(
                 sqlite3_progress_handler.invoke(segment, instructionCount, registration.stub, MemorySegment.NULL)
             } else {
                 sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
+                progressHandlerRegistrations.remove(db)?.close()
             }
         }
     }
