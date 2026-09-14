@@ -124,6 +124,7 @@ internal open class JdbcPreparedStatement(
     private val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     private var totalBatchCount = 0
     private var successArray: IntArray? = null
+    private var previousSuccessArray: IntArray? = null
 
     private fun validateParameterIndex(parameterIndex: Int) {
         checkClosed()
@@ -253,8 +254,6 @@ internal open class JdbcPreparedStatement(
         clearParameters()
         batchRows.clear()
         totalBatchCount = 0
-        successArray?.fill(0)
-        successArray = null
         super.onReturned()
     }
 
@@ -283,6 +282,26 @@ internal open class JdbcPreparedStatement(
         totalBatchCount = 0
     }
 
+    private fun successArray(batchSize: Int): IntArray {
+        val current = successArray
+        val previous = previousSuccessArray
+        val result = when {
+            current?.size == batchSize -> current
+            previous?.size == batchSize -> previous
+            else -> IntArray(batchSize) { Statement.SUCCESS_NO_INFO }
+        }
+        if (result !== current) {
+            previousSuccessArray = current
+            successArray = result
+        }
+        return result
+    }
+
+    /**
+     * Returns a driver-owned array that must be treated as read-only. Selekt reports every successful command as
+     * [Statement.SUCCESS_NO_INFO], so the array may be reused by subsequent batch executions. Callers that need to
+     * retain the update counts after another call to this method or after closing the statement must copy the array.
+     */
     override fun executeBatch(): IntArray {
         checkClosed()
         closeCurrentResultSet()
@@ -298,10 +317,7 @@ internal open class JdbcPreparedStatement(
                 connection.ensureTransaction()
                 batchRows(sql, batchRows)
             }
-            val result = successArray?.takeIf { it.size == totalBatchCount }
-                ?: IntArray(totalBatchCount).also { successArray = it }
-            result.fill(Statement.SUCCESS_NO_INFO)
-            return result
+            return successArray(totalBatchCount)
         } catch (e: Exception) {
             val mapped = if (e is OperationCancelledException) {
                 SQLExceptionMapper.mapCancellation(e)
