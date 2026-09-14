@@ -32,11 +32,13 @@ private const val VEC1_DISTANCE_L2 = 1
 private const val VEC1_META_1BYTE_INT = 2
 private const val VEC1_META_4BYTE_INT = 4
 private const val VEC1_META_REAL = 8
+private const val VEC1_META_GENERIC = 1
 private const val VEC1_META_TYPE_MASK = 15
 private const val VEC1_META_COLUMN_BITS = 8
 private const val VEC1_PQ_CODEBOOK_SIZE = 256
 private const val VEC1_PQ_BLOCK_SIZE = 16
 private const val VEC1_LIST_HEADER_SIZE = 12
+private const val VEC1_META_HEADER_SIZE = 8
 private const val VEC1_LIST_64_BIT = 1
 private const val VEC1_MAX_CODESIZE = 128
 private const val VEC1_VECSIZE_MIN = 2
@@ -102,7 +104,7 @@ internal class Vec1InputsTest {
         runProbe("streaming-invalid-bucket")
 
     @Test
-    fun `vec1 rejects truncated real metadata before query-time decoding`() = runProbe("truncated-meta")
+    fun `vec1 bounds every metadata encoding before query-time decoding`() = runProbe("truncated-meta")
 
     @Test
     fun `vec1 validates base vector size before delete-time transformation`() = runProbe("truncated-base-delete")
@@ -835,31 +837,65 @@ internal object Vec1SecurityProbeMain {
             "INSERT INTO t_idx VALUES(1, 0, 1, 1, ?)",
             validIndexBlob()
         )
-        executeBlob(
-            sqlite,
-            db,
-            "INSERT INTO t_meta VALUES(${1 shl VEC1_META_COLUMN_BITS}, ?)",
-            ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN).apply {
-                putInt(VEC1_META_REAL)
-                putInt(1)
-                putDouble(1.0)
-            }.array()
-        )
+        val metaId = 1 shl VEC1_META_COLUMN_BITS
         val query =
             "SELECT rowid FROM t " +
                 "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1 AND tag=1.0"
-        expectSingleRow(sqlite, db, query)
         executeBlob(
             sqlite,
             db,
-            "REPLACE INTO t_meta VALUES(${1 shl VEC1_META_COLUMN_BITS}, ?)",
-            ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).apply {
-                putInt(VEC1_META_REAL)
-                putInt(1)
-            }.array()
+            "INSERT INTO t_meta VALUES($metaId, ?)",
+            metadataBlob(VEC1_META_REAL, byteArrayOf(0x3F, 0xF0.toByte()) + ByteArray(6))
         )
-        expectCorrupt(sqlite, db, query)
+        expectSingleRow(sqlite, db, query)
+
+        listOf(
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(5)) to
+                "tag=''",
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(6)) to
+                "tag=X''"
+        ).forEach { (blob, filter) ->
+            executeBlob(sqlite, db, "UPDATE t_meta SET val=? WHERE id=$metaId", blob)
+            expectSingleRow(
+                sqlite,
+                db,
+                "SELECT rowid FROM t " +
+                    "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1 AND $filter"
+            )
+        }
+
+        val malformed = listOf(
+            ByteArray(0),
+            ByteArray(VEC1_META_HEADER_SIZE - 1),
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf()),
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(1)),
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(2, 0, 0, 0)),
+            metadataBlob(VEC1_META_GENERIC, ByteArray(10) { 0x80.toByte() }),
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(0x7F)),
+            metadataBlob(VEC1_META_GENERIC, byteArrayOf(0, 0)),
+            metadataBlob(VEC1_META_1BYTE_INT, byteArrayOf()),
+            metadataBlob(VEC1_META_4BYTE_INT, byteArrayOf(0, 0, 0)),
+            metadataBlob(VEC1_META_REAL, ByteArray(7)),
+            metadataBlob(VEC1_META_REAL, ByteArray(8), nEntry = 2),
+            metadataBlob(0x20 or VEC1_META_1BYTE_INT, byteArrayOf(1))
+        )
+        malformed.forEach { blob ->
+            executeBlob(sqlite, db, "UPDATE t_meta SET val=? WHERE id=$metaId", blob)
+            expectCorrupt(sqlite, db, query)
+        }
     }
+
+    private fun metadataBlob(
+        format: Int,
+        payload: ByteArray,
+        nEntry: Int = 1
+    ): ByteArray = ByteBuffer.allocate(VEC1_META_HEADER_SIZE + payload.size)
+        .order(ByteOrder.BIG_ENDIAN)
+        .apply {
+            putInt(format)
+            putInt(nEntry)
+            put(payload)
+        }.array()
 
     private fun probeTruncatedBaseDelete(sqlite: IExternalSQLite, db: Long) {
         createQuantizedTableWithCorruptBase(sqlite, db)

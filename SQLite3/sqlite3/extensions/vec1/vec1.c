@@ -4417,8 +4417,9 @@ static int vec1DecodeModel(
 **        3: Integer value. 8 byte payload.
 **        4: Real value. 8 byte payload. 
 **  
-**     Odd values larger than 2 are text values, with size in bytes of 
-**     (type - 2)/2. Even values larger than 2 are blobs.
+**     Odd values larger than 4 are text values, with size in bytes of
+**     (type - 5)/2. Even values larger than 4 are blobs, with size in bytes
+**     of (type - 6)/2.
 **  
 **   VEC1_META_1BYTEINT:
 **     This format may be used if all values in the list are either NULL or
@@ -6003,18 +6004,13 @@ static int vec1PutVarint(u8 *aBuf, u64 v){
   }
 }
 
-/*
-** The longest a varint written by vec1PutVarint() can ever be: 10 bytes
-** of 7 bits each are required to encode a full 64-bit value.
-*/
-#define VEC1_MAX_VARINT_SIZE 10
+/* Metadata serial types are bounded by SQLite's signed-int value-size limit. */
+#define VEC1_MAX_VARINT_SIZE 9
 
 /*
-** As vec1GetVarint(), except that this function never reads more than
-** nRem bytes from aBuf[], and never more than VEC1_MAX_VARINT_SIZE bytes
-** (the longest varint vec1PutVarint() can produce). Return the number of
-** bytes consumed, or -1 if the varint does not terminate within that
-** many bytes.
+** Decode a metadata varint without reading more than nRem bytes from aBuf[],
+** or more than VEC1_MAX_VARINT_SIZE bytes. Return the number of bytes
+** consumed, or -1 if the varint does not terminate within those bounds.
 */
 static int vec1GetVarintBounded(const u8 *aBuf, int nRem, u64 *piVal){
   int nRet = 0;
@@ -6023,16 +6019,6 @@ static int vec1GetVarintBounded(const u8 *aBuf, int nRem, u64 *piVal){
   if( nRem>VEC1_MAX_VARINT_SIZE ) nRem = VEC1_MAX_VARINT_SIZE;
   do {
     if( nRet>=nRem ) return -1;
-    out = (out<<7) + (aBuf[nRet] & 0x7F);
-  } while( aBuf[nRet++] & 0x80 );
-  *piVal = out;
-  return nRet;
-}
-
-static int vec1GetVarint(const u8 *aBuf, u64 *piVal){
-  int nRet = 0;
-  u64 out = 0;
-  do {
     out = (out<<7) + (aBuf[nRet] & 0x7F);
   } while( aBuf[nRet++] & 0x80 );
   *piVal = out;
@@ -6141,6 +6127,8 @@ static int vec1ReadMeta(
   return rc;
 }
 
+static int vec1MetaValueSizeChecked(const u8 *aBuf, int nRem);
+
 /*
 **        0: NULL value. 0 byte payload.
 **        1: Integer value. 1 byte payload.
@@ -6149,59 +6137,62 @@ static int vec1ReadMeta(
 **        4: Real value. 8 byte payload.
 */
 static int vec1MetaValueRead(
-  Vec1Buffer *pMeta, 
+  const Vec1Buffer *pMeta,
   int *piOff, 
   Vec1MetaValue *pVal
 ){
   int iOff = *piOff;
-  switch( pMeta->a[iOff] ){
+  int nValue;
+  const u8 *a;
+
+  if( iOff<0 || iOff>=pMeta->n ) return VEC1_CORRUPT;
+  a = &pMeta->a[iOff];
+  nValue = vec1MetaValueSizeChecked(a, pMeta->n-iOff);
+  if( nValue<0 ) return VEC1_CORRUPT;
+
+  switch( a[0] ){
     case 0: {
       pVal->eType = SQLITE_NULL;
-      iOff++;
       break;
     }
 
     case 1: {
       pVal->eType = SQLITE_INTEGER;
-      pVal->iVal = (i64)(u8)pMeta->a[iOff+1];
-      iOff += 2;
+      pVal->iVal = (i64)(u8)a[1];
       break;
     }
 
     case 2: {
       pVal->eType = SQLITE_INTEGER;
-      pVal->iVal = (int)vec1GetU32(&pMeta->a[iOff+1]);
-      iOff += 5;
+      pVal->iVal = (int)vec1GetU32(&a[1]);
       break;
     }
 
     case 3: {
       pVal->eType = SQLITE_INTEGER;
-      pVal->iVal = (i64)vec1GetU64(&pMeta->a[iOff+1]);
-      iOff += 9;
+      pVal->iVal = (i64)vec1GetU64(&a[1]);
       break;
     }
 
     case 4: {
-      u64 iVal = vec1GetU64(&pMeta->a[iOff+1]);
+      u64 iVal = vec1GetU64(&a[1]);
       memcpy(&pVal->fVal, &iVal, sizeof(u64));
       pVal->eType = SQLITE_FLOAT;
-      iOff += 9;
       break;
     }
 
     default: {
       u64 eType = 0;
-      iOff += vec1GetVarint(&pMeta->a[iOff], &eType);
-      pVal->pPtr = &pMeta->a[iOff];
+      int nHdr = vec1GetVarintBounded(a, nValue, &eType);
+      if( nHdr<0 || eType<5 ) return VEC1_CORRUPT;
+      pVal->pPtr = &a[nHdr];
       pVal->iVal = (eType-5) / 2;
-      iOff += (int)pVal->iVal;
       pVal->eType = (eType & 0x01) ? SQLITE_TEXT : SQLITE_BLOB;
       break;
     }
   }
 
-  *piOff = iOff;
+  *piOff = iOff+nValue;
   return SQLITE_OK;
 }
 
@@ -6814,7 +6805,9 @@ static int vec1MetaFilterIntList(
   Vec1Buffer *pBitmask
 ){
   int rc = SQLITE_OK;
-  if( pMeta->n<(VEC1_META_SZHDR+(nEntry*szInt)) ){
+  sqlite3_int64 nRequired = (sqlite3_int64)VEC1_META_SZHDR
+                          + (sqlite3_int64)nEntry*szInt;
+  if( nEntry<0 || (szInt!=1 && szInt!=4) || nRequired>pMeta->n ){
     rc = VEC1_CORRUPT;
   }else{
     int *aRval = 0;
@@ -6863,7 +6856,7 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
   int ii;
 
   /* Grow and zero the bitmask array. */
-  int nByte = (nEntry+7)/8;
+  int nByte = nEntry/8 + (nEntry%8!=0);
   pBitmask->n = 0;
   rc = vec1BufferGrow(pBitmask, nByte);
   if( rc==SQLITE_OK && nByte>0 ){
@@ -6918,10 +6911,10 @@ static VEC1_NOINLINE int vec1DoMetaFilters(
       }else if( rc==SQLITE_OK ){
         /* Generic format */
         int iOff = VEC1_META_SZHDR;
-        for(jj=0; jj<nEntry; jj++){
+        for(jj=0; rc==SQLITE_OK && jj<nEntry; jj++){
           Vec1MetaValue val;
-          vec1MetaValueRead(pMeta, &iOff, &val);
-          if( vec1MetaValueFilter(pFilter, &val) ){
+          rc = vec1MetaValueRead(pMeta, &iOff, &val);
+          if( rc==SQLITE_OK && vec1MetaValueFilter(pFilter, &val) ){
             pBitmask->a[jj / 8] |= (1 << (jj % 8));
           }
         }
@@ -8600,8 +8593,9 @@ static int vec1WriteMeta(
     );
     if( rc!=SQLITE_OK ) return rc;
 
-    while( iIn<p->buf.n && (iOut+szElem)<=buf.nAlloc ){
-      vec1MetaValueRead(&p->buf, &iIn, &val);
+    while( rc==SQLITE_OK && iIn<p->buf.n && (iOut+szElem)<=buf.nAlloc ){
+      rc = vec1MetaValueRead(&p->buf, &iIn, &val);
+      if( rc!=SQLITE_OK ) break;
       if( val.eType==SQLITE_NULL ){
         val.iVal = iNull;
       }else if( p->format==VEC1_META_REAL ){
@@ -8619,6 +8613,10 @@ static int vec1WriteMeta(
       }
       iOut += szElem;
     }
+    if( rc!=SQLITE_OK ){
+      vec1BufferFree(&buf);
+      return rc;
+    }
     buf.n = iOut;
 
     SWAP(Vec1Buffer, p->buf, buf);
@@ -8631,28 +8629,6 @@ static int vec1WriteMeta(
   return vec1WriteMetaBlob(pTab, &p->buf, iId, iMeta);
 }
 
-/*
-** A serialized meta-value is stored in buffer aBuf. Return the size in
-** bytes of the meta value.
-*/
-static int vec1MetaValueSize(const u8 *aBuf){
-  switch( aBuf[0] ){
-    case 0: return 1;               /* NULL */
-    case 1: return 2;               /* 1-byte integer */
-    case 2: return 5;               /* 4-byte float */
-    case 3: return 9;               /* 8-byte integer */
-    case 4: return 9;               /* 8-byte real */
-    default: {
-      i64 t = 0;
-      int n = vec1GetVarint(aBuf, (u64*)&t);
-      return (int)(((t-4)/2) + n);
-    }
-  }
-
-  assert( 0 );
-  return 0;
-}
-
 #ifndef NDEBUG
 /*
 ** This may be used in assert() statements to check that the meta-value
@@ -8662,7 +8638,10 @@ static int vec1MetaValueCheck(Vec1Buffer *pBuf, int nEntry){
   int iOff = 0;
   int ii;
   for(ii=0; ii<nEntry; ii++){
-    iOff += vec1MetaValueSize(&pBuf->a[iOff]);
+    if( iOff<0 || iOff>=pBuf->n ) return 0;
+    int n = vec1MetaValueSizeChecked(&pBuf->a[iOff], pBuf->n-iOff);
+    if( n<0 ) return 0;
+    iOff += n;
   }
   assert( iOff==pBuf->n );
   return 1;
@@ -8689,7 +8668,7 @@ static int vec1MetaValueSizeChecked(const u8 *aBuf, int nRem){
       int nHdr = vec1GetVarintBounded(aBuf, nRem, &t);
       if( nHdr<0 ) return -1;
       if( t<5 ) return -1;
-      nData = (sqlite3_int64)((t-4)/2);
+      nData = (sqlite3_int64)((t-5)/2);
       if( nData<0 || nData>(nRem-nHdr) ) return -1;
       n = nHdr + (int)nData;
       break;
@@ -8704,8 +8683,15 @@ static int vec1MetaValueSizeChecked(const u8 *aBuf, int nRem){
 */
 static int vec1CheckMetaSize(const Vec1Buffer *pBuf, u32 format, int nEntry){
   sqlite3_int64 iOff = VEC1_META_SZHDR;
+  u32 flags;
 
   if( pBuf->n<VEC1_META_SZHDR || nEntry<0 ) return VEC1_CORRUPT;
+  flags = vec1GetU32(pBuf->a);
+  if( flags & ~(VEC1_META_TYPEMASK | VEC1_META_HASNULL) ){
+    return VEC1_CORRUPT;
+  }
+  if( format!=(flags & VEC1_META_TYPEMASK) ) return VEC1_CORRUPT;
+  if( vec1GetU32(&pBuf->a[4])!=(u32)nEntry ) return VEC1_CORRUPT;
   if( nEntry>(pBuf->n-VEC1_META_SZHDR) ) return VEC1_CORRUPT;
 
   if( format==VEC1_META_GENERIC ){
@@ -8987,7 +8973,19 @@ static int vec1ListBuilderCompress(
 
 
       if( pMeta->format==VEC1_META_GENERIC ){
-        int nIn = vec1MetaValueSize(&a[aMetaIn[iMeta]]);
+        if( aMetaIn[iMeta]<VEC1_META_SZHDR
+         || aMetaIn[iMeta]>=pMeta->buf.n
+        ){
+          sqlite3_free(aMetaIn);
+          return VEC1_CORRUPT;
+        }
+        int nIn = vec1MetaValueSizeChecked(
+            &a[aMetaIn[iMeta]], pMeta->buf.n-aMetaIn[iMeta]
+        );
+        if( nIn<0 ){
+          sqlite3_free(aMetaIn);
+          return VEC1_CORRUPT;
+        }
         if( bTombstone==0 ){
           if( aMetaIn[iMeta]!=aMetaOut[iMeta] ){
             memmove(&a[ aMetaOut[iMeta] ], &a[ aMetaIn[iMeta] ], nIn);
@@ -9650,7 +9648,11 @@ static int vec1WriterMetaFromPacked(
   for(ii=0; ii<pWriter->pTab->nMeta; ii++){
     Vec1MetaBuilder *pTo = &pBld->aMeta[ii];
     int rc;
-    anSize[ii] = vec1MetaValueSize(&pBuf->a[iScan]);
+    if( iScan<0 || iScan>=pBuf->n ) return VEC1_CORRUPT;
+    anSize[ii] = vec1MetaValueSizeChecked(
+        &pBuf->a[iScan], pBuf->n-iScan
+    );
+    if( anSize[ii]<0 ) return VEC1_CORRUPT;
     rc = vec1BufferGrowLimited(&pTo->buf, anSize[ii], nLimit);
     if( rc!=SQLITE_OK ) return rc;
     iScan += anSize[ii];
@@ -10553,24 +10555,30 @@ static int vec1RollbackToMethod(sqlite3_vtab *pVtab, int iSavepoint){
 ** SQLITE_ERROR.
 */
 static int vec1IntegrityMetaValue(
-  Vec1Buffer *pBuf,
+  const Vec1Buffer *pBuf,
   int *piOff,
   sqlite3_value *pVal
 ){
-  u32 f = vec1GetU32(pBuf->a);
   int iOff = *piOff;
+  u32 format;
   Vec1MetaValue val;
   int rc = SQLITE_OK;
 
+  if( pBuf->n<VEC1_META_SZHDR || iOff<VEC1_META_SZHDR || iOff>pBuf->n ){
+    return VEC1_CORRUPT;
+  }
+  format = vec1GetU32(pBuf->a) & VEC1_META_TYPEMASK;
   memset(&val, 0, sizeof(val));
-  if( (f & VEC1_META_1BYTEINT) ){
+  if( format==VEC1_META_1BYTEINT ){
+    if( iOff>pBuf->n-1 ) return VEC1_CORRUPT;
     val.iVal = pBuf->a[iOff++];
     if( val.iVal==VEC1_META_1BYTENULL ){
       val.eType = SQLITE_NULL;
     }else{
       val.eType = SQLITE_INTEGER;
     }
-  }else if( (f & VEC1_META_4BYTEINT) ){
+  }else if( format==VEC1_META_4BYTEINT ){
+    if( iOff>pBuf->n-sizeof_u32 ) return VEC1_CORRUPT;
     val.iVal = (int)vec1GetU32(&pBuf->a[iOff]);
     iOff += sizeof_u32;
     if( (u32)val.iVal==VEC1_META_4BYTENULL ){
@@ -10578,7 +10586,8 @@ static int vec1IntegrityMetaValue(
     }else{
       val.eType = SQLITE_INTEGER;
     }
-  }else if( (f & VEC1_META_REAL) ){
+  }else if( format==VEC1_META_REAL ){
+    if( iOff>pBuf->n-sizeof_f64 ) return VEC1_CORRUPT;
     u64 v = vec1GetU64(&pBuf->a[iOff]);
     iOff += sizeof_f64;
     if( v==VEC1_META_REALNULL ){
@@ -10587,8 +10596,11 @@ static int vec1IntegrityMetaValue(
       val.eType = SQLITE_FLOAT;
       memcpy(&val.fVal, &v, sizeof_f64);
     }
+  }else if( format==VEC1_META_GENERIC ){
+    rc = vec1MetaValueRead(pBuf, &iOff, &val);
+    if( rc!=SQLITE_OK ) return rc;
   }else{
-    vec1MetaValueRead(pBuf, &iOff, &val);
+    return VEC1_CORRUPT;
   }
 
   if( pVal ){
@@ -10765,9 +10777,12 @@ static int vec1IntegrityMethod(
 
         if( bTombstone ){
           /* Advance the meta-data data iterators 1 value */
-          for(iMeta=0; iMeta<pTab->nMeta; iMeta++){
-            vec1IntegrityMetaValue(&aBufMeta[iMeta], &aiOffMeta[iMeta], 0);
+          for(iMeta=0; rc==SQLITE_OK && iMeta<pTab->nMeta; iMeta++){
+            rc = vec1IntegrityMetaValue(
+                &aBufMeta[iMeta], &aiOffMeta[iMeta], 0
+            );
           }
+          if( rc!=SQLITE_OK ) goto integrity_failed;
           continue;
         }
 
