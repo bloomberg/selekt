@@ -49,7 +49,7 @@ internal class Vec1InputsTest {
     fun `vec1 from json accepts SQL null without crashing`() = runProbe("null-json")
 
     @Test
-    fun `vec1 rejects an index entry count that overflows signed sizes`() = runProbe("index-overflow")
+    fun `vec1 rejects a twelve byte index claiming one billion entries`() = runProbe("index-overflow")
 
     @Test
     fun `vec1 validates incremental index blobs before rowid lookup and delete`() =
@@ -380,28 +380,37 @@ internal object Vec1SecurityProbeMain {
     private fun metadataTag(index: Int): String = index.toString() + "x".repeat(599)
 
     private fun probeIndexOverflow(sqlite: IExternalSQLite, db: Long) {
-        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
-        executeBlob(
+        val corruptIndex = indexHeader(flags = 0, nEntry = 0x40000000, nTombstone = 0)
+        listOf("knn", "builder", "flat").forEach { table ->
+            check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+                indexedModelHeader()
+            )
+            executeBlob(
+                sqlite,
+                db,
+                "INSERT INTO ${table}_idx VALUES(1, 0, 1, 1, ?)",
+                corruptIndex
+            )
+        }
+        expectCorrupt(
             sqlite,
             db,
-            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
-            indexedModelHeader()
-        )
-        executeBlob(
-            sqlite,
-            db,
-            "INSERT INTO t_idx VALUES(1, 0, 1, 1, ?)",
-            ByteBuffer.allocate(12).order(ByteOrder.BIG_ENDIAN).apply {
-                putInt(0)
-                putInt(0x40000000)
-                putInt(0)
-            }.array()
+            "SELECT rowid FROM knn " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1"
         )
         expectCorrupt(
             sqlite,
             db,
-            "SELECT rowid FROM t " +
-                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1"
+            "INSERT INTO builder(rowid, vector) VALUES(1, vec1_from_json('[0,0,0,0]'))"
+        )
+        expectCorrupt(
+            sqlite,
+            db,
+            "INSERT INTO flat(cmd, arg) VALUES('rebuild', '{\"index\":\"none\"}')"
         )
     }
 

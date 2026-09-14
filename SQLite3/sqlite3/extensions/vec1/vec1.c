@@ -5345,6 +5345,7 @@ static int vec1CheckIdxLayout(
   if( nEntry>(u64)INT_MAX ) return 1;
   if( nTombstone>nEntry ) return 1;
   if( p->mod.hdr.nCodebook>VEC1_MAX_CODESIZE ) return 1;
+  if( nEntry>((u64)nBlob-VEC1_LIST_SZHDR)/szRowid ) return 1;
   nRowid = nEntry*szRowid;
   nExpected = (u64)VEC1_LIST_SZHDR + nRowid;
 
@@ -8731,39 +8732,38 @@ static int vec1ListBuilderLoad(
   const u8 *aVal, int nVal
 ){
   Vec1Tab *pTab = p->pTab;
-  int nEntry = 0;
+  Vec1IdxLayout layout;
   int flags = 0;
   int rc = SQLITE_OK;
-  int nRowid = 0;
   int nData = 0;
   int ii;                         /* Iterator variable */
 
   assert( p->bufRowid.n==0 );
   assert( p->szRowid==4 );
 
-  if( vec1CheckIdxSize(pTab, aVal, nVal) ){
+  if( vec1CheckIdxLayout(pTab, aVal, nVal, &layout) ){
     return VEC1_CORRUPT;
   }
+  /* Keep the memcpy bounds explicit even though layout validation proves it. */
+  if( layout.nRowid>nVal-VEC1_LIST_SZHDR ) return VEC1_CORRUPT;
   flags = vec1GetU32(&aVal[0]);
-  nEntry = vec1GetU32(&aVal[4]);
-  p->nTombstone = vec1GetU32(&aVal[8]);
-  if( flags & VEC1_LIST_64BIT ) p->szRowid = 8;
+  p->nTombstone = layout.nTombstone;
+  p->szRowid = layout.szRowid;
   p->bBlocked = (pTab->mod.hdr.nCodebook>0);
   p->bSorted = ((flags & VEC1_LIST_SORTED)!=0);
   p->iFirst = iFirst;
   p->iLast = iLast;
   p->iId = iId;
 
-  nRowid = nEntry * p->szRowid;
-  nData = nVal - VEC1_LIST_SZHDR - nRowid;
-  rc = vec1BufferGrow(&p->bufRowid, nRowid);
+  nData = nVal - VEC1_LIST_SZHDR - layout.nRowid;
+  rc = vec1BufferGrow(&p->bufRowid, layout.nRowid);
   if( rc==SQLITE_OK ){
-    memcpy(p->bufRowid.a, &aVal[VEC1_LIST_SZHDR], nRowid);
-    p->bufRowid.n = nRowid;
+    memcpy(p->bufRowid.a, &aVal[VEC1_LIST_SZHDR], layout.nRowid);
+    p->bufRowid.n = layout.nRowid;
     rc = vec1BufferGrow(&p->bufData, nData);
   }
   if( rc==SQLITE_OK ){
-    memcpy(p->bufData.a, &aVal[VEC1_LIST_SZHDR+nRowid], nData);
+    memcpy(p->bufData.a, &aVal[VEC1_LIST_SZHDR+layout.nRowid], nData);
     p->bufData.n = nData;
   }
 
@@ -8778,7 +8778,7 @@ static int vec1ListBuilderLoad(
         u32 f = vec1GetU32(pMeta->buf.a);
         pMeta->format = (f & VEC1_META_TYPEMASK);
         pMeta->flags = f;
-        rc = vec1CheckMetaSize(&pMeta->buf, pMeta->format, nEntry);
+        rc = vec1CheckMetaSize(&pMeta->buf, pMeta->format, layout.nEntry);
       }
     }
   }
