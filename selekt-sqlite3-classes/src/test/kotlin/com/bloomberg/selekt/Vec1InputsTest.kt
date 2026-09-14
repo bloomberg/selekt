@@ -39,6 +39,8 @@ private const val VEC1_PQ_BLOCK_SIZE = 16
 private const val VEC1_LIST_HEADER_SIZE = 12
 private const val VEC1_LIST_64_BIT = 1
 private const val VEC1_MAX_CODESIZE = 128
+private const val VEC1_VECSIZE_MIN = 2
+private const val VEC1_VECSIZE_MAX = 4096
 private const val SIZEOF_F32 = 4
 
 private data class ExpectedSqlError(val code: Int, val message: String)
@@ -50,6 +52,10 @@ internal class Vec1InputsTest {
 
     @Test
     fun `vec1 rejects a twelve byte index claiming one billion entries`() = runProbe("index-overflow")
+
+    @Test
+    fun `vec1 rejects configured vector dimensions outside supported bounds`() =
+        runProbe("configured-vector-size")
 
     @Test
     fun `vec1 validates incremental index blobs before rowid lookup and delete`() =
@@ -217,6 +223,7 @@ internal object Vec1SecurityProbeMain {
             when (args.single()) {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
+                "configured-vector-size" -> probeConfiguredVectorSize(sqlite, db)
                 "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
                 "metadata-list-id" -> probeMetadataListId(sqlite, db)
                 "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
@@ -378,6 +385,49 @@ internal object Vec1SecurityProbeMain {
     }
 
     private fun metadataTag(index: Int): String = index.toString() + "x".repeat(599)
+
+    private fun probeConfiguredVectorSize(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector) VALUES(1, vec1_from_json('[1,2,3,4]'))"
+            ) == SQL_OK
+        )
+        val query =
+            "SELECT rowid FROM t " +
+                "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1"
+        expectSingleRow(sqlite, db, query)
+
+        listOf(
+            Long.MIN_VALUE,
+            -1L,
+            0L,
+            (VEC1_VECSIZE_MIN - 1).toLong(),
+            (VEC1_VECSIZE_MAX + 1).toLong(),
+            0x40000000L + 4,
+            Long.MAX_VALUE
+        ).forEach { nElem ->
+            check(sqlite.exec(db, "UPDATE t_config SET val=$nElem WHERE id=2") == SQL_OK)
+            expectError(
+                sqlite,
+                db,
+                query,
+                SQL_CORRUPT,
+                "invalid configured vector element count: $nElem"
+            )
+        }
+
+        listOf(VEC1_VECSIZE_MIN, VEC1_VECSIZE_MAX).forEach { nElem ->
+            check(sqlite.exec(db, "UPDATE t_config SET val=$nElem WHERE id=2") == SQL_OK)
+            val statement = prepare(sqlite, db, "SELECT vector FROM t WHERE rowid=-1")
+            try {
+                check(sqlite.step(statement) == SQL_DONE) { sqlite.errorMessage(db) }
+            } finally {
+                sqlite.finalize(statement)
+            }
+        }
+    }
 
     private fun probeIndexOverflow(sqlite: IExternalSQLite, db: Long) {
         val corruptIndex = indexHeader(flags = 0, nEntry = 0x40000000, nTombstone = 0)
