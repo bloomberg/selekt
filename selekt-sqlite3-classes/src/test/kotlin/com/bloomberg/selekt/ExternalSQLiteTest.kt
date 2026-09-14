@@ -468,6 +468,80 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `vec1 JSON rebuilds preserve nearest neighbors across reopen`() {
+        val databaseFile = File(tempDir, "vec1-rebuild.db")
+        val expectedInitial = listOf(2L, 3L, 1L, 4L)
+        val expectedAfterInsert = listOf(2L, 5L, 3L, 1L, 4L)
+        val query =
+            "SELECT rowid FROM vectors " +
+                "WHERE cmd=vec1_from_json('[1.1,0]') AND arg=5"
+
+        withOpenDatabase(databaseFile) { db ->
+            assertEquals(SQL_OK, sqlite.exec(db, "CREATE VIRTUAL TABLE vectors USING vec1(embedding)"))
+            listOf("[0,0]", "[1,0]", "[2,0]", "[5,0]").forEach { vector ->
+                assertEquals(
+                    SQL_OK,
+                    sqlite.exec(db, "INSERT INTO vectors(embedding) VALUES(vec1_from_json('$vector'))")
+                )
+            }
+            assertEquals(expectedInitial, queryRowIds(db, query))
+
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "INSERT INTO vectors(cmd, arg) VALUES('rebuild', '{\"index\":\"flat\"}')")
+            )
+            assertEquals(expectedInitial, queryRowIds(db, query))
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "INSERT INTO vectors(embedding) VALUES(vec1_from_json('[1.5,0]'))")
+            )
+            assertEquals(expectedAfterInsert, queryRowIds(db, query))
+
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "INSERT INTO vectors(cmd, arg) VALUES('rebuild', '{\"index\":\"none\"}')")
+            )
+            assertEquals(expectedAfterInsert, queryRowIds(db, query))
+        }
+
+        withOpenDatabase(databaseFile) { db ->
+            assertEquals(expectedAfterInsert, queryRowIds(db, query))
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "INSERT INTO vectors(cmd, arg) VALUES('rebuild', '{\"index\":\"flat\"}')")
+            )
+            assertEquals(expectedAfterInsert, queryRowIds(db, query))
+        }
+    }
+
+    private fun withOpenDatabase(file: File, block: (Long) -> Unit) {
+        val holder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.openV2(file.absolutePath, SQL_OPEN_READWRITE_OR_CREATE, holder))
+        try {
+            block(holder[0])
+        } finally {
+            sqlite.closeV2(holder[0])
+        }
+    }
+
+    private fun queryRowIds(db: Long, sql: String): List<Long> {
+        val holder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, holder))
+        return try {
+            buildList {
+                var result = sqlite.step(holder[0])
+                while (result == SQL_ROW) {
+                    add(sqlite.columnInt64(holder[0], 0))
+                    result = sqlite.step(holder[0])
+                }
+                assertEquals(SQL_DONE, result, sqlite.errorMessage(db))
+            }
+        } finally {
+            sqlite.finalize(holder[0])
+        }
+    }
+
+    @Test
     fun `can bind and retrieve text`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
