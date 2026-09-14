@@ -19,6 +19,7 @@ package com.bloomberg.selekt
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.lang.ref.WeakReference
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Collections
@@ -138,6 +139,7 @@ internal class ExternalSQLiteTest {
         val db = dbHolder[0]
         val firstCalls = AtomicInteger()
         val secondCalls = AtomicInteger()
+        val thirdCalls = AtomicInteger()
         val sql = """
             WITH RECURSIVE counter(value) AS (
                 VALUES(0)
@@ -165,10 +167,46 @@ internal class ExternalSQLiteTest {
             sqlite.progressHandler(db, 0, null)
             assertEquals(SQL_OK, sqlite.exec(db, sql))
             assertEquals(secondCallsAfterClearing, secondCalls.get())
+            sqlite.progressHandler(db, 1) {
+                thirdCalls.incrementAndGet()
+                0
+            }
+            assertEquals(SQL_OK, sqlite.exec(db, sql))
+            assertTrue(thirdCalls.get() > 0)
         } finally {
             sqlite.progressHandler(db, 0, null)
             sqlite.closeV2(db)
         }
+    }
+
+    @Test
+    fun `clearing progress handler releases its object graph`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val retained = registerProgressHandlerWithRetainedObject(db)
+            sqlite.progressHandler(db, 0, null)
+            repeat(50) {
+                if (retained.get() == null) {
+                    return
+                }
+                System.gc()
+                Thread.sleep(10)
+            }
+            assertNull(retained.get(), "Cleared progress handler still retains its object graph")
+        } finally {
+            sqlite.progressHandler(db, 0, null)
+            sqlite.closeV2(db)
+        }
+    }
+
+    private fun registerProgressHandlerWithRetainedObject(db: Long): WeakReference<ByteArray> {
+        val retained = ByteArray(1)
+        sqlite.progressHandler(db, 1) {
+            retained[0].toInt()
+        }
+        return WeakReference(retained)
     }
 
     @Test

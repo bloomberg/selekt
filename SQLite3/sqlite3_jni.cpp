@@ -999,6 +999,18 @@ static int progressHandlerCallback(void* ctx) {
 static std::mutex progressHandlerMapMutex;
 static std::unordered_map<sqlite3*, ProgressHandlerContext*> progressHandlerMap;
 
+static ProgressHandlerContext* detachProgressHandler(sqlite3* db) {
+    std::scoped_lock lock(progressHandlerMapMutex);
+    sqlite3_progress_handler(db, 0, nullptr, nullptr);
+    auto it = progressHandlerMap.find(db);
+    if (it == progressHandlerMap.end()) {
+        return nullptr;
+    }
+    auto context = it->second;
+    progressHandlerMap.erase(it);
+    return context;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_closeV2(
     JNIEnv* env,
@@ -1006,19 +1018,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_closeV2(
     jlong jdb
 ) {
     auto db = reinterpret_cast<sqlite3*>(jdb);
-    ProgressHandlerContext* progressCtx = nullptr;
-    {
-        std::scoped_lock lock(progressHandlerMapMutex);
-        auto it = progressHandlerMap.find(db);
-        if (it != progressHandlerMap.end()) {
-            progressCtx = it->second;
-            progressHandlerMap.erase(it);
-        }
-    }
-    if (progressCtx != nullptr) {
-        sqlite3_progress_handler(db, 0, nullptr, nullptr);
-        freeProgressHandlerContext(progressCtx);
-    }
+    freeProgressHandlerContext(detachProgressHandler(db));
     void* commitCtx = sqlite3_commit_hook(db, nullptr, nullptr);
     sqlite3_rollback_hook(db, nullptr, nullptr);
     freeCommitListenerContext(commitCtx);
@@ -1622,18 +1622,18 @@ Java_com_bloomberg_selekt_ExternalSQLite_progressHandler(
     auto db = reinterpret_cast<sqlite3*>(jdb);
     bool const unregister = (handler == nullptr || instructionCount <= 0);
     if (unregister) {
-        sqlite3_progress_handler(db, 0, nullptr, nullptr);
+        freeProgressHandlerContext(detachProgressHandler(db));
         return;
     }
     jclass handlerClass = env->GetObjectClass(handler);
     jmethodID onProgressMethod = env->GetMethodID(handlerClass, "onProgress", "()I");
     if (onProgressMethod == nullptr) {
-        sqlite3_progress_handler(db, 0, nullptr, nullptr);
+        freeProgressHandlerContext(detachProgressHandler(db));
         return;
     }
     auto globalHandler = env->NewGlobalRef(handler);
     if (globalHandler == nullptr) {
-        sqlite3_progress_handler(db, 0, nullptr, nullptr);
+        freeProgressHandlerContext(detachProgressHandler(db));
         throwOutOfMemoryError(env, "NewGlobalRef");
         return;
     }
