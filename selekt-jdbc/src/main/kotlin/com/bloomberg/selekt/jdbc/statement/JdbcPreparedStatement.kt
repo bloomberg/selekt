@@ -63,12 +63,7 @@ private fun validatedStreamLength(length: Long): Int {
     return length.toInt()
 }
 
-private fun validatedStreamLength(length: Int): Int {
-    if (length < 0) {
-        throw SQLException("Stream length must be non-negative, was $length")
-    }
-    return length
-}
+private fun validatedStreamLength(length: Int): Int = validatedStreamLength(length.toLong())
 
 private fun Reader.readBounded(
     maxChars: Int
