@@ -7333,7 +7333,16 @@ static int vec1LoadConfig(Vec1Tab *pTab){
         }
 
         case VEC1_CONFIG_NELEM: {
-          pTab->cfg.nElem = sqlite3_column_int(pStmt, 1);
+          i64 nElem = sqlite3_column_int64(pStmt, 1);
+          if( nElem<VEC1_VECSIZE_MIN || nElem>VEC1_VECSIZE_MAX ){
+            vec1VtabError(
+                pTab, "vec1: invalid configured vector element count: %lld",
+                nElem
+            );
+            rc = VEC1_CORRUPT;
+          }else{
+            pTab->cfg.nElem = (int)nElem;
+          }
           break;
         }
 
