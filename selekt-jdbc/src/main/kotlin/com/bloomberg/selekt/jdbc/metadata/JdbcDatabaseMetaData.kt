@@ -51,17 +51,85 @@ internal fun sanitiseDeclaredTypeName(
     }
 }
 
-@JvmSynthetic
-internal fun String.toJdbcPatternRegex(): Regex = buildString {
-    for (c in this@toJdbcPatternRegex) {
-        when (c) {
-            '%' -> append(".*")
-            '_' -> append('.')
-            '.', '\\', '(', ')', '[', ']', '{', '}', '^', '$', '|', '?', '*', '+' -> append('\\').append(c)
-            else -> append(c)
+/**
+ * Matches JDBC `%` and `_` patterns without invoking a backtracking regular-expression engine.
+ *
+ * Tokenisation uses linear time and at most one [Int] per UTF-16 code unit in the caller-owned
+ * pattern. JDBC does not define a maximum metadata-pattern length, so this applies no arbitrary
+ * compatibility limit.
+ */
+internal class JdbcPatternMatcher(pattern: String) {
+    private companion object {
+        const val MATCH_MANY = -1
+        const val MATCH_ONE = -2
+
+        fun tokenise(pattern: String): IntArray {
+            val tokens = IntArray(pattern.length)
+            var size = 0
+            var index = 0
+            while (index < pattern.length) {
+                when {
+                    pattern[index] == '%' -> {
+                        // Adjacent wildcards are equivalent to one and must not create redundant retry states.
+                        if (size == 0 || tokens[size - 1] != MATCH_MANY) {
+                            tokens[size++] = MATCH_MANY
+                        }
+                        ++index
+                    }
+                    pattern[index] == '_' -> {
+                        tokens[size++] = MATCH_ONE
+                        ++index
+                    }
+                    pattern[index] == '\\' && index + 1 < pattern.length -> {
+                        ++index
+                        tokens[size++] = pattern.codePointAt(index)
+                        index = pattern.offsetByCodePoints(index, 1)
+                    }
+                    else -> {
+                        tokens[size++] = pattern.codePointAt(index)
+                        index = pattern.offsetByCodePoints(index, 1)
+                    }
+                }
+            }
+            return if (size == tokens.size) { tokens } else { tokens.copyOf(size) }
         }
     }
-}.toRegex()
+
+    private val tokens = tokenise(pattern)
+
+    fun matches(value: String): Boolean {
+        var tokenIndex = 0
+        var valueIndex = 0
+        var tokenAfterWildcard = -1
+        var wildcardValueIndex = -1
+
+        while (valueIndex < value.length) {
+            val valueCodePoint = value.codePointAt(valueIndex)
+            when {
+                tokenIndex < tokens.size && tokens[tokenIndex] == MATCH_MANY -> {
+                    tokenAfterWildcard = ++tokenIndex
+                    wildcardValueIndex = valueIndex
+                }
+                tokenIndex < tokens.size &&
+                    (tokens[tokenIndex] == MATCH_ONE || tokens[tokenIndex] == valueCodePoint) -> {
+                    ++tokenIndex
+                    valueIndex = value.offsetByCodePoints(valueIndex, 1)
+                }
+                tokenAfterWildcard >= 0 && wildcardValueIndex < value.length -> {
+                    wildcardValueIndex = value.offsetByCodePoints(wildcardValueIndex, 1)
+                    valueIndex = wildcardValueIndex
+                    tokenIndex = tokenAfterWildcard
+                }
+                else -> return false
+            }
+        }
+
+        while (tokenIndex < tokens.size && tokens[tokenIndex] == MATCH_MANY) {
+            ++tokenIndex
+        }
+        return tokenIndex == tokens.size
+    }
+}
 
 /**
  * @since 0.28.0
@@ -411,6 +479,7 @@ internal class JdbcDatabaseMetaData(
         tableNamePattern: String?,
         columnNamePattern: String?
     ): ResultSet {
+        val columnPatternMatcher = columnNamePattern?.let(::JdbcPatternMatcher)
         val tablesResult = getTables(catalog, schemaPattern, tableNamePattern, arrayOf("TABLE", "VIEW"))
         val columnRows = mutableListOf<String>()
         tablesResult.use { tablesResult ->
@@ -425,10 +494,7 @@ internal class JdbcDatabaseMetaData(
                         val notNull = pragmaResult.getInt("notnull")
                         val defaultValue = pragmaResult.getString("dflt_value")
                         val primaryKey = pragmaResult.getInt("pk")
-                        if (columnNamePattern != null && !columnName.matches(
-                            columnNamePattern.toJdbcPatternRegex()
-                            )
-                        ) {
+                        if (columnPatternMatcher != null && !columnPatternMatcher.matches(columnName)) {
                             continue
                         }
                         val sqlType = mapSQLiteTypeToJDBCType(dataType)
