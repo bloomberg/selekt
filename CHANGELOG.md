@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 1.4.4
+
+* Publish CycloneDX SBOMs.
+* SQLCipher 4.19.0.
+* Enforce JDBC stream length limits.
+* Release progress handlers on unregister.
+* Fix JDBC metadata pattern ReDoS.
+
 ## Version 1.4.3
 
 * Reset JDBC prepared statements before returning them to the pool, access allocation-free.
