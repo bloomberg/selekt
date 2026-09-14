@@ -1446,6 +1446,40 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
+    fun intStreamLengthsAtMaximumAreAccepted() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE value=?").run {
+            listOf(999_999_999, 1_000_000_000).forEach { length ->
+                setAsciiStream(1, byteArrayOf().inputStream(), length)
+                setUnicodeStream(1, byteArrayOf().inputStream(), length)
+                setBinaryStream(1, byteArrayOf().inputStream(), length)
+                setCharacterStream(1, "".reader(), length)
+            }
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun intStreamLengthsAboveMaximumThrowSQLException() {
+        JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE value=?").run {
+            listOf(1_000_000_001, Int.MAX_VALUE).forEach { length ->
+                assertFailsWith<SQLException> {
+                    setAsciiStream(1, "test".byteInputStream(), length)
+                }
+                assertFailsWith<SQLException> {
+                    setUnicodeStream(1, "test".byteInputStream(), length)
+                }
+                assertFailsWith<SQLException> {
+                    setBinaryStream(1, byteArrayOf(1).inputStream(), length)
+                }
+                assertFailsWith<SQLException> {
+                    setCharacterStream(1, "test".reader(), length)
+                }
+            }
+        }
+    }
+
+    @Test
     fun setAsciiStreamLongOverflowThrowsSQLException() {
         JdbcPreparedStatement(connection, database, "SELECT * FROM test WHERE text=?").run {
             assertFailsWith<SQLException> {
