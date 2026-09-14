@@ -37,6 +37,9 @@ internal class ConnectionURL private constructor(
     val databasePath: String,
     val properties: Properties
 ) {
+    val isInMemoryDatabase: Boolean
+        get() = databasePath == ":memory:" || databasePath == "file::memory:"
+
     companion object {
         private const val JDBC_PREFIX = "jdbc:"
         private const val SELEKT_SUBPROTOCOL = "sqlite:"

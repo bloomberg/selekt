@@ -39,6 +39,13 @@ internal class ConnectionURLTest {
     fun basicURL(): Unit = ConnectionURL.parse("jdbc:sqlite:/path/to/test.db").run {
         assertEquals("/path/to/test.db", databasePath)
         assertTrue(properties.isEmpty)
+        assertFalse(isInMemoryDatabase)
+    }
+
+    @Test
+    fun identifiesInMemoryDatabaseURLs() {
+        assertTrue(ConnectionURL.parse("jdbc:sqlite::memory:").isInMemoryDatabase)
+        assertTrue(ConnectionURL.parse("jdbc:sqlite:file::memory:?cache=shared").isInMemoryDatabase)
     }
 
     @Test

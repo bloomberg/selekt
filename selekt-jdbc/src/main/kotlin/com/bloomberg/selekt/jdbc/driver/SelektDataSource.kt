@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.CommonThreadLocalRandom
-import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.commons.zero
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.DatabaseKey
@@ -33,7 +32,6 @@ import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
 import java.util.Properties
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.logging.Logger as JulLogger
 import javax.sql.DataSource
@@ -71,6 +69,13 @@ internal class DataSourceLifecycle {
         block()
     }
 
+    fun <T> withOpenDataSourceForUpdate(block: () -> T): T = lock.write {
+        if (closed) {
+            throw SQLException("DataSource is closed")
+        }
+        block()
+    }
+
     fun close(block: () -> Unit): Boolean = lock.write {
         if (closed) {
             false
@@ -82,8 +87,16 @@ internal class DataSourceLifecycle {
     }
 }
 
+/**
+ * Owns in-memory databases until [close] or replacement of their encryption configuration.
+ * Closing the final JDBC connection does not discard an in-memory database owned by this data source.
+ */
 @Suppress("TooGenericExceptionCaught")
-class SelektDataSource : DataSource {
+class SelektDataSource internal constructor(
+    private val databaseCache: SharedDatabaseCache
+) : DataSource {
+    constructor() : this(SharedDatabaseCache())
+
     companion object {
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
@@ -158,7 +171,8 @@ class SelektDataSource : DataSource {
     @Volatile
     private var logWriter: PrintWriter? = null
 
-    private val databaseCache = ConcurrentHashMap<String, SharedDatabase>()
+    internal val cachedDatabaseCount: Int
+        get() = databaseCache.size
 
     override fun getConnection(): Connection = getConnection(null, null)
 
@@ -179,7 +193,7 @@ class SelektDataSource : DataSource {
                 runCatching {
                     JdbcConnection(database, connectionURL, mergedProperties)
                 }.getOrElse {
-                    runCatching(database::release)
+                    runCatching(database::releaseConnection)
                     throw it
                 }
             }.getOrElse { e ->
@@ -200,19 +214,29 @@ class SelektDataSource : DataSource {
      * and should zero it after this method returns.
      */
     fun setEncryption(keySource: EncryptionKeySource?) {
-        replaceEncryptionKeySource(keySource)
+        lifecycle.withOpenDataSourceForUpdate {
+            if (replaceEncryptionKeySource(keySource)) {
+                databaseCache.clear()
+            }
+        }
     }
 
-    private fun replaceEncryptionKeySource(source: EncryptionKeySource?) {
+    private fun replaceEncryptionKeySource(source: EncryptionKeySource?): Boolean {
         val next = if (source is EncryptionKeySource.Literal) {
             KeyEncoding.validateLength(source.key)
             EncryptionKeySource.Literal(source.key.copyOf())
         } else {
             source
         }
-        synchronized(keyLock) {
-            (keySource as? EncryptionKeySource.Literal)?.zero()
-            keySource = next
+        return synchronized(keyLock) {
+            if (keySource == next) {
+                (next as? EncryptionKeySource.Literal)?.zero()
+                false
+            } else {
+                (keySource as? EncryptionKeySource.Literal)?.zero()
+                keySource = next
+                true
+            }
         }
     }
 
@@ -226,10 +250,7 @@ class SelektDataSource : DataSource {
     fun close() {
         val closedNow = lifecycle.close {
             replaceEncryptionKeySource(null)
-            databaseCache.run {
-                values.forEachCatching(SharedDatabase::release)
-                clear()
-            }
+            databaseCache.close()
         }
         if (closedNow) {
             logger.info("SelektDataSource closed")
@@ -287,16 +308,13 @@ class SelektDataSource : DataSource {
         keyHash: String?
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties, keyHash)
-        while (true) {
-            val cached = databaseCache.computeIfAbsent(cacheKey) {
-                SharedDatabase(createDatabase(connectionURL, properties, encryptionKeyBytes)) {
-                    databaseCache.remove(cacheKey)
-                }
-            }
-            if (cached.tryRetain()) {
-                return cached
-            }
-            databaseCache.remove(cacheKey, cached)
+        val idlePolicy = if (connectionURL.isInMemoryDatabase) {
+            DatabaseIdlePolicy.RETAIN_UNTIL_CLEARED
+        } else {
+            DatabaseIdlePolicy.EVICT_AFTER_TIMEOUT
+        }
+        return databaseCache.acquire(cacheKey, idlePolicy) {
+            createDatabase(connectionURL, properties, encryptionKeyBytes)
         }
     }
 

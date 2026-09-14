@@ -24,13 +24,18 @@ import kotlin.jvm.Throws
 internal fun <K : Any, T : IPooledObject<K>> createObjectPool(
     factory: IObjectFactory<T>,
     executor: ScheduledExecutorService,
-    configuration: PoolConfiguration
+    configuration: PoolConfiguration,
+    retainPrimary: Boolean = false
 ) = SingleObjectPool(
     factory,
     executor,
     configuration.evictionDelayMillis,
     configuration.evictionIntervalMillis
-).let {
+).apply {
+    if (retainPrimary) {
+        retainUntilClose()
+    }
+}.let {
     when (configuration.maxTotal) {
         1 -> TieredObjectPool(it, null)
         else -> TieredObjectPool(

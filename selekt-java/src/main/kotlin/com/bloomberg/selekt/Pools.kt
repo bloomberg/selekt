@@ -59,7 +59,8 @@ internal fun openConnectionPool(
     val pool = createObjectPool(
         factory,
         sharedExecutor,
-        configuration.toPoolConfiguration(path)
+        configuration.toPoolConfiguration(path),
+        retainPrimary = path.isInMemoryDatabase()
     )
     return pool to factory
 }
@@ -79,13 +80,20 @@ internal interface CloseableSQLExecutor : SQLExecutor, Closeable, IPooledObject<
 
 internal data class ProgressHandlerSetting(val instructionCount: Int, val handler: SQLProgressHandler)
 
-internal fun DatabaseConfiguration.toPoolConfiguration(path: String) = PoolConfiguration(
-    evictionDelayMillis = evictionDelayMillis,
-    evictionIntervalMillis = timeBetweenEvictionRunsMillis,
-    maxTotal = if (path.isPrivateInMemoryDatabase()) { 1 } else { maxConnectionPoolSize }
-)
+internal fun DatabaseConfiguration.toPoolConfiguration(path: String): PoolConfiguration {
+    val memoryDatabaseIsShared = path.memoryDatabaseIsShared()
+    return PoolConfiguration(
+        evictionDelayMillis = evictionDelayMillis,
+        evictionIntervalMillis = timeBetweenEvictionRunsMillis,
+        maxTotal = if (memoryDatabaseIsShared == false) { 1 } else { maxConnectionPoolSize }
+    )
+}
 
-private fun String.isPrivateInMemoryDatabase(): Boolean = this == ":memory:" || startsWith("file:") && run {
+internal fun String.isInMemoryDatabase(): Boolean = memoryDatabaseIsShared() != null
+
+private fun String.memoryDatabaseIsShared(): Boolean? = if (this == ":memory:") {
+    false
+} else if (startsWith("file:")) {
     val uriPath = substringBefore('?')
     val parameters = substringAfter('?', "")
         .split('&')
@@ -97,7 +105,13 @@ private fun String.isPrivateInMemoryDatabase(): Boolean = this == ":memory:" || 
                 null
             }
         }.toMap()
-    (uriPath == "file::memory:" || parameters["mode"] == "memory") && parameters["cache"] != "shared"
+    if (uriPath == "file::memory:" || parameters["mode"] == "memory") {
+        parameters["cache"] == "shared"
+    } else {
+        null
+    }
+} else {
+    null
 }
 
 @ThreadSafe

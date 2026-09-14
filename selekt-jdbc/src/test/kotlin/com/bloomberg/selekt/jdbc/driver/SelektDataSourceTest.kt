@@ -292,6 +292,46 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun closingLastConnectionRetainsDatabaseForIdleReuse(): Unit = dataSource.run {
+        databasePath = File(tempDir, "idle-reuse.db").absolutePath
+        getConnection().close()
+        assertEquals(1, cachedDatabaseCount)
+        getConnection().close()
+        assertEquals(1, cachedDatabaseCount)
+    }
+
+    @Test
+    fun closingDataSourceDoesNotReleaseLiveConnection(): Unit = dataSource.run {
+        databasePath = File(tempDir, "close-with-live-connection.db").absolutePath
+        getConnection().use { connection ->
+            close()
+            assertEquals(0, cachedDatabaseCount)
+            assertConnectionUsable(connection)
+        }
+    }
+
+    private fun assertConnectionUsable(connection: java.sql.Connection) {
+        connection.createStatement().use { statement ->
+            statement.executeQuery("SELECT 1").use { resultSet ->
+                assertTrue(resultSet.next())
+                assertEquals(1, resultSet.getInt(1))
+            }
+        }
+    }
+
+    @Test
+    fun changingEncryptionReleasesIdleDatabases(): Unit = dataSource.run {
+        databasePath = File(tempDir, "key-rotation-idle.db").absolutePath
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+        getConnection().close()
+        assertEquals(1, cachedDatabaseCount)
+
+        setEncryption(EncryptionKeySource.Literal("REPLACEMENT-KEY-exactly-32bytes!".toCharArray()))
+
+        assertEquals(0, cachedDatabaseCount)
+    }
+
+    @Test
     fun getConnectionWithUsernamePasswordAttempt(): Unit = dataSource.run {
         databasePath = File(tempDir, "test2.db").absolutePath
         val thrown = assertFailsWith<SQLException> {
@@ -395,15 +435,18 @@ internal class SelektDataSourceTest {
     }
 
     @Test
-    fun encryptedPrivateMemoryDatabaseIsReusableBetweenConnections(): Unit = dataSource.run {
-        databasePath = ":memory:"
-        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
-        getConnection().use { connection ->
-            populatePrivateMemoryDatabase(connection)
-        }
-        getConnection().use { connection ->
-            verifyPrivateMemoryDatabase(connection)
-        }
+    fun encryptedPrivateMemoryDatabaseIsReusableBetweenConnections() {
+        dataSource.close()
+        dataSource = SelektDataSource(SharedDatabaseCache(maxIdleEntries = 0))
+        dataSource.databasePath = ":memory:"
+        dataSource.setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+
+        dataSource.getConnection().use(::populatePrivateMemoryDatabase)
+        assertEquals(1, dataSource.cachedDatabaseCount)
+        dataSource.getConnection().use(::verifyPrivateMemoryDatabase)
+
+        dataSource.close()
+        assertEquals(0, dataSource.cachedDatabaseCount)
     }
 
     @Test
@@ -705,10 +748,10 @@ internal class SelektDataSourceTest {
             Thread {
                 try {
                     repeat(iterations) {
-                        runCatching {
-                            dataSource.getConnection().use { connection ->
-                                connection.createStatement().use { statement ->
-                                    statement.executeQuery("SELECT 1").use { resultSet -> resultSet.next() }
+                        dataSource.getConnection().use { connection ->
+                            connection.createStatement().use { statement ->
+                                statement.executeQuery("SELECT 1").use { resultSet ->
+                                    assertTrue(resultSet.next())
                                 }
                             }
                         }

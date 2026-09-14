@@ -34,6 +34,13 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 ) : IObjectPool<K, T> {
     private val mutex = Mutex()
 
+    private var retainObject = false
+
+    @JvmSynthetic
+    internal fun retainUntilClose() {
+        retainObject = true
+    }
+
     @GuardedBy("mutex")
     private var obj: T? = null
 
@@ -89,6 +96,9 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
                 attemptUnparkWaiters()
             }
             priority.isHigh() -> withTryLock {
+                if (retainObject) {
+                    obj?.releaseMemory()
+                }
                 evictions(priority)
             }
             else -> withTryLock(0L, false) {
@@ -118,7 +128,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("mutex")
     private fun attemptScheduleEviction() {
-        if (evictionIntervalMillis < 0L || isClosed) {
+        if (retainObject || evictionIntervalMillis < 0L || isClosed) {
             return
         }
         future = executor.scheduleWithFixedDelay(
@@ -139,7 +149,8 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("mutex")
     private fun evictions(priority: Priority?): T? {
-        return (if (obj?.let { it shouldBeRemovedAt priority } == true) obj else null)?.also {
+        val mayRemove = !retainObject || isClosed
+        return (if (mayRemove && obj?.let { it shouldBeRemovedAt priority } == true) obj else null)?.also {
             obj = null
             cancelScheduledEviction()
         }.also {

@@ -24,10 +24,14 @@ import java.sql.DriverPropertyInfo
 import java.sql.SQLException
 import java.sql.SQLFeatureNotSupportedException
 import java.util.Properties
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -215,6 +219,27 @@ internal class SelektDriverTest {
     fun privateMemoryDatabaseForcesSingleConnectionPool() {
         driver.connect("jdbc:sqlite::memory:?poolSize=10", Properties())!!.use { connection ->
             verifyPrivateMemoryRoundTrip(connection)
+        }
+    }
+
+    @Test
+    fun privateMemoryDatabaseEndsWithFinalConnection() {
+        val url = "jdbc:sqlite::memory:?poolSize=9"
+        driver.connect(url, Properties())!!.use { connection ->
+            connection.createStatement().use {
+                it.executeUpdate("CREATE TABLE transient(value INTEGER)")
+            }
+        }
+
+        driver.connect(url, Properties())!!.use { connection ->
+            connection.createStatement().use {
+                it.executeQuery(
+                    "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='transient'"
+                ).use { resultSet ->
+                    assertTrue(resultSet.next())
+                    assertEquals(0, resultSet.getInt(1))
+                }
+            }
         }
     }
 
@@ -428,14 +453,60 @@ internal class SelektDriverTest {
     }
 
     @Test
-    fun closingAllConnectionsReleasesFromCache() {
+    fun closingAllConnectionsRetainsDatabaseForIdleReuse() {
         val url = "jdbc:sqlite:/tmp/test_lifecycle.db"
         val properties = Properties()
         val connectionOne = driver.connect(url, properties)!!.also(connections::add)
         val connectionTwo = driver.connect(url, properties)!!.also(connections::add)
+        val sharedDatabase = connectionOne.sharedDatabase()
+        assertSame(sharedDatabase, connectionTwo.sharedDatabase())
         connectionOne.close()
+        assertTrue(sharedDatabase.isOpen())
         connectionTwo.close()
-        assertNotNull(driver.connect(url, properties)).also(connections::add)
+        assertTrue(sharedDatabase.isOpen())
+        val replacement = assertNotNull(driver.connect(url, properties)).also(connections::add)
+        val replacementDatabase = replacement.sharedDatabase()
+        assertSame(sharedDatabase, replacementDatabase)
+        replacement.close()
+        assertTrue(replacementDatabase.isOpen())
+    }
+
+    private fun Connection.sharedDatabase(): SharedDatabase = javaClass
+        .getDeclaredField("sharedDatabase")
+        .apply { isAccessible = true }
+        .get(this) as SharedDatabase
+
+    @Test
+    fun concurrentConnectDoesNotRaceFinalRelease() {
+        val databaseFile = File.createTempFile("selekt-driver-race-", ".db").also(tempFiles::add)
+        val url = "jdbc:sqlite:${databaseFile.absolutePath}"
+        val threadCount = 16
+        val iterations = 50
+        val barrier = CyclicBarrier(threadCount)
+        val executor = Executors.newFixedThreadPool(threadCount)
+        try {
+            val tasks = List(threadCount) {
+                executor.submit {
+                    barrier.await()
+                    repeat(iterations) {
+                        connectAndQuery(url)
+                    }
+                }
+            }
+            tasks.forEach { it.get(30, TimeUnit.SECONDS) }
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    private fun connectAndQuery(url: String) {
+        driver.connect(url, Properties())!!.use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT 1").use { resultSet ->
+                    assertTrue(resultSet.next())
+                }
+            }
+        }
     }
 
     @Test
