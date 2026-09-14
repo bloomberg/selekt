@@ -587,9 +587,13 @@ jobs:
         run: |
           ./gradlew assembleRelease ${{ env.SCAN }}
 
-      - name: 'Build Selekt JVM'
+      - name: 'Build Selekt JVM and Linux x86-64 native JAR'
         run: |
-          ./gradlew :selekt-jdbc:jar :selekt-jvm:jar ${{ env.SCAN }}
+          ./gradlew \
+            :selekt-jdbc:jar \
+            :selekt-jvm:jar \
+            :selekt-sqlite3-sqlcipher:jar \
+            ${{ env.SCAN }}
 
       - name: 'Verify coverage'
         run:
