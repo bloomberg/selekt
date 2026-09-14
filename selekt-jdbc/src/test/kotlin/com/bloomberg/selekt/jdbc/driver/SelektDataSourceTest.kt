@@ -374,9 +374,19 @@ internal class SelektDataSourceTest {
     }
 
     private fun verifyPrivateMemoryRoundTrip(connection: java.sql.Connection) {
+        populatePrivateMemoryDatabase(connection)
+        verifyPrivateMemoryDatabase(connection)
+    }
+
+    private fun populatePrivateMemoryDatabase(connection: java.sql.Connection) {
         connection.createStatement().use { statement ->
             statement.executeUpdate("CREATE TABLE test(value INTEGER)")
             statement.executeUpdate("INSERT INTO test VALUES (42)")
+        }
+    }
+
+    private fun verifyPrivateMemoryDatabase(connection: java.sql.Connection) {
+        connection.createStatement().use { statement ->
             statement.executeQuery("SELECT value FROM test").use {
                 assertTrue(it.next())
                 assertEquals(42, it.getInt(1))
@@ -389,18 +399,10 @@ internal class SelektDataSourceTest {
         databasePath = ":memory:"
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         getConnection().use { connection ->
-            connection.createStatement().use { statement ->
-                statement.executeUpdate("CREATE TABLE test(value INTEGER)")
-                statement.executeUpdate("INSERT INTO test VALUES (42)")
-            }
+            populatePrivateMemoryDatabase(connection)
         }
         getConnection().use { connection ->
-            connection.createStatement().use { statement ->
-                statement.executeQuery("SELECT value FROM test").use {
-                    assertTrue(it.next())
-                    assertEquals(42, it.getInt(1))
-                }
-            }
+            verifyPrivateMemoryDatabase(connection)
         }
     }
 

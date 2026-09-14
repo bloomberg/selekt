@@ -572,6 +572,34 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun executeBatchCachesDriverOwnedUpdateCountsForTwoMostRecentBatchSizes() {
+        val batchStatement = updateStatement()
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
+
+        fun executeBatch(batchSize: Int) = batchStatement.run {
+            repeat(batchSize) {
+                setInt(2, it)
+                addBatch()
+            }
+            executeBatch()
+        }
+
+        val fullBatch = executeBatch(3)
+        assertSame(fullBatch, executeBatch(3))
+
+        val firstTail = executeBatch(2)
+        assertSame(fullBatch, executeBatch(3))
+        assertSame(fullBatch, executeBatch(3))
+
+        val secondTail = executeBatch(1)
+        assertSame(fullBatch, executeBatch(3))
+
+        assertTrue(firstTail !== secondTail)
+        assertContentEquals(intArrayOf(-2, -2, -2), fullBatch)
+    }
+
+    @Test
     fun executeBatchWithChunkExpansion() {
         val batchSql = "UPDATE users SET value = ? WHERE id = ?"
         val batchStatement = JdbcPreparedStatement(connection, database, batchSql).apply {
@@ -1533,7 +1561,7 @@ internal class JdbcPreparedStatementTest {
         val statement = updateStatement()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
-        statement.apply {
+        val updateCounts = statement.run {
             setString(1, "batched-sensitive-value")
             setInt(2, 1)
             addBatch()
@@ -1553,6 +1581,7 @@ internal class JdbcPreparedStatementTest {
         assertEquals(0, batchRows.size)
         assertSame(batchRowsBeforeClose, batchRows)
         assertSame(batchChunkBeforeClose, readField<Any>(batchRows, "firstChunk"))
-        assertNull(readField<IntArray>(statement, "successArray"))
+        assertSame(updateCounts, readField<IntArray>(statement, "successArray"))
+        assertContentEquals(intArrayOf(-2), updateCounts)
     }
 }

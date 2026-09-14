@@ -342,6 +342,9 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases ar
     }
     ```
 
+Selekt may reuse the driver-owned update-count array returned by `executeBatch()`. Treat the array as read-only and
+copy it before another batch execution or before closing the statement if the counts need to be retained.
+
 ### Transactions
 
 === "Kotlin"
