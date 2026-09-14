@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.4.5
+
+* Reject oversized vec1 index entry counts.
+* Validate persisted vec1 vector dimensions.
+* Bound vec1 metadata list parsing.
+
 ## Version 1.4.4
 
 * Publish CycloneDX SBOMs.
