@@ -385,6 +385,26 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun encryptedPrivateMemoryDatabaseIsReusableBetweenConnections(): Unit = dataSource.run {
+        databasePath = ":memory:"
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+        getConnection().use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeUpdate("CREATE TABLE test(value INTEGER)")
+                statement.executeUpdate("INSERT INTO test VALUES (42)")
+            }
+        }
+        getConnection().use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT value FROM test").use {
+                    assertTrue(it.next())
+                    assertEquals(42, it.getInt(1))
+                }
+            }
+        }
+    }
+
+    @Test
     fun getConnectionWithCustomBusyTimeout(): Unit = dataSource.run {
         databasePath = File(tempDir, "timeout.db").absolutePath
         busyTimeout = 5000
