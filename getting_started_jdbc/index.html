@@ -496,17 +496,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#with-a-hex-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With a hex key
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -873,17 +862,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#with-a-hex-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With a hex key
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -992,7 +970,8 @@
   <h1>JDBC</h1>
 
 <h2 id="integration">Integration</h2>
-<p>Selekt JBDC requires Java 25 or later.</p>
+<p>Selekt JDBC supports Java 11 and later. For new projects, we recommend the current LTS release (Java 25 at the time of writing) which uses Selekt's FFM backend. Java 11–24 remain supported through the JNI backend for compatibility. Gradle uses published variant metadata to select the appropriate backend from the project's target JVM version, not the JVM running Gradle.</p>
+<p>Maven does not consume Gradle variant metadata. Maven consumers therefore receive the unclassified Java 11 JNI backend on every supported Java version, including Java 25 or later. FFM backend selection is not currently supported for Maven consumers.</p>
 <h3 id="gradle">Gradle</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Kotlin</label><label for="__tabbed_1_2">Groovy</label></div>
 <div class="tabbed-content">
@@ -1140,19 +1119,21 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 <h2 id="encryption">Encryption</h2>
-<p>Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases are unencrypted by default. To enable encryption, provide a key that is exactly 32 bytes. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function. A <code>0x</code>-prefixed key must contain exactly 64 hexadecimal digits.</p>
+<p>Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases are unencrypted by default. To enable encryption, provide a key that is exactly 32 bytes. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function.</p>
+<p>Represent arbitrary key bytes as a <code>CharArray</code> containing <code>0x</code> followed by exactly 64 hexadecimal digits. Selekt also accepts a non-prefixed <code>CharArray</code>, but encodes it as UTF-8; its encoded length, rather than its character count, must be exactly 32 bytes.</p>
 <p><code>SelektDriver</code> does not accept encryption keys. Encrypted connections must use <code>SelektDataSource.setEncryption</code> with an <code>EncryptionKeySource.Literal</code> backed by a caller-owned <code>CharArray</code>. <code>SelektDataSource</code> stores and later zeroes an internal copy; zero the caller-owned array after <code>setEncryption</code> returns.</p>
 <h3 id="with-a-datasource">With a DataSource</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">():</span><span class="w"> </span><span class="n">CharArray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
-<span class="w">    </span><span class="s">&quot;Derive a 32-byte encryption key.&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveHexEncodedKey</span><span class="p">():</span><span class="w"> </span><span class="n">CharArray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;Return 32 bytes from a cryptographically secure random-number generator or suitable &quot;</span><span class="w"> </span><span class="o">+</span>
+<span class="w">        </span><span class="s">&quot;key derivation function, encoded as &#39;0x&#39; followed by 64 hexadecimal digits.&quot;</span><span class="p">)</span>
 
 <span class="kd">val</span><span class="w"> </span><span class="nv">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">().</span><span class="na">apply</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">databasePath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/path/to/encrypted.db&quot;</span>
 <span class="p">}</span>
-<span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">()</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveHexEncodedKey</span><span class="p">()</span>
 <span class="k">try</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
 <span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
@@ -1161,43 +1142,14 @@ runtime-inspection and generation details.</p>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// TODO Derive a 32-byte encryption key.</span>
+<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="nf">deriveHexEncodedKey</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// TODO Return 32 bytes from a cryptographically secure random-number generator or suitable</span>
+<span class="w">    </span><span class="c1">// key derivation function, encoded as &quot;0x&quot; followed by 64 hexadecimal digits.</span>
 <span class="p">}</span>
 
 <span class="kd">final</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="w"> </span><span class="n">dataSource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SelektDataSource</span><span class="p">();</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setDatabasePath</span><span class="p">(</span><span class="s">&quot;/path/to/encrypted.db&quot;</span><span class="p">);</span>
-<span class="kd">final</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">();</span>
-<span class="k">try</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">));</span>
-<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">java</span><span class="p">.</span><span class="na">util</span><span class="p">.</span><span class="na">Arrays</span><span class="p">.</span><span class="na">fill</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-</div>
-</div>
-</div>
-<h3 id="with-a-hex-key">With a hex key</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Java</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveHexKey</span><span class="p">():</span><span class="w"> </span><span class="n">CharArray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
-<span class="w">    </span><span class="s">&quot;Return &#39;0x&#39; followed by 64 hexadecimal digits.&quot;</span><span class="p">)</span>
-
-<span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveHexKey</span><span class="p">()</span>
-<span class="k">try</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
-<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">key</span><span class="p">.</span><span class="na">fill</span><span class="p">(</span><span class="err">&#39;\</span><span class="n">u0000</span><span class="err">&#39;</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="nf">deriveHexKey</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// TODO Return &quot;0x&quot; followed by 64 hexadecimal digits.</span>
-<span class="p">}</span>
-
-<span class="kd">final</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveHexKey</span><span class="p">();</span>
+<span class="kd">final</span><span class="w"> </span><span class="kt">char</span><span class="o">[]</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveHexEncodedKey</span><span class="p">();</span>
 <span class="k">try</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">dataSource</span><span class="p">.</span><span class="na">setEncryption</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">EncryptionKeySource</span><span class="p">.</span><span class="na">Literal</span><span class="p">(</span><span class="n">key</span><span class="p">));</span>
 <span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
@@ -1209,7 +1161,7 @@ runtime-inspection and generation details.</p>
 </div>
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-with-a-preparedstatement">Querying with a PreparedStatement</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1246,7 +1198,7 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 <h3 id="inserting-data">Inserting data</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Kotlin</label><label for="__tabbed_9_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1273,7 +1225,7 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 <h3 id="batch-inserts">Batch inserts</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Kotlin</label><label for="__tabbed_10_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Kotlin</label><label for="__tabbed_9_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1319,10 +1271,9 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 </div>
-<p>Selekt may reuse the driver-owned update-count array returned by <code>executeBatch()</code>. Treat the array as read-only and
-copy it before another batch execution or before closing the statement if the counts need to be retained.</p>
+<p>Selekt may reuse the driver-owned update-count array returned by <code>executeBatch()</code>. Treat the array as read-only and copy it before another batch execution or before closing the statement if the counts need to be retained.</p>
 <h3 id="transactions">Transactions</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Kotlin</label><label for="__tabbed_11_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Kotlin</label><label for="__tabbed_10_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1416,7 +1367,7 @@ copy it before another batch execution or before closing the statement if the co
 </tbody>
 </table>
 <h2 id="closing-the-datasource">Closing the DataSource</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="12:2"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1">Kotlin</label><label for="__tabbed_12_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Kotlin</label><label for="__tabbed_11_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">close</span><span class="p">()</span>
