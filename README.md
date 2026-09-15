@@ -29,6 +29,12 @@ The two most popular publicly available alternatives to Selekt are the Android S
 
 Selekt sits somewhere between the two: when Selekt uses SQLCipher, it does so in a mode that moves the responsibility for deriving keys to the caller. This sacrifices some of the security guarantee offered by the default operating mode of SQLCipher, in return for allowing greater concurrency and efficient resource use by pooling connections while still retaining pretty good security.
 
+### JDBC
+
+JVM applications commonly use [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc). Applications that want a pooled `DataSource` must add a separate JDBC pool, such as the general-purpose HikariCP. Xerial's standard distribution does not support encrypted database files, while a generic pool treats every JDBC connection alike and does not understand SQLite's asymmetric concurrency model.
+
+Selekt provides its own database-scoped SQLite-aware connection pool behind the JDBC API. It coordinates a primary writer and pooled readers around SQLite's locking and transaction model, so no third-party connection pool is required. The pool enables WAL read/write concurrency by default and avoids repeatedly creating native connections. Selekt also supports encrypted database files through SQLCipher.
+
 ## Quick Start
 
 Please refer to the [main documentation](https://bloomberg.github.io/selekt/getting_started_android/).
@@ -41,8 +47,7 @@ Have you had a good experience with this project? Why not share some love and co
 
 We welcome issue reports [here](../../issues); be sure to choose the proper issue template for your issue, so that we can be sure you're providing the necessary information.
 
-Before sending a [Pull Request](../../pulls), please make sure you read our
-[Contribution Guidelines](https://github.com/bloomberg/.github/blob/master/CONTRIBUTING.md).
+Before sending a [Pull Request](../../pulls), please make sure you read our [Contribution Guidelines](https://github.com/bloomberg/.github/blob/master/CONTRIBUTING.md).
 
 ## Licenses
 
@@ -50,14 +55,10 @@ Please read the [LICENSE](LICENSE), [OPENSSL_LICENSE](OPENSSL_LICENSE) and [SQLC
 
 ## Code of Conduct
 
-This project has adopted a [Code of Conduct](https://github.com/bloomberg/.github/blob/master/CODE_OF_CONDUCT.md).
-If you have any concerns about the Code, or behavior which you have experienced in the project, please
-contact us at opensource@bloomberg.net.
+This project has adopted a [Code of Conduct](https://github.com/bloomberg/.github/blob/master/CODE_OF_CONDUCT.md). If you have any concerns about the Code, or behavior which you have experienced in the project, please contact us at opensource@bloomberg.net.
 
 ## Security Vulnerability Reporting
 
-If you believe you have identified a security vulnerability in this project, please send an email to the project
-team at opensource@bloomberg.net, detailing the suspected issue and any methods you've found to reproduce it.
+If you believe you have identified a security vulnerability in this project, please send an email to the project team at opensource@bloomberg.net, detailing the suspected issue and any methods you've found to reproduce it.
 
-Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until
-we've had an opportunity to review and address them.
+Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until we've had an opportunity to review and address them.

@@ -15,6 +15,12 @@
  */
 
 import me.champeau.jmh.JMHTask
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 description = "Selekt JDBC library."
 
@@ -43,10 +49,14 @@ disableKotlinCompilerAssertions()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
     withJavadocJar()
     withSourcesJar()
+}
+
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 sourceSets {
@@ -63,18 +73,11 @@ sourceSets {
 dependencies {
     implementation(projects.selektApi)
     implementation(projects.selektCommons)
-    implementation(projects.selektJvm)
+    implementation(projects.selektJava)
     implementation(projects.selektSqlite3Api)
-    implementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-        }
-    }
-    jmhImplementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-        }
-    }
+    implementation(projects.selektSqlite3Classes)
+    runtimeOnly(projects.selektSqlite3Sqlcipher)
+    jmhImplementation(projects.selektSqlite3Classes)
     jmhImplementation(libs.xerial.sqlite.jdbc)
     implementation(libs.slf4j.api)
     testImplementation(platform(libs.exposed.bom))
@@ -139,20 +142,32 @@ kover {
     }
 }
 
-val jmhSqlite3ClassesJava17 = configurations.create("jmhSqlite3ClassesJava17") {
+val jmhSqlite3ClassesJava11 = configurations.create("jmhSqlite3ClassesJava11") {
     isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 11)
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    }
 }
 
 val jmhSqlite3ClassesJava25 = configurations.create("jmhSqlite3ClassesJava25") {
     isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    }
 }
 
 dependencies {
-    jmhSqlite3ClassesJava17(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java17")
-        }
-    }
+    jmhSqlite3ClassesJava11(projects.selektSqlite3Classes)
     jmhSqlite3ClassesJava25(projects.selektSqlite3Classes) {
         capabilities {
             requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
@@ -160,8 +175,20 @@ dependencies {
     }
 }
 
+val java25TestRuntimeClasspath = configurations.create("java25TestRuntimeClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    extendsFrom(configurations.testImplementation.get(), configurations.testRuntimeOnly.get())
+    attributes {
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+    }
+}
+
 jmh {
-    jvmArgs.add("-XX:+UseCompactObjectHeaders")
     resultFormat.set("JSON")
     if (hasProperty("jmh.includes")) {
         includes.add(property("jmh.includes").toString())
@@ -202,25 +229,54 @@ tasks.withType<ProcessResources>().matching { it.name != "processResources" }.co
 
 tasks.named<JMHTask>("jmh") {
     dependsOn("buildHostSQLite")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    })
+}
+
+tasks.register<Test>("testJava25") {
+    description = "Runs the Java 11-compatible JDBC tests on Java 25 using the automatically selected FFM backend."
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].output + sourceSets["main"].output + java25TestRuntimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    dependsOn("testClasses")
+    shouldRunAfter("test")
+}
+
+tasks.named("check") {
+    dependsOn("testJava25")
 }
 
 listOf(
-    Triple("jmhJni", "JNI", jmhSqlite3ClassesJava17),
+    Triple("jmhJni", "JNI", jmhSqlite3ClassesJava11),
     Triple("jmhFfm", "FFM", jmhSqlite3ClassesJava25)
 ).forEach { (taskName, backend, sqliteClasses) ->
     tasks.register<JavaExec>(taskName) {
+        val runtimeVersion = if (backend == "JNI") 11 else 25
+        val resultFile = layout.buildDirectory.file("results/$taskName/results.json")
         description = "Runs the JMH benchmarks using the $backend SQLite backend"
         group = "benchmark"
         val jmhJar = tasks.named("jmhJar").get().outputs.files.singleFile
         classpath = sqliteClasses + files(jmhJar)
         mainClass.set("org.openjdk.jmh.Main")
         javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(25))
+            languageVersion.set(JavaLanguageVersion.of(runtimeVersion))
         })
         dependsOn("jmhJar", "buildHostSQLite")
         outputs.upToDateWhen { false }
         outputs.cacheIf { false }
-        jvmArgs("--enable-native-access=ALL-UNNAMED", "-XX:+UseCompactObjectHeaders")
+        outputs.file(resultFile)
+        doFirst {
+            resultFile.get().asFile.parentFile.mkdirs()
+        }
+        args("-rf", "JSON", "-rff", resultFile.get().asFile.absolutePath)
+        if (runtimeVersion >= 25) {
+            jvmArgs("--enable-native-access=ALL-UNNAMED", "-XX:+UseCompactObjectHeaders")
+        }
         if (project.hasProperty("jmh.includes")) {
             args(project.property("jmh.includes").toString())
         }
@@ -242,7 +298,9 @@ listOf(
                 args("-prof", resolved)
             }
         }
-        args("-jvmArgsAppend", "--enable-native-access=ALL-UNNAMED")
+        if (runtimeVersion >= 25) {
+            args("-jvmArgsAppend", "--enable-native-access=ALL-UNNAMED")
+        }
     }
 }
 

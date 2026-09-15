@@ -504,6 +504,12 @@ jobs:
           fetch-depth: 2
           submodules: recursive
 
+      - name: 'Setup Java 11'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: 11
+
       - name: 'Setup Java 17'
         id: setup-java-17
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
@@ -573,7 +579,7 @@ jobs:
             **/build/reports/detekt
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-sqlite3-classes:testJava17 :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -585,7 +591,8 @@ jobs:
             selekt-android/build/reports/tests/testDebugUnitTest
             selekt-java/build/reports/tests/test
             selekt-jdbc/build/reports/tests/test
-            selekt-sqlite3-classes/build/reports/tests/testJava17
+            selekt-jdbc/build/reports/tests/testJava25
+            selekt-sqlite3-classes/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/testJava25
 
       - name: 'Build Selekt Android'
@@ -601,8 +608,6 @@ jobs:
             ${{ env.SCAN }}
 
       - name: 'Test JDBC Gradle and Maven consumers'
-        env:
-          MAVEN_OPTS: '--enable-native-access=ALL-UNNAMED'
         run: |
           VERSION="$(sed -n 's/^version=//p' gradle.properties)-jdbc-consumer-test"
           REPOSITORY="$GITHUB_WORKSPACE/build/jdbc-consumer-m2"
@@ -629,14 +634,35 @@ jobs:
             -p integration-tests/jdbc-gradle \
             -Dmaven.repo.local="$REPOSITORY" \
             -PselektVersion="$VERSION" \
+            -PconsumerJavaVersion=11 \
             run \
+            --args=JNI \
             --no-configuration-cache
-          JAVA_HOME="$JAVA_HOME_25_X64" mvn \
+          JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew \
+            -p integration-tests/jdbc-gradle \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -PselektVersion="$VERSION" \
+            -PconsumerJavaVersion=25 \
+            run \
+            --args=FFM \
+            --no-configuration-cache
+          JAVA_HOME="$JAVA_HOME_11_X64" mvn \
             --batch-mode \
             --no-transfer-progress \
             --file integration-tests/jdbc-maven/pom.xml \
             -Dmaven.repo.local="$REPOSITORY" \
             -Dselekt.version="$VERSION" \
+            -Dconsumer.java.version=11 \
+            -Dselekt.expected.backend=JNI \
+            verify
+          JAVA_HOME="$JAVA_HOME_25_X64" MAVEN_OPTS='--enable-native-access=ALL-UNNAMED' mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            --file integration-tests/jdbc-maven/pom.xml \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -Dselekt.version="$VERSION" \
+            -Dconsumer.java.version=25 \
+            -Dselekt.expected.backend=JNI \
             verify
 
       - name: 'Verify coverage'

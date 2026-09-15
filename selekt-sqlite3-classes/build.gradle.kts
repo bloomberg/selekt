@@ -17,8 +17,9 @@
 @file:Suppress("UnstableApiUsage")
 
 import me.champeau.jmh.JMHTask
-import org.gradle.api.component.AdhocComponentWithVariants
+import org.gradle.api.attributes.java.TargetJvmEnvironment
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 description = "Selekt SQLite classes library."
@@ -40,6 +41,9 @@ repositories {
 disableKotlinCompilerAssertions()
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
     withJavadocJar()
     withSourcesJar()
 }
@@ -48,21 +52,18 @@ tasks.named<Javadoc>("javadoc") {
     enabled = false
 }
 
-(components["java"] as AdhocComponentWithVariants).run {
-    withVariantsFromConfiguration(configurations["apiElements"]) { skip() }
-    withVariantsFromConfiguration(configurations["runtimeElements"]) { skip() }
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+listOf("apiElements", "runtimeElements").forEach { configurationName ->
+    configurations.named(configurationName) {
+        outgoing.capability("${project.group}:${project.name}:${project.version}")
+        outgoing.capability("${project.group}:${project.name}-java11:${project.version}")
     }
 }
 
-listOf(
-    JvmTarget.JVM_17,
-    JvmTarget.JVM_25
-).forEach {
+listOf(JvmTarget.JVM_25).forEach {
     val variantName = "java${it.target}"
     sourceSets {
         create(variantName) {
@@ -78,7 +79,19 @@ listOf(
     java {
         registerFeature(variantName) {
             usingSourceSet(sourceSets[variantName])
+            capability(project.group.toString(), project.name, project.version.toString())
             capability(project.group.toString(), "${project.name}-$variantName", project.version.toString())
+        }
+    }
+    listOf("${variantName}ApiElements", "${variantName}RuntimeElements").forEach { configurationName ->
+        configurations.named(configurationName) {
+            attributes {
+                attribute(
+                    TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+                    objects.named(TargetJvmEnvironment.STANDARD_JVM)
+                )
+                attribute(KotlinPlatformType.attribute, KotlinPlatformType.jvm)
+            }
         }
     }
     tasks.named<JavaCompile>("compileJava${it.target}Java") {
@@ -96,17 +109,19 @@ listOf(
         })
     }
     tasks.named<Jar>("${variantName}Jar") {
-        from(sourceSets.main.get().output)
+        from(sourceSets.main.get().output) {
+            exclude("com/bloomberg/selekt/ExternalSQLite*.class")
+            exclude("META-INF/*.kotlin_module")
+        }
     }
 }
 
 sourceSets {
+    named("main") {
+        kotlin.srcDir("src/java11/kotlin")
+    }
     named("jmh") {
         resources.srcDir(layout.buildDirectory.dir("intermediates/libs"))
-    }
-    named("test") {
-        compileClasspath += sourceSets["java17"].output
-        runtimeClasspath += sourceSets["java17"].output
     }
 }
 
@@ -116,16 +131,12 @@ dependencies {
     implementation(projects.selektSqlite3Api)
     jmhImplementation(projects.selektCommons)
     jmhImplementation(projects.selektSqlite3Api)
-    jmhImplementation(sourceSets["java17"].output)
     testImplementation(projects.selektCommons)
     testImplementation(projects.selektSqlite3Api)
     testImplementation(libs.kotlin.test)
 }
 
-listOf(
-    JvmTarget.JVM_17,
-    JvmTarget.JVM_25
-).forEach {
+listOf(JvmTarget.JVM_25).forEach {
     val variantName = "java${it.target}"
     sourceSets {
         create("${variantName}Test") {
@@ -182,7 +193,15 @@ listOf(
 }
 
 tasks.named<Test>("test") {
-    enabled = false
+    description = "Runs tests for the Java 11 JNI backend"
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    })
+    dependsOn("copyJniLibs")
+    systemProperty(
+        "com.bloomberg.selekt.library_path",
+        layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
+    )
 }
 
 fun registerCrossRuntimeDatabaseTask(
@@ -201,7 +220,13 @@ fun registerCrossRuntimeDatabaseTask(
         "Reads the Java $databaseWriterVersion raw-key database using the " +
             "Java $runtimeVersion $runtimeBackend backend."
     }
-    classpath = sourceSets["java${runtimeVersion}Test"].runtimeClasspath
+    val testSourceSet = if (runtimeVersion == 11) "test" else "java${runtimeVersion}Test"
+    val compileTestTask = if (runtimeVersion == 11) {
+        "compileTestKotlin"
+    } else {
+        "compileJava${runtimeVersion}TestKotlin"
+    }
+    classpath = sourceSets[testSourceSet].runtimeClasspath
     mainClass.set("com.bloomberg.selekt.CrossRuntimeRawKeyMainKt")
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion.set(JavaLanguageVersion.of(runtimeVersion))
@@ -217,22 +242,22 @@ fun registerCrossRuntimeDatabaseTask(
         operation,
         layout.buildDirectory.file("cross-runtime/java$databaseWriterVersion.db").get().asFile.absolutePath
     )
-    dependsOn("compileJava${runtimeVersion}TestKotlin", "copyJniLibs")
+    dependsOn(compileTestTask, "copyJniLibs")
     prerequisite?.let { dependsOn(it) }
 }
 
-val writeCrossRuntimeDatabaseWithJava17 = registerCrossRuntimeDatabaseTask("write", 17, "JNI", 17)
+val writeCrossRuntimeDatabaseWithJava11 = registerCrossRuntimeDatabaseTask("write", 11, "JNI", 11)
 val writeCrossRuntimeDatabaseWithJava25 = registerCrossRuntimeDatabaseTask("write", 25, "FFM", 25)
 val readCrossRuntimeDatabaseWithJava25 = registerCrossRuntimeDatabaseTask(
-    "read", 25, "FFM", 17, writeCrossRuntimeDatabaseWithJava17
+    "read", 25, "FFM", 11, writeCrossRuntimeDatabaseWithJava11
 )
-val readCrossRuntimeDatabaseWithJava17 = registerCrossRuntimeDatabaseTask(
-    "read", 17, "JNI", 25, writeCrossRuntimeDatabaseWithJava25
+val readCrossRuntimeDatabaseWithJava11 = registerCrossRuntimeDatabaseTask(
+    "read", 11, "JNI", 25, writeCrossRuntimeDatabaseWithJava25
 )
 
 tasks.register<Test>("testCrossRuntimeKeyCompatibility") {
-    description = "Verifies raw-key database compatibility between the Java 17 JNI and Java 25 FFM backends."
-    dependsOn(readCrossRuntimeDatabaseWithJava25, readCrossRuntimeDatabaseWithJava17)
+    description = "Verifies raw-key database compatibility between the Java 11 JNI and Java 25 FFM backends."
+    dependsOn(readCrossRuntimeDatabaseWithJava25, readCrossRuntimeDatabaseWithJava11)
 }
 
 tasks.register<Copy>("copyJniLibs") {
@@ -243,7 +268,7 @@ tasks.register<Copy>("copyJniLibs") {
 
 listOf(
     "processJmhResources",
-    "processJava17TestResources",
+    "processTestResources",
     "processJava25TestResources",
 ).forEach { taskName ->
     tasks.named<ProcessResources>(taskName) {
@@ -253,38 +278,39 @@ listOf(
 
 tasks.named<JMHTask>("jmh") {
     dependsOn("copyJniLibs", ":selekt-sqlite3-sqlcipher:buildNativeHost")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    })
 }
 
-listOf(
-    JvmTarget.JVM_17,
-    JvmTarget.JVM_25
-).forEach {
-    val variantName = "java${it.target}"
-    tasks.register<JavaExec>("jmh${variantName.replaceFirstChar(Char::uppercase)}") {
-        description = "Runs JMH benchmarks using Java ${it.target}"
-        group = "benchmark"
-        val jmhJar = tasks.named("jmhJar").get().outputs.files.singleFile
-        classpath = sourceSets[variantName].output + files(jmhJar)
-        mainClass.set("org.openjdk.jmh.Main")
-        javaLauncher.set(javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(it.target))
-        })
-        dependsOn("jmhJar", "copyJniLibs")
-        outputs.upToDateWhen { false }
-        outputs.cacheIf { false }
-        systemProperty(
-            "com.bloomberg.selekt.library_path",
-            layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
-        )
-        if (it.target.toInt() >= 25) {
-            jvmArgs("--enable-native-access=ALL-UNNAMED")
-        }
-    }
+tasks.register("jmhJava11") {
+    description = "Runs JMH benchmarks using the Java 11 JNI backend"
+    group = "benchmark"
+    dependsOn("jmh")
+}
+
+tasks.register<JavaExec>("jmhJava25") {
+    description = "Runs JMH benchmarks using the Java 25 FFM backend"
+    group = "benchmark"
+    val jmhJar = tasks.named("jmhJar").get().outputs.files.singleFile
+    classpath = sourceSets["java25"].output + files(jmhJar)
+    mainClass.set("org.openjdk.jmh.Main")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    dependsOn("jmhJar", "copyJniLibs")
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    systemProperty(
+        "com.bloomberg.selekt.library_path",
+        layout.buildDirectory.dir("intermediates/libs").get().asFile.toString()
+    )
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 detekt {
     listOf(
-        "java17",
+        "java11",
         "java25",
         "jmh",
         "test"
@@ -308,9 +334,6 @@ publishing {
     publications {
         register<MavenPublication>("main") {
             from(components.getByName("java"))
-            artifact(tasks.named("java25Jar")) {
-                classifier = null
-            }
             pom {
                 commonInitialisation(project)
             }

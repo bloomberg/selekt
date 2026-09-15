@@ -3,6 +3,9 @@ plugins {
 }
 
 val selektVersion = providers.gradleProperty("selektVersion")
+val consumerJavaVersion = providers.gradleProperty("consumerJavaVersion")
+    .map(String::toInt)
+    .getOrElse(25)
 
 repositories {
     mavenLocal()
@@ -16,7 +19,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(consumerJavaVersion))
     }
 }
 
@@ -28,5 +31,7 @@ sourceSets {
 
 application {
     mainClass.set("com.bloomberg.selekt.samples.JdbcSmokeTest")
-    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+    if (consumerJavaVersion >= 25) {
+        applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+    }
 }

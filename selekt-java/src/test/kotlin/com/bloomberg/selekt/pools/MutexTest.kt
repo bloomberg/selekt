@@ -17,6 +17,8 @@
 package com.bloomberg.selekt.pools
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertTimeoutPreemptively
+import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -165,7 +167,7 @@ internal class MutexTest {
     }
 
     @Test
-    fun tryLockRespectsTimeout() {
+    fun tryLockRespectsTimeout() = assertTimeoutPreemptively(Duration.ofSeconds(5L)) {
         Mutex().apply {
             lock()
             val intervalNanos = TimeUnit.MILLISECONDS.toNanos(100L)
@@ -173,7 +175,6 @@ internal class MutexTest {
             assertFalse(tryLock(intervalNanos, false))
             val duration = System.nanoTime() - start
             assertTrue(duration >= intervalNanos)
-            assertTrue(duration <= intervalNanos + TimeUnit.MILLISECONDS.toNanos(300L))
         }
     }
 

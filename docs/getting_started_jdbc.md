@@ -1,6 +1,8 @@
 ## Integration
 
-Selekt JBDC requires Java 25 or later.
+Selekt JDBC supports Java 11 and later. For new projects, we recommend the current LTS release (Java 25 at the time of writing) which uses Selekt's FFM backend. Java 11–24 remain supported through the JNI backend for compatibility. Gradle uses published variant metadata to select the appropriate backend from the project's target JVM version, not the JVM running Gradle.
+
+Maven does not consume Gradle variant metadata. Maven consumers therefore receive the unclassified Java 11 JNI backend on every supported Java version, including Java 25 or later. FFM backend selection is not currently supported for Maven consumers.
 
 ### Gradle
 
@@ -150,7 +152,9 @@ Properties can also be inlined in the URL query string:
 
 ## Encryption
 
-Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases are unencrypted by default. To enable encryption, provide a key that is exactly 32 bytes. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function. A `0x`-prefixed key must contain exactly 64 hexadecimal digits.
+Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases are unencrypted by default. To enable encryption, provide a key that is exactly 32 bytes. Selekt treats these bytes as raw key material and does not apply PBKDF2 or another password-based key derivation function. Do not supply a human-readable password or passphrase; use cryptographically random bytes or the 32-byte output of a suitable key derivation function.
+
+Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exactly 64 hexadecimal digits. Selekt also accepts a non-prefixed `CharArray`, but encodes it as UTF-8; its encoded length, rather than its character count, must be exactly 32 bytes.
 
 `SelektDriver` does not accept encryption keys. Encrypted connections must use `SelektDataSource.setEncryption` with an `EncryptionKeySource.Literal` backed by a caller-owned `CharArray`. `SelektDataSource` stores and later zeroes an internal copy; zero the caller-owned array after `setEncryption` returns.
 
@@ -158,13 +162,14 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases ar
 
 === "Kotlin"
     ``` kotlin
-    private fun deriveKey(): CharArray = TODO(
-        "Derive a 32-byte encryption key.")
+    private fun deriveHexEncodedKey(): CharArray = TODO(
+        "Return 32 bytes from a cryptographically secure random-number generator or suitable " +
+            "key derivation function, encoded as '0x' followed by 64 hexadecimal digits.")
 
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/encrypted.db"
     }
-    val key = deriveKey()
+    val key = deriveHexEncodedKey()
     try {
         dataSource.setEncryption(EncryptionKeySource.Literal(key))
     } finally {
@@ -174,42 +179,14 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases ar
 
 === "Java"
     ``` java
-    private char[] deriveKey() {
-        // TODO Derive a 32-byte encryption key.
+    private char[] deriveHexEncodedKey() {
+        // TODO Return 32 bytes from a cryptographically secure random-number generator or suitable
+        // key derivation function, encoded as "0x" followed by 64 hexadecimal digits.
     }
 
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/encrypted.db");
-    final char[] key = deriveKey();
-    try {
-        dataSource.setEncryption(new EncryptionKeySource.Literal(key));
-    } finally {
-        java.util.Arrays.fill(key, '\0');
-    }
-    ```
-
-### With a hex key
-
-=== "Kotlin"
-    ``` kotlin
-    private fun deriveHexKey(): CharArray = TODO(
-        "Return '0x' followed by 64 hexadecimal digits.")
-
-    val key = deriveHexKey()
-    try {
-        dataSource.setEncryption(EncryptionKeySource.Literal(key))
-    } finally {
-        key.fill('\u0000')
-    }
-    ```
-
-=== "Java"
-    ``` java
-    private char[] deriveHexKey() {
-        // TODO Return "0x" followed by 64 hexadecimal digits.
-    }
-
-    final char[] key = deriveHexKey();
+    final char[] key = deriveHexEncodedKey();
     try {
         dataSource.setEncryption(new EncryptionKeySource.Literal(key));
     } finally {
@@ -327,8 +304,7 @@ Selekt uses SQLCipher for AES-256 encryption. Encryption is opt-in, databases ar
     }
     ```
 
-Selekt may reuse the driver-owned update-count array returned by `executeBatch()`. Treat the array as read-only and
-copy it before another batch execution or before closing the statement if the counts need to be retained.
+Selekt may reuse the driver-owned update-count array returned by `executeBatch()`. Treat the array as read-only and copy it before another batch execution or before closing the statement if the counts need to be retained.
 
 ### Transactions
 
