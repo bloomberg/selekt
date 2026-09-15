@@ -39,6 +39,7 @@ nav:
   - 'Getting started':
     - 'Android': getting_started_android.md
     - 'JDBC': getting_started_jdbc.md
+  - 'Supply chain': supply_chain.md
   - 'Benchmarks':
     - 'Android': benchmarks_android.md
     - 'JDBC': benchmarks_jdbc.md
