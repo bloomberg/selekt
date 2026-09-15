@@ -44,17 +44,52 @@ internal class ChunkedParameterRowsTest {
         rows.clear()
 
         chainBefore.forEach(::assertChunkFullyCleared)
-        val retained = assertFieldNotNull<Any>(rows, "firstChunk")
-        assertEquals(
-            chainBefore.maxOf { readField<Int>(it, "capacity")!! },
-            readField<Int>(retained, "capacity")!!,
-            "clear should retain the largest chunk for reuse"
-        )
+        val retained = collectChunkChain(assertFieldNotNull(rows, "firstChunk"))
+        assertSameElements(chainBefore, retained)
         assertSame(
-            retained,
+            retained.first(),
             readField<Any>(rows, "currentChunk"),
-            "firstChunk and currentChunk should both point at the retained chunk"
+            "currentChunk should return to the start of the retained chain"
         )
+    }
+
+    @Test
+    fun clearedChunksAreReused() {
+        val rows = ChunkedParameterRows(parameterCount = 1, initialChunkCapacity = 2)
+        val scratch = ParameterRow(1)
+        repeat(31) {
+            scratch.setInt(0, it)
+            rows.add(scratch)
+        }
+        val chunks = collectChunkChain(assertFieldNotNull(rows, "firstChunk"))
+
+        rows.clear()
+        repeat(31) {
+            scratch.setInt(0, it)
+            rows.add(scratch)
+        }
+
+        assertSameElements(chunks, collectChunkChain(assertFieldNotNull(rows, "firstChunk")))
+        assertEquals((0 until 31).toList(), rows.map { it.ints[0] })
+    }
+
+    @Test
+    fun clearDropsChunksBeyondRetainedCapacity() {
+        val rows = ChunkedParameterRows(parameterCount = 1, initialChunkCapacity = 2)
+        val scratch = ParameterRow(1)
+        repeat(33) {
+            scratch.setInt(0, it)
+            rows.add(scratch)
+        }
+        val chunksBefore = collectChunkChain(assertFieldNotNull(rows, "firstChunk"))
+        assertEquals(listOf(2, 2, 4, 8, 16, 32), chunksBefore.map(::chunkCapacity))
+
+        rows.clear()
+
+        val retained = collectChunkChain(assertFieldNotNull(rows, "firstChunk"))
+        assertSameElements(chunksBefore.take(5), retained)
+        assertEquals(32, retained.sumOf(::chunkCapacity))
+        chunksBefore.forEach(::assertChunkFullyCleared)
     }
 
     @Test
@@ -75,6 +110,15 @@ internal class ChunkedParameterRowsTest {
         while (node != null) {
             add(node)
             node = readField<Any>(node, "next")
+        }
+    }
+
+    private fun chunkCapacity(chunk: Any) = checkNotNull(readField<Int>(chunk, "capacity"))
+
+    private fun assertSameElements(expected: List<Any>, actual: List<Any>) {
+        assertEquals(expected.size, actual.size)
+        expected.zip(actual).forEach { (expectedChunk, actualChunk) ->
+            assertSame(expectedChunk, actualChunk)
         }
     }
 
