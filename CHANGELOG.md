@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.4.6
+
+* Reuse JDBC batch success arrays across pooled statements.
+* Reuse retained batch parameter chunks.
+* Release idle JDBC database caches.
+
 ## Version 1.4.5
 
 * Reject oversized vec1 index entry counts.
