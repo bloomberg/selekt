@@ -187,6 +187,8 @@ jobs:
       - name: 'Setup Android SDK'
         if: "!contains(matrix.platform, 'linux-aarch64') && !contains(matrix.platform, 'musl') && matrix.platform != 'windows-aarch64'"
         uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
+        with:
+          packages: platform-tools
 
       - name: 'Setup Android SDK (aarch64)'
         if: matrix.platform == 'linux-aarch64'
