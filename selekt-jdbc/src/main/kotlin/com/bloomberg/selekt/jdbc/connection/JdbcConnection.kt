@@ -375,7 +375,7 @@ internal class JdbcConnection(
                 }
                 sharedDatabase.releaseTransaction(sessionOwner)
                 sharedDatabase.runCatching {
-                    release()
+                    releaseConnection()
                 }.onFailure { e ->
                     logger.debug("Error releasing database on connection close: {}", e.message)
                 }

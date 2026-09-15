@@ -30,6 +30,13 @@ internal class MemoryDatabasePoolConfigurationTest {
     }
 
     @Test
+    fun `memory database retains its primary connection`() {
+        assertEquals(true, ":memory:".isInMemoryDatabase())
+        assertEquals(true, "file::memory:?cache=shared".isInMemoryDatabase())
+        assertEquals(true, "file:shared?mode=memory&cache=shared".isInMemoryDatabase())
+    }
+
+    @Test
     fun `shared memory database retains configured pool size`() {
         assertEquals(10, configuration.toPoolConfiguration("file::memory:?cache=shared").maxTotal)
         assertEquals(10, configuration.toPoolConfiguration("file:shared?mode=memory&cache=shared").maxTotal)
@@ -39,5 +46,6 @@ internal class MemoryDatabasePoolConfigurationTest {
     fun `file database retains configured pool size`() {
         assertEquals(10, configuration.toPoolConfiguration("database.sqlite").maxTotal)
         assertEquals(10, configuration.toPoolConfiguration("file:database.sqlite").maxTotal)
+        assertEquals(false, "database.sqlite".isInMemoryDatabase())
     }
 }

@@ -26,17 +26,18 @@ import kotlin.concurrent.withLock
 /**
  * A reference-counted wrapper around [SQLDatabase] for use by the JDBC driver cache.
  *
- * The cache holds one reference (the initial retain count of 1), keeping the database alive
- * for reuse even when no connections are open. Each
+ * The cache owns the initial retain count. Each
  * [JdbcConnection][com.bloomberg.selekt.jdbc.connection.JdbcConnection] obtains an additional
- * reference via [retain], and releases it via [release]. When the last reference is released
- * the underlying [SQLDatabase] is closed and [onClose] is invoked.
+ * reference, and [releaseConnection] releases it and notifies the cache when the database becomes
+ * idle. Releasing the cache reference closes the underlying [SQLDatabase] after all connections
+ * have also released their references.
  *
  * @since 0.29.11
  */
 internal class SharedDatabase(
     val database: SQLDatabase,
-    private val onClose: () -> Unit = {}
+    private val onClose: () -> Unit = {},
+    private val onConnectionReleased: (SharedDatabase) -> Unit = {}
 ) : SharedResource() {
     private data class TransactionOwner(
         val token: Any,
@@ -49,6 +50,14 @@ internal class SharedDatabase(
     // and released at its end boundary or on connection close.
     @GuardedBy("transactionOwnerLock")
     private var transactionOwner: TransactionOwner? = null
+
+    fun releaseConnection() {
+        try {
+            release()
+        } finally {
+            onConnectionReleased(this)
+        }
+    }
 
     /**
      * Rejects attempts to hand an active transaction to another thread.

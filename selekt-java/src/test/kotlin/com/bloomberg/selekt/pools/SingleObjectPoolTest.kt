@@ -145,6 +145,26 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun retainedObjectSurvivesEvictionUntilClose() {
+        val factory = mock<IObjectFactory<PooledObject>>()
+        val obj = mock<PooledObject>()
+        whenever(factory.makePrimaryObject()) doReturn obj
+
+        SingleObjectPool(factory, executor, 1L, 1L).apply {
+            retainUntilClose()
+        }.use {
+            it.returnObject(it.borrowObject())
+            it.evict()
+            it.evict(Priority.HIGH)
+
+            assertSame(obj, it.borrowObject().also(it::returnObject))
+            verify(obj).releaseMemory()
+            verify(factory, never()).destroyObject(any())
+        }
+        verify(factory).destroyObject(same(obj))
+    }
+
+    @Test
     fun newObjectAfterSuccessfulEviction() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
         evict()

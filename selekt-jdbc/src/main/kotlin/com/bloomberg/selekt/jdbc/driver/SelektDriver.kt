@@ -20,8 +20,6 @@ import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SelektVersion
-import com.bloomberg.selekt.SharedResource
-import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -33,10 +31,8 @@ import java.sql.DriverPropertyInfo
 import java.sql.SQLException
 import java.sql.SQLFeatureNotSupportedException
 import java.util.Properties
-import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Logger as JulLogger
 import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -52,6 +48,9 @@ internal const val DEFAULT_JDBC_POOL_SIZE = 4
  * - cursorWindowSize: Maximum rows per materialised cursor-window segment (positive integer, default: 1024)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
+ *
+ * A private in-memory database is released when its final JDBC connection closes. Use an explicitly
+ * owned [SelektDataSource] to retain an in-memory database between connections.
  *
  * @since 0.28.0
  */
@@ -87,8 +86,7 @@ class SelektDriver : Driver {
 
         private val BOOLEAN_CHOICES = arrayOf("true", "false")
 
-        private val databaseCacheLock = ReentrantLock()
-        private val databaseCache = LinkedHashMap<String, SharedDatabase>(16, 0.75f, true)
+        private val databaseCache = SharedDatabaseCache()
 
         init {
             runCatching {
@@ -97,11 +95,7 @@ class SelektDriver : Driver {
                     start = false,
                     name = "selekt-driver-shutdown"
                 ) {
-                    databaseCacheLock.withLock {
-                        databaseCache.values.toList().also {
-                            databaseCache.clear()
-                        }
-                    }.forEachCatching(SharedDatabase::release)
+                    databaseCache.close()
                 })
                 logger.info("{} {} registered successfully", DRIVER_NAME, DRIVER_VERSION)
             }.onFailure { e ->
@@ -122,7 +116,7 @@ class SelektDriver : Driver {
             runCatching {
                 JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
             }.getOrElse {
-                runCatching(sharedDatabase::release)
+                runCatching(sharedDatabase::releaseConnection)
                 throw it
             }
         }.getOrElse { e ->
@@ -195,15 +189,12 @@ class SelektDriver : Driver {
         properties: Properties
     ): SharedDatabase {
         val cacheKey = buildCacheKey(connectionURL, properties)
-        return databaseCacheLock.withLock {
-            databaseCache.getOrPut(cacheKey) {
-                SharedDatabase(createDatabase(connectionURL, properties)) {
-                    databaseCacheLock.withLock {
-                        databaseCache.remove(cacheKey)
-                    }
-                }
-            }.also(SharedResource::retain)
+        val idlePolicy = if (connectionURL.isInMemoryDatabase) {
+            DatabaseIdlePolicy.RELEASE_IMMEDIATELY
+        } else {
+            DatabaseIdlePolicy.EVICT_AFTER_TIMEOUT
         }
+        return databaseCache.acquire(cacheKey, idlePolicy) { createDatabase(connectionURL, properties) }
     }
 
     private fun createDatabase(
