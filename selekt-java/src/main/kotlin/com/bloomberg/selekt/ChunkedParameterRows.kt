@@ -19,6 +19,7 @@ package com.bloomberg.selekt
 import javax.annotation.concurrent.NotThreadSafe
 
 private const val DEFAULT_INITIAL_CHUNK_CAPACITY = 1024
+private const val MAX_RETAINED_CAPACITY_FACTOR = 16
 
 @NotThreadSafe
 class ChunkedParameterRows(
@@ -34,6 +35,10 @@ class ChunkedParameterRows(
 
     private var firstChunk: Chunk? = null
     private var currentChunk: Chunk? = null
+    private val maximumRetainedCapacity = minOf(
+        initialChunkCapacity.toLong() * MAX_RETAINED_CAPACITY_FACTOR,
+        Int.MAX_VALUE.toLong()
+    ).toInt()
 
     var size = 0
         private set
@@ -45,9 +50,7 @@ class ChunkedParameterRows(
         }
         currentChunk!!.run {
             if (count == capacity) {
-                currentChunk = Chunk(size, parameterCount).also {
-                    next = it
-                }
+                currentChunk = next ?: Chunk(size, parameterCount).also { next = it }
             }
         }
         currentChunk!!.run {
@@ -59,15 +62,25 @@ class ChunkedParameterRows(
 
     fun clear() {
         var chunk = firstChunk
+        var lastRetainedChunk: Chunk? = null
+        var retainedCapacity = 0
+        var retaining = true
         while (chunk != null) {
             val rows = chunk.data
             for (i in 0 until chunk.count) {
                 rows[i].clear()
             }
             chunk.count = 0
+            if (retaining && chunk.capacity <= maximumRetainedCapacity - retainedCapacity) {
+                retainedCapacity += chunk.capacity
+                lastRetainedChunk = chunk
+            } else {
+                retaining = false
+            }
             chunk = chunk.next
         }
-        firstChunk = currentChunk
+        lastRetainedChunk?.next = null
+        currentChunk = firstChunk
         size = 0
     }
 
@@ -78,6 +91,9 @@ class ChunkedParameterRows(
         override fun hasNext() = chunk != null && index < chunk!!.count
 
         override fun next(): ParameterRow {
+            if (!hasNext()) {
+                throw NoSuchElementException()
+            }
             val current = chunk ?: throw NoSuchElementException()
             val row = current.data[index]
             if (++index >= current.count) {
