@@ -308,6 +308,9 @@ publishing {
     publications {
         register<MavenPublication>("main") {
             from(components.getByName("java"))
+            artifact(tasks.named("java25Jar")) {
+                classifier = null
+            }
             pom {
                 commonInitialisation(project)
             }
