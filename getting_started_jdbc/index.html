@@ -18,7 +18,7 @@
         <link rel="prev" href="../getting_started_android/">
       
       
-        <link rel="next" href="../benchmarks_android/">
+        <link rel="next" href="../supply_chain/">
       
       
         
@@ -435,17 +435,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#software-bill-of-materials" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Software bill of materials
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#getting-a-connection" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -628,6 +617,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../supply_chain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply chain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -637,10 +653,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -658,8 +674,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -792,17 +808,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#software-bill-of-materials" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Software bill of materials
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1035,18 +1040,8 @@
 <span class="w">    </span><span class="nt">&lt;/dependency&gt;</span>
 <span class="nt">&lt;/dependencies&gt;</span>
 </code></pre></div>
-<h2 id="software-bill-of-materials">Software bill of materials</h2>
-<p>Each published Selekt JAR has a CycloneDX SBOM. Maven Central publishes it beside the JAR using the <code>cyclonedx</code>
-classifier, for example <code>selekt-jdbc-1.4.6-cyclonedx.json</code>. The identical document is embedded at
-<code>META-INF/sbom/selekt-jdbc.cdx.json</code> for runtime inspection:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">sbom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDriver</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">.</span><span class="na">classLoader</span>
-<span class="w">    </span><span class="p">.</span><span class="na">getResourceAsStream</span><span class="p">(</span><span class="s">&quot;META-INF/sbom/selekt-jdbc.cdx.json&quot;</span><span class="p">)</span>
-</code></pre></div>
-<p>The JDBC, JVM, and native SQLCipher SBOMs also inventory the native code bundled in the runtime artifact: SQLCipher,
-its SQLite and OpenSSL dependencies, the optional vec1 extension when enabled, and mimalloc for Linux variants.
-Platform restrictions are recorded as component properties.</p>
-<p>Run <code>./gradlew cyclonedxBom</code> to generate every final JVM artifact SBOM, or
-<code>./gradlew :selekt-jdbc:enrichCycloneDxSbom</code> for the final JDBC document.</p>
+<p>Published artifacts include CycloneDX SBOMs. See <a href="../supply_chain/">Software bill of materials</a> for publication,
+runtime-inspection and generation details.</p>
 <h2 id="getting-a-connection">Getting a connection</h2>
 <h3 id="using-a-datasource">Using a DataSource</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Kotlin</label><label for="__tabbed_2_2">Java</label></div>

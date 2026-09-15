@@ -12,11 +12,13 @@
         <meta name="author" content="Bloomberg L.P.">
       
       
-        <link rel="canonical" href="https://bloomberg.github.io/selekt/benchmarks_jdbc/">
+        <link rel="canonical" href="https://bloomberg.github.io/selekt/supply_chain/">
       
       
-        <link rel="prev" href="../benchmarks_android/">
+        <link rel="prev" href="../getting_started_jdbc/">
       
+      
+        <link rel="next" href="../benchmarks_android/">
       
       
         
@@ -27,7 +29,7 @@
     
     
       
-        <title>JDBC - Selekt</title>
+        <title>Supply chain - Selekt</title>
       
     
     
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#batch-insert" class="md-skip">
+        <a href="#software-bill-of-materials" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              JDBC
+              Supply chain
             
           </span>
         </div>
@@ -368,10 +370,19 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../supply_chain/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -387,6 +398,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -395,20 +407,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -429,7 +439,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -472,35 +482,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    JDBC
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../benchmarks_jdbc/" class="md-nav__link">
         
   
   
@@ -516,46 +501,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#batch-insert" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch Insert
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#text-stream-reads" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Text Stream Reads
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -585,36 +530,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#batch-insert" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch Insert
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#text-stream-reads" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Text Stream Reads
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -631,256 +548,18 @@
 
 
 
-  <h1>JDBC</h1>
-
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-
-<h3 id="batch-insert">Batch Insert</h3>
-<p>Latest JMH batch-insert results across drivers, updated periodically from CI. Lower is better for both metrics.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Allocation</label><label for="__tabbed_1_2">Throughput</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p><div id="jdbc_allocation"></div></p>
-</div>
-<div class="tabbed-block">
-<p><div id="jdbc_throughput"></div></p>
-</div>
-</div>
-</div>
-<h3 id="text-stream-reads">Text Stream Reads</h3>
-<p>Latest JMH results for querying and fully consuming 50,000 text values through JDBC. Lower is better for both metrics.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Allocation</label><label for="__tabbed_2_2">Throughput</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p><div id="jdbc_stream_allocation"></div></p>
-</div>
-<div class="tabbed-block">
-<p><div id="jdbc_stream_throughput"></div></p>
-</div>
-</div>
-</div>
-<script type="text/javascript">
-(function () {
-  function loadScript(src, cb) {
-    var s = document.createElement('script');
-    s.src = src;
-    s.onload = cb;
-    s.onerror = function () { cb(null); };
-    document.head.appendChild(s);
-  }
-
-  function pairBenches(benches) {
-    var pairs = {};
-    benches.forEach(function (b) {
-      var method = b.name.replace(/^.*\./, '');
-      var driver, base;
-      if (method.startsWith('selekt')) {
-        driver = 'Selekt';
-        base = method.substring(6);
-      } else if (method.startsWith('xerial')) {
-        driver = 'Xerial';
-        base = method.substring(6);
-      } else {
-        return;
-      }
-      if (!pairs[base]) pairs[base] = {};
-      pairs[base][driver] = b;
-    });
-    return pairs;
-  }
-
-  var BATCH_BENCH_ORDER = ['BatchInsertSIMPLE', 'BatchInsertMIXED', 'BatchInsertBLOB'];
-  var STREAM_BENCH_ORDER = [
-    'AsciiStreamASCII',
-    'AsciiStreamLATIN1',
-    'AsciiStreamUTF16',
-    'CharacterStreamASCII',
-    'CharacterStreamLATIN1',
-    'CharacterStreamUTF16'
-  ];
-  var STREAM_BENCH_LABELS = {
-    'AsciiStreamASCII': 'getAsciiStream() — ASCII',
-    'AsciiStreamLATIN1': 'getAsciiStream() — Latin-1 characters',
-    'AsciiStreamUTF16': 'getAsciiStream() — emoji',
-    'CharacterStreamASCII': 'getCharacterStream() — ASCII',
-    'CharacterStreamLATIN1': 'getCharacterStream() — Latin-1 characters',
-    'CharacterStreamUTF16': 'getCharacterStream() — emoji'
-  };
-
-  function drawPairs(pairs, containerId, defaultUnit, prefix, benchOrder, labels) {
-    var container = document.getElementById(containerId);
-    var keys = Object.keys(pairs).filter(function (k) {
-      return k.startsWith(prefix);
-    });
-    keys.sort(function (a, b) {
-      var ai = benchOrder.indexOf(a);
-      var bi = benchOrder.indexOf(b);
-      if (ai === -1) ai = benchOrder.length;
-      if (bi === -1) bi = benchOrder.length;
-      return ai - bi;
-    });
-    keys.forEach(function (base) {
-      var p = pairs[base];
-      var selekt = p['Selekt'];
-      var xerial = p['Xerial'];
-      if (!selekt || !xerial) return;
-
-      var unit = selekt.unit || defaultUnit || 'ms/op';
-      var sv = Number(selekt.value);
-      var xv = Number(xerial.value);
-      var selektColor = sv <= xv ? '#34A853' : '#EA4335';
-      var xerialColor = xv <= sv ? '#34A853' : '#EA4335';
-
-      var data = new google.visualization.DataTable();
-      data.addColumn('string', 'Driver');
-      data.addColumn('number', unit);
-      data.addColumn({ type: 'string', role: 'style' });
-      data.addRows([
-        ['Selekt', sv, selektColor],
-        ['Xerial', xv, xerialColor]
-      ]);
-
-      var div = document.createElement('div');
-      div.style.width = '100%';
-      div.style.height = '220px';
-      div.style.marginBottom = '24px';
-      container.appendChild(div);
-
-      new google.visualization.BarChart(div).draw(data, {
-        title: labels[base] || base,
-        legend: 'none',
-        hAxis: { title: unit, minValue: 0 },
-        chartArea: { width: '70%' }
-      });
-    });
-
-    if (container.children.length === 0) {
-      container.textContent =
-        'No benchmark data available yet. Results will appear after the next CI run.';
-    }
-  }
-
-  var throughputData = null;
-  var allocData = null;
-  var loaded = 0;
-
-  function onAllLoaded() {
-    google.charts.load('current', { packages: ['corechart'] });
-    google.charts.setOnLoadCallback(function () {
-      if (allocData) {
-        var allocationPairs = pairBenches(allocData);
-        drawPairs(
-          allocationPairs,
-          'jdbc_allocation',
-          'B/op',
-          'BatchInsert',
-          BATCH_BENCH_ORDER,
-          {}
-        );
-        drawPairs(
-          allocationPairs,
-          'jdbc_stream_allocation',
-          'B/op',
-          'AsciiStream',
-          STREAM_BENCH_ORDER,
-          STREAM_BENCH_LABELS
-        );
-        drawPairs(
-          allocationPairs,
-          'jdbc_stream_allocation',
-          'B/op',
-          'CharacterStream',
-          STREAM_BENCH_ORDER,
-          STREAM_BENCH_LABELS
-        );
-      } else {
-        document.getElementById('jdbc_allocation').textContent =
-          'Allocation data not yet available. Results will appear after the first CI run.';
-        document.getElementById('jdbc_stream_allocation').textContent =
-          'Allocation data not yet available. Results will appear after the first CI run.';
-      }
-      var throughputTargets = [
-        {
-          id: 'jdbc_throughput',
-          prefix: 'BatchInsert',
-          order: BATCH_BENCH_ORDER,
-          labels: {},
-          drawn: false
-        },
-        {
-          id: 'jdbc_stream_throughput',
-          prefix: 'AsciiStream',
-          order: STREAM_BENCH_ORDER,
-          labels: STREAM_BENCH_LABELS,
-          drawn: false
-        },
-        {
-          id: 'jdbc_stream_throughput',
-          prefix: 'CharacterStream',
-          order: STREAM_BENCH_ORDER,
-          labels: STREAM_BENCH_LABELS,
-          drawn: false
-        }
-      ];
-      function drawThroughputIfNeeded(target) {
-        if (target.drawn) return;
-        var el = document.getElementById(target.id);
-        if (el && el.offsetWidth > 0) {
-          target.drawn = true;
-          if (throughputData) {
-            drawPairs(
-              pairBenches(throughputData),
-              target.id,
-              'ms/op',
-              target.prefix,
-              target.order,
-              target.labels
-            );
-          } else {
-            el.textContent =
-              'Benchmark data not yet available. Results will appear after the first CI run.';
-          }
-        }
-      }
-      document.querySelectorAll('input[name^="__tabbed_"]').forEach(function (input) {
-        input.addEventListener('change', function () {
-          setTimeout(function () {
-            throughputTargets.forEach(drawThroughputIfNeeded);
-          }, 50);
-        });
-      });
-      throughputTargets.forEach(drawThroughputIfNeeded);
-    });
-  }
-
-  function check() {
-    loaded++;
-    if (loaded === 2) onAllLoaded();
-  }
-
-  loadScript('../benchmarks/jmh/data.js', function () {
-    if (window.BENCHMARK_DATA) {
-      var group = window.BENCHMARK_DATA.entries['JDBC Benchmarks'];
-      if (group && group.length > 0) {
-        throughputData = group[group.length - 1].benches;
-      }
-      window._THROUGHPUT_DATA = window.BENCHMARK_DATA;
-      delete window.BENCHMARK_DATA;
-    }
-    loadScript('../benchmarks/jmh-alloc/data.js', function () {
-      if (window.BENCHMARK_DATA) {
-        var group = window.BENCHMARK_DATA.entries['JDBC Allocations'];
-        if (group && group.length > 0) {
-          allocData = group[group.length - 1].benches;
-        }
-      }
-      check(); check();
-    });
-  });
-})();
-</script>
-
-<p>For full time-series history, see the throughput <a href="../benchmarks/jmh/index.html">benchmark dashboard</a> and <a href="../benchmarks/jmh-alloc/index.html">allocation dashboard</a>.</p>
+<h1 id="software-bill-of-materials">Software bill of materials</h1>
+<p>Each published Selekt JAR has a CycloneDX SBOM. Maven Central publishes it beside the JAR using the <code>cyclonedx</code>
+classifier, for example <code>selekt-jdbc-1.4.6-cyclonedx.json</code>. The identical document is embedded at
+<code>META-INF/sbom/selekt-jdbc.cdx.json</code> for runtime inspection:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">sbom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDriver</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">.</span><span class="na">classLoader</span>
+<span class="w">    </span><span class="p">.</span><span class="na">getResourceAsStream</span><span class="p">(</span><span class="s">&quot;META-INF/sbom/selekt-jdbc.cdx.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>The JDBC, JVM, and native SQLCipher SBOMs also inventory the native code bundled in the runtime artifact: SQLCipher,
+its SQLite and OpenSSL dependencies, the optional vec1 extension when enabled, and mimalloc for Linux variants.
+Platform restrictions are recorded as component properties.</p>
+<p>Run <code>./gradlew cyclonedxBom</code> to generate every final JVM artifact SBOM, or
+<code>./gradlew :selekt-jdbc:enrichCycloneDxSbom</code> for the final JDBC document.</p>
 
 
 
