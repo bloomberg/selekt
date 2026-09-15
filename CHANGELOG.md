@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.5.0
+
+* Support JDBC on Java 11 using JNI.
+
 ## Version 1.4.6
 
 * Reuse JDBC batch success arrays across pooled statements.
