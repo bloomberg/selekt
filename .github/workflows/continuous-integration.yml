@@ -597,6 +597,45 @@ jobs:
             :selekt-sqlite3-sqlcipher:jar \
             ${{ env.SCAN }}
 
+      - name: 'Test JDBC Gradle and Maven consumers'
+        env:
+          MAVEN_OPTS: '--enable-native-access=ALL-UNNAMED'
+        run: |
+          VERSION="$(sed -n 's/^version=//p' gradle.properties)-jdbc-consumer-test"
+          REPOSITORY="$GITHUB_WORKSPACE/build/jdbc-consumer-m2"
+          ./gradlew -Dmaven.repo.local="$REPOSITORY" -Pversion="$VERSION" \
+            :selekt-api:publishMainPublicationToMavenLocal \
+            :selekt-bom:publishMainPublicationToMavenLocal \
+            :selekt-commons:publishMainPublicationToMavenLocal \
+            :selekt-java:publishMainPublicationToMavenLocal \
+            :selekt-jdbc:publishMainPublicationToMavenLocal \
+            :selekt-jvm:publishMainPublicationToMavenLocal \
+            :selekt-sqlite3-api:publishMainPublicationToMavenLocal \
+            :selekt-sqlite3-classes:publishMainPublicationToMavenLocal \
+            :selekt-sqlite3-sqlcipher:jar \
+            :selekt-sqlite3-sqlcipher:generatePomFileForNativePublication
+
+          NATIVE_DIRECTORY="$REPOSITORY/com/bloomberg/selekt/selekt-sqlite3-sqlcipher/$VERSION"
+          mkdir -p "$NATIVE_DIRECTORY"
+          cp "selekt-sqlite3-sqlcipher/build/libs/selekt-sqlite3-sqlcipher-$VERSION-linux-amd64.jar" \
+            "$NATIVE_DIRECTORY/selekt-sqlite3-sqlcipher-$VERSION.jar"
+          cp selekt-sqlite3-sqlcipher/build/publications/native/pom-default.xml \
+            "$NATIVE_DIRECTORY/selekt-sqlite3-sqlcipher-$VERSION.pom"
+
+          JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew \
+            -p integration-tests/jdbc-gradle \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -PselektVersion="$VERSION" \
+            run \
+            --no-configuration-cache
+          JAVA_HOME="$JAVA_HOME_25_X64" mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            --file integration-tests/jdbc-maven/pom.xml \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -Dselekt.version="$VERSION" \
+            verify
+
       - name: 'Verify coverage'
         run:
           ./gradlew :koverVerify -x integrationTest

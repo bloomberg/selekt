@@ -5,6 +5,7 @@
 .fleet
 .vscode
 build
+target
 .gradle
 .kotlin
 *.iml
