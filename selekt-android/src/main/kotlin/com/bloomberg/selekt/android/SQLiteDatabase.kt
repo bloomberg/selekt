@@ -72,30 +72,37 @@ class SQLiteDatabase private constructor(
         private fun internalOpenOrCreateDatabase(
             file: File?,
             configuration: DatabaseConfiguration,
-            key: ByteArray?
-        ): SQLiteDatabase {
-            require(key == null || key.any { it != 0.toByte() }) {
-                "Encryption keys must not consist entirely of zero bytes."
-            }
-            return key?.let { DatabaseKey.of(SQLite, it) }.use { key ->
-                SQLiteDatabase(
-                    SQLDatabase(
-                        file?.path ?: "file::memory:",
-                        SQLite,
-                        configuration,
-                        key,
-                        CommonThreadLocalRandom
-                    )
-                )
-            }
-        }
+            key: DatabaseKey?
+        ) = SQLiteDatabase(
+            SQLDatabase(
+                file?.path ?: "file::memory:",
+                SQLite,
+                configuration,
+                key,
+                CommonThreadLocalRandom
+            )
+        )
+
+        @JvmSynthetic
+        internal fun openOrCreateDatabaseWithKey(
+            file: File,
+            configuration: DatabaseConfiguration,
+            key: DatabaseKey
+        ) = internalOpenOrCreateDatabase(file, configuration, key)
 
         @JvmStatic
         fun openOrCreateDatabase(
             file: File,
             configuration: DatabaseConfiguration,
             key: ByteArray?
-        ) = internalOpenOrCreateDatabase(file, configuration, key)
+        ): SQLiteDatabase {
+            require(key == null || key.any { it != 0.toByte() }) {
+                "Encryption keys must not consist entirely of zero bytes."
+            }
+            return key?.let { DatabaseKey.of(SQLite, it) }.use {
+                internalOpenOrCreateDatabase(file, configuration, it)
+            }
+        }
 
         @JvmStatic
         fun createInMemoryDatabase(trace: SQLiteTraceEventMode? = null) = internalOpenOrCreateDatabase(null,

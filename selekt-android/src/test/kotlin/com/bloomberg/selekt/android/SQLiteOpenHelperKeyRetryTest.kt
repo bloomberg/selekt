@@ -18,6 +18,7 @@ package com.bloomberg.selekt.android
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.commons.deleteDatabase
 import org.junit.jupiter.api.AfterEach
@@ -34,6 +35,7 @@ import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -79,29 +81,24 @@ internal class SQLiteOpenHelperKeyRetryTest {
     }
 
     @Test
-    fun `key is not zeroed after a failed open and is used again on retry`() {
+    fun `native key is retained after a failed open and is used again on retry`() {
         val key = ByteArray(32) { 0x42 }
         val callback = ThrowOnceThenSucceedCallback { IllegalStateException("Simulated onCreate failure.") }
-        newHelper(key, callback).use {
+        val helper = newHelper(key, callback)
+        val internalKey = requireNotNull(internalKeyOf(helper))
+        helper.use {
             assertFailsWith<IllegalStateException> {
                 it.writableDatabase
             }
-            val internalKeyAfterFailure = internalKeyOf(it)
-            requireNotNull(internalKeyAfterFailure)
-            assertTrue(
-                internalKeyAfterFailure.all { it == 0x42.toByte() },
-                "Internal _key must not be zeroed after a failed open"
-            )
+            assertSame(internalKey, internalKeyOf(it))
+            assertTrue(internalKey.isOpen(), "The helper must retain its native key after a failed open")
             val database = it.writableDatabase
             assertTrue(database.isOpen)
             assertEquals(2, callback.attempts)
-            val internalKeyAfterSuccess = internalKeyOf(it)
-            requireNotNull(internalKeyAfterSuccess)
-            assertTrue(
-                internalKeyAfterSuccess.all { it == 0.toByte() },
-                "Internal _key must be zeroed once the retry succeeds"
-            )
+            assertNull(internalKeyOf(it), "The helper must release its key reference once the retry succeeds")
+            assertTrue(internalKey.isOpen(), "The opened database must retain the native key")
         }
+        assertFalse(internalKey.isOpen(), "Closing the opened database must destroy the native key")
     }
 
     @Test
@@ -129,20 +126,17 @@ internal class SQLiteOpenHelperKeyRetryTest {
     }
 
     @Test
-    fun `key is not zeroed and database is closed when onDowngrade throws by default`() {
+    fun `native key is retained and database is closed when onDowngrade throws by default`() {
         val key = ByteArray(32) { 0x42 }
         newHelper(key.copyOf(), mock(), version = 2).use { it.writableDatabase }
         val callback = ConfigureCapturingCallback()
         newHelper(key, callback, version = 1).use {
+            val internalKey = requireNotNull(internalKeyOf(it))
             assertFailsWith<SQLiteException> {
                 it.writableDatabase
             }
-            val internalKey = internalKeyOf(it)
-            requireNotNull(internalKey)
-            assertTrue(
-                internalKey.all { it == 0x42.toByte() },
-                "Internal _key must not be zeroed when onDowngrade throws"
-            )
+            assertSame(internalKey, internalKeyOf(it))
+            assertTrue(internalKey.isOpen(), "The helper must retain its native key when onDowngrade throws")
             assertFalse(
                 requireNotNull(callback.capturedDatabase).isOpen,
                 "The partially-opened database must be closed when the default onDowngrade throws"
@@ -211,10 +205,8 @@ internal class SQLiteOpenHelperKeyRetryTest {
 
     @Test
     fun `helper rejects an all-zero encryption key`() {
-        newHelper(ByteArray(32), mock()).use {
-            assertFailsWith<IllegalArgumentException> {
-                it.writableDatabase
-            }
+        assertFailsWith<IllegalArgumentException> {
+            newHelper(ByteArray(32), mock())
         }
     }
 
@@ -259,16 +251,16 @@ internal class SQLiteOpenHelperKeyRetryTest {
         context = targetContext,
         configuration = ISQLiteOpenHelper.Configuration(
             callback = callback,
-            key = key,
             name = file.name
         ),
         openParams = SQLiteOpenParams(journalMode = SQLiteJournalMode.WAL),
-        version = version
+        version = version,
+        key = key
     )
 
-    private fun internalKeyOf(helper: SQLiteOpenHelper): ByteArray? {
-        val field = SQLiteOpenHelper::class.java.getDeclaredField("_key")
+    private fun internalKeyOf(helper: SQLiteOpenHelper): DatabaseKey? {
+        val field = SQLiteOpenHelper::class.java.getDeclaredField("databaseKey")
         field.isAccessible = true
-        return field.get(helper) as ByteArray?
+        return field.get(helper) as DatabaseKey?
     }
 }

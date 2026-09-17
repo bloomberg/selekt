@@ -19,9 +19,9 @@ package com.bloomberg.selekt.android
 import android.content.Context
 import android.database.sqlite.SQLiteException
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
-import com.bloomberg.selekt.commons.zero
 import java.io.Closeable
 import java.io.File
 import javax.annotation.concurrent.GuardedBy
@@ -32,6 +32,9 @@ import javax.annotation.concurrent.NotThreadSafe
  * obtain references to your database, the system performs the potentially long-running operations of creating and updating
  * the database lazily and only when needed, not during application startup. All you need to do is call
  * [writableDatabase()].
+ *
+ * The optional constructor key remains owned by the caller. This helper copies it during construction and does not retain
+ * the supplied array. The caller should clear the array immediately after construction, including when construction throws.
  *
  * @since 0.1.0
  */
@@ -47,13 +50,14 @@ class SQLiteOpenHelper internal constructor(
         context: Context,
         configuration: ISQLiteOpenHelper.Configuration,
         version: Int,
-        openParams: SQLiteOpenParams = SQLiteOpenParams()
+        openParams: SQLiteOpenParams = SQLiteOpenParams(),
+        key: ByteArray? = null
     ) : this(
         file = context.getDatabasePath(configuration.name),
         openParams = openParams,
         configuration = configuration,
         databaseConfiguration = openParams.journalMode.databaseConfiguration.copy(trace = openParams.trace),
-        key = configuration.key,
+        key = key,
         version = version
     )
 
@@ -61,7 +65,13 @@ class SQLiteOpenHelper internal constructor(
         require(version > 0) { "Version must be at least 1." }
     }
 
-    private val _key: ByteArray? = key?.copyOf()
+    private var databaseKey: DatabaseKey? = key?.let {
+        require(it.any { byte -> byte != 0.toByte() }) {
+            "Encryption keys must not consist entirely of zero bytes."
+        }
+        DatabaseKey.of(SQLite, it)
+    }
+    private val hasKey = key != null
 
     private val lifecycleLock = Any()
     @GuardedBy("lifecycleLock")
@@ -72,14 +82,17 @@ class SQLiteOpenHelper internal constructor(
     private var closeRequestedDuringInitialization = false
 
     private val lazyDatabase = lazy(lifecycleLock) {
-        check(_key == null || !keyDestroyed) {
+        check(!hasKey || !keyDestroyed) {
             "The encryption key has already been destroyed and cannot be reused to open this database."
         }
         initializationInProgress = true
         closeRequestedDuringInitialization = false
         var database: SQLiteDatabase? = null
         try {
-            SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, _key).also {
+            val openedDatabase = databaseKey?.let {
+                SQLiteDatabase.openOrCreateDatabaseWithKey(file, databaseConfiguration, it)
+            } ?: SQLiteDatabase.openOrCreateDatabase(file, databaseConfiguration, null)
+            openedDatabase.also {
                 database = it
                 it.setPageSizeExponent(openParams.pageSizeExponent)
                 it.setJournalMode(openParams.journalMode)
@@ -107,8 +120,7 @@ class SQLiteOpenHelper internal constructor(
                 }
                 configuration.callback.onOpen(it)
                 checkCloseNotRequested()
-                _key?.zero()
-                keyDestroyed = true
+                destroyHelperKey()
             }
         } catch (failure: Throwable) {
             try {
@@ -126,6 +138,13 @@ class SQLiteOpenHelper internal constructor(
 
     private fun checkCloseNotRequested() = check(!closeRequestedDuringInitialization) {
         "The database helper was closed while the database was being initialized."
+    }
+
+    @GuardedBy("lifecycleLock")
+    private fun destroyHelperKey() {
+        databaseKey?.close()
+        databaseKey = null
+        keyDestroyed = true
     }
 
     /**
@@ -151,8 +170,7 @@ class SQLiteOpenHelper internal constructor(
                 writableDatabase.close()
             }
         } finally {
-            _key?.zero()
-            keyDestroyed = true
+            destroyHelperKey()
         }
     }
 }
@@ -226,10 +244,8 @@ interface ISQLiteOpenHelper : Closeable {
         fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int)
     }
 
-    @Suppress("ArrayInDataClass")
     data class Configuration(
         val callback: Callback,
-        val key: ByteArray?,
         val name: String
     )
 }

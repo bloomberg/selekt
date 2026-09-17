@@ -43,11 +43,11 @@ private fun createSQLiteOpenHelper(
     context,
     ISQLiteOpenHelper.Configuration(
         callback = CacheSQLiteSupportOpenHelperCallback,
-        key = "a".repeat(32).toByteArray(Charsets.UTF_8),
         name = "test-cache"
     ),
     1,
-    SQLiteOpenParams(SQLiteJournalMode.WAL)
+    SQLiteOpenParams(SQLiteJournalMode.WAL),
+    "a".repeat(32).toByteArray(Charsets.UTF_8)
 )
 
 private object CacheSQLiteSupportOpenHelperCallback : ISQLiteOpenHelper.Callback {

@@ -34,7 +34,7 @@ internal class SupportSQLiteOpenHelperKtTest {
             .build()
             .let {
                 assertFailsWith<IllegalArgumentException> {
-                    it.asSelektConfiguration(byteArrayOf())
+                    it.asSelektConfiguration()
                 }
             }
     }
