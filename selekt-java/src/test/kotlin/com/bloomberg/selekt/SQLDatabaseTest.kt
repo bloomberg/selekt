@@ -373,6 +373,60 @@ internal class SQLDatabaseTest {
     }
 
     @Test
+    fun pragmaCanonicalisesMixedCaseKey(): Unit = database.run {
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "wal"
+        pragma("JoUrNaL_MoDe")
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("PRAGMA journal_mode"), any<LongArray>())
+    }
+
+    @Test
+    fun pragmaCanonicalisesMixedCaseQualifiedKey(): Unit = database.run {
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "ok"
+        pragma("MaIn.InTeGrItY_ChEcK")
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("PRAGMA MaIn.integrity_check"), any<LongArray>())
+    }
+
+    @Test
+    fun pragmaRejectsAllowListedKeyWithUnvalidatedSuffix(): Unit = database.run {
+        listOf(
+            "journal_mode=MEMORY --.integrity_check",
+            "journal_mode=MEMORY",
+            "main.integrity_check --",
+            "main.integrity_check/*comment*/",
+            "main.integrity_check;",
+            "main.integrity_check\n",
+            "main..integrity_check",
+            "incremental_vacuum(100); DROP TABLE foo",
+            "incremental_vacuum(100--comment)",
+            "journal_mode(OFF--comment)"
+        ).forEach { key ->
+            assertFailsWith<IllegalArgumentException>(key) { pragma(key) }
+        }
+    }
+
+    @Test
+    fun pragmaWithValueRejectsKeyArgumentOrAssignment(): Unit = database.run {
+        listOf(
+            "journal_mode=OFF --",
+            "journal_mode(OFF)",
+            "main.journal_mode=OFF"
+        ).forEach { key ->
+            assertFailsWith<IllegalArgumentException>(key) { pragma(key, "wal") }
+        }
+    }
+
+    @Test
+    fun pragmaAcceptsSafelyQuotedSchemaName(): Unit = database.run {
+        whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "ok"
+        assertEquals("ok", pragma("\"main\"\"; PRAGMA journal_mode=MEMORY; --\".integrity_check"))
+        verify(sqlite, times(1)).prepareV2(
+            eq(DB),
+            eq("PRAGMA \"main\"\"; PRAGMA journal_mode=MEMORY; --\".integrity_check"),
+            any<LongArray>()
+        )
+    }
+
+    @Test
     fun pragmaValueRejectsSqlInjection(): Unit = database.run {
         assertFailsWith<IllegalArgumentException> {
             pragma(SQLitePragma.JOURNAL_MODE, "wal; DROP TABLE foo--")

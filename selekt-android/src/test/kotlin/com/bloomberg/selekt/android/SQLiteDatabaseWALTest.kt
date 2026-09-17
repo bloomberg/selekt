@@ -168,6 +168,24 @@ internal class SQLiteDatabaseWALTest {
     }
 
     @Test
+    fun integrityCheckDoesNotExecuteInjectedPragmas(): Unit = database.run {
+        val mode = journalMode
+        listOf(
+            "journal_mode=MEMORY --",
+            "main\"; PRAGMA journal_mode=MEMORY; --"
+        ).forEach { name ->
+            assertFailsWith<SQLiteException>(name) { integrityCheck(name) }
+            assertEquals(mode, journalMode)
+        }
+    }
+
+    @Test
+    fun integrityCheckRejectsEmptyOrNulSchemaName(): Unit = database.run {
+        assertFailsWith<IllegalArgumentException> { integrityCheck("") }
+        assertFailsWith<IllegalArgumentException> { integrityCheck("main\u0000temp") }
+    }
+
+    @Test
     fun vacuum(): Unit = database.run {
         exec("CREATE TABLE 'Foo' (bar INT)")
         insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
