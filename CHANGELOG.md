@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 1.5.1
+
+* Reject invalid JDBC foreign key configuration.
+* Harden PRAGMA validation and schema quoting.
+* Harden SQL fragment handling.
+* Improve Android open helper key lifecycle.
+
 ## Version 1.5.0
 
 * Support JDBC on Java 11 using JNI.
