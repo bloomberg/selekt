@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
 import com.bloomberg.selekt.commons.forEachByPosition
 import com.bloomberg.selekt.commons.joinTo
 import org.intellij.lang.annotations.Language
@@ -179,7 +180,7 @@ internal class SQLQuery internal constructor(
 }
 
 class SimpleSQLQuery(
-    @field:Language("RoomSql") override val sql: String,
+    @field:Language("RoomSql") @param:TrustedSql @get:TrustedSql override val sql: String,
     private val bindArgs: Array<out Any?> = EMPTY_ARRAY
 ) : ISQLQuery {
     override val argCount = bindArgs.size
@@ -222,6 +223,27 @@ internal fun StringBuilder.selectColumns(columns: Array<out String>, distinct: B
         append('*')
     } else {
         columns.joinTo(this, ',')
+    }
+}
+
+@JvmSynthetic
+internal fun StringBuilder.appendIdentifier(identifier: String) = apply {
+    require(identifier.isNotEmpty() && '\u0000' !in identifier) { "SQL identifiers must be non-empty and contain no NUL." }
+    append('"')
+    identifier.forEach {
+        if (it == '"') { append('"') }
+        append(it)
+    }
+    append('"')
+}
+
+@JvmSynthetic
+internal fun StringBuilder.appendQualifiedIdentifier(identifier: String) = apply {
+    val parts = identifier.split('.')
+    require(parts.all(String::isNotEmpty)) { "Qualified SQL identifiers must not contain empty components." }
+    parts.forEachIndexed { index, part ->
+        if (index > 0) { append('.') }
+        appendIdentifier(part)
     }
 }
 

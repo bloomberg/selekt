@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
 import com.bloomberg.selekt.exceptions.SelektSQLException
 import java.nio.ByteBuffer
 import java.sql.SQLException
@@ -353,9 +354,9 @@ open class SQLite(
 
     fun errorMessage(db: DatabaseHandle) = sqlite.errorMessage(db)
 
-    fun exec(db: Long, query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
+    fun exec(db: Long, @TrustedSql query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
 
-    fun exec(db: DatabaseHandle, query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
+    fun exec(db: DatabaseHandle, @TrustedSql query: String) = checkConnectionSQLCode(db, sqlite.exec(db, query))
 
     fun expandedSql(statement: Long) = sqlite.expandedSql(statement)
 
@@ -467,13 +468,13 @@ open class SQLite(
 
     fun prepareV2(
         db: Long,
-        sql: String,
+        @TrustedSql sql: String,
         statementHolder: LongArray
     ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
 
     fun prepareV2(
         db: DatabaseHandle,
-        sql: String,
+        @TrustedSql sql: String,
         statementHolder: LongArray
     ) = checkConnectionSQLCode(db, sqlite.prepareV2(db, sql, sql.length, statementHolder))
 

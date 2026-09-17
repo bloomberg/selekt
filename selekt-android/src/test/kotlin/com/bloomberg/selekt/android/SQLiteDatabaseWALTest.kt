@@ -195,6 +195,39 @@ internal class SQLiteDatabaseWALTest {
     }
 
     @Test
+    fun mutationTableNameIsQuotedAsAnIdentifier(): Unit = database.run {
+        exec("CREATE TABLE Foo (bar INT)")
+        insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.NONE)
+        assertFailsWith<SQLiteException> {
+            delete("Foo WHERE 1=1 --", "0", emptyArray())
+        }
+        query("SELECT count(*) FROM Foo", null).use {
+            assertTrue(it.moveToFirst())
+            assertEquals(1, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun mutationIdentifiersEscapeDoubleQuotes(): Unit = database.run {
+        exec("CREATE TABLE \"odd\"\"table\" (\"odd\"\"column\" INT UNIQUE, value INT)")
+        val values = ContentValues().apply {
+            put("odd\"column", 1)
+            put("value", 2)
+        }
+        insert("odd\"table", values, ConflictAlgorithm.NONE)
+        upsert(
+            "odd\"table",
+            values,
+            arrayOf("odd\"column"),
+            ContentValues().apply { put("value", 3) }
+        )
+        query("SELECT value FROM \"odd\"\"table\"", null).use {
+            assertTrue(it.moveToFirst())
+            assertEquals(3, it.getInt(0))
+        }
+    }
+
+    @Test
     fun fullAutoVacuum(): Unit = database.run {
         autoVacuum = SQLiteAutoVacuumMode.FULL
         vacuum()

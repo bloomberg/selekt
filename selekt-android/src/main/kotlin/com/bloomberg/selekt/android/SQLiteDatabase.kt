@@ -34,6 +34,7 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SQLiteTraceEventMode
 import com.bloomberg.selekt.SQLiteTransactionMode
 import com.bloomberg.selekt.annotations.DelicateApi
+import com.bloomberg.selekt.annotations.TrustedSql
 import com.bloomberg.selekt.pools.Priority
 import org.intellij.lang.annotations.Language
 import java.io.Closeable
@@ -56,6 +57,9 @@ private fun quotedPragmaSchema(name: String): String {
 
 /**
  * Mirrors the Android SDK APIs.
+ *
+ * Parameters marked [TrustedSql] become part of SQL syntax. They must contain only application-controlled SQL; pass
+ * external values through the corresponding bind-argument parameters.
  *
  * @since 0.1.0
  */
@@ -193,7 +197,10 @@ class SQLiteDatabase private constructor(
      * @param bindArgs sequence of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Sequence<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+    fun batch(
+        @Language("RoomSql") @TrustedSql sql: String,
+        bindArgs: Sequence<Array<out Any?>>
+    ): Int = database.batch(sql, bindArgs)
 
     /**
      * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
@@ -209,7 +216,10 @@ class SQLiteDatabase private constructor(
      * @param bindArgs iterable of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Iterable<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+    fun batch(
+        @Language("RoomSql") @TrustedSql sql: String,
+        bindArgs: Iterable<Array<out Any?>>
+    ): Int = database.batch(sql, bindArgs)
 
     /**
      * Transacts to the database in exclusive mode a batch of queries with the same underlying SQL statement. The
@@ -225,7 +235,10 @@ class SQLiteDatabase private constructor(
      * @param bindArgs stream of standard type arguments for binding to the statement.
      * @return the number of rows affected.
      */
-    fun batch(@Language("RoomSql") sql: String, bindArgs: Stream<Array<out Any?>>): Int = database.batch(sql, bindArgs)
+    fun batch(
+        @Language("RoomSql") @TrustedSql sql: String,
+        bindArgs: Stream<Array<out Any?>>
+    ): Int = database.batch(sql, bindArgs)
 
     /**
      * Begins a transaction in exclusive mode. Prefer [transact] whenever possible.
@@ -263,7 +276,7 @@ class SQLiteDatabase private constructor(
     fun beginImmediateTransactionWithListener(listener: SQLTransactionListener) =
         database.beginImmediateTransactionWithListener(listener)
 
-    fun compileStatement(@Language("RoomSql") sql: String) = database.compileStatement(sql)
+    fun compileStatement(@Language("RoomSql") @TrustedSql sql: String) = database.compileStatement(sql)
 
     /**
      * Configures a database connection using [sqlite3_db_config](https://www.sqlite.org/c3ref/db_config.html).
@@ -274,7 +287,7 @@ class SQLiteDatabase private constructor(
      */
     fun databaseConfig(op: SQLiteDbConfig, value: Int) = database.databaseConfig(op.code, value)
 
-    fun delete(table: String, whereClause: String?, whereArgs: Array<out Any?>?) =
+    fun delete(table: String, @TrustedSql whereClause: String?, whereArgs: Array<out Any?>?) =
         database.delete(
             table,
             whereClause.orEmpty(),
@@ -283,9 +296,12 @@ class SQLiteDatabase private constructor(
     @DelicateApi
     fun endTransaction() = database.endTransaction()
 
-    fun exec(@Language("RoomSql") sql: String) = database.exec(sql)
+    fun exec(@Language("RoomSql") @TrustedSql sql: String) = database.exec(sql)
 
-    fun exec(@Language("RoomSql") sql: String, @Size(min = 1) bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
+    fun exec(
+        @Language("RoomSql") @TrustedSql sql: String,
+        @Size(min = 1) bindArgs: Array<out Any?>
+    ) = database.exec(sql, bindArgs)
 
     /**
      * The incremental vacuum pragma causes pages to be removed from the freelist. The database file is truncated by the
@@ -357,14 +373,14 @@ class SQLiteDatabase private constructor(
 
     fun query(
         distinct: Boolean,
-        table: String,
-        columns: Array<out String>?,
-        selection: String?,
+        @TrustedSql table: String,
+        @TrustedSql columns: Array<out String>?,
+        @TrustedSql selection: String?,
         selectionArgs: Array<out Any?>?,
-        groupBy: String? = null,
-        having: String? = null,
+        @TrustedSql groupBy: String? = null,
+        @TrustedSql having: String? = null,
         limit: Int? = null,
-        orderBy: String? = null
+        @TrustedSql orderBy: String? = null
     ) = database.query(
         distinct,
         table,
@@ -377,7 +393,7 @@ class SQLiteDatabase private constructor(
         limit
     ).asAndroidCursor()
 
-    fun query(@Language("RoomSql") sql: String, selectionArgs: Array<out Any?>?) =
+    fun query(@Language("RoomSql") @TrustedSql sql: String, selectionArgs: Array<out Any?>?) =
         database.query(sql, selectionArgs.orEmpty()).asAndroidCursor()
 
     fun query(query: ISQLQuery) = database.query(query).asAndroidCursor()
@@ -391,14 +407,14 @@ class SQLiteDatabase private constructor(
      */
     fun query(
         distinct: Boolean,
-        table: String,
-        columns: Array<out String>?,
-        selection: String?,
+        @TrustedSql table: String,
+        @TrustedSql columns: Array<out String>?,
+        @TrustedSql selection: String?,
         selectionArgs: Array<out Any?>?,
-        groupBy: String? = null,
-        having: String? = null,
+        @TrustedSql groupBy: String? = null,
+        @TrustedSql having: String? = null,
         limit: Int? = null,
-        orderBy: String? = null,
+        @TrustedSql orderBy: String? = null,
         cancellationSignal: CancellationSignal
     ) = database.query(
         distinct,
@@ -423,7 +439,7 @@ class SQLiteDatabase private constructor(
      * @throws OperationCancelledException if the operation was cancelled.
      */
     fun query(
-        @Language("RoomSql") sql: String,
+        @Language("RoomSql") @TrustedSql sql: String,
         selectionArgs: Array<out Any?>?,
         cancellationSignal: CancellationSignal
     ) = database.query(sql, selectionArgs.orEmpty(), cancellationSignal).asAndroidCursor()
@@ -547,7 +563,7 @@ class SQLiteDatabase private constructor(
     fun update(
         table: String,
         values: ContentValues,
-        whereClause: String?,
+        @TrustedSql whereClause: String?,
         whereArgs: Array<out Any?>?,
         conflictAlgorithm: ConflictAlgorithm
     ) = database.update(
