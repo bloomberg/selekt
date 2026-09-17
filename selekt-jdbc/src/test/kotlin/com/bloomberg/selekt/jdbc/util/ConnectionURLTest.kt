@@ -66,6 +66,22 @@ internal class ConnectionURLTest {
     }
 
     @Test
+    fun booleanPropertiesRejectInvalidValues() {
+        listOf("tru", "yes", "1", "").forEach { value ->
+            val url = ConnectionURL.parse("jdbc:sqlite:/test.db?foreignKeys=$value")
+            assertFailsWith<SQLException> {
+                url.getBooleanProperty("foreignKeys", true)
+            }
+        }
+    }
+
+    @Test
+    fun booleanPropertiesAreCaseInsensitive() {
+        assertTrue(ConnectionURL.parse("jdbc:sqlite:/test.db?foreignKeys=TRUE").getBooleanProperty("foreignKeys"))
+        assertFalse(ConnectionURL.parse("jdbc:sqlite:/test.db?foreignKeys=FALSE").getBooleanProperty("foreignKeys"))
+    }
+
+    @Test
     fun intProperties(): Unit = ConnectionURL.parse("jdbc:sqlite:/test.db?poolSize=10&busyTimeout=5000").run {
         assertEquals(10, getIntProperty("poolSize"))
         assertEquals(5_000, getIntProperty("busyTimeout"))

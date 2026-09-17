@@ -31,6 +31,7 @@ import com.bloomberg.selekt.jdbc.metadata.JdbcDatabaseMetaData
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
+import com.bloomberg.selekt.jdbc.util.getStrictBooleanProperty
 import java.lang.invoke.MethodHandles
 import java.sql.Blob
 import java.sql.CallableStatement
@@ -598,7 +599,7 @@ internal class JdbcConnection(
 
     private fun applyConnectionProperties() {
         runCatching {
-            val foreignKeys = properties.getProperty("foreignKeys")?.toBoolean() ?: true
+            val foreignKeys = properties.getStrictBooleanProperty("foreignKeys", true)
             withSession { exec("PRAGMA foreign_keys = ${if (foreignKeys) { 1 } else { 0 } }") }
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))

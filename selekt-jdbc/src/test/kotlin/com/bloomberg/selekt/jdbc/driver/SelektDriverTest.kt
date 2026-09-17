@@ -36,8 +36,12 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 internal class SelektDriverTest {
+    @TempDir
+    lateinit var tempDir: File
+
     private lateinit var driver: SelektDriver
     private val connections = mutableListOf<Connection>()
     private val tempFiles = mutableListOf<File>()
@@ -197,6 +201,57 @@ internal class SelektDriverTest {
         val connection = driver.connect(url, properties)
         assertNotNull(connection)
         connections.add(connection)
+    }
+
+    @Test
+    fun invalidForeignKeysUrlIsRejectedBeforeDatabaseOpen() {
+        listOf("tru", "yes", "1", "").forEachIndexed { index, value ->
+            val databaseFile = File(tempDir, "invalid-url-$index.db")
+            assertFailsWith<SQLException> {
+                driver.connect("jdbc:sqlite:${databaseFile.absolutePath}?foreignKeys=$value", Properties())
+            }
+            assertFalse(databaseFile.exists())
+        }
+    }
+
+    @Test
+    fun invalidForeignKeysPropertyOverrideIsRejectedBeforeDatabaseOpen() {
+        val databaseFile = File(tempDir, "invalid-property.db")
+        val properties = Properties().apply { setProperty("foreignKeys", "tru") }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:${databaseFile.absolutePath}?foreignKeys=true", properties)
+        }
+        assertFalse(databaseFile.exists())
+    }
+
+    @Test
+    fun foreignKeysConfigurationControlsReferentialIntegrity() {
+        listOf(null, "true", "TRUE", "TrUe").forEach { value ->
+            val property = value?.let { "?foreignKeys=$it" }.orEmpty()
+            driver.connect("jdbc:sqlite::memory:$property", Properties())!!.use { connection ->
+                createForeignKeyTables(connection)
+                connection.createStatement().use { statement ->
+                    assertFailsWith<SQLException> {
+                        statement.executeUpdate("INSERT INTO child(parent_id) VALUES (404)")
+                    }
+                }
+            }
+        }
+        listOf("false", "FALSE", "FaLsE").forEach { value ->
+            driver.connect("jdbc:sqlite::memory:?foreignKeys=$value", Properties())!!.use { connection ->
+                createForeignKeyTables(connection)
+                connection.createStatement().use { statement ->
+                    assertEquals(1, statement.executeUpdate("INSERT INTO child(parent_id) VALUES (404)"))
+                }
+            }
+        }
+    }
+
+    private fun createForeignKeyTables(connection: Connection) {
+        connection.createStatement().use { statement ->
+            statement.execute("CREATE TABLE parent(id INTEGER PRIMARY KEY)")
+            statement.execute("CREATE TABLE child(parent_id INTEGER REFERENCES parent(id))")
+        }
     }
 
     @Test

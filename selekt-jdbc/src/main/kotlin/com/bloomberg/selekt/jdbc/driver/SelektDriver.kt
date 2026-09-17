@@ -24,6 +24,7 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
+import com.bloomberg.selekt.jdbc.util.getStrictBooleanProperty
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.DriverManager
@@ -112,6 +113,7 @@ class SelektDriver : Driver {
         runCatching {
             val connectionURL = ConnectionURL.parse(url)
             val mergedProperties = mergeProperties(connectionURL.properties, info)
+            canonicalizeConnectionProperties(mergedProperties)
             val sharedDatabase = getOrCreateDatabase(connectionURL, mergedProperties)
             runCatching {
                 JdbcConnection(sharedDatabase, connectionURL, mergedProperties)
@@ -258,6 +260,11 @@ class SelektDriver : Driver {
     ): Properties = Properties().apply {
         putAll(urlProperties)
         putAll(additionalProperties)
+    }
+
+    private fun canonicalizeConnectionProperties(properties: Properties) {
+        val foreignKeys = properties.getStrictBooleanProperty(PROPERTY_FOREIGN_KEYS, true)
+        properties.setProperty(PROPERTY_FOREIGN_KEYS, foreignKeys.toString())
     }
 
     private fun buildCacheKey(
