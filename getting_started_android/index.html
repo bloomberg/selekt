@@ -1089,15 +1089,20 @@ and prevents creation of further helpers; helpers already created by Room remain
 <span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveKey</span><span class="p">():</span><span class="w"> </span><span class="n">ByteArray? </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
 <span class="w">    </span><span class="s">&quot;Optional key, must be exactly 32-bytes long.&quot;</span><span class="p">)</span>
 
-<span class="kd">val</span><span class="w"> </span><span class="nv">databaseHelper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SQLiteOpenHelper</span><span class="p">(</span>
-<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
-<span class="w">    </span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Configuration</span><span class="p">(</span>
-<span class="w">        </span><span class="n">callback</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyOpenHelperCallback</span><span class="p">,</span>
-<span class="w">        </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">(),</span>
-<span class="w">        </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sample&quot;</span>
-<span class="w">    </span><span class="p">),</span>
-<span class="w">    </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span>
-<span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">()</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">databaseHelper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">SQLiteOpenHelper</span><span class="p">(</span>
+<span class="w">        </span><span class="n">context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
+<span class="w">        </span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Configuration</span><span class="p">(</span>
+<span class="w">            </span><span class="n">callback</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyOpenHelperCallback</span><span class="p">,</span>
+<span class="w">            </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sample&quot;</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span>
+<span class="w">        </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">key</span><span class="o">?.</span><span class="na">fill</span><span class="p">(</span><span class="m">0</span><span class="p">)</span>
+<span class="p">}</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -1121,19 +1126,30 @@ and prevents creation of further helpers; helpers already created by Room remain
 <span class="w">    </span><span class="c1">// TODO Optional key, must be exactly 32-bytes long.</span>
 <span class="p">}</span>
 
-<span class="kd">final</span><span class="w"> </span><span class="n">SQLiteOpenHelper</span><span class="w"> </span><span class="n">databaseHelper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SQLiteOpenHelper</span><span class="p">(</span>
-<span class="w">    </span><span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
-<span class="w">    </span><span class="mi">3</span><span class="p">,</span>
-<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Configuration</span><span class="p">(</span>
-<span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">MyOpenHelperCallback</span><span class="p">(),</span>
-<span class="w">        </span><span class="n">deriveKey</span><span class="p">(),</span>
-<span class="w">        </span><span class="s">&quot;sample&quot;</span>
-<span class="w">    </span><span class="p">)</span>
-<span class="p">);</span>
+<span class="kd">final</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deriveKey</span><span class="p">();</span>
+<span class="kd">final</span><span class="w"> </span><span class="n">SQLiteOpenHelper</span><span class="w"> </span><span class="n">databaseHelper</span><span class="p">;</span>
+<span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">databaseHelper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SQLiteOpenHelper</span><span class="p">(</span>
+<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="na">applicationContext</span><span class="p">,</span>
+<span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">ISQLiteOpenHelper</span><span class="p">.</span><span class="na">Configuration</span><span class="p">(</span>
+<span class="w">            </span><span class="k">new</span><span class="w"> </span><span class="n">MyOpenHelperCallback</span><span class="p">(),</span>
+<span class="w">            </span><span class="s">&quot;sample&quot;</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">SQLiteOpenParams</span><span class="p">(),</span>
+<span class="w">        </span><span class="n">key</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Arrays</span><span class="p">.</span><span class="na">fill</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 </div>
 </div>
 </div>
+<p>The helper copies the key synchronously and does not retain the supplied array. The caller remains responsible for clearing
+it after construction; the helper clears its private copy after a successful open or on close.</p>
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-the-database">Querying the database</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Kotlin</label><label for="__tabbed_5_2">Java</label></div>
