@@ -21,6 +21,7 @@ import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.SQLiteStatement
 import androidx.sqlite.throwSQLiteException
 import com.bloomberg.selekt.CommonThreadLocalRandom
+import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.ISQLRawStatement
 import com.bloomberg.selekt.SQLDatabase
@@ -53,6 +54,14 @@ fun createSelektSQLiteDriver(
 ): SelektSQLiteDriver = SelektSQLiteDriver(journalMode, key)
 
 /**
+ * Creates a pooled SQLite driver with an explicit database configuration.
+ */
+fun createSelektSQLiteDriver(
+    databaseConfiguration: DatabaseConfiguration,
+    key: ByteArray? = null
+): SelektSQLiteDriver = SelektSQLiteDriver(databaseConfiguration, key)
+
+/**
  * A pooled SQLite driver that owns a native copy of its optional database key.
  *
  * @see createSelektSQLiteDriver
@@ -60,9 +69,14 @@ fun createSelektSQLiteDriver(
  */
 @ThreadSafe
 class SelektSQLiteDriver internal constructor(
-    private val journalMode: SQLiteJournalMode,
+    private val databaseConfiguration: DatabaseConfiguration,
     key: ByteArray?
 ) : SQLiteDriver, Closeable {
+    internal constructor(journalMode: SQLiteJournalMode, key: ByteArray?) : this(
+        journalMode.databaseConfiguration,
+        key
+    )
+
     private val lifecycleLock = Any()
     private val key = key?.let {
         require(it.any { byte -> byte != 0.toByte() }) {
@@ -80,9 +94,14 @@ class SelektSQLiteDriver internal constructor(
             val isMemory = MEMORY_FILE_NAME == fileName
             val path = if (isMemory) { MEMORY_PATH } else { fileName }
             val configuration = if (isMemory) {
-                SQLiteJournalMode.MEMORY.databaseConfiguration
+                databaseConfiguration.copy(
+                    busyTimeoutMillis = SQLiteJournalMode.MEMORY.databaseConfiguration.busyTimeoutMillis,
+                    maxConnectionPoolSize = SQLiteJournalMode.MEMORY.databaseConfiguration.maxConnectionPoolSize,
+                    timeBetweenEvictionRunsMillis =
+                        SQLiteJournalMode.MEMORY.databaseConfiguration.timeBetweenEvictionRunsMillis
+                )
             } else {
-                journalMode.databaseConfiguration
+                databaseConfiguration
             }
             SelektSQLiteConnection(SQLDatabase(path, SQLite, configuration, key, CommonThreadLocalRandom))
         }

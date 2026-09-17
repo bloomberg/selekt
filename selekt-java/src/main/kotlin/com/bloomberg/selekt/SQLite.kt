@@ -36,6 +36,12 @@ open class SQLite(
         useNativeCursorWindow = nativeCursorSQLite != null
     )
 
+    /** Maximum rows retained when the database configuration requests the platform default. */
+    open val defaultCursorWindowSize = DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_SIZE
+
+    /** Maximum estimated bytes retained when the database configuration requests the platform default. */
+    open val defaultCursorWindowByteSize = DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
+
     fun newDatabaseHandle(pointer: Long): DatabaseHandle = sqlite.newDatabaseHandle(pointer)
 
     fun newStatementHandle(pointer: Long): StatementHandle = sqlite.newStatementHandle(pointer)
@@ -287,6 +293,10 @@ open class SQLite(
 
     fun columnBlob(statement: StatementHandle, index: Int) = sqlite.columnBlob(statement, index)
 
+    fun columnBytes(statement: Long, index: Int) = sqlite.columnBytes(statement, index)
+
+    fun columnBytes(statement: StatementHandle, index: Int) = sqlite.columnBytes(statement, index)
+
     fun columnCount(statement: Long) = sqlite.columnCount(statement)
 
     fun columnCount(statement: StatementHandle) = sqlite.columnCount(statement)
@@ -398,6 +408,16 @@ open class SQLite(
         countAllRows: Boolean
     ) = requireNotNull(nativeCursorSQLite) { NATIVE_CURSOR_UNSUPPORTED }
         .fillCursorWindow(statement, startRow, maxRows, countAllRows)
+        ?: throwSQLException(sqlite.databaseHandle(statement))
+
+    fun fillCursorWindow(
+        statement: StatementHandle,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean,
+        maxBytes: Int
+    ) = requireNotNull(nativeCursorSQLite) { NATIVE_CURSOR_UNSUPPORTED }
+        .fillCursorWindow(statement, startRow, maxRows, countAllRows, maxBytes)
         ?: throwSQLException(sqlite.databaseHandle(statement))
 
     fun finalize(statement: Long) = checkStatementSQLCode(statement, sqlite.finalize(statement))

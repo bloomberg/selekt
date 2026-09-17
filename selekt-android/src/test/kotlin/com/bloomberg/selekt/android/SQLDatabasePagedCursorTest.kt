@@ -17,6 +17,9 @@
 package com.bloomberg.selekt.android
 
 import com.bloomberg.selekt.ColumnType
+import com.bloomberg.selekt.CancellationSignal
+import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.SimpleSQLQuery
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -59,6 +63,15 @@ internal class SQLDatabasePagedCursorTest {
     }
 
     @Test
+    fun androidCursorPlatformDefaultsRemainUnbounded() {
+        assertEquals(DatabaseConfiguration.UNBOUNDED_CURSOR_WINDOW_SIZE, SQLite.defaultCursorWindowSize)
+        assertEquals(
+            DatabaseConfiguration.UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE,
+            SQLite.defaultCursorWindowByteSize
+        )
+    }
+
+    @Test
     fun countIsTheWholeResultSet() {
         database.query(SimpleSQLQuery("SELECT bar FROM Foo")).use {
             assertEquals(ROW_COUNT, it.count)
@@ -74,6 +87,42 @@ internal class SQLDatabasePagedCursorTest {
                 assertEquals("row$it", cursor.getString(1))
             }
             assertFalse(cursor.moveToNext())
+        }
+    }
+
+    @Test
+    fun refillsInsteadOfRetainingTheCompleteResult(): Unit = database.run {
+        query(SimpleSQLQuery("SELECT bar, baz FROM Foo ORDER BY bar")).use { cursor ->
+            exec("UPDATE Foo SET baz=? WHERE bar=?", arrayOf<Any?>("changed", 20))
+            assertTrue(cursor.moveToPosition(20))
+            assertEquals("changed", cursor.getString(1))
+        }
+    }
+
+    @Test
+    fun cancellationRemainsActiveForRefills(): Unit = database.run {
+        val signal = CancellationSignal()
+        query("SELECT bar FROM Foo ORDER BY bar", emptyArray(), signal).use { cursor ->
+            assertTrue(cursor.moveToPosition(20))
+            signal.cancel()
+            assertFailsWith<OperationCancelledException> { cursor.getLong(0) }
+        }
+    }
+
+    @Test
+    fun rejectsARowLargerThanTheWindowBeforeCopyingIt() {
+        SQLDatabase(
+            "file::memory:",
+            SQLite,
+            SQLiteJournalMode.MEMORY.databaseConfiguration.copy(cursorWindowByteSize = 128),
+            null
+        ).use { boundedDatabase ->
+            boundedDatabase.exec("CREATE TABLE oversized (value BLOB)", emptyArray())
+            boundedDatabase.exec("INSERT INTO oversized VALUES (?)", arrayOf(ByteArray(256)))
+            val failure = assertFailsWith<IllegalStateException> {
+                boundedDatabase.query(SimpleSQLQuery("SELECT value FROM oversized"))
+            }
+            assertTrue(failure.message.orEmpty().contains("forward-only"))
         }
     }
 

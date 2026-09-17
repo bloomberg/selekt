@@ -34,7 +34,7 @@ private const val ROW_COUNT = 25
 private const val WINDOW_SIZE = 4
 
 /**
- * Exercises segmented native cursor-window materialisation against real SQLite. `selekt-jdbc`'s
+ * Exercises refillable native cursor windows against real SQLite. `selekt-jdbc`'s
  * plain `SQLite` does not override [com.bloomberg.selekt.SQLite.capabilities], so this
  * reaches selekt_fill_cursor_window's maxRows handling, which nothing above
  * the JNI/FFM boundary can otherwise verify. Runs as a fast unit test rather than in
@@ -165,11 +165,11 @@ internal class NativeCursorWindowPagingTest {
     }
 
     @Test
-    fun materializedResultRemainsStableAfterSourceChanges() {
-        database.query(SimpleSQLQuery("SELECT bar FROM Foo ORDER BY bar")).use { cursor ->
-            database.exec("DELETE FROM Foo WHERE bar >= $WINDOW_SIZE", emptyArray())
-            assertTrue(cursor.moveToPosition(ROW_COUNT - 1))
-            assertEquals((ROW_COUNT - 1).toLong(), cursor.getLong(0))
+    fun refillReflectsSourceChanges() {
+        database.query(SimpleSQLQuery("SELECT bar, baz FROM Foo ORDER BY bar")).use { cursor ->
+            database.exec("UPDATE Foo SET baz = 'changed' WHERE bar = 20", emptyArray())
+            assertTrue(cursor.moveToPosition(20))
+            assertEquals("changed", cursor.getString(1))
         }
     }
 }

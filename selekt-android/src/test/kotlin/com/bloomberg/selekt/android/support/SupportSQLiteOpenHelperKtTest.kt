@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.android.support
 
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLiteJournalMode
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -24,6 +25,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 internal class SupportSQLiteOpenHelperKtTest {
@@ -59,9 +61,29 @@ internal class SupportSQLiteOpenHelperKtTest {
         }
     }
 
+    @Test
+    fun factoryAcceptsExplicitDatabaseConfiguration() {
+        val configuration = SQLiteJournalMode.WAL.databaseConfiguration.copy(
+            cursorWindowSize = 64,
+            cursorWindowByteSize = 4 * 1024 * 1024
+        )
+        val factory = assertIs<SupportSQLiteOpenHelperFactory>(
+            createSupportSQLiteOpenHelperFactory(SQLiteJournalMode.WAL, configuration, null)
+        )
+        factory.use {
+            assertSame(configuration, factory.databaseConfiguration())
+        }
+    }
+
     private fun SupportSQLiteOpenHelperFactory.keySnapshot(): ByteArray {
         val field = SupportSQLiteOpenHelperFactory::class.java.getDeclaredField("key")
         field.isAccessible = true
         return field.get(this) as ByteArray
+    }
+
+    private fun SupportSQLiteOpenHelperFactory.databaseConfiguration(): DatabaseConfiguration {
+        val field = SupportSQLiteOpenHelperFactory::class.java.getDeclaredField("databaseConfiguration")
+        field.isAccessible = true
+        return field.get(this) as DatabaseConfiguration
     }
 }

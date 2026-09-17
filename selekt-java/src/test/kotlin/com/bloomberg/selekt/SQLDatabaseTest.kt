@@ -123,7 +123,9 @@ internal class SQLDatabaseTest {
         whenever(sqlite.stepWithoutThrowing(any<Long>())) doReturn SQL_DONE
         whenever(sqlite.getAutocommit(any<Long>())) doReturn 1
         whenever(sqlite.capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = true)
-        whenever(sqlite.fillCursorWindow(any<StatementHandle>(), any(), any(), any())) doAnswer {
+        whenever(sqlite.defaultCursorWindowSize) doReturn DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_SIZE
+        whenever(sqlite.defaultCursorWindowByteSize) doReturn DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
+        whenever(sqlite.fillCursorWindow(any<StatementHandle>(), any(), any(), any(), any())) doAnswer {
             ByteBuffer.allocate(2 * Int.SIZE_BYTES).apply { putInt(0, 0); putInt(Int.SIZE_BYTES, 0) }
         }
         database = SQLDatabase("file::memory:", sqlite, databaseConfiguration, null)
@@ -482,6 +484,22 @@ internal class SQLDatabaseTest {
         assertFailsWith<OperationCancelledException> {
             database.query("SELECT 1", emptyArray(), signal)
         }
+    }
+
+    @Test
+    fun jvmCursorPlatformDefaultsAreBounded() {
+        whenever(sqlite.columnCount(any<Long>())) doReturn 0
+        whenever(sqlite.statementReadOnly(any<Long>())) doReturn 1
+
+        database.query("SELECT 1", emptyArray()).close()
+
+        verify(sqlite).fillCursorWindow(
+            any<StatementHandle>(),
+            eq(0),
+            eq(DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_SIZE),
+            eq(true),
+            eq(DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE)
+        )
     }
 
     @Test

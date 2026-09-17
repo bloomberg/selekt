@@ -21,7 +21,7 @@ private val EMPTY_ARRAY = emptyArray<Any?>()
 /**
  * @since 0.12.1
  */
-@Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
+@Suppress("Detekt.ComplexInterface", "Detekt.LongParameterList", "Detekt.TooManyFunctions")
 internal interface SQLExecutor : BatchSQLExecutor {
     val isAutoCommit: Boolean
 
@@ -57,7 +57,8 @@ internal interface SQLExecutor : BatchSQLExecutor {
         bindArgs: Array<out Any?>,
         startPosition: Int = 0,
         windowSize: Int = Int.MAX_VALUE,
-        countAllRows: Boolean = true
+        countAllRows: Boolean = true,
+        windowByteSize: Int = DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
     ): CursorWindowPage
 
     fun executeForCursorWindow(
@@ -65,14 +66,9 @@ internal interface SQLExecutor : BatchSQLExecutor {
         bindArgs: ParameterRow,
         startPosition: Int = 0,
         windowSize: Int = Int.MAX_VALUE,
-        countAllRows: Boolean = true
+        countAllRows: Boolean = true,
+        windowByteSize: Int = DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
     ): PreparedCursorWindow
-
-    fun executeForCursorWindows(
-        sql: String,
-        bindArgs: Array<out Any?>,
-        windowSize: Int
-    ): CursorWindowPage
 
     fun executeForForwardCursor(
         sql: String,

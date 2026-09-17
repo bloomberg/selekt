@@ -67,6 +67,8 @@ runtime-inspection and generation details.
         journalMode = "WAL" // is the default
         busyTimeout = 2_500 // milliseconds is the default
         maxPoolSize = 4 // is the default, with 3 read connections
+        cursorWindowSize = 1_024 // rows; the default
+        cursorWindowByteSize = 2 * 1024 * 1024 // bytes; the default
         foreignKeys = true
     }
 
@@ -82,6 +84,8 @@ runtime-inspection and generation details.
     dataSource.setJournalMode("WAL"); // is the default
     dataSource.setBusyTimeout(2500); // milliseconds is the default
     dataSource.setMaxPoolSize(4); // is the default, with 3 read connections
+    dataSource.setCursorWindowSize(1024); // rows; the default
+    dataSource.setCursorWindowByteSize(2 * 1024 * 1024); // bytes; the default
     dataSource.setForeignKeys(true);
 
     try (Connection connection = dataSource.getConnection()) {
@@ -111,6 +115,8 @@ Connection properties can be passed via a `Properties` object:
         setProperty("journalMode", "WAL")
         setProperty("busyTimeout", "2500")
         setProperty("poolSize", "4")
+        setProperty("cursorWindowSize", "1024")
+        setProperty("cursorWindowByteSize", "2097152")
         setProperty("foreignKeys", "true")
     }
 
@@ -126,6 +132,8 @@ Connection properties can be passed via a `Properties` object:
     properties.setProperty("journalMode", "WAL");
     properties.setProperty("busyTimeout", "2500");
     properties.setProperty("poolSize", "4");
+    properties.setProperty("cursorWindowSize", "1024");
+    properties.setProperty("cursorWindowByteSize", "2097152");
     properties.setProperty("foreignKeys", "true");
 
     final Connection connection = DriverManager.getConnection(
@@ -139,14 +147,16 @@ Properties can also be inlined in the URL query string:
 === "Kotlin"
     ``` kotlin
     val connection = DriverManager.getConnection(
-        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
+        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4" +
+            "&cursorWindowSize=1024&cursorWindowByteSize=2097152&foreignKeys=true"
     )
     ```
 
 === "Java"
     ``` java
     final Connection connection = DriverManager.getConnection(
-        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4&foreignKeys=true"
+        "jdbc:sqlite:/path/to/database.db?journalMode=WAL&busyTimeout=2500&poolSize=4" +
+            "&cursorWindowSize=1024&cursorWindowByteSize=2097152&foreignKeys=true"
     );
     ```
 
@@ -231,6 +241,16 @@ Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exact
         }
     }
     ```
+
+### Cursor memory and scrolling
+
+Scrollable JVM cursors retain at most 1,024 rows and an estimated 2 MiB by default. Moving outside the retained window
+re-runs the query to refill it; use a transaction when scrolling must observe a stable snapshot. A row whose estimated
+size exceeds 2 MiB is rejected rather than copied into the cursor window.
+
+Auto-commit `TYPE_FORWARD_ONLY` result sets—the JDBC default—stream rows and do not use these window limits. Selekt may
+materialise a forward-only query inside a manual read-only transaction to avoid pinning its SQLite snapshot after the
+query call.
 
 ### Inserting data
 

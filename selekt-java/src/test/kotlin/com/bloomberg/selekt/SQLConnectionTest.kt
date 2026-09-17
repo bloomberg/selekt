@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.stream.Stream
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -925,7 +924,7 @@ internal class SQLConnectionTest {
             (it.arguments[2] as LongArray)[0] = 43L
             0
         }
-        whenever(fillCursorWindow(any<StatementHandle>(), any(), any(), any())) doAnswer {
+        whenever(fillCursorWindow(any<StatementHandle>(), any(), any(), any(), any())) doAnswer {
             ByteBuffer.allocate(2 * Int.SIZE_BYTES).apply { putInt(0, 0); putInt(Int.SIZE_BYTES, 0) }
         }
         SQLConnection(
@@ -974,7 +973,34 @@ internal class SQLConnectionTest {
             assertEquals(42L, page.window.getLong(0, 0))
             page.window.close()
         }
-        verify(this@run, never()).fillCursorWindow(any<StatementHandle>(), any(), any(), any())
+        verify(this@run, never()).fillCursorWindow(any<StatementHandle>(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun executeForCursorWindowRejectsOversizedBlobBeforeCopyingIt(): Unit = sqlite.run {
+        whenever(capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = false)
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "value"
+        whenever(columnType(any<Long>(), any<Int>())) doReturn ColumnType.BLOB.sqlDataType
+        whenever(columnBytes(any<StatementHandle>(), any<Int>())) doReturn 256
+        whenever(step(any<Long>())) doReturn SQL_ROW
+
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            assertFailsWith<IllegalStateException> {
+                connection.executeForCursorWindow(
+                    "SELECT value FROM oversized",
+                    emptyArray(),
+                    windowByteSize = 128
+                )
+            }
+        }
+
+        verify(this@run).columnBytes(any<StatementHandle>(), eq(0))
+        verify(this@run, never()).columnBlob(any<StatementHandle>(), any<Int>())
     }
 
     private fun SQLite.stubRowsForCursorWindow(rowCount: Int) {
@@ -1081,83 +1107,6 @@ internal class SQLConnectionTest {
             connection.executeForCursorWindow("SELECT * FROM Foo", emptyArray(), 0, 3, true).window.close()
         }
         verify(this@run, times(11)).step(any<Long>())
-    }
-
-    @Test
-    fun executeForCursorWindowsMaterializesEverySegmentInOnePass(): Unit = sqlite.run {
-        stubRowsForCursorWindow(rowCount = 10)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            conn.executeForCursorWindows("SELECT * FROM Foo", emptyArray(), 4).run {
-                assertEquals(0, startPosition)
-                assertEquals(10, count)
-                assertTrue(window is SegmentedCursorWindow)
-                assertEquals(10, window.numberOfRows())
-                repeat(10) {
-                    assertEquals(it.toLong(), window.getLong(it, 0))
-                }
-                window.close()
-            }
-        }
-        verify(this@run, times(11)).step(any<Long>())
-    }
-
-    @Test
-    fun executeForCursorWindowsHandlesAnExactNumberOfSegments(): Unit = sqlite.run {
-        stubRowsForCursorWindow(rowCount = 8)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            conn.executeForCursorWindows("SELECT * FROM Foo", emptyArray(), 4).run {
-                assertEquals(8, count)
-                assertTrue(window is SegmentedCursorWindow)
-                assertEquals(7L, window.getLong(7, 0))
-                window.close()
-            }
-        }
-        verify(this@run, times(9)).step(any<Long>())
-    }
-
-    @Test
-    fun executeForCursorWindowsHandlesAnEmptyResult(): Unit = sqlite.run {
-        stubRowsForCursorWindow(rowCount = 0)
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            conn.executeForCursorWindows("SELECT * FROM Foo", emptyArray(), 4).run {
-                assertEquals(0, count)
-                assertTrue(window is SimpleCursorWindow)
-                assertEquals(0, window.numberOfRows())
-                window.close()
-            }
-        }
-        verify(this@run, times(1)).step(any<Long>())
-    }
-
-    @Test
-    fun executeForCursorWindowsClosesCompletedNativeSegmentsAfterAFillFailure(): Unit = sqlite.run {
-        whenever(capabilities) doReturn PlatformCapabilities(useNativeCursorWindow = true)
-        whenever(openV2(any(), any(), any())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 42L
-            0
-        }
-        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
-            (it.arguments[2] as LongArray)[0] = 43L
-            0
-        }
-        whenever(columnCount(any<Long>())) doReturn 0
-        val firstSegment = ByteBuffer.allocate(2 * Int.SIZE_BYTES).order(ByteOrder.nativeOrder()).apply {
-            putInt(0, 2)
-            putInt(Int.SIZE_BYTES, NOT_COUNTED)
-        }
-        val fillFailure = IllegalStateException("fill failed")
-        var fillCount = 0
-        whenever(fillCursorWindow(any<StatementHandle>(), eq(0), eq(2), eq(false))) doAnswer {
-            if (fillCount++ == 0) firstSegment else throw fillFailure
-        }
-
-        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { conn ->
-            val thrown = assertFailsWith<IllegalStateException> {
-                conn.executeForCursorWindows("SELECT * FROM Foo", emptyArray(), 2)
-            }
-            assertEquals(fillFailure, thrown)
-        }
-        verify(this@run).freeCursorWindow(firstSegment)
     }
 
     private companion object {

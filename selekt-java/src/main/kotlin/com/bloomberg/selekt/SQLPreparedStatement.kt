@@ -124,6 +124,8 @@ internal class SQLPreparedStatement(
 
     fun columnBlob(index: Int) = sqlite.columnBlob(statement, index)
 
+    fun columnBytes(index: Int) = sqlite.columnBytes(statement, index)
+
     fun columnDouble(index: Int) = sqlite.columnDouble(statement, index)
 
     fun columnInt(index: Int) = sqlite.columnInt(statement, index)
@@ -139,8 +141,9 @@ internal class SQLPreparedStatement(
     fun fillCursorWindow(
         startRow: Int,
         maxRows: Int,
-        countAllRows: Boolean
-    ) = sqlite.fillCursorWindow(statement, startRow, maxRows, countAllRows)
+        countAllRows: Boolean,
+        maxBytes: Int
+    ) = sqlite.fillCursorWindow(statement, startRow, maxRows, countAllRows, maxBytes)
 
     fun isBusy() = sqlite.statementBusy(statement) != 0
 

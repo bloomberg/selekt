@@ -19,6 +19,7 @@ package com.bloomberg.selekt.android.room
 import androidx.sqlite.SQLITE_DATA_BLOB
 import androidx.sqlite.SQLITE_DATA_FLOAT
 import androidx.sqlite.SQLITE_DATA_NULL
+import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.commons.deleteDatabase
@@ -30,6 +31,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @ExtendWith(SelektTestExtension::class)
@@ -43,6 +45,17 @@ internal class SelektSQLiteDriverTest {
                 assertTrue(statement.step())
                 assertEquals(1L, statement.getLong(0))
             }
+        }
+    }
+
+    @Test
+    fun createDriverWithExplicitDatabaseConfiguration() {
+        val configuration = SQLiteJournalMode.WAL.databaseConfiguration.copy(
+            cursorWindowSize = 64,
+            cursorWindowByteSize = 4 * 1024 * 1024
+        )
+        createSelektSQLiteDriver(configuration).use { driver ->
+            assertSame(configuration, driver.databaseConfiguration())
         }
     }
 
@@ -206,6 +219,12 @@ internal class SelektSQLiteDriverTest {
         isAccessible = true
         get(this@nativeKey) as DatabaseKey
     }
+
+    private fun SelektSQLiteDriver.databaseConfiguration() =
+        SelektSQLiteDriver::class.java.getDeclaredField("databaseConfiguration").run {
+            isAccessible = true
+            get(this@databaseConfiguration) as DatabaseConfiguration
+        }
 
     private fun SelektSQLiteDriver.createTable(path: String) = open(path).use { connection ->
         connection.prepare("CREATE TABLE test (id INTEGER PRIMARY KEY)").use { statement ->

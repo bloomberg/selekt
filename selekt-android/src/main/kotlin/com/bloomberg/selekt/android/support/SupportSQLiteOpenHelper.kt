@@ -18,6 +18,7 @@ package com.bloomberg.selekt.android.support
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.ISQLiteOpenHelper
 import com.bloomberg.selekt.android.SQLiteDatabase
@@ -41,6 +42,15 @@ fun createSupportSQLiteOpenHelperFactory(
 ): SupportSQLiteOpenHelper.Factory = SupportSQLiteOpenHelperFactory(journalMode, key)
 
 /**
+ * Creates a legacy Room factory with an explicit database configuration.
+ */
+fun createSupportSQLiteOpenHelperFactory(
+    journalMode: SQLiteJournalMode,
+    databaseConfiguration: DatabaseConfiguration,
+    key: ByteArray?
+): SupportSQLiteOpenHelper.Factory = SupportSQLiteOpenHelperFactory(journalMode, databaseConfiguration, key)
+
+/**
  * A legacy Room factory that owns a private snapshot of its optional database key.
  *
  * The supplied [key] remains owned by the caller and is never modified. This factory snapshots it during construction;
@@ -53,8 +63,15 @@ fun createSupportSQLiteOpenHelperFactory(
 @ThreadSafe
 class SupportSQLiteOpenHelperFactory(
     private val journalMode: SQLiteJournalMode,
+    private val databaseConfiguration: DatabaseConfiguration,
     key: ByteArray?
 ) : SupportSQLiteOpenHelper.Factory, Closeable {
+    constructor(journalMode: SQLiteJournalMode, key: ByteArray?) : this(
+        journalMode,
+        journalMode.databaseConfiguration,
+        key
+    )
+
     private val lifecycleLock = Any()
     private val key = key?.copyOf()
     private var closed = false
@@ -64,6 +81,7 @@ class SupportSQLiteOpenHelperFactory(
         SQLiteOpenHelper(
             configuration = configuration.asSelektConfiguration(),
             context = configuration.context,
+            databaseConfiguration = databaseConfiguration,
             openParams = SQLiteOpenParams(journalMode),
             version = configuration.callback.version,
             key = key

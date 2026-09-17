@@ -27,6 +27,11 @@ import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.NotThreadSafe
 import kotlin.concurrent.withLock
 
+private const val CURSOR_ROW_OVERHEAD_BYTES = 32L
+private const val CURSOR_CELL_OVERHEAD_BYTES = 16L
+private const val CURSOR_FIXED_VALUE_BYTES = 8L
+private const val MAX_UTF16_BYTES_PER_UTF8_BYTE = 2L
+
 /**
  * @since 0.12.1
  */
@@ -229,9 +234,10 @@ internal class SQLConnection(
         bindArgs: Array<out Any?>,
         startPosition: Int,
         windowSize: Int,
-        countAllRows: Boolean
+        countAllRows: Boolean,
+        windowByteSize: Int
     ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
-        fillCursorWindowPage(startPosition, windowSize, countAllRows)
+        fillCursorWindowPage(startPosition, windowSize, countAllRows, windowByteSize)
     }
 
     override fun executeForCursorWindow(
@@ -239,94 +245,113 @@ internal class SQLConnection(
         bindArgs: ParameterRow,
         startPosition: Int,
         windowSize: Int,
-        countAllRows: Boolean
+        countAllRows: Boolean,
+        windowByteSize: Int
     ): PreparedCursorWindow = withPreparedStatement(sql, bindArgs) {
-        PreparedCursorWindow(columnNames, fillCursorWindowPage(startPosition, windowSize, countAllRows))
-    }
-
-    override fun executeForCursorWindows(
-        sql: String,
-        bindArgs: Array<out Any?>,
-        windowSize: Int
-    ): CursorWindowPage = withPreparedStatement(sql, bindArgs) {
-        require(windowSize > 0) { "Cursor window size must be positive." }
-        val windows = ArrayList<ICursorWindow>()
-        var rowCount = 0
-        try {
-            var storedRows: Int
-            do {
-                val window = fillCursorWindowPage(0, windowSize, false).window
-                storedRows = window.numberOfRows()
-                if (storedRows == 0) {
-                    window.close()
-                } else {
-                    windows.add(window)
-                    check(rowCount <= Int.MAX_VALUE - storedRows) { "Cursor row count exceeds Int.MAX_VALUE." }
-                    rowCount += storedRows
-                }
-            } while (storedRows == windowSize)
-            val window = when (windows.size) {
-                0 -> SimpleCursorWindow()
-                1 -> windows.single()
-                else -> SegmentedCursorWindow(windows, windowSize)
-            }
-            CursorWindowPage(window, 0, rowCount)
-        } catch (failure: Throwable) {
-            closeCursorWindowsAfterFailure(windows, failure)
-        }
-    }
-
-    private fun closeCursorWindowsAfterFailure(windows: List<ICursorWindow>, failure: Throwable): Nothing {
-        windows.forEach { window ->
-            runCatching(window::close).exceptionOrNull()?.let(failure::addSuppressed)
-        }
-        throw failure
+        PreparedCursorWindow(
+            columnNames,
+            fillCursorWindowPage(startPosition, windowSize, countAllRows, windowByteSize)
+        )
     }
 
     private fun SQLPreparedStatement.fillCursorWindowPage(
         startPosition: Int,
         windowSize: Int,
-        countAllRows: Boolean
+        countAllRows: Boolean,
+        windowByteSize: Int
     ): CursorWindowPage {
         return if (sqlite.capabilities.useNativeCursorWindow) {
             NativeCursorWindow(
-                fillCursorWindow(startPosition, windowSize, countAllRows),
+                fillCursorWindow(startPosition, windowSize, countAllRows, windowByteSize),
                 sqlite,
                 columnCount
             ).let {
                 CursorWindowPage(it, startPosition, it.totalCount)
             }
         } else {
-            fillSimpleCursorWindow(startPosition, windowSize, countAllRows)
+            fillSimpleCursorWindow(startPosition, windowSize, countAllRows, windowByteSize)
         }
     }
 
+    @Suppress("Detekt.NestedBlockDepth")
     private fun SQLPreparedStatement.fillSimpleCursorWindow(
         startPosition: Int,
         windowSize: Int,
-        countAllRows: Boolean
+        countAllRows: Boolean,
+        windowByteSize: Int
     ): CursorWindowPage {
         val window = SimpleCursorWindow()
         var rowCount = 0
         var storedCount = 0
-        while ((countAllRows || storedCount < windowSize) && SQL_ROW == step()) {
-            if (rowCount >= startPosition && storedCount < windowSize) {
-                check(window.allocateRow()) { "Failed to allocate a window row." }
-                0.forUntil(columnCount) {
-                    when (columnType(it)) {
-                        ColumnType.STRING.sqlDataType -> window.put(checkNotNull(columnString(it)))
-                        ColumnType.INTEGER.sqlDataType -> window.put(columnLong(it))
-                        ColumnType.FLOAT.sqlDataType -> window.put(columnDouble(it))
-                        ColumnType.NULL.sqlDataType -> window.putNull()
-                        ColumnType.BLOB.sqlDataType -> window.put(columnBlob(it))
-                        else -> error("Unrecognised column type for column $it.")
+        var storedBytes = 0L
+        var windowFull = false
+        try {
+            while (shouldContinueFilling(countAllRows, windowFull, storedCount, windowSize)) {
+                if (SQL_ROW != step()) {
+                    break
+                }
+                if (canStoreRow(rowCount, startPosition, windowFull, storedCount, windowSize)) {
+                    val rowBytes = estimatedCursorRowBytes()
+                    check(rowBytes <= windowByteSize) {
+                        "Cursor row requires an estimated $rowBytes bytes, exceeding the $windowByteSize-byte window. " +
+                            "Use a forward-only cursor for oversized rows."
+                    }
+                    if (storedCount > 0 && storedBytes + rowBytes > windowByteSize) {
+                        windowFull = true
+                    } else {
+                        appendCurrentRowTo(window)
+                        storedCount += 1
+                        storedBytes += rowBytes
                     }
                 }
-                storedCount += 1
+                rowCount += 1
             }
-            rowCount += 1
+            return CursorWindowPage(window, startPosition, rowCount)
+        } catch (failure: Throwable) {
+            runCatching(window::close).exceptionOrNull()?.let(failure::addSuppressed)
+            throw failure
         }
-        return CursorWindowPage(window, startPosition, rowCount)
+    }
+
+    private fun shouldContinueFilling(
+        countAllRows: Boolean,
+        windowFull: Boolean,
+        storedCount: Int,
+        windowSize: Int
+    ) = countAllRows || !windowFull && storedCount < windowSize
+
+    private fun canStoreRow(
+        rowCount: Int,
+        startPosition: Int,
+        windowFull: Boolean,
+        storedCount: Int,
+        windowSize: Int
+    ) = rowCount >= startPosition && !windowFull && storedCount < windowSize
+
+    private fun SQLPreparedStatement.appendCurrentRowTo(window: ICursorWindow) {
+        check(window.allocateRow()) { "Failed to allocate a window row." }
+        0.forUntil(columnCount) {
+            when (columnType(it)) {
+                ColumnType.STRING.sqlDataType -> window.put(checkNotNull(columnString(it)))
+                ColumnType.INTEGER.sqlDataType -> window.put(columnLong(it))
+                ColumnType.FLOAT.sqlDataType -> window.put(columnDouble(it))
+                ColumnType.NULL.sqlDataType -> window.putNull()
+                ColumnType.BLOB.sqlDataType -> window.put(columnBlob(it))
+                else -> error("Unrecognised column type for column $it.")
+            }
+        }
+    }
+
+    private fun SQLPreparedStatement.estimatedCursorRowBytes(): Long {
+        var bytes = CURSOR_ROW_OVERHEAD_BYTES + columnCount * CURSOR_CELL_OVERHEAD_BYTES
+        0.forUntil(columnCount) {
+            bytes += when (columnType(it)) {
+                ColumnType.STRING.sqlDataType -> columnBytes(it) * MAX_UTF16_BYTES_PER_UTF8_BYTE
+                ColumnType.BLOB.sqlDataType -> columnBytes(it).toLong()
+                else -> CURSOR_FIXED_VALUE_BYTES
+            }
+        }
+        return bytes
     }
 
     override fun executeForForwardCursor(

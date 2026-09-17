@@ -95,7 +95,7 @@ private object SharedSqlBuilder {
  *
  * @see <a href="https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java">Android's SQLiteDatabase</a>
  */
-@Suppress("Detekt.MethodOverloading", "Detekt.TooManyFunctions")
+@Suppress("Detekt.LargeClass", "Detekt.MethodOverloading", "Detekt.TooManyFunctions")
 @ThreadSafe
 class SQLDatabase(
     val path: String,
@@ -107,7 +107,12 @@ class SQLDatabase(
     private val connectionFactory: SQLConnectionFactory
     private val connectionPool: SQLExecutorPool
     private val session: ThreadLocalSession
-    private val cursorWindowSize = configuration.cursorWindowSize
+    private val cursorWindowSize = configuration.cursorWindowSize.takeUnless {
+        it == DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE
+    } ?: sqlite.defaultCursorWindowSize
+    private val cursorWindowByteSize = configuration.cursorWindowByteSize.takeUnless {
+        it == DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
+    } ?: sqlite.defaultCursorWindowByteSize
 
     init {
         key?.retain()
@@ -447,8 +452,21 @@ class SQLDatabase(
         @TrustedSql orderBy: String?,
         limit: Int?,
         cancellationSignal: CancellationSignal
-    ): ICursor = withCancellationSignal(cancellationSignal) {
-        query(distinct, table, columns, selection, selectionArgs, groupBy, having, orderBy, limit)
+    ): ICursor = SharedSqlBuilder.use {
+        selectColumns(columns, distinct)
+            .fromTable(table)
+            .where(selection)
+            .groupBy(groupBy)
+            .having(having)
+            .orderBy(orderBy)
+            .limit(limit)
+            .toString()
+            .let {
+                query(
+                    SQLQuery.create(session.freeze(), it, SQLStatementType.SELECT, selectionArgs),
+                    cancellationSignal
+                )
+            }
     }
 
     /**
@@ -464,9 +482,10 @@ class SQLDatabase(
         @TrustedSql sql: String,
         selectionArgs: Array<out Any?>,
         cancellationSignal: CancellationSignal
-    ): ICursor = withCancellationSignal(cancellationSignal) {
-        query(sql, selectionArgs)
-    }
+    ): ICursor = query(
+        SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), selectionArgs),
+        cancellationSignal
+    )
 
     /**
      * Executes a cancellable query while stepping no more than [maximumRows].
@@ -496,7 +515,13 @@ class SQLDatabase(
         require(maximumRows > 0) { "Maximum rows must be positive." }
         return withCancellationSignal(cancellationSignal) {
             val result = session().execute(false, sql) {
-                it.executeForCursorWindow(sql, bindArgs, windowSize = maximumRows, countAllRows = false)
+                it.executeForCursorWindow(
+                    sql,
+                    bindArgs,
+                    windowSize = maximumRows,
+                    countAllRows = false,
+                    windowByteSize = cursorWindowByteSize
+                )
             }
             WindowedCursor(
                 result.columnNames,
@@ -510,9 +535,10 @@ class SQLDatabase(
         @TrustedSql sql: String,
         bindArgs: ParameterRow,
         cancellationSignal: CancellationSignal
-    ): ICursor = withCancellationSignal(cancellationSignal) {
-        query(SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), bindArgs))
-    }
+    ): ICursor = query(
+        SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), bindArgs),
+        cancellationSignal
+    )
 
     /**
      * Executes a cancellable query. If the [cancellationSignal] is cancelled from another thread, the query will be
@@ -525,9 +551,15 @@ class SQLDatabase(
     fun query(
         query: ISQLQuery,
         cancellationSignal: CancellationSignal
-    ): ICursor = withCancellationSignal(cancellationSignal) {
-        query(query)
-    }
+    ): ICursor = query(
+        SQLQuery.create(
+            session.freeze(),
+            query.sql,
+            query.sql.resolvedSqlStatementType(),
+            query.argCount
+        ).also { query.bindTo(it) },
+        cancellationSignal
+    )
 
     fun <T> withCancellationSignal(
         cancellationSignal: CancellationSignal,
@@ -806,14 +838,27 @@ class SQLDatabase(
         session().blob(name, table, column, row, readOnly)
     }
 
-    private fun query(query: SQLQuery): ICursor = pledge {
-        val (information, page) = query.fill(cursorWindowSize)
-        check(page.count == page.window.numberOfRows()) { "Scrollable query was not fully materialised." }
-        WindowedCursor(information.columnNames, page)
-    }
+    private fun query(query: SQLQuery, cancellationSignal: CancellationSignal? = null): ICursor =
+        cursorOperation(cancellationSignal) {
+            val (information, page) = query.fill(cursorWindowSize, cursorWindowByteSize)
+            WindowedCursor(information.columnNames, page, query::close) { startPosition ->
+                cursorOperation(cancellationSignal) {
+                    query.fillWindow(startPosition, cursorWindowSize, cursorWindowByteSize).second
+                }
+            }
+        }
+
+    private fun <T> cursorOperation(cancellationSignal: CancellationSignal?, block: () -> T): T =
+        if (cancellationSignal == null) {
+            pledge { block() }
+        } else {
+            withCancellationSignal(cancellationSignal) {
+                block()
+            }
+        }
 
     private fun queryUpTo(query: SQLQuery, maximumRows: Int): ICursor = pledge {
-        val (information, page) = query.fillUpTo(maximumRows)
+        val (information, page) = query.fillUpTo(maximumRows, cursorWindowByteSize)
         WindowedCursor(information.columnNames, page)
     }
 

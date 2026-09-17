@@ -23,8 +23,8 @@ package com.bloomberg.selekt
  */
 data class PlatformCapabilities(
     /**
-     * Whether query results should be materialised by a single native call into an off-heap cursor
-     * window, rather than by stepping the statement and copying each value onto the Java heap.
+     * Whether each bounded query window should be packed by a native call into off-heap memory,
+     * rather than by stepping the statement and copying each retained value onto the Java heap.
      */
     val useNativeCursorWindow: Boolean = false
 )
