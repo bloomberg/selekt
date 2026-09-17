@@ -1084,6 +1084,17 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun invalidForeignKeysValueIsRejected() {
+        val database = mock<SQLDatabase>()
+        assertFailsWith<SQLException> {
+            JdbcConnection(testSharedDatabase(database), connectionURL, Properties().apply {
+                setProperty("foreignKeys", "tru")
+            })
+        }
+        verify(database, never()).exec(any(), anyOrNull())
+    }
+
+    @Test
     fun setAutoCommitWithSQLException() {
         val database = mock<SQLDatabase> {
             whenever(it.inTransaction) doReturn true

@@ -173,10 +173,8 @@ internal class ConnectionURL private constructor(
 
     fun getBooleanProperty(
         key: String,
-        defaultValue: Boolean = false)
-    : Boolean = (properties.getProperty(key) ?: return defaultValue).let {
-        it.equals("true", ignoreCase = true) || it == "1"
-    }
+        defaultValue: Boolean = false
+    ): Boolean = properties.getStrictBooleanProperty(key, defaultValue)
 
     fun getIntProperty(
         key: String,
