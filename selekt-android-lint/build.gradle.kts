@@ -38,6 +38,9 @@ dependencies {
     compileOnly(libs.android.tools.lint.asProvider())
     compileOnly(libs.android.tools.lint.api)
     implementation(libs.kotlin.reflect)
+    testImplementation(libs.android.tools.lint)
+    testImplementation(libs.android.tools.lint.tests)
+    testImplementation(libs.junit.junit)
 }
 
 tasks.withType<Jar>().configureEach {

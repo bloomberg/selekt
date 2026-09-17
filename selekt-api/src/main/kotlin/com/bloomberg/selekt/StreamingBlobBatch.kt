@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
 import java.io.InputStream
 
 private const val DEFAULT_BLOB_TRANSFER_BUFFER_SIZE = 64 * 1024
@@ -36,7 +37,7 @@ private const val DEFAULT_BLOB_TRANSFER_BUFFER_SIZE = 64 * 1024
 data class StreamingBlobBatch @JvmOverloads constructor(
     val table: String,
     val column: String,
-    val insertSql: String,
+    @param:TrustedSql @get:TrustedSql val insertSql: String,
     val blobParameterIndex: Int,
     val databaseName: String = "main",
     val transferBufferSize: Int = DEFAULT_BLOB_TRANSFER_BUFFER_SIZE

@@ -16,12 +16,15 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
+
 /**
  * @since 0.12.1
  */
 interface ISQLQuery {
     val argCount: Int
 
+    @get:TrustedSql
     val sql: String
 
     fun bindTo(statement: ISQLProgram)

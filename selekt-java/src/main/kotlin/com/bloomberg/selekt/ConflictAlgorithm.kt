@@ -16,10 +16,13 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
+
 /**
  * @since 0.12.1
  */
 enum class ConflictAlgorithm(
+    @get:TrustedSql
     override val sql: String
 ) : IConflictAlgorithm {
     ABORT(" OR ABORT "),
@@ -31,5 +34,6 @@ enum class ConflictAlgorithm(
 }
 
 interface IConflictAlgorithm {
+    @get:TrustedSql
     val sql: String
 }

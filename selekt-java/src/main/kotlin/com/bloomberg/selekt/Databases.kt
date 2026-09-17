@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt
 
+import com.bloomberg.selekt.annotations.TrustedSql
 import com.bloomberg.selekt.commons.ManagedStringBuilder
 import com.bloomberg.selekt.commons.forUntil
 import com.bloomberg.selekt.exceptions.SelektSQLException
@@ -86,6 +87,9 @@ private object SharedSqlBuilder {
  * A thread can acquire at most one connection session per database instance. Sessions hold at most one connection at any
  * given time, and exclusively. Sessions control all access to a database's connections and each session is thread-bound.
  * This prevents two threads from ever sharing a single connection.
+ *
+ * Parameters marked [TrustedSql] become part of SQL syntax. They must contain only application-controlled SQL; pass
+ * external values through the corresponding bind-argument parameters.
  *
  * This is the same strategy Google employs in the Android SDK.
  *
@@ -170,16 +174,16 @@ class SQLDatabase(
     val isCurrentThreadSessionActive: Boolean
         get() = session().hasObject
 
-    fun batch(sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
+    fun batch(@TrustedSql sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
-    fun batch(sql: String, bindArgs: List<Array<out Any?>>): Int = transact {
+    fun batch(@TrustedSql sql: String, bindArgs: List<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
     fun batch(
-        sql: String,
+        @TrustedSql sql: String,
         bindArgs: Array<out Array<out Any?>>,
         fromIndex: Int = 0,
         toIndex: Int = bindArgs.size
@@ -187,29 +191,29 @@ class SQLDatabase(
         SQLStatement.execute(session, sql, bindArgs, fromIndex, toIndex)
     }
 
-    fun batch(sql: String, bindArgs: Iterable<Array<out Any?>>): Int = transact {
+    fun batch(@TrustedSql sql: String, bindArgs: Iterable<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
-    fun batchRows(sql: String, bindArgs: Iterable<ParameterRow>): Int = transact {
+    fun batchRows(@TrustedSql sql: String, bindArgs: Iterable<ParameterRow>): Int = transact {
         SQLStatement.executeRows(session, sql, bindArgs)
     }
 
     @JvmSynthetic
-    fun executePreparedInsert(sql: String, bindArgs: ParameterRow): Long = pledge {
+    fun executePreparedInsert(@TrustedSql sql: String, bindArgs: ParameterRow): Long = pledge {
         session().execute(true, sql) {
             it.executeForLastInsertedRowId(sql, bindArgs)
         }
     }
 
     @JvmSynthetic
-    fun executePreparedUpdateDelete(sql: String, bindArgs: ParameterRow): Int = pledge {
+    fun executePreparedUpdateDelete(@TrustedSql sql: String, bindArgs: ParameterRow): Int = pledge {
         session().execute(true, sql) {
             it.executeForChangedRowCount(sql, bindArgs)
         }
     }
 
-    fun batch(sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
+    fun batch(@TrustedSql sql: String, bindArgs: Stream<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }
 
@@ -261,7 +265,7 @@ class SQLDatabase(
         session().beginImmediateTransactionWithListener(listener)
     }
 
-    override fun compileStatement(sql: String, bindArgs: Array<out Any?>?) = compileStatement(
+    override fun compileStatement(@TrustedSql sql: String, bindArgs: Array<out Any?>?) = compileStatement(
         sql,
         sql.resolvedSqlStatementType(),
         bindArgs
@@ -275,20 +279,20 @@ class SQLDatabase(
         SQLStatement.compile(session.freeze(), sql, sqlStatementType, bindArgs)
     }
 
-    fun prepare(sql: String): ISQLRawStatement = pledge {
+    fun prepare(@TrustedSql sql: String): ISQLRawStatement = pledge {
         SQLRawStatement.prepare(session, sql)
     }
 
     override fun delete(
         table: String,
-        whereClause: String,
+        @TrustedSql whereClause: String,
         whereArgs: Array<out Any?>
     ) = pledge {
-        SQLStatement.executeUpdateDelete(
-            session,
-            "DELETE FROM $table${if (whereClause.isNotEmpty()) " WHERE $whereClause" else ""}",
-            whereArgs
-        )
+        SharedSqlBuilder.use {
+            append("DELETE FROM ").appendQualifiedIdentifier(table)
+            if (whereClause.isNotEmpty()) { append(" WHERE ").append(whereClause) }
+            SQLStatement.executeUpdateDelete(session, toString(), whereArgs)
+        }
     }
 
     override fun endTransaction(): Unit = pledge { session().endTransaction() }
@@ -299,7 +303,7 @@ class SQLDatabase(
         }
     }
 
-    override fun exec(sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
+    override fun exec(@TrustedSql sql: String, bindArgs: Array<out Any?>?): Unit = pledge {
         compileStatement(
             sql,
             sql.resolvedSqlStatementType(),
@@ -321,13 +325,13 @@ class SQLDatabase(
             append("INSERT")
                 .append(conflictAlgorithm.sql)
                 .append("INTO ")
-                .append(table)
+                .appendQualifiedIdentifier(table)
                 .append('(')
             val iterator = values.entrySet.iterator()
             val bindArgs = Array(values.size) {
                 if (it > 0) { append(',') }
                 iterator.next().run {
-                    append(key)
+                    appendIdentifier(key)
                     value
                 }
             }
@@ -391,13 +395,13 @@ class SQLDatabase(
 
     override fun query(
         distinct: Boolean,
-        table: String,
-        columns: Array<out String>,
-        selection: String,
+        @TrustedSql table: String,
+        @TrustedSql columns: Array<out String>,
+        @TrustedSql selection: String,
         selectionArgs: Array<out Any?>,
-        groupBy: String?,
-        having: String?,
-        orderBy: String?,
+        @TrustedSql groupBy: String?,
+        @TrustedSql having: String?,
+        @TrustedSql orderBy: String?,
         limit: Int?
     ) = SharedSqlBuilder.use {
         selectColumns(columns, distinct)
@@ -412,7 +416,7 @@ class SQLDatabase(
     }
 
     override fun query(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>
     ): ICursor = query(SQLQuery.create(session.freeze(), sql, sql.resolvedSqlStatementType(), selectionArgs))
 
@@ -434,13 +438,13 @@ class SQLDatabase(
     @Suppress("Detekt.LongParameterList")
     fun query(
         distinct: Boolean,
-        table: String,
-        columns: Array<out String>,
-        selection: String,
+        @TrustedSql table: String,
+        @TrustedSql columns: Array<out String>,
+        @TrustedSql selection: String,
         selectionArgs: Array<out Any?>,
-        groupBy: String?,
-        having: String?,
-        orderBy: String?,
+        @TrustedSql groupBy: String?,
+        @TrustedSql having: String?,
+        @TrustedSql orderBy: String?,
         limit: Int?,
         cancellationSignal: CancellationSignal
     ): ICursor = withCancellationSignal(cancellationSignal) {
@@ -457,7 +461,7 @@ class SQLDatabase(
      * @throws OperationCancelledException if the operation was cancelled.
      */
     fun query(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>,
         cancellationSignal: CancellationSignal
     ): ICursor = withCancellationSignal(cancellationSignal) {
@@ -471,7 +475,7 @@ class SQLDatabase(
      */
     @JvmSynthetic
     fun queryUpTo(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>,
         maximumRows: Int,
         cancellationSignal: CancellationSignal
@@ -484,7 +488,7 @@ class SQLDatabase(
 
     @JvmSynthetic
     fun queryUpTo(
-        sql: String,
+        @TrustedSql sql: String,
         bindArgs: ParameterRow,
         maximumRows: Int,
         cancellationSignal: CancellationSignal
@@ -503,7 +507,7 @@ class SQLDatabase(
 
     @JvmSynthetic
     fun query(
-        sql: String,
+        @TrustedSql sql: String,
         bindArgs: ParameterRow,
         cancellationSignal: CancellationSignal
     ): ICursor = withCancellationSignal(cancellationSignal) {
@@ -646,7 +650,7 @@ class SQLDatabase(
     override fun update(
         table: String,
         values: IContentValues,
-        whereClause: String,
+        @TrustedSql whereClause: String,
         whereArgs: Array<out Any?>,
         conflictAlgorithm: IConflictAlgorithm
     ) = pledge {
@@ -656,13 +660,13 @@ class SQLDatabase(
         SharedSqlBuilder.use {
             append("UPDATE")
                 .append(conflictAlgorithm.sql)
-                .append(table)
+                .appendQualifiedIdentifier(table)
                 .append(" SET ")
             val bindArgs = Array(valuesSize + whereArgs.size) {
                 if (it < valuesSize) {
                     if (it > 0) { append(',') }
                     iterator.next().run {
-                        append(key).append("=?")
+                        appendIdentifier(key).append("=?")
                         value
                     }
                 } else {
@@ -690,37 +694,37 @@ class SQLDatabase(
         val bindArgs = arrayOfNulls<Any?>(insertValues.size + updateSize)
         SharedSqlBuilder.use {
             append("INSERT INTO ")
-                .append(table)
+                .appendQualifiedIdentifier(table)
                 .append('(')
             val insertIterator = insertValues.entrySet.iterator()
             insertIterator.next().apply {
-                append(key)
+                appendIdentifier(key)
                 bindArgs[0] = value
             }
             1.forUntil(insertValues.size) {
                 append(',')
                 insertIterator.next().run {
-                    append(key)
+                    appendIdentifier(key)
                     bindArgs[it] = value
                 }
             }
             append(") VALUES (?")
                 .apply { repeat(insertValues.size - 1) { append(",?") } }
                 .append(") ON CONFLICT (")
-                .append(columns.first())
+                .appendIdentifier(columns.first())
             1.forUntil(columns.size) {
-                append(',').append(columns[it])
+                append(',').appendIdentifier(columns[it])
             }
             append(") DO UPDATE SET ")
             val updateIterator = updateValues.entrySet.iterator()
             updateIterator.next().run {
-                append(key).append("=?")
+                appendIdentifier(key).append("=?")
                 bindArgs[insertValues.size] = value
             }
             1.forUntil(updateSize) {
                 append(',')
                 updateIterator.next().run {
-                    append(key).append("=?")
+                    appendIdentifier(key).append("=?")
                     bindArgs[insertValues.size + it] = value
                 }
             }
@@ -819,7 +823,7 @@ class SQLDatabase(
      * back to the connection's cache and to release the session's connection back to the pool.
      */
     fun queryForwardOnly(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>
     ): ICursor = pledge {
         session().executeForForwardCursor(sql, selectionArgs)
@@ -831,7 +835,7 @@ class SQLDatabase(
      * @since 0.35.0
      */
     fun queryForwardOnly(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>,
         cancellationSignal: CancellationSignal
     ): ICursor = pledge {
@@ -841,7 +845,7 @@ class SQLDatabase(
 
     @JvmSynthetic
     fun queryForwardOnly(
-        sql: String,
+        @TrustedSql sql: String,
         bindArgs: ParameterRow,
         cancellationSignal: CancellationSignal
     ): ICursor = pledge {
@@ -851,15 +855,15 @@ class SQLDatabase(
 }
 
 interface IDatabase : IReadableDatabase, ISQLTransactor {
-    fun compileStatement(sql: String, bindArgs: Array<out Any?>? = null): ISQLStatement
+    fun compileStatement(@TrustedSql sql: String, bindArgs: Array<out Any?>? = null): ISQLStatement
 
     fun delete(
         table: String,
-        whereClause: String,
+        @TrustedSql whereClause: String,
         whereArgs: Array<out Any?>
     ): Int
 
-    fun exec(sql: String, bindArgs: Array<out Any?>? = null)
+    fun exec(@TrustedSql sql: String, bindArgs: Array<out Any?>? = null)
 
     fun insert(
         table: String,
@@ -870,7 +874,7 @@ interface IDatabase : IReadableDatabase, ISQLTransactor {
     fun update(
         table: String,
         values: IContentValues,
-        whereClause: String,
+        @TrustedSql whereClause: String,
         whereArgs: Array<out Any?>,
         conflictAlgorithm: IConflictAlgorithm
     ): Int
@@ -892,18 +896,18 @@ interface IReadableDatabase : Closeable {
     @Suppress("Detekt.LongParameterList")
     fun query(
         distinct: Boolean,
-        table: String,
-        columns: Array<out String>,
-        selection: String,
+        @TrustedSql table: String,
+        @TrustedSql columns: Array<out String>,
+        @TrustedSql selection: String,
         selectionArgs: Array<out Any?>,
-        groupBy: String?,
-        having: String?,
-        orderBy: String?,
+        @TrustedSql groupBy: String?,
+        @TrustedSql having: String?,
+        @TrustedSql orderBy: String?,
         limit: Int?
     ): ICursor
 
     fun query(
-        sql: String,
+        @TrustedSql sql: String,
         selectionArgs: Array<out Any?>
     ): ICursor
 

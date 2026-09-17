@@ -29,6 +29,7 @@ import com.bloomberg.selekt.SQLTransactionListener
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.android.SQLiteDatabase
 import com.bloomberg.selekt.annotations.DelicateApi
+import com.bloomberg.selekt.annotations.TrustedSql
 import org.intellij.lang.annotations.Language
 import java.util.Locale
 
@@ -75,12 +76,12 @@ private class SupportSQLiteDatabase(
 
     override fun close() = database.close()
 
-    override fun compileStatement(@Language("RoomSql") sql: String) =
+    override fun compileStatement(@Language("RoomSql") @TrustedSql sql: String) =
         database.compileStatement(sql).asSupportSQLiteStatement()
 
     override fun delete(
         table: String,
-        whereClause: String?,
+        @TrustedSql whereClause: String?,
         whereArgs: Array<out Any?>?
     ): Int = database.delete(
         table,
@@ -94,9 +95,10 @@ private class SupportSQLiteDatabase(
 
     override fun endTransaction() = database.endTransaction()
 
-    override fun execSQL(@Language("RoomSql") sql: String) = database.exec(sql)
+    override fun execSQL(@Language("RoomSql") @TrustedSql sql: String) = database.exec(sql)
 
-    override fun execSQL(@Language("RoomSql") sql: String, bindArgs: Array<out Any?>) = database.exec(sql, bindArgs)
+    override fun execSQL(@Language("RoomSql") @TrustedSql sql: String, bindArgs: Array<out Any?>) =
+        database.exec(sql, bindArgs)
 
     override val attachedDbs: List<Pair<String, String>>
         get() = database.query("PRAGMA database_list", null).use {
@@ -154,9 +156,9 @@ private class SupportSQLiteDatabase(
 
     override fun needUpgrade(newVersion: Int) = database.version < newVersion
 
-    override fun query(query: String) = database.query(query, null)
+    override fun query(@TrustedSql query: String) = database.query(query, null)
 
-    override fun query(query: String, bindArgs: Array<out Any?>) = database.query(query, bindArgs)
+    override fun query(@TrustedSql query: String, bindArgs: Array<out Any?>) = database.query(query, bindArgs)
 
     override fun query(query: SupportSQLiteQuery) = database.query(query.asSelektSQLQuery())
 
@@ -200,7 +202,7 @@ private class SupportSQLiteDatabase(
         table: String,
         conflictAlgorithm: Int,
         values: ContentValues,
-        whereClause: String?,
+        @TrustedSql whereClause: String?,
         whereArgs: Array<out Any?>?
     ) = database.update(table, values, whereClause, whereArgs, conflictAlgorithm.toConflictAlgorithm())
 
