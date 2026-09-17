@@ -550,7 +550,7 @@
 
 <h1 id="software-bill-of-materials">Software bill of materials</h1>
 <p>Each published Selekt JAR has a CycloneDX SBOM. Maven Central publishes it beside the JAR using the <code>cyclonedx</code>
-classifier, for example <code>selekt-jdbc-1.5.0-cyclonedx.json</code>. The identical document is embedded at
+classifier, for example <code>selekt-jdbc-1.5.1-cyclonedx.json</code>. The identical document is embedded at
 <code>META-INF/sbom/selekt-jdbc.cdx.json</code> for runtime inspection:</p>
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">sbom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SelektDriver</span><span class="o">::</span><span class="n">class</span><span class="p">.</span><span class="na">java</span><span class="p">.</span><span class="na">classLoader</span>
 <span class="w">    </span><span class="p">.</span><span class="na">getResourceAsStream</span><span class="p">(</span><span class="s">&quot;META-INF/sbom/selekt-jdbc.cdx.json&quot;</span><span class="p">)</span>
