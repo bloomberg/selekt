@@ -177,15 +177,20 @@ and prevents creation of further helpers; helpers already created by Room remain
     private fun deriveKey(): ByteArray? = TODO(
         "Optional key, must be exactly 32-bytes long.")
 
-    val databaseHelper = SQLiteOpenHelper(
-        context = context.applicationContext,
-        configuration = ISQLiteOpenHelper.Configuration(
-            callback = MyOpenHelperCallback,
-            key = deriveKey(),
-            name = "sample"
-        ),
-        version = 3
-    )
+    val key = deriveKey()
+    val databaseHelper = try {
+        SQLiteOpenHelper(
+            context = context.applicationContext,
+            configuration = ISQLiteOpenHelper.Configuration(
+                callback = MyOpenHelperCallback,
+                name = "sample"
+            ),
+            version = 3,
+            key = key
+        )
+    } finally {
+        key?.fill(0)
+    }
     ```
 
 === "Java"
@@ -210,16 +215,28 @@ and prevents creation of further helpers; helpers already created by Room remain
         // TODO Optional key, must be exactly 32-bytes long.
     }
 
-    final SQLiteOpenHelper databaseHelper = new SQLiteOpenHelper(
-        context.applicationContext,
-        3,
-        new ISQLiteOpenHelper.Configuration(
-            new MyOpenHelperCallback(),
-            deriveKey(),
-            "sample"
-        )
-    );
+    final byte[] key = deriveKey();
+    final SQLiteOpenHelper databaseHelper;
+    try {
+        databaseHelper = new SQLiteOpenHelper(
+            context.applicationContext,
+            new ISQLiteOpenHelper.Configuration(
+                new MyOpenHelperCallback(),
+                "sample"
+            ),
+            3,
+            new SQLiteOpenParams(),
+            key
+        );
+    } finally {
+        if (key != null) {
+            Arrays.fill(key, (byte) 0);
+        }
+    }
     ```
+
+The helper copies the key synchronously and does not retain the supplied array. The caller remains responsible for clearing
+it after construction; the helper clears its private copy after a successful open or on close.
 
 ## Interaction
 

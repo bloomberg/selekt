@@ -66,10 +66,10 @@ internal class SQLiteOpenHelperTest {
             targetContext,
             ISQLiteOpenHelper.Configuration(
                 callback = mock(),
-                key = ByteArray(32) { 0x42 },
                 name = file.name
             ),
-            1
+            1,
+            key = ByteArray(32) { 0x42 }
         ).apply {
             assertSame(SQLiteJournalMode.WAL, writableDatabase.journalMode)
             assertEquals(file.name, databaseName)
@@ -188,11 +188,11 @@ internal class SQLiteOpenHelperTest {
             context = targetContext,
             configuration = ISQLiteOpenHelper.Configuration(
                 callback = mock(),
-                key = key,
                 name = file.name
             ),
             openParams = SQLiteOpenParams(),
-            version = 1
+            version = 1,
+            key = key
         )
         helper.use {
             it.writableDatabase
@@ -208,11 +208,11 @@ internal class SQLiteOpenHelperTest {
         context = targetContext,
         configuration = ISQLiteOpenHelper.Configuration(
             callback = callback,
-            key = ByteArray(32) { 0x42 },
             name = file.name
         ),
         openParams = openParams,
-        version = version
+        version = version,
+        key = ByteArray(32) { 0x42 }
     )
 
     @Test

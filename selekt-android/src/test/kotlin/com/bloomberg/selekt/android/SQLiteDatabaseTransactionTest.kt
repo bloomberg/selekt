@@ -50,7 +50,6 @@ private fun createSQLiteOpenHelper(
 
             override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
         },
-        key = null,
         name = "test-transactions-$journalMode"
     ),
     1,

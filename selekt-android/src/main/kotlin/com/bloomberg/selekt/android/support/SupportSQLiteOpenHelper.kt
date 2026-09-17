@@ -62,10 +62,11 @@ class SupportSQLiteOpenHelperFactory(
     override fun create(configuration: SupportSQLiteOpenHelper.Configuration) = synchronized(lifecycleLock) {
         check(!closed) { "Factory is closed." }
         SQLiteOpenHelper(
-            configuration = configuration.asSelektConfiguration(key),
+            configuration = configuration.asSelektConfiguration(),
             context = configuration.context,
             openParams = SQLiteOpenParams(journalMode),
-            version = configuration.callback.version
+            version = configuration.callback.version,
+            key = key
         ).asSupportSQLiteOpenHelper()
     }
 
@@ -106,11 +107,8 @@ internal fun ISQLiteOpenHelper.asSupportSQLiteOpenHelper() = @DelicateApi object
 }
 
 @JvmSynthetic
-internal fun SupportSQLiteOpenHelper.Configuration.asSelektConfiguration(
-    key: ByteArray?
-) = ISQLiteOpenHelper.Configuration(
+internal fun SupportSQLiteOpenHelper.Configuration.asSelektConfiguration() = ISQLiteOpenHelper.Configuration(
     callback = callback.asSelektCallback(),
-    key = key,
     name = requireNotNull(name) { "Encryption of in-memory SupportDatabases is not supported." }
 )
 

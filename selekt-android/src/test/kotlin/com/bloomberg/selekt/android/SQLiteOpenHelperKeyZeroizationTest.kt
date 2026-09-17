@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.android
 
 import android.content.Context
+import com.bloomberg.selekt.DatabaseKey
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.commons.deleteDatabase
 import org.junit.jupiter.api.AfterEach
@@ -27,6 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.io.path.createTempFile
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 internal class SQLiteOpenHelperKeyZeroizationTest {
@@ -56,6 +58,41 @@ internal class SQLiteOpenHelperKeyZeroizationTest {
     }
 
     @Test
+    fun `configuration has no key property and helper does not retain caller key`() {
+        val key = ByteArray(32) { 0x42 }
+        val configuration = ISQLiteOpenHelper.Configuration(
+            callback = mock(),
+            name = file.name
+        )
+        val helper = SQLiteOpenHelper(
+            context = targetContext,
+            configuration = configuration,
+            openParams = SQLiteOpenParams(journalMode = SQLiteJournalMode.WAL),
+            version = 1,
+            key = key
+        )
+        try {
+            assertFalse(ISQLiteOpenHelper.Configuration::class.java.declaredFields.any { it.type == ByteArray::class.java })
+            val fields = SQLiteOpenHelper::class.java.declaredFields.onEach { it.isAccessible = true }
+            assertFalse(fields.any { it.type == ByteArray::class.java })
+            assertFalse(fields.any { it.get(helper) === key })
+        } finally {
+            helper.close()
+        }
+    }
+
+    @Test
+    fun `caller can clear key immediately after helper construction`() {
+        val key = ByteArray(32) { 0x42 }
+        val helper = newHelper(key)
+        key.fill(0)
+        helper.use {
+            assertTrue(it.writableDatabase.isOpen)
+            assertFalse(key.any { byte -> byte != 0.toByte() })
+        }
+    }
+
+    @Test
     fun `caller supplied key remains intact after writableDatabase is opened`() {
         val key = ByteArray(32) { 0x42 }
         newHelper(key).use {
@@ -68,60 +105,59 @@ internal class SQLiteOpenHelperKeyZeroizationTest {
     }
 
     @Test
-    fun `internal key copy is zeroed after writableDatabase is opened`() {
+    fun `helper hands its native key ownership to the opened database`() {
         val key = ByteArray(32) { 0x42 }
         val helper = newHelper(key)
+        val internalKey = requireNotNull(internalKeyOf(helper)) {
+            "A keyed helper should own a DatabaseKey before opening"
+        }
         try {
+            assertTrue(internalKey.isOpen())
             helper.writableDatabase
-            val internalKey = internalKeyOf(helper)
-            requireNotNull(internalKey) { "Internal _key should have been allocated for a keyed helper" }
-            assertTrue(
-                internalKey.all { it == 0.toByte() },
-                "Internal _key copy must be zeroed after the database is opened"
-            )
+            assertNull(internalKeyOf(helper), "The helper must release its key reference after opening")
+            assertTrue(internalKey.isOpen(), "The opened database must retain the native key")
         } finally {
             helper.close()
         }
+        assertFalse(internalKey.isOpen(), "Closing the database must destroy its native key")
     }
 
     @Test
-    fun `internal key copy is zeroed by close even if writableDatabase was never accessed`() {
+    fun `close destroys native key even if writableDatabase was never accessed`() {
         val key = ByteArray(32) { 0x42 }
         val helper = newHelper(key)
+        val internalKey = requireNotNull(internalKeyOf(helper))
         helper.close()
-        val internalKey = internalKeyOf(helper)
-        requireNotNull(internalKey) { "Internal _key should have been allocated for a keyed helper" }
-        assertTrue(
-            internalKey.all { it == 0.toByte() },
-            "close() must zero the internal _key copy even when writableDatabase was never accessed"
-        )
+        assertNull(internalKeyOf(helper))
+        assertFalse(internalKey.isOpen(), "close() must destroy an unopened helper's native key")
     }
 
     @Test
-    fun `close is idempotent and repeated calls keep internal key zeroed`() {
+    fun `close is idempotent and repeated calls keep native key destroyed`() {
         val key = ByteArray(32) { 0x42 }
         val helper = newHelper(key)
+        val internalKey = requireNotNull(internalKeyOf(helper))
         helper.writableDatabase
         helper.close()
         helper.close()
-        val internalKey = internalKeyOf(helper)
-        assertFalse(internalKey?.any { it != 0.toByte() } == true)
+        assertNull(internalKeyOf(helper))
+        assertFalse(internalKey.isOpen())
     }
 
     private fun newHelper(key: ByteArray) = SQLiteOpenHelper(
         context = targetContext,
         configuration = ISQLiteOpenHelper.Configuration(
             callback = mock(),
-            key = key,
             name = file.name
         ),
         openParams = SQLiteOpenParams(journalMode = SQLiteJournalMode.WAL),
-        version = 1
+        version = 1,
+        key = key
     )
 
-    private fun internalKeyOf(helper: SQLiteOpenHelper): ByteArray? {
-        val field = SQLiteOpenHelper::class.java.getDeclaredField("_key")
+    private fun internalKeyOf(helper: SQLiteOpenHelper): DatabaseKey? {
+        val field = SQLiteOpenHelper::class.java.getDeclaredField("databaseKey")
         field.isAccessible = true
-        return field.get(helper) as ByteArray?
+        return field.get(helper) as DatabaseKey?
     }
 }

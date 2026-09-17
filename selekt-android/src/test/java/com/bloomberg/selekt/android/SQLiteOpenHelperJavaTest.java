@@ -79,11 +79,11 @@ final class SQLiteOpenHelperJavaTest {
             targetContext,
             new ISQLiteOpenHelper.Configuration(
                 callback,
-                key,
                 file.getName()
             ),
             3,
-            new SQLiteOpenParams()
+            new SQLiteOpenParams(),
+            key
         );
         final SQLiteDatabase database = databaseHelper.getWritableDatabase();
         assertEquals(3, database.getVersion());
@@ -96,7 +96,6 @@ final class SQLiteOpenHelperJavaTest {
             targetContext,
             new ISQLiteOpenHelper.Configuration(
                 callback,
-                key,
                 file.getName()
             ),
             3,
@@ -104,7 +103,8 @@ final class SQLiteOpenHelperJavaTest {
                 .setJournalMode(SQLiteJournalMode.WAL)
                 .setPageSizeExponent(12)
                 .setTraceEventMode(new SQLiteTraceEventMode().enableStatement())
-                .build()
+                .build(),
+            key
         );
         final SQLiteDatabase database = databaseHelper.getWritableDatabase();
         assertEquals(SQLiteJournalMode.WAL, database.getJournalMode());

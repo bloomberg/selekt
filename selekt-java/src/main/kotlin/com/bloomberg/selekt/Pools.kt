@@ -26,6 +26,7 @@ import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.concurrent.withLock
@@ -122,6 +123,9 @@ internal class SQLConnectionFactory(
     private val random: IRandom,
     private val key: DatabaseKey?
 ) : IObjectFactory<CloseableSQLExecutor> {
+    @Suppress("unused")
+    @Volatile
+    private var keyReleased = 0
     private val busyLock = ReentrantLock()
     private val connections: MutableSet<CloseableSQLExecutor> = Collections.newSetFromMap(ConcurrentHashMap())
 
@@ -129,7 +133,9 @@ internal class SQLConnectionFactory(
     private var progressHandlerSetting: ProgressHandlerSetting? = null
 
     override fun close() {
-        key?.release()
+        if (keyReleasedUpdater.compareAndSet(this, 0, 1)) {
+            key?.release()
+        }
     }
 
     override fun destroyObject(obj: CloseableSQLExecutor) = busyLock.withLock {
@@ -167,5 +173,12 @@ internal class SQLConnectionFactory(
         ).also {
             connections.add(it)
         }
+    }
+
+    private companion object {
+        val keyReleasedUpdater: AtomicIntegerFieldUpdater<SQLConnectionFactory> = AtomicIntegerFieldUpdater.newUpdater(
+            SQLConnectionFactory::class.java,
+            "keyReleased"
+        )
     }
 }
