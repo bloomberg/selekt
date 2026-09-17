@@ -46,6 +46,14 @@ import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.jvm.Throws
 
+private fun quotedPragmaSchema(name: String): String {
+    require(name.isNotEmpty()) { "Pragma schema name must not be empty." }
+    require('\u0000' !in name) { "Pragma schema name must not contain NUL." }
+    return buildString(name.length + 2) {
+        append('"').append(name.replace("\"", "\"\"")).append('"')
+    }
+}
+
 /**
  * Mirrors the Android SDK APIs.
  *
@@ -314,7 +322,10 @@ class SQLiteDatabase private constructor(
      * @return `true` if the integrity check passes, `false` otherwise.
      * @see <a href="https://www.sqlite.org/pragma.html#pragma_integrity_check">PRAGMA integrity_check</a>
      */
-    fun integrityCheck(name: String = "main") = "ok".equals(database.pragma("$name.integrity_check"), true)
+    fun integrityCheck(name: String = "main") = "ok".equals(
+        database.pragma("${quotedPragmaSchema(name)}.integrity_check"),
+        ignoreCase = true
+    )
 
     /**
      * Interrupts all database connections managed by this database. This causes any pending database operations on those

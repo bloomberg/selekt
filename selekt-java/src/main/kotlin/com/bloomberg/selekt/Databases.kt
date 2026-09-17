@@ -29,10 +29,31 @@ import javax.annotation.concurrent.ThreadSafe
 
 private val allowedPragmaKeys = SQLitePragma.entries.map(SQLitePragma::key).toSet()
 
-private fun requireSafePragmaKey(key: String) {
-    val baseKey = key.substringBefore('(').substringBefore('=').substringAfterLast('.').lowercase()
+private val safePragmaKeyPattern = Regex(
+    """^(?:([a-zA-Z_][a-zA-Z0-9_]*|"(?:[^"\x00]|"")*")\.)?""" +
+        """([a-zA-Z_][a-zA-Z0-9_]*)(?:\(([+-]?[0-9]+|[a-zA-Z_][a-zA-Z0-9_]*)\))?$"""
+)
+
+private fun canonicalPragmaKey(key: String, allowArgument: Boolean): String {
+    val match = requireNotNull(safePragmaKeyPattern.matchEntire(key)) {
+        "Invalid pragma key: '$key'. Use SQLitePragma enum for type-safe access."
+    }
+    val (schema, uncanonicalisedBaseKey, argument) = match.destructured
+    require(allowArgument || argument.isEmpty()) {
+        "Pragma key must not contain an argument when a separate value is supplied: '$key'."
+    }
+    val baseKey = uncanonicalisedBaseKey.lowercase()
     require(baseKey in allowedPragmaKeys) {
         "Unknown pragma key: '$baseKey'. Use SQLitePragma enum for type-safe access."
+    }
+    return buildString(key.length) {
+        if (schema.isNotEmpty()) {
+            append(schema).append('.')
+        }
+        append(baseKey)
+        if (argument.isNotEmpty()) {
+            append('(').append(argument).append(')')
+        }
     }
 }
 
@@ -353,19 +374,19 @@ class SQLDatabase(
     fun pragma(pragma: SQLitePragma, value: Any) = pragma(pragma.key, value)
 
     fun pragma(key: String) = pledge {
-        requireSafePragmaKey(key)
+        val canonicalKey = canonicalPragmaKey(key, allowArgument = true)
         checkNotNull(SQLStatement.executeForString(
             session,
-            "PRAGMA $key",
+            "PRAGMA $canonicalKey",
             SQLStatementType.PRAGMA,
             EMPTY_ARRAY
         ))
     }
 
     fun pragma(key: String, value: Any) = pledge {
-        requireSafePragmaKey(key)
+        val canonicalKey = canonicalPragmaKey(key, allowArgument = false)
         requireSafePragmaValue(value)
-        SQLStatement.executeForString(session, "PRAGMA $key=$value", SQLStatementType.PRAGMA, EMPTY_ARRAY)
+        SQLStatement.executeForString(session, "PRAGMA $canonicalKey=$value", SQLStatementType.PRAGMA, EMPTY_ARRAY)
     }
 
     override fun query(
