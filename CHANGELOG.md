@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.6.0
+
+* Bound scrollable cursor memory.
+* Normalize SQL statement trace logging.
+* Prevent stale OpenSSL artifact mixing.
+
 ## Version 1.5.1
 
 * Reject invalid JDBC foreign key configuration.
