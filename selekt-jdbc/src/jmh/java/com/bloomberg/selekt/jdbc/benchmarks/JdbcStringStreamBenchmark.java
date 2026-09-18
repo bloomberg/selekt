@@ -70,25 +70,44 @@ public class JdbcStringStreamBenchmark {
     }
 
     public enum StringEncoding {
-        ASCII("-a-bb"),
-        LATIN1("-é-ññ"),
-        UTF16("-€-😀");
+        ASCII("a", 1),
+        LATIN1("é", 2),
+        UTF16("😀", 4);
 
-        private final String suffix;
+        private final String character;
+        private final int utf8Bytes;
 
-        StringEncoding(final String suffix) {
-            this.suffix = suffix;
+        StringEncoding(final String character, final int utf8Bytes) {
+            this.character = character;
+            this.utf8Bytes = utf8Bytes;
+        }
+
+        String value(final int row, final int valueSizeBytes) {
+            final String prefix = "row-" + row + "-";
+            final int remainingBytes = valueSizeBytes - prefix.length();
+            if (remainingBytes < utf8Bytes) {
+                throw new IllegalArgumentException(
+                    "valueSizeBytes is too small for the row prefix and encoding");
+            }
+            return prefix
+                + character.repeat(remainingBytes / utf8Bytes)
+                + "a".repeat(remainingBytes % utf8Bytes);
         }
     }
 
     @Param({"SELEKT", "XERIAL"})
     public DriverKind driverKind;
 
-    @Param({"1", "1000", "50000"})
+    // CI separately exercises 50,000 rows with 16-byte values to avoid a
+    // multi-gigabyte parameter combination.
+    @Param({"1", "1000"})
     public int rowCount;
 
     @Param({"ASCII", "LATIN1", "UTF16"})
     public StringEncoding stringEncoding;
+
+    @Param({"16", "1024", "65536"})
+    public int valueSizeBytes;
 
     private File databaseFile;
     private Connection connection;
@@ -108,7 +127,7 @@ public class JdbcStringStreamBenchmark {
         try (PreparedStatement insertStatement = connection.prepareStatement(INSERT_SQL)) {
             for (int row = 0; row < rowCount; row++) {
                 insertStatement.setInt(1, row);
-                insertStatement.setString(2, "row-" + row + stringEncoding.suffix);
+                insertStatement.setString(2, stringEncoding.value(row, valueSizeBytes));
                 insertStatement.addBatch();
             }
             insertStatement.executeBatch();
