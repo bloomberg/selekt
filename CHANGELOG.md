@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.6.1
+
+* Optimize FFM column byte copying.
+
 ## Version 1.6.0
 
 * Bound scrollable cursor memory.
