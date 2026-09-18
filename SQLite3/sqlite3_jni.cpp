@@ -24,7 +24,6 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
-#include <string_view>
 #include <bloomberg/AutoJByteArray.h>
 #include <bloomberg/log.h>
 #include <SelektConfig.h>
@@ -68,85 +67,6 @@ namespace {
         std::memcpy(&pointer, &address, sizeof(pointer));
         return pointer;
     }
-
-    constexpr bool isAsciiIdentifierCharacter(char value) {
-        return (value >= 'a' && value <= 'z')
-            || (value >= 'A' && value <= 'Z')
-            || (value >= '0' && value <= '9')
-            || value == '_'
-            || value == '$'
-            || static_cast<unsigned char>(value) >= 0x80;
-    }
-
-    constexpr char asciiLowercase(char value) {
-        return value >= 'A' && value <= 'Z' ? static_cast<char>(value + ('a' - 'A')) : value;
-    }
-
-    constexpr bool matchesKeywordAt(
-        std::string_view sql,
-        std::size_t offset,
-        std::string_view keyword,
-        bool requireLeadingBoundary = true
-    ) {
-        if (offset > sql.size()
-            || keyword.size() > sql.size() - offset
-            || (requireLeadingBoundary && offset > 0 && isAsciiIdentifierCharacter(sql[offset - 1]))) {
-            return false;
-        }
-        for (std::size_t i = 0; i < keyword.size(); ++i) {
-            if (asciiLowercase(sql[offset + i]) != asciiLowercase(keyword[i])) {
-                return false;
-            }
-        }
-        auto const end = offset + keyword.size();
-        return end == sql.size() || !isAsciiIdentifierCharacter(sql[end]);
-    }
-
-    constexpr bool containsKeywordAfter(
-        std::string_view sql,
-        std::size_t offset,
-        std::string_view keyword
-    ) {
-        for (; offset < sql.size(); ++offset) {
-            if (matchesKeywordAt(sql, offset, keyword)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    constexpr bool containsKeyingPragma(std::string_view sql) {
-        for (std::size_t offset = 0; offset < sql.size(); ++offset) {
-            if (!matchesKeywordAt(sql, offset, "pragma", false)) {
-                continue;
-            }
-            auto const nameOffset = offset + std::string_view("pragma").size();
-            if (containsKeywordAfter(sql, nameOffset, "key")
-                || containsKeywordAfter(sql, nameOffset, "rekey")
-                || containsKeywordAfter(sql, nameOffset, "hexkey")
-                || containsKeywordAfter(sql, nameOffset, "hexrekey")
-                || containsKeywordAfter(sql, nameOffset, "textkey")
-                || containsKeywordAfter(sql, nameOffset, "textrekey")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static_assert(containsKeyingPragma("PRAGMA key = 'secret'"));
-    static_assert(containsKeyingPragma(" \t-- leading comment\n/* another */ PrAgMa rekey='secret'"));
-    static_assert(containsKeyingPragma("; PRAGMA main.hexkey = 'secret'"));
-    static_assert(containsKeyingPragma("EXPLAIN QUERY PLAN PRAGMA hexrekey = 'secret'"));
-    static_assert(containsKeyingPragma("EXPLAIN PRAGMA temp.textkey = 'secret'"));
-    static_assert(containsKeyingPragma("/* leading */ PRAGMA \"main\".textrekey('secret')"));
-    static_assert(containsKeyingPragma("\uFEFFPRAGMA key = 'secret'"));
-    static_assert(containsKeyingPragma("SELECT 'PRAGMA key = secret'"));
-    static_assert(!containsKeyingPragma("PRAGMA journal_mode=WAL"));
-    static_assert(!containsKeyingPragma("PRAGMA foreign_keys=ON"));
-    static_assert(!containsKeyingPragma("PRAGMA key_store='value'"));
-    static_assert(!containsKeyingPragma("PRAGMA monkey='value'"));
-    static_assert(!containsKeyingPragma("PRAGMATIC key = 'value'"));
-    static_assert(!containsKeyingPragma("SELECT 1"));
 
     struct ThrowableClasses {
         jclass illegalArgumentException = nullptr;
@@ -2296,11 +2216,13 @@ Java_com_bloomberg_selekt_ExternalSQLite_traceV2(
                 case SQLITE_TRACE_ROW: LOG_D("ROW: %p", p); break;
                 case SQLITE_TRACE_PROFILE: LOG_D("PROFILE: %p %lldns", p, *static_cast<sqlite3_int64*>(x)); break;
                 case SQLITE_TRACE_STMT: {
-                    auto sql = static_cast<const char*>(x);
-                    if (sql != nullptr && containsKeyingPragma(sql)) {
-                        LOG_D("STMT: %p PRAGMA <keying operation>=<redacted>", p);
+                    // Normalization retains useful SQL structure while replacing literals and bind parameters
+                    // with placeholders and removing comments. If normalization fails, do not fall back to raw SQL.
+                    auto const normalizedSql = sqlite3_normalized_sql(static_cast<sqlite3_stmt*>(p));
+                    if (normalizedSql == nullptr) {
+                        LOG_D("STMT: %p <normalized SQL unavailable>", p);
                     } else {
-                        LOG_D("STMT: %p %s", p, sql);
+                        LOG_D("STMT: %p %s", p, normalizedSql);
                     }
                     break;
                 }

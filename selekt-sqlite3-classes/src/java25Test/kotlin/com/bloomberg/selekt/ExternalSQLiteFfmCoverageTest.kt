@@ -18,12 +18,18 @@ package com.bloomberg.selekt
 
 import java.io.File
 import java.lang.foreign.Arena
+import java.lang.foreign.FunctionDescriptor
+import java.lang.foreign.Linker
+import java.lang.foreign.MemorySegment
+import java.lang.foreign.SymbolLookup
+import java.lang.foreign.ValueLayout
 import java.lang.invoke.MethodHandle
 import java.lang.reflect.InvocationTargetException
 import java.nio.ByteBuffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -43,6 +49,13 @@ internal class ExternalSQLiteFfmCoverageTest {
 
     private val sqlite = externalSQLiteSingleton()
     private val externalType = Class.forName("com.bloomberg.selekt.ExternalSQLite")
+    private val normalizedSqlHandle by lazy {
+        val symbol = SymbolLookup.loaderLookup().find("sqlite3_normalized_sql").orElseThrow()
+        Linker.nativeLinker().downcallHandle(
+            symbol,
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+        )
+    }
 
     @Test
     fun `configured singleton overload retains the singleton`() {
@@ -114,6 +127,25 @@ internal class ExternalSQLiteFfmCoverageTest {
     }
 
     @Test
+    fun `native SQL normalization removes trace-sensitive values`() {
+        assertNormalized(
+            "SELECT 'trace-secret', 42, x'CAFE', :private_parameter /* secret-comment */",
+            sensitiveValues = listOf("trace-secret", "42", "CAFE", "private_parameter", "secret-comment"),
+            retainedStructure = listOf("SELECT")
+        )
+        assertNormalized(
+            "PRAGMA key = 'pragma-secret'",
+            sensitiveValues = listOf("pragma-secret"),
+            retainedStructure = listOf("PRAGMA", "KEY")
+        )
+        assertNormalized(
+            "ATTACH DATABASE 'secret.db' AS attached KEY 'attach-secret'",
+            sensitiveValues = listOf("secret.db", "attach-secret"),
+            retainedStructure = listOf("ATTACH", "DATABASE", "attached", "KEY")
+        )
+    }
+
+    @Test
     fun `cursor ownership failures release or reject native buffers`() = withStatement { statement ->
         val registry = mock<CursorWindowOwnershipRegistry>()
         val subject = newExternalSQLite(registry)
@@ -151,6 +183,35 @@ internal class ExternalSQLiteFfmCoverageTest {
             CursorWindowOwnershipRegistry::class.java
         ).apply { trySetAccessible() }
             .newInstance(SQLiteConfiguration(), { Unit }, registry) as IExternalSQLite
+
+    private fun assertNormalized(
+        sql: String,
+        sensitiveValues: List<String>,
+        retainedStructure: List<String>
+    ) {
+        val dbHolder = LongArray(1)
+        assertEquals(
+            SQL_OK,
+            sqlite.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        )
+        val statementHolder = LongArray(1)
+        try {
+            assertEquals(SQL_OK, sqlite.prepareV2(dbHolder.single(), sql, sql.length, statementHolder))
+            val pointer = normalizedSqlHandle.invoke(MemorySegment.ofAddress(statementHolder.single())) as MemorySegment
+            assertTrue(pointer.address() != 0L)
+            val normalized = pointer.reinterpret(Long.MAX_VALUE).getString(0)
+            assertTrue("?" in normalized, "Expected normalized placeholders in: $normalized")
+            sensitiveValues.forEach {
+                assertFalse(it in normalized, "Sensitive value '$it' remained in: $normalized")
+            }
+            retainedStructure.forEach {
+                assertTrue(it in normalized, "SQL structure '$it' missing from: $normalized")
+            }
+        } finally {
+            statementHolder.single().takeIf { it != 0L }?.let(sqlite::finalize)
+            sqlite.closeV2(dbHolder.single())
+        }
+    }
 
     private inline fun withStatement(block: (Long) -> Unit) {
         val dbHolder = LongArray(1)

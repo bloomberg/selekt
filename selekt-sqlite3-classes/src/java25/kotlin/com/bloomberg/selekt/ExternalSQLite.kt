@@ -58,7 +58,6 @@ internal fun requireSecretPointer(pointer: Long): Long {
 }
 
 private val NATIVE_READER: MemorySegment = MemorySegment.ofAddress(0L).reinterpret(Long.MAX_VALUE)
-private const val SQLITE_NULL_TYPE = 5
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun MemorySegment.getConfinedString(): String = address().let {
