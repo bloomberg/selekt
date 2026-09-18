@@ -106,33 +106,45 @@ fun openSslWorkingDir(target: String): Provider<Directory> = archive.run {
     layout.buildDirectory.dir("generated/$target/${get().asFile.name.substringBefore(".tar.gz")}")
 }
 
-arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach {
-    val titleCaseName = it.replaceFirstChar { c -> c.uppercaseChar() }
+arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach { abi ->
+    val titleCaseName = abi.replaceFirstChar { c -> c.uppercaseChar() }
+    val removeStaleTask = tasks.register<RemoveStaleOpenSslSources>("removeStaleOpenSsl$titleCaseName") {
+        generatedTargetDirectory.set(layout.buildDirectory.dir("generated/$abi"))
+        expectedDirectoryName.set("openssl-${openSslVersion()}")
+    }
     tasks.register<Copy>("unpackOpenSsl$titleCaseName") {
         from(openSslSourceFiles)
-        into(layout.buildDirectory.dir("generated/$it"))
-        dependsOn("downloadOpenSsl")
+        into(layout.buildDirectory.dir("generated/$abi"))
+        dependsOn("downloadOpenSsl", removeStaleTask)
     }
 
-    tasks.register<Exec>("assemble$titleCaseName") {
+    val library = layout.buildDirectory.file("libs/$abi/libcrypto.a")
+    val buildOpenSsl = tasks.register<Exec>("buildOpenSsl$titleCaseName") {
         dependsOn("unpackOpenSsl$titleCaseName")
         inputs.file("$projectDir/build_libraries.sh")
         inputs.property("version", openSslVersion())
-        val workingDirFile = openSslWorkingDir(it).get().asFile
+        val workingDirFile = openSslWorkingDir(abi).get().asFile
         outputs.files(fileTree("$workingDirFile/include") { include("**/*.h") })
             .withPropertyName("headers")
-        outputs.dir(layout.buildDirectory.dir("libs/$it")).withPropertyName("lib")
+        outputs.file(library).withPropertyName("libcrypto")
         outputs.cacheIf { true }
         workingDir(projectDir)
         commandLine("./build_libraries.sh")
         args(
             archive.run { layout.buildDirectory.file("generated" +
-                "/$it/${get().asFile.name.substringBefore(".tar.gz")}")
+                "/$abi/${get().asFile.name.substringBefore(".tar.gz")}")
             }.get().asFile.path,
-            it,
+            abi,
             21
         )
         logging.captureStandardOutput(LogLevel.INFO)
+    }
+    tasks.register<VerifyOpenSslArtifacts>("assemble$titleCaseName") {
+        dependsOn(buildOpenSsl)
+        expectedVersion.set(openSslVersion())
+        versionHeader.set(openSslWorkingDir(abi).map { it.file("include/openssl/opensslv.h") })
+        this.library.set(library)
+        manifest.set(layout.buildDirectory.file("manifests/$abi/openssl-build.properties"))
     }
 }
 
@@ -159,12 +171,17 @@ val isWindowsArm64 = osName() == "windows" && Regex("(?i)aarch64|arm64").contain
 )
 
 val openSslWorkingDir: Provider<Directory> = openSslWorkingDir(targetIdentifier())
+val hostCryptoExtension = if (isWindowsArm64) { ".lib" } else { ".a" }
+val removeStaleOpenSslHost = tasks.register<RemoveStaleOpenSslSources>("removeStaleOpenSslHost") {
+    generatedTargetDirectory.set(layout.buildDirectory.dir("generated/${targetIdentifier()}"))
+    expectedDirectoryName.set("openssl-${openSslVersion()}")
+}
 
 // FIXME Some of the host building logic parallels Android's above. Re-purpose?
 tasks.register<Copy>("unpackOpenSslHost") {
     from(openSslSourceFiles)
     into(layout.buildDirectory.dir("generated/${targetIdentifier()}"))
-    dependsOn("downloadOpenSsl")
+    dependsOn("downloadOpenSsl", removeStaleOpenSslHost)
     mustRunAfter("clean")
 }
 
@@ -217,9 +234,8 @@ tasks.register<Exec>("makeHost") {
     inputs.property("version", openSslVersion())
     workingDir(openSslWorkingDir)
     val openSslWorkingDir = openSslWorkingDir.get().asFile
-    val cryptoExtension = if (isWindowsArm64) { ".lib" } else { ".a" }
-    outputs.files("$openSslWorkingDir/libcrypto$cryptoExtension")
-        .withPropertyName("libcrypto$cryptoExtension")
+    outputs.files("$openSslWorkingDir/libcrypto$hostCryptoExtension")
+        .withPropertyName("libcrypto$hostCryptoExtension")
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })
         .withPropertyName("headers")
     outputs.cacheIf { false }
@@ -237,7 +253,8 @@ tasks.register<Exec>("makeHost") {
     logging.captureStandardOutput(LogLevel.INFO)
 }
 
-tasks.register<Copy>("assembleHost") {
+val hostLibrary = layout.buildDirectory.file("libs/${targetIdentifier()}/libcrypto$hostCryptoExtension")
+val copyOpenSslHost = tasks.register<Copy>("copyOpenSslHost") {
     dependsOn("makeHost")
     inputs.property("target", targetIdentifier())
     inputs.property("version", openSslVersion())
@@ -245,15 +262,16 @@ tasks.register<Copy>("assembleHost") {
     outputs.dir(outputDir).withPropertyName("libs")
     outputs.cacheIf { false }
     val openSslWorkingDir = openSslWorkingDir.get().asFile
-    val cryptoExtensions = if (isWindowsArm64) {
-        arrayOf(".lib")
-    } else {
-        arrayOf(".a")
-    }
     from(fileTree(openSslWorkingDir) {
-        cryptoExtensions.forEach {
-            include("**/libcrypto$it")
-        }
+        include("**/libcrypto$hostCryptoExtension")
     })
     into(outputDir)
+}
+
+tasks.register<VerifyOpenSslArtifacts>("assembleHost") {
+    dependsOn(copyOpenSslHost)
+    expectedVersion.set(openSslVersion())
+    versionHeader.set(openSslWorkingDir.map { it.file("include/openssl/opensslv.h") })
+    library.set(hostLibrary)
+    manifest.set(layout.buildDirectory.file("manifests/${targetIdentifier()}/openssl-build.properties"))
 }
