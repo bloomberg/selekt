@@ -111,7 +111,7 @@ jobs:
             > /tmp/jdbc-batch-java11-results.json
 
       - name: 'Run Java 25 JDBC text-stream benchmarks'
-        run: ./gradlew :selekt-jdbc:jmhFfm -Pjmh.includes="JdbcStringStreamBenchmark\.(readAsciiStream|readCharacterStream)" -Pjmh.profilers=gc -Pjmh.params="driverKind=SELEKT,XERIAL;rowCount=50000;stringEncoding=ASCII,LATIN1,UTF16"
+        run: ./gradlew :selekt-jdbc:jmhFfm -Pjmh.includes="JdbcStringStreamBenchmark\.(readAsciiStream|readCharacterStream)" -Pjmh.profilers=gc -Pjmh.params="driverKind=SELEKT,XERIAL;rowCount=50000;stringEncoding=ASCII,LATIN1,UTF16;valueSizeBytes=16"
 
       - name: 'Normalise Java 25 text-stream benchmark names'
         run: |
@@ -132,7 +132,7 @@ jobs:
           )' selekt-jdbc/build/results/jmhFfm/results.json > /tmp/jdbc-stream-java25-results.json
 
       - name: 'Run Java 11 JNI text-stream benchmarks'
-        run: ./gradlew :selekt-jdbc:jmhJni -Pjmh.includes="JdbcStringStreamBenchmark\.(readAsciiStream|readCharacterStream)" -Pjmh.profilers=gc -Pjmh.params="driverKind=SELEKT;rowCount=50000;stringEncoding=ASCII,LATIN1,UTF16"
+        run: ./gradlew :selekt-jdbc:jmhJni -Pjmh.includes="JdbcStringStreamBenchmark\.(readAsciiStream|readCharacterStream)" -Pjmh.profilers=gc -Pjmh.params="driverKind=SELEKT;rowCount=50000;stringEncoding=ASCII,LATIN1,UTF16;valueSizeBytes=16"
 
       - name: 'Normalise Java 11 JNI text-stream benchmark names'
         run: |

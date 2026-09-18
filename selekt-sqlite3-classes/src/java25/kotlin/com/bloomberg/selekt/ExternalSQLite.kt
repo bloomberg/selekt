@@ -20,6 +20,7 @@ import com.bloomberg.selekt.commons.loadLibrary
 import java.lang.foreign.Arena
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
+import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout.ADDRESS
@@ -836,7 +837,9 @@ internal class ExternalSQLite(
                 EMPTY_BYTE_ARRAY
             }
         }
-        return blob.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+        return ByteArray(size).also {
+            MemorySegment.copy(blob, JAVA_BYTE, 0, it, 0, size)
+        }
     }
 
     private fun columnText(statement: MemorySegment, index: Int): String? {
@@ -1624,6 +1627,8 @@ internal class ExternalSQLite(
         // sqlite3_bind_text receives an explicit byte count, but retaining a trailing NUL also satisfies its text contract.
         private const val ASCII_BIND_BUFFER_SIZE = DIRECT_ASCII_BIND_MAX_LENGTH + 1
         private const val INITIAL_CALLBACK_DEPTH = 4
+        // Matches SQLite's compiled limit and lets column copies avoid creating a reinterpreted segment for every value.
+        private const val SQLITE_MAX_LENGTH = 1_000_000_000L
         private const val SQLITE_NULL = 5
 
         init {
@@ -1638,6 +1643,10 @@ internal class ExternalSQLite(
 
         private val criticalOption = Linker.Option.critical(true)
         private val criticalNoHeapOption = Linker.Option.critical(false)
+
+        private val sqliteValueAddress = ADDRESS.withTargetLayout(
+            MemoryLayout.sequenceLayout(SQLITE_MAX_LENGTH, JAVA_BYTE)
+        )
 
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
 
@@ -1745,7 +1754,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_blob").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
+            FunctionDescriptor.of(sqliteValueAddress, ADDRESS, JAVA_INT),
             criticalNoHeapOption
         )
         private val sqlite3_column_bytes: MethodHandle = linker.downcallHandle(

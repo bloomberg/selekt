@@ -16,7 +16,7 @@ Latest JMH batch-insert results across Xerial and both Selekt backends, updated 
 
 ### Text Stream Reads
 
-Latest JMH results for querying and fully consuming 50,000 text values through JDBC. Lower is better for both metrics.
+Latest JMH results for querying and fully consuming 50,000 16-byte UTF-8 text values through JDBC. Lower is better for both metrics.
 
 === "Allocation"
 
