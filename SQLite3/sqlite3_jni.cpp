@@ -2013,14 +2013,13 @@ namespace {
         int columnCount,
         size_t maxBytes
     ) {
-        using enum AppendCursorRowResult;
         auto rowSize = cursorRowSize(statement, columnCount);
         auto finalOffsetsSize = (rowOffsets.size() + 1) * sizeof(int32_t);
         if (rowSize > maxBytes - buffer.size() ||
             finalOffsetsSize > maxBytes - buffer.size() - rowSize) {
             return rowOffsets.empty()
-                ? OVERSIZED
-                : FULL;
+                ? AppendCursorRowResult::OVERSIZED
+                : AppendCursorRowResult::FULL;
         }
         auto rowOffset = buffer.appendUninitialised(static_cast<size_t>(columnCount) * CURSOR_WINDOW_SLOT_SIZE);
         rowOffsets.push_back(static_cast<int32_t>(rowOffset));
@@ -2028,7 +2027,7 @@ namespace {
             auto slotOffset = rowOffset + static_cast<size_t>(column) * CURSOR_WINDOW_SLOT_SIZE;
             writeColumnSlot(buffer, statement, column, slotOffset);
         }
-        return APPENDED;
+        return AppendCursorRowResult::APPENDED;
     }
 
     bool shouldContinueCursorWindowFill(
@@ -2096,7 +2095,6 @@ extern "C" uint8_t* selekt_fill_cursor_window(
     int32_t maxBytes,
     int64_t* outSize
 ) {
-    using enum AppendCursorRowResult;
     if (outSize == nullptr) {
         return nullptr;
     }
@@ -2126,13 +2124,13 @@ extern "C" uint8_t* selekt_fill_cursor_window(
                 continue;
             }
             switch (appendCursorRow(buffer, rowOffsets, statement, columnCount, static_cast<size_t>(maxBytes))) {
-                case OVERSIZED:
+                case AppendCursorRowResult::OVERSIZED:
                     *outSize = ROW_TOO_LARGE;
                     return nullptr;
-                case FULL:
+                case AppendCursorRowResult::FULL:
                     windowFull = true;
                     break;
-                case APPENDED:
+                case AppendCursorRowResult::APPENDED:
                     break;
             }
         }
