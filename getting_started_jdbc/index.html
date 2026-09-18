@@ -525,6 +525,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cursor-memory-and-scrolling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cursor memory and scrolling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#inserting-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -891,6 +902,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cursor-memory-and-scrolling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cursor memory and scrolling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#inserting-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1031,6 +1053,8 @@ runtime-inspection and generation details.</p>
 <span class="w">    </span><span class="n">journalMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="w"> </span><span class="c1">// is the default</span>
 <span class="w">    </span><span class="n">busyTimeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="n">_500</span><span class="w"> </span><span class="c1">// milliseconds is the default</span>
 <span class="w">    </span><span class="n">maxPoolSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="c1">// is the default, with 3 read connections</span>
+<span class="w">    </span><span class="n">cursorWindowSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="n">_024</span><span class="w"> </span><span class="c1">// rows; the default</span>
+<span class="w">    </span><span class="n">cursorWindowByteSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="c1">// bytes; the default</span>
 <span class="w">    </span><span class="n">foreignKeys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">}</span>
 
@@ -1045,6 +1069,8 @@ runtime-inspection and generation details.</p>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setJournalMode</span><span class="p">(</span><span class="s">&quot;WAL&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setBusyTimeout</span><span class="p">(</span><span class="mi">2500</span><span class="p">);</span><span class="w"> </span><span class="c1">// milliseconds is the default</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setMaxPoolSize</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w"> </span><span class="c1">// is the default, with 3 read connections</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setCursorWindowSize</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span><span class="w"> </span><span class="c1">// rows; the default</span>
+<span class="n">dataSource</span><span class="p">.</span><span class="na">setCursorWindowByteSize</span><span class="p">(</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span><span class="w"> </span><span class="c1">// bytes; the default</span>
 <span class="n">dataSource</span><span class="p">.</span><span class="na">setForeignKeys</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
 
 <span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dataSource</span><span class="p">.</span><span class="na">getConnection</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -1077,6 +1103,8 @@ runtime-inspection and generation details.</p>
 <span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;journalMode&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;busyTimeout&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;2500&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;poolSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;4&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;cursorWindowSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1024&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;cursorWindowByteSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;2097152&quot;</span><span class="p">)</span>
 <span class="w">    </span><span class="n">setProperty</span><span class="p">(</span><span class="s">&quot;foreignKeys&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 
@@ -1091,6 +1119,8 @@ runtime-inspection and generation details.</p>
 <span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;journalMode&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WAL&quot;</span><span class="p">);</span>
 <span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;busyTimeout&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;2500&quot;</span><span class="p">);</span>
 <span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;poolSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;4&quot;</span><span class="p">);</span>
+<span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;cursorWindowSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1024&quot;</span><span class="p">);</span>
+<span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;cursorWindowByteSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;2097152&quot;</span><span class="p">);</span>
 <span class="n">properties</span><span class="p">.</span><span class="na">setProperty</span><span class="p">(</span><span class="s">&quot;foreignKeys&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">);</span>
 
 <span class="kd">final</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DriverManager</span><span class="p">.</span><span class="na">getConnection</span><span class="p">(</span>
@@ -1106,13 +1136,15 @@ runtime-inspection and generation details.</p>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DriverManager</span><span class="p">.</span><span class="na">getConnection</span><span class="p">(</span>
-<span class="w">    </span><span class="s">&quot;jdbc:sqlite:/path/to/database.db?journalMode=WAL&amp;busyTimeout=2500&amp;poolSize=4&amp;foreignKeys=true&quot;</span>
+<span class="w">    </span><span class="s">&quot;jdbc:sqlite:/path/to/database.db?journalMode=WAL&amp;busyTimeout=2500&amp;poolSize=4&quot;</span><span class="w"> </span><span class="o">+</span>
+<span class="w">        </span><span class="s">&quot;&amp;cursorWindowSize=1024&amp;cursorWindowByteSize=2097152&amp;foreignKeys=true&quot;</span>
 <span class="p">)</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DriverManager</span><span class="p">.</span><span class="na">getConnection</span><span class="p">(</span>
-<span class="w">    </span><span class="s">&quot;jdbc:sqlite:/path/to/database.db?journalMode=WAL&amp;busyTimeout=2500&amp;poolSize=4&amp;foreignKeys=true&quot;</span>
+<span class="w">    </span><span class="s">&quot;jdbc:sqlite:/path/to/database.db?journalMode=WAL&amp;busyTimeout=2500&amp;poolSize=4&quot;</span><span class="w"> </span><span class="o">+</span>
+<span class="w">        </span><span class="s">&quot;&amp;cursorWindowSize=1024&amp;cursorWindowByteSize=2097152&amp;foreignKeys=true&quot;</span>
 <span class="p">);</span>
 </code></pre></div>
 </div>
@@ -1197,6 +1229,13 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 </div>
+<h3 id="cursor-memory-and-scrolling">Cursor memory and scrolling</h3>
+<p>Scrollable JVM cursors retain at most 1,024 rows and an estimated 2 MiB by default. Moving outside the retained window
+re-runs the query to refill it; use a transaction when scrolling must observe a stable snapshot. A row whose estimated
+size exceeds 2 MiB is rejected rather than copied into the cursor window.</p>
+<p>Auto-commit <code>TYPE_FORWARD_ONLY</code> result sets—the JDBC default—stream rows and do not use these window limits. Selekt may
+materialise a forward-only query inside a manual read-only transaction to avoid pinning its SQLite snapshot after the
+query call.</p>
 <h3 id="inserting-data">Inserting data</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Java</label></div>
 <div class="tabbed-content">

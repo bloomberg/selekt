@@ -485,6 +485,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cursor-memory-and-scrolling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cursor memory and scrolling
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -852,6 +863,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cursor-memory-and-scrolling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cursor memory and scrolling
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1185,6 +1207,46 @@ it after construction; the helper clears its private copy after a successful ope
 </div>
 </div>
 </div>
+<h3 id="cursor-memory-and-scrolling">Cursor memory and scrolling</h3>
+<p>On Android, omitted row and byte limits both resolve to <code>Int.MAX_VALUE</code>, so a query result is materialised without a
+practical cursor-window bound.</p>
+<p>Set both limits by copying the selected journal mode's configuration:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Java</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">databaseConfiguration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">.</span><span class="na">databaseConfiguration</span><span class="p">.</span><span class="na">copy</span><span class="p">(</span>
+<span class="w">    </span><span class="n">cursorWindowSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="n">_024</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cursorWindowByteSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1024</span>
+<span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">DatabaseConfiguration</span><span class="w"> </span><span class="n">databaseConfiguration</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">SQLiteJournalMode</span><span class="p">.</span><span class="na">WAL</span><span class="p">.</span><span class="na">databaseConfiguration</span><span class="p">.</span><span class="na">withCursorWindowLimits</span><span class="p">(</span>
+<span class="w">        </span><span class="mi">1024</span><span class="p">,</span>
+<span class="w">        </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span>
+<span class="w">    </span><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Pass this configuration to the corresponding overload of <code>SQLiteOpenHelper</code>, <code>createSelektSQLiteDriver</code>,
+<code>SupportSQLiteOpenHelperFactory</code>, or <code>SQLiteDatabase.openOrCreateDatabase</code>. For example, with Room 2.8 or later:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Java</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">createSelektSQLiteDriver</span><span class="p">(</span><span class="n">databaseConfiguration</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kd">final</span><span class="w"> </span><span class="n">SelektSQLiteDriver</span><span class="w"> </span><span class="n">driver</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">SelektSQLiteDriverKt</span><span class="p">.</span><span class="na">createSelektSQLiteDriver</span><span class="p">(</span><span class="n">databaseConfiguration</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Moving outside a bounded window re-runs the query to refill it; keep the cursor inside a transaction when movement must
+observe a stable snapshot.</p>
 <h2 id="native-abi-compatibility">Native ABI compatibility</h2>
 <p>Selekt's packaged native libraries target the following Android ABIs:</p>
 <ul>
@@ -1196,7 +1258,7 @@ it after construction; the helper clears its private copy after a successful ope
 <p>If your app only supports a subset of these architectures, configure ABI filtering to reduce APK size and avoid installs on unsupported devices.</p>
 <h3 id="restricting-native-libraries">Restricting native libraries</h3>
 <p>To support only 64-bit ABIs:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Groovy</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Groovy</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">android</span><span class="w"> </span><span class="p">{</span>
@@ -1218,7 +1280,7 @@ it after construction; the helper clears its private copy after a successful ope
 </div>
 <h3 id="excluding-native-libraries">Excluding native libraries</h3>
 <p>Alternatively, exclude ABIs while packaging. For example, for an APK that only supports ARM architectures:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Groovy</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Kotlin</label><label for="__tabbed_9_2">Groovy</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">android</span><span class="w"> </span><span class="p">{</span>
