@@ -42,13 +42,13 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
       var method = b.name.replace(/^.*\./, '');
       var driver, base;
       if (method.startsWith('selektJni')) {
-        driver = 'Selekt JNI (Java 11)';
+        driver = 'Selekt JNI';
         base = method.substring(9);
       } else if (method.startsWith('selekt')) {
-        driver = 'Selekt FFM (Java 25)';
+        driver = 'Selekt FFM';
         base = method.substring(6);
       } else if (method.startsWith('xerial')) {
-        driver = 'Xerial (Java 25)';
+        driver = 'Xerial';
         base = method.substring(6);
       } else {
         return;
@@ -91,9 +91,9 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
     });
     keys.forEach(function (base) {
       var group = groups[base];
-      var selektFfm = group['Selekt FFM (Java 25)'];
-      var selektJni = group['Selekt JNI (Java 11)'];
-      var xerial = group['Xerial (Java 25)'];
+      var selektFfm = group['Selekt FFM'];
+      var selektJni = group['Selekt JNI'];
+      var xerial = group['Xerial'];
       if (!selektFfm || !selektJni || !xerial) return;
 
       var unit = selektFfm.unit || defaultUnit || 'ms/op';
@@ -101,8 +101,11 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
       var jv = Number(selektJni.value);
       var xv = Number(xerial.value);
       var best = Math.min(fv, jv, xv);
+      var worst = Math.max(fv, jv, xv);
       function color(value) {
-        return value === best ? '#34A853' : '#EA4335';
+        if (value === best) return '#34A853';
+        if (value === worst) return '#EA4335';
+        return '#FBBC04';
       }
 
       var data = new google.visualization.DataTable();
@@ -110,9 +113,9 @@ Latest JMH results for querying and fully consuming 50,000 text values through J
       data.addColumn('number', unit);
       data.addColumn({ type: 'string', role: 'style' });
       data.addRows([
-        ['Selekt FFM (Java 25)', fv, color(fv)],
-        ['Selekt JNI (Java 11)', jv, color(jv)],
-        ['Xerial (Java 25)', xv, color(xv)]
+        ['Selekt FFM', fv, color(fv)],
+        ['Selekt JNI', jv, color(jv)],
+        ['Xerial', xv, color(xv)]
       ]);
 
       var div = document.createElement('div');
