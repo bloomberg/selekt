@@ -49,6 +49,9 @@ class SQLiteTraceEventMode {
     /**
      * Tracing is invoked when a prepared statement first begins running and possibly at other times during the execution of
      * the prepared statement, such as at the start of each trigger subprogram.
+     *
+     * Statement trace output contains normalized SQL. It preserves SQL structure and identifiers for debugging, but replaces
+     * literal values and bind parameters with placeholders and removes comments. If normalization fails, SQL text is omitted.
      */
     fun enableStatement() = apply {
         flag = flag.or(SQLTraceEventCode.STATEMENT())

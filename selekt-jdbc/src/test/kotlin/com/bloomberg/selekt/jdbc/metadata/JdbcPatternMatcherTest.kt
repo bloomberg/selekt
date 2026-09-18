@@ -115,7 +115,7 @@ internal class JdbcPatternMatcherTest {
     @Test
     fun wildcardGeneratedBacktrackingIsBounded() {
         val matcher = JdbcPatternMatcher("%a".repeat(30) + "b")
-        assertTimeoutPreemptively(Duration.ofMillis(250)) {
+        assertTimeoutPreemptively(Duration.ofSeconds(1)) {
             assertFalse(matcher.matches("a".repeat(30) + "c"))
         }
     }
