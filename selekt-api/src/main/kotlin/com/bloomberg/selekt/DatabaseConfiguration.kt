@@ -50,28 +50,58 @@ data class DatabaseConfiguration(
      */
     val useNativeTransactionListeners: Boolean = false,
     /**
-     * Maximum number of rows in each cursor-window segment, [Int.MAX_VALUE] to use one segment.
+     * Maximum rows retained by a scrollable cursor at once, or
+     * [PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE] to use the platform default.
      *
-     * Scrollable queries are stepped once and materialised into one or more segments. Segmenting
-     * avoids very large individual native allocations, but total cursor memory remains proportional
-     * to the result-set size. It also gives the cursor a stable snapshot: later movement does not
-     * re-run the query.
+     * Moving outside the current window re-runs the query to refill it. Callers requiring a stable
+     * snapshot must keep the cursor inside a transaction. Sequential processing of unbounded results
+     * should use a forward-only API.
      *
-     * Callers processing large results sequentially should use a forward-only API, which retains
-     * only the current SQLite row instead of materialising the result.
-     *
-     * Scrollable cursors are not thread safe and must not be accessed concurrently from multiple
-     * threads. Cross-thread hand-off requires the caller to provide the usual happens-before
-     * relationship.
+     * Android defaults to [UNBOUNDED_CURSOR_WINDOW_SIZE] for compatibility. Other JVM runtimes
+     * default to [JVM_DEFAULT_CURSOR_WINDOW_SIZE].
      */
-    val cursorWindowSize: Int = Int.MAX_VALUE
+    val cursorWindowSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE,
+    /**
+     * Maximum estimated bytes retained by a scrollable cursor window, or
+     * [PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE] to use the platform default.
+     *
+     * A row that cannot fit by itself is rejected before its text or BLOB values are copied into JVM
+     * memory. The estimate includes stored value payloads and cursor bookkeeping.
+     *
+     * Android defaults to [UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE] for compatibility. Other JVM runtimes
+     * default to [JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE].
+     */
+    val cursorWindowByteSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
 ) {
     init {
         require(maxConnectionPoolSize > 0)
-        require(cursorWindowSize > 0) { "Cursor window size must be positive, but was $cursorWindowSize." }
+        require(cursorWindowSize == PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE || cursorWindowSize > 0) {
+            "Cursor window size must be positive or the platform default, but was $cursorWindowSize."
+        }
+        require(
+            cursorWindowByteSize == PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE ||
+                cursorWindowByteSize >= MINIMUM_CURSOR_WINDOW_BYTE_SIZE
+        ) {
+            "Cursor window byte size must be at least $MINIMUM_CURSOR_WINDOW_BYTE_SIZE or the platform default, " +
+                "but was $cursorWindowByteSize."
+        }
     }
 
+    /** Returns a copy with explicit scrollable-cursor row and byte limits. */
+    fun withCursorWindowLimits(cursorWindowSize: Int, cursorWindowByteSize: Int) = copy(
+        cursorWindowSize = cursorWindowSize,
+        cursorWindowByteSize = cursorWindowByteSize
+    )
+
     companion object {
+        const val PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE = -1
+        const val PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE = -1
+        const val JVM_DEFAULT_CURSOR_WINDOW_SIZE = 1024
+        const val JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE = 2 * 1024 * 1024
+        const val UNBOUNDED_CURSOR_WINDOW_SIZE = Int.MAX_VALUE
+        const val UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE = Int.MAX_VALUE
+        const val MINIMUM_CURSOR_WINDOW_BYTE_SIZE = 8
+
         /**
          * When using WAL, a timeout could occur if one connection is busy performing an auto-checkpoint operation. The
          * busy timeout needs to be long enough to tolerate slow I/O write operations but not so long as to cause the

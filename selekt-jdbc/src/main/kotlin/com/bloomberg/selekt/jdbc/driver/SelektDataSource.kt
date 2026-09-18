@@ -100,6 +100,7 @@ class SelektDataSource internal constructor(
     companion object {
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
+        private const val PROPERTY_CURSOR_WINDOW_BYTE_SIZE = "cursorWindowByteSize"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
@@ -136,6 +137,15 @@ class SelektDataSource internal constructor(
     var cursorWindowSize: Int = DEFAULT_JDBC_CURSOR_WINDOW_SIZE
         set(value) {
             require(value > 0) { "Cursor window size must be positive" }
+            field = value
+        }
+
+    @Volatile
+    var cursorWindowByteSize: Int = DEFAULT_JDBC_CURSOR_WINDOW_BYTE_SIZE
+        set(value) {
+            require(value >= DatabaseConfiguration.MINIMUM_CURSOR_WINDOW_BYTE_SIZE) {
+                "Cursor window byte size must be at least ${DatabaseConfiguration.MINIMUM_CURSOR_WINDOW_BYTE_SIZE}"
+            }
             field = value
         }
 
@@ -297,6 +307,7 @@ class SelektDataSource internal constructor(
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
         setProperty(PROPERTY_CURSOR_WINDOW_SIZE, cursorWindowSize.toString())
+        setProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE, cursorWindowByteSize.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
         setProperty(PROPERTY_FOREIGN_KEYS, foreignKeys.toString())
     }
@@ -348,6 +359,7 @@ class SelektDataSource internal constructor(
         val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE).toInt()
         val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT).toInt()
         val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE).toInt()
+        val cursorWindowByteSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE).toInt()
         val journalModeValue = SQLiteJournalMode.valueOf(
             properties.getProperty(PROPERTY_JOURNAL_MODE).uppercase()
         )
@@ -356,7 +368,8 @@ class SelektDataSource internal constructor(
             maxConnectionPoolSize = poolSizeValue,
             busyTimeoutMillis = busyTimeoutValue,
             useNativeTransactionListeners = true,
-            cursorWindowSize = cursorWindowSizeValue
+            cursorWindowSize = cursorWindowSizeValue,
+            cursorWindowByteSize = cursorWindowByteSizeValue
         )
     }
 
@@ -368,6 +381,7 @@ class SelektDataSource internal constructor(
         append(connectionURL.databasePath)
         append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
         append("&cursorWindowSize=").append(properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE))
+        append("&cursorWindowByteSize=").append(properties.getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE))
         append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))
         append("&journalMode=").append(properties.getProperty(PROPERTY_JOURNAL_MODE))
         append("&poolSize=").append(properties.getProperty(PROPERTY_POOL_SIZE))

@@ -38,6 +38,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 internal const val DEFAULT_JDBC_CURSOR_WINDOW_SIZE = 1024
+internal const val DEFAULT_JDBC_CURSOR_WINDOW_BYTE_SIZE = DatabaseConfiguration.JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
 internal const val DEFAULT_JDBC_POOL_SIZE = 4
 
 /**
@@ -46,7 +47,8 @@ internal const val DEFAULT_JDBC_POOL_SIZE = 4
  * Supported connection properties:
  * - poolSize: Maximum connection pool size (integer, default: 4)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
- * - cursorWindowSize: Maximum rows per materialised cursor-window segment (positive integer, default: 1024)
+ * - cursorWindowSize: Maximum rows retained in a scrollable cursor window (positive integer, default: 1024)
+ * - cursorWindowByteSize: Maximum estimated bytes retained in a scrollable cursor window (integer, default: 2097152)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
  * - foreignKeys: Enable foreign key constraints (true/false, default: true)
  *
@@ -78,6 +80,7 @@ class SelektDriver : Driver {
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
+        private const val PROPERTY_CURSOR_WINDOW_BYTE_SIZE = "cursorWindowByteSize"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
 
@@ -162,7 +165,14 @@ class SelektDriver : Driver {
                 PROPERTY_CURSOR_WINDOW_SIZE,
                 info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, DEFAULT_JDBC_CURSOR_WINDOW_SIZE.toString())
             ).apply {
-                description = "Maximum rows per materialised cursor-window segment"
+                description = "Maximum rows retained in a scrollable cursor window"
+                required = false
+            },
+            DriverPropertyInfo(
+                PROPERTY_CURSOR_WINDOW_BYTE_SIZE,
+                info.getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE, DEFAULT_JDBC_CURSOR_WINDOW_BYTE_SIZE.toString())
+            ).apply {
+                description = "Maximum estimated bytes retained in a scrollable cursor window"
                 required = false
             },
             DriverPropertyInfo(PROPERTY_JOURNAL_MODE, info.getProperty(PROPERTY_JOURNAL_MODE, "WAL")).apply {
@@ -231,6 +241,8 @@ class SelektDriver : Driver {
             ?: DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
         val cursorWindowSize = getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull()
             ?: DEFAULT_JDBC_CURSOR_WINDOW_SIZE
+        val cursorWindowByteSize = getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE)?.toIntOrNull()
+            ?: DEFAULT_JDBC_CURSOR_WINDOW_BYTE_SIZE
         val journalMode = getProperty(PROPERTY_JOURNAL_MODE)?.let {
             SQLiteJournalMode.valueOf(it.uppercase())
         } ?: SQLiteJournalMode.WAL
@@ -239,7 +251,8 @@ class SelektDriver : Driver {
             maxConnectionPoolSize = poolSize,
             busyTimeoutMillis = busyTimeout,
             useNativeTransactionListeners = true,
-            cursorWindowSize = cursorWindowSize
+            cursorWindowSize = cursorWindowSize,
+            cursorWindowByteSize = cursorWindowByteSize
         )
     }
 
@@ -274,6 +287,7 @@ class SelektDriver : Driver {
         val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
             PROPERTY_CURSOR_WINDOW_SIZE,
+            PROPERTY_CURSOR_WINDOW_BYTE_SIZE,
             PROPERTY_FOREIGN_KEYS,
             PROPERTY_JOURNAL_MODE,
             PROPERTY_POOL_SIZE

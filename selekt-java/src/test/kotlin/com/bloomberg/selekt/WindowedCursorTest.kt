@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -42,6 +43,17 @@ internal class WindowedCursorTest {
         cursor.close()
         verify(window, times(1)).close()
         assertTrue(cursor.isClosed())
+    }
+
+    @Test
+    fun closeReleasesResourcesOnce() {
+        val window = mock<ICursorWindow>()
+        var releases = 0
+        val cursor = WindowedCursor(emptyArray(), CursorWindowPage(window, 0, 0), onClose = { ++releases })
+        cursor.close()
+        cursor.close()
+        verify(window, times(1)).close()
+        assertEquals(1, releases)
     }
 
     @Test
@@ -321,6 +333,25 @@ internal class WindowedCursorTest {
             getLong(0)
         }
         verify(requireNotNull(replaced), times(1)).close()
+    }
+
+    @Test
+    fun refillRetainsReplacementIfClosingPreviousWindowFails() {
+        val failure = IllegalStateException("close failed")
+        val first = mock<ICursorWindow> {
+            on { numberOfRows() } doReturn WINDOW_SIZE
+            on { close() } doThrow failure
+        }
+        val replacement = spyWindow(5, WINDOW_SIZE)
+        WindowedCursor(
+            arrayOf("a"),
+            CursorWindowPage(first, 0, TOTAL_ROWS),
+            refill = { CursorWindowPage(replacement, it, NOT_COUNTED) }
+        ).use { cursor ->
+            assertTrue(cursor.moveToPosition(6))
+            assertSame(failure, assertFailsWith<IllegalStateException> { cursor.getLong(0) })
+        }
+        verify(replacement).close()
     }
 
     @Test

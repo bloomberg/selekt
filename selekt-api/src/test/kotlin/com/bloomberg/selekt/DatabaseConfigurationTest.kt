@@ -30,19 +30,27 @@ internal class DatabaseConfigurationTest {
     )
 
     @Test
-    fun cursorWindowSizeIsUnboundedByDefault() {
+    fun cursorWindowUsesPlatformDefaultsByDefault() {
         val configuration = DatabaseConfiguration(
             evictionDelayMillis = 5_000L,
             maxConnectionPoolSize = 1,
             maxSqlCacheSize = 5,
             timeBetweenEvictionRunsMillis = 5_000L
         )
-        assertEquals(Int.MAX_VALUE, configuration.cursorWindowSize)
+        assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE, configuration.cursorWindowSize)
+        assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE, configuration.cursorWindowByteSize)
     }
 
     @Test
     fun cursorWindowSizeIsRetained() {
         assertEquals(64, configuration(64).cursorWindowSize)
+    }
+
+    @Test
+    fun cursorWindowLimitsCanBeCopiedTogether() {
+        val configuration = configuration(64).withCursorWindowLimits(128, 4 * 1024 * 1024)
+        assertEquals(128, configuration.cursorWindowSize)
+        assertEquals(4 * 1024 * 1024, configuration.cursorWindowByteSize)
     }
 
     @Test
@@ -52,7 +60,14 @@ internal class DatabaseConfigurationTest {
 
     @Test
     fun cursorWindowSizeRejectsNegative() {
-        assertFailsWith<IllegalArgumentException> { configuration(-1) }
+        assertFailsWith<IllegalArgumentException> { configuration(-2) }
+    }
+
+    @Test
+    fun cursorWindowByteSizeRejectsUndersizedValues() {
+        assertFailsWith<IllegalArgumentException> {
+            configuration(1).copy(cursorWindowByteSize = DatabaseConfiguration.MINIMUM_CURSOR_WINDOW_BYTE_SIZE - 1)
+        }
     }
 
     @Test
@@ -69,6 +84,7 @@ internal class DatabaseConfigurationTest {
             null,
             false
         )
-        assertEquals(Int.MAX_VALUE, configuration.cursorWindowSize)
+        assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE, configuration.cursorWindowSize)
+        assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE, configuration.cursorWindowByteSize)
     }
 }

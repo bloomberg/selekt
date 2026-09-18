@@ -45,7 +45,8 @@ internal fun emptyCursorWindow(result: Long): ByteBuffer? = when (result) {
     -2L -> throw OutOfMemoryError("fillCursorWindow")
     -3L -> throw OutOfMemoryError("Cursor window exceeds the maximum Java buffer capacity")
     -4L -> error("Unexpected failure while filling cursor window")
-    -5L -> throw IllegalArgumentException("Cursor window start row and maximum rows must be valid")
+    -5L -> throw IllegalArgumentException("Cursor window bounds must be valid")
+    -6L -> error("Cursor row exceeds the configured window byte size; use a forward-only cursor")
     else -> null
 }
 
@@ -423,6 +424,9 @@ internal class ExternalSQLite(
     override fun columnBlob(statement: StatementHandle, index: Int): ByteArray? {
         return columnBlob(statementSegment(statement), index)
     }
+
+    override fun columnBytes(statement: StatementHandle, index: Int): Int =
+        sqlite3_column_bytes.invoke(statementSegment(statement), index) as Int
 
     override fun columnCount(statement: StatementHandle): Int =
         sqlite3_column_count.invoke(statementSegment(statement)) as Int
@@ -967,6 +971,9 @@ internal class ExternalSQLite(
         index: Int
     ): ByteArray? = columnBlob(MemorySegment.ofAddress(statement), index)
 
+    override fun columnBytes(statement: Long, index: Int): Int =
+        sqlite3_column_bytes.invoke(MemorySegment.ofAddress(statement), index) as Int
+
     override fun columnCount(
         statement: Long
     ): Int = sqlite3_column_count.invoke(MemorySegment.ofAddress(statement)) as Int
@@ -1160,6 +1167,14 @@ internal class ExternalSQLite(
         startRow: Int,
         maxRows: Int,
         countAllRows: Boolean
+    ): ByteBuffer? = fillCursorWindow(statement, startRow, maxRows, countAllRows, Int.MAX_VALUE)
+
+    override fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean,
+        maxBytes: Int
     ): ByteBuffer? = withCallbackFailurePropagation {
         withSlab { slab ->
             val outSize = slab.allocate(JAVA_LONG)
@@ -1172,6 +1187,7 @@ internal class ExternalSQLite(
                 } else {
                     0
                 },
+                maxBytes,
                 outSize
             ) as MemorySegment
             if (buffer.address() == 0L) {
@@ -1976,7 +1992,7 @@ internal class ExternalSQLite(
         )
         private val selekt_fill_cursor_window: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_fill_cursor_window").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS)
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, ADDRESS)
         )
         private val selekt_free_cursor_window: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_free_cursor_window").orElseThrow(),

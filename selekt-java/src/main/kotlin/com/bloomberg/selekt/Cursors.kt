@@ -94,10 +94,13 @@ interface ICursor : Closeable {
 internal class WindowedCursor(
     private val columnNames: Array<out String>,
     page: CursorWindowPage,
-    private val refill: ((startPosition: Int) -> CursorWindowPage)? = null
+    onClose: (() -> Unit)? = null,
+    refill: ((startPosition: Int) -> CursorWindowPage)? = null
 ) : ICursor {
     private var closed = false
     private var position = -1
+    private var onClose = onClose
+    private var refill = refill
 
     private var window = page.window
     private var windowStart = page.startPosition
@@ -122,16 +125,27 @@ internal class WindowedCursor(
                     "Refilled cursor window starting at ${next.startPosition} does not contain position $position."
                 )
             }
-            window.close()
+            val previous = window
             window = next.window
             windowStart = next.startPosition
+            previous.close()
         }
         return window.block(position - windowStart)
     }
 
     override fun close() {
+        if (closed) {
+            return
+        }
         closed = true
-        window.close()
+        refill = null
+        var failure = runCatching(window::close).exceptionOrNull()
+        val release = onClose
+        onClose = null
+        runCatching { release?.invoke() }.exceptionOrNull()?.let {
+            failure?.addSuppressed(it) ?: run { failure = it }
+        }
+        failure?.let { throw it }
     }
 
     override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }

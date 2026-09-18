@@ -242,6 +242,28 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `native cursor window rejects a row exceeding its byte limit on every backend`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "bounded-window.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT zeroblob(256)"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            try {
+                assertFailsWith<IllegalStateException> {
+                    assertIs<INativeCursorWindowSQLite>(sqlite)
+                        .fillCursorWindow(statementHolder[0], 0, 1, true, 128)
+                }
+            } finally {
+                sqlite.finalize(statementHolder[0])
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `native cursor window rejects buffers without live exact ownership on every backend`() {
         val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
         val dbHolder = LongArray(1)
@@ -648,6 +670,31 @@ internal class ExternalSQLiteTest {
                 assertNotNull(result)
                 assertEquals(blob.toList(), result.toList())
                 assertContentEquals(original, blob)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `columnBytes reports text and blob lengths without materialising values`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "column-bytes.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            "SELECT ?, ?".let { sqlite.prepareV2(db, it, it.length + 1, statementHolder) }
+            val statement = statementHolder[0]
+            try {
+                val text = "café"
+                val blob = ByteArray(256)
+                assertEquals(SQL_OK, sqlite.bindText(statement, 1, text))
+                assertEquals(SQL_OK, sqlite.bindBlob(statement, 2, blob, blob.size))
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(text.toByteArray(Charsets.UTF_8).size, sqlite.columnBytes(statement, 0))
+                assertEquals(blob.size, sqlite.columnBytes(statement, 1))
             } finally {
                 sqlite.finalize(statement)
             }

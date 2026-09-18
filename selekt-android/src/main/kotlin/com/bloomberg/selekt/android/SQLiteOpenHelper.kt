@@ -61,6 +61,25 @@ class SQLiteOpenHelper internal constructor(
         version = version
     )
 
+    /**
+     * Creates a helper with an explicit database configuration.
+     */
+    constructor(
+        context: Context,
+        configuration: ISQLiteOpenHelper.Configuration,
+        version: Int,
+        databaseConfiguration: DatabaseConfiguration,
+        openParams: SQLiteOpenParams = SQLiteOpenParams(),
+        key: ByteArray? = null
+    ) : this(
+        file = context.getDatabasePath(configuration.name),
+        openParams = openParams,
+        configuration = configuration,
+        databaseConfiguration = databaseConfiguration.copy(trace = openParams.trace),
+        key = key,
+        version = version
+    )
+
     init {
         require(version > 0) { "Version must be at least 1." }
     }

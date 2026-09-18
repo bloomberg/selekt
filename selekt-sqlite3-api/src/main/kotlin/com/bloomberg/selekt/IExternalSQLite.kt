@@ -415,6 +415,13 @@ interface IExternalSQLite {
         index: Int
     ): ByteArray? = columnBlob(statement.pointer, index)
 
+    /**
+     * Returns the byte length of the current text or BLOB value without requiring callers to copy it.
+     */
+    fun columnBytes(statement: Long, index: Int): Int
+
+    fun columnBytes(statement: StatementHandle, index: Int): Int = columnBytes(statement.pointer, index)
+
     fun columnCount(statement: Long): Int
 
     fun columnCount(statement: StatementHandle): Int = columnCount(statement.pointer)
@@ -764,12 +771,33 @@ interface INativeCursorWindowSQLite {
         countAllRows: Boolean
     ): ByteBuffer?
 
+    /**
+     * Fills a cursor window whose packed representation does not exceed [maxBytes].
+     *
+     * Implementations that cannot enforce a byte ceiling may delegate to the legacy overload.
+     */
+    fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean,
+        maxBytes: Int
+    ): ByteBuffer? = fillCursorWindow(statement, startRow, maxRows, countAllRows)
+
     fun fillCursorWindow(
         statement: StatementHandle,
         startRow: Int,
         maxRows: Int,
         countAllRows: Boolean
     ): ByteBuffer? = fillCursorWindow(statement.pointer, startRow, maxRows, countAllRows)
+
+    fun fillCursorWindow(
+        statement: StatementHandle,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean,
+        maxBytes: Int
+    ): ByteBuffer? = fillCursorWindow(statement.pointer, startRow, maxRows, countAllRows, maxBytes)
 
     /**
      * Releases the exact buffer instance returned by [fillCursorWindow].

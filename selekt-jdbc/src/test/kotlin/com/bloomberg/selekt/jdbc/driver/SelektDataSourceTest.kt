@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.driver
 
+import com.bloomberg.selekt.DatabaseConfiguration
 import java.io.File
 import java.io.PrintWriter
 import java.sql.SQLException
@@ -61,6 +62,7 @@ internal class SelektDataSourceTest {
         maxPoolSize = 20
         busyTimeout = 5_000
         cursorWindowSize = 64
+        cursorWindowByteSize = 4 * 1024 * 1024
         journalMode = "WAL"
         foreignKeys = true
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
@@ -68,6 +70,7 @@ internal class SelektDataSourceTest {
         assertEquals(20, maxPoolSize)
         assertEquals(5_000, busyTimeout)
         assertEquals(64, cursorWindowSize)
+        assertEquals(4 * 1024 * 1024, cursorWindowByteSize)
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
         assertTrue(encryptionEnabled)
@@ -94,6 +97,14 @@ internal class SelektDataSourceTest {
     fun invalidCursorWindowSize() {
         assertFailsWith<IllegalArgumentException> { dataSource.cursorWindowSize = 0 }
         assertFailsWith<IllegalArgumentException> { dataSource.cursorWindowSize = -1 }
+    }
+
+    @Test
+    fun invalidCursorWindowByteSize() {
+        assertFailsWith<IllegalArgumentException> { dataSource.cursorWindowByteSize = 0 }
+        assertFailsWith<IllegalArgumentException> {
+            dataSource.cursorWindowByteSize = DatabaseConfiguration.MINIMUM_CURSOR_WINDOW_BYTE_SIZE - 1
+        }
     }
 
     @Test
@@ -268,6 +279,11 @@ internal class SelektDataSourceTest {
     @Test
     fun cursorWindowSizeDefault() {
         assertEquals(1024, dataSource.cursorWindowSize)
+    }
+
+    @Test
+    fun cursorWindowByteSizeDefault() {
+        assertEquals(2 * 1024 * 1024, dataSource.cursorWindowByteSize)
     }
 
     @Test

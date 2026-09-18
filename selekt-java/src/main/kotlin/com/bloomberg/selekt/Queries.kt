@@ -108,19 +108,35 @@ internal class SQLQuery internal constructor(
     }
 
     // TODO Ever need to prepare again after execute, prepare_v2 will auto-recompile on step picking up any schema change?
-    override fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage> = fill(
-        windowSize,
+    override fun fill(
+        windowSize: Int,
+        windowByteSize: Int
+    ): Pair<SQLStatementInformation, CursorWindowPage> = fill(
+        startPosition = 0,
+        windowSize = windowSize,
+        windowByteSize = windowByteSize,
         countAllRows = true
     )
 
-    fun fillUpTo(maximumRows: Int): Pair<SQLStatementInformation, CursorWindowPage> {
+    fun fillWindow(
+        startPosition: Int,
+        windowSize: Int,
+        windowByteSize: Int
+    ) = fill(startPosition, windowSize, windowByteSize, countAllRows = false)
+
+    fun fillUpTo(
+        maximumRows: Int,
+        windowByteSize: Int
+    ): Pair<SQLStatementInformation, CursorWindowPage> {
         require(maximumRows > 0) { "Maximum rows must be positive." }
-        val (information, page) = fill(maximumRows, countAllRows = false)
+        val (information, page) = fill(0, maximumRows, windowByteSize, countAllRows = false)
         return information to page.copy(count = page.window.numberOfRows())
     }
 
     private fun fill(
+        startPosition: Int,
         windowSize: Int,
+        windowByteSize: Int,
         countAllRows: Boolean
     ): Pair<SQLStatementInformation, CursorWindowPage> {
         var page: CursorWindowPage? = null
@@ -133,11 +149,14 @@ internal class SQLQuery internal constructor(
             it.prepare(sql).apply {
                 if (isReadOnly) {
                     val args = validatedBindArgs(parameterCount)
-                    page = if (countAllRows) {
-                        it.executeForCursorWindows(sql, args, windowSize)
-                    } else {
-                        it.executeForCursorWindow(sql, args, 0, windowSize, false)
-                    }
+                    page = it.executeForCursorWindow(
+                        sql,
+                        args,
+                        startPosition,
+                        windowSize,
+                        countAllRows,
+                        windowByteSize
+                    )
                 }
             }
         }
@@ -145,11 +164,7 @@ internal class SQLQuery internal constructor(
         return if (information !== EMPTY_SQL_STATEMENT_INFORMATION) {
             information to session().execute(true, sql, statementType, emptyCursorWindowPage()) {
                 val args = validatedBindArgs(information.parameterCount)
-                if (countAllRows) {
-                    it.executeForCursorWindows(sql, args, windowSize)
-                } else {
-                    it.executeForCursorWindow(sql, args, 0, windowSize, false)
-                }
+                it.executeForCursorWindow(sql, args, startPosition, windowSize, countAllRows, windowByteSize)
             }
         } else {
             // Query was resolved as transactional(!!)
@@ -210,7 +225,7 @@ class SimpleSQLQuery(
 }
 
 private interface IQuery : ISQLProgram {
-    fun fill(windowSize: Int): Pair<SQLStatementInformation, CursorWindowPage>
+    fun fill(windowSize: Int, windowByteSize: Int): Pair<SQLStatementInformation, CursorWindowPage>
 }
 
 @JvmSynthetic

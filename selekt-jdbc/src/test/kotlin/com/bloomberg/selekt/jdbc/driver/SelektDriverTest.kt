@@ -121,6 +121,7 @@ internal class SelektDriverTest {
             assertTrue(contains("poolSize"))
             assertTrue(contains("busyTimeout"))
             assertTrue(contains("cursorWindowSize"))
+            assertTrue(contains("cursorWindowByteSize"))
             assertTrue(contains("journalMode"))
             assertTrue(contains("foreignKeys"))
         }
@@ -170,9 +171,15 @@ internal class SelektDriverTest {
         }
         find { it.name == "cursorWindowSize" }.let {
             assertNotNull(it)
-            assertEquals("Maximum rows per materialised cursor-window segment", it.description)
+            assertEquals("Maximum rows retained in a scrollable cursor window", it.description)
             assertFalse(it.required)
             assertEquals("1024", it.value)
+        }
+        find { it.name == "cursorWindowByteSize" }.let {
+            assertNotNull(it)
+            assertEquals("Maximum estimated bytes retained in a scrollable cursor window", it.description)
+            assertFalse(it.required)
+            assertEquals("2097152", it.value)
         }
         find { it.name == "journalMode" }.let {
             assertNotNull(it)
@@ -195,6 +202,7 @@ internal class SelektDriverTest {
             setProperty("poolSize", "5")
             setProperty("busyTimeout", "2000")
             setProperty("cursorWindowSize", "64")
+            setProperty("cursorWindowByteSize", "4194304")
             setProperty("journalMode", "DELETE")
             setProperty("foreignKeys", "false")
         }
@@ -257,6 +265,14 @@ internal class SelektDriverTest {
     @Test
     fun rejectsInvalidCursorWindowSize() {
         val properties = Properties().apply { setProperty("cursorWindowSize", "0") }
+        assertFailsWith<SQLException> {
+            driver.connect("jdbc:sqlite:/tmp/test.db", properties)
+        }
+    }
+
+    @Test
+    fun rejectsInvalidCursorWindowByteSize() {
+        val properties = Properties().apply { setProperty("cursorWindowByteSize", "7") }
         assertFailsWith<SQLException> {
             driver.connect("jdbc:sqlite:/tmp/test.db", properties)
         }

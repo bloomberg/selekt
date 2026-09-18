@@ -31,6 +31,7 @@ import android.database.sqlite.SQLiteMisuseException
 import android.database.sqlite.SQLiteOutOfMemoryException
 import android.database.sqlite.SQLiteReadOnlyDatabaseException
 import android.database.sqlite.SQLiteTableLockedException
+import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.PlatformCapabilities
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQL_ABORT
@@ -85,6 +86,10 @@ object Selekt {
 
 internal object SQLite : com.bloomberg.selekt.SQLite(sqlite) {
     override val capabilities = PlatformCapabilities(useNativeCursorWindow = false)
+
+    override val defaultCursorWindowSize = DatabaseConfiguration.UNBOUNDED_CURSOR_WINDOW_SIZE
+
+    override val defaultCursorWindowByteSize = DatabaseConfiguration.UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE
 
     override fun throwSQLException(
         code: SQLCode,

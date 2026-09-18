@@ -139,6 +139,8 @@ internal class ExternalSQLite(
 
     external override fun columnBlob(statement: Long, index: Int): ByteArray?
 
+    external override fun columnBytes(statement: Long, index: Int): Int
+
     external override fun columnCount(statement: Long): Int
 
     external override fun columnDouble(statement: Long, index: Int): Double
@@ -192,7 +194,15 @@ internal class ExternalSQLite(
         startRow: Int,
         maxRows: Int,
         countAllRows: Boolean
-    ): ByteBuffer? = fillCursorWindowNative(statement, startRow, maxRows, countAllRows)?.let { buffer ->
+    ): ByteBuffer? = fillCursorWindow(statement, startRow, maxRows, countAllRows, Int.MAX_VALUE)
+
+    override fun fillCursorWindow(
+        statement: Long,
+        startRow: Int,
+        maxRows: Int,
+        countAllRows: Boolean,
+        maxBytes: Int
+    ): ByteBuffer? = fillCursorWindowNative(statement, startRow, maxRows, countAllRows, maxBytes)?.let { buffer ->
         try {
             cursorWindowOwnership.register(buffer)
         } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
@@ -208,7 +218,8 @@ internal class ExternalSQLite(
         statement: Long,
         startRow: Int,
         maxRows: Int,
-        countAllRows: Boolean
+        countAllRows: Boolean,
+        maxBytes: Int
     ): ByteBuffer?
 
     external override fun finalize(statement: Long): SQLCode

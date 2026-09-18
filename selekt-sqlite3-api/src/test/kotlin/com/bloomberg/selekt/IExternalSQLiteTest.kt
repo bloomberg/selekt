@@ -110,6 +110,15 @@ internal class IExternalSQLiteTest {
         verify(sqlite).fillCursorWindow(statement, 0, 1, false)
     }
 
+    @Test
+    fun `bounded native cursor handle overload is callable`() {
+        val sqlite = mock<INativeCursorWindowSQLite>(defaultAnswer = Answers.CALLS_REAL_METHODS)
+
+        runCatching { sqlite.fillCursorWindow(statementHandle, 0, 1, false, 128) }
+
+        verify(sqlite).fillCursorWindow(statement, 0, 1, false, 128)
+    }
+
     private fun argumentFor(type: Class<*>): Any? = when (type) {
         Boolean::class.javaPrimitiveType -> false
         Byte::class.javaPrimitiveType -> 0.toByte()

@@ -325,6 +325,7 @@ public class CursorWindowBenchmark {
         return new WindowedCursor(
                 new String[]{"value"},
                 new CursorWindowPage(window, 0, window.numberOfRows()),
+                null,
                 null);
     }
 }

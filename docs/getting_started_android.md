@@ -273,6 +273,47 @@ it after construction; the helper clears its private copy after a successful ope
     }
     ```
 
+### Cursor memory and scrolling
+
+On Android, omitted row and byte limits both resolve to `Int.MAX_VALUE`, so a query result is materialised without a
+practical cursor-window bound.
+
+Set both limits by copying the selected journal mode's configuration:
+
+=== "Kotlin"
+    ``` kotlin
+    val databaseConfiguration = SQLiteJournalMode.WAL.databaseConfiguration.copy(
+        cursorWindowSize = 1_024,
+        cursorWindowByteSize = 2 * 1024 * 1024
+    )
+    ```
+
+=== "Java"
+    ``` java
+    final DatabaseConfiguration databaseConfiguration =
+        SQLiteJournalMode.WAL.databaseConfiguration.withCursorWindowLimits(
+            1024,
+            2 * 1024 * 1024
+        );
+    ```
+
+Pass this configuration to the corresponding overload of `SQLiteOpenHelper`, `createSelektSQLiteDriver`,
+`SupportSQLiteOpenHelperFactory`, or `SQLiteDatabase.openOrCreateDatabase`. For example, with Room 2.8 or later:
+
+=== "Kotlin"
+    ``` kotlin
+    val driver = createSelektSQLiteDriver(databaseConfiguration, key)
+    ```
+
+=== "Java"
+    ``` java
+    final SelektSQLiteDriver driver =
+        SelektSQLiteDriverKt.createSelektSQLiteDriver(databaseConfiguration, key);
+    ```
+
+Moving outside a bounded window re-runs the query to refill it; keep the cursor inside a transaction when movement must
+observe a stable snapshot.
+
 ## Native ABI compatibility
 
 Selekt's packaged native libraries target the following Android ABIs:
