@@ -172,9 +172,7 @@ internal class SQLiteDatabaseTransactionTest {
     ): Unit = createSQLiteOpenHelper(targetContext, input).writableDatabase.destroy {
         it.beginExclusiveTransaction()
         it.setTransactionSuccessful()
-        assertFailsWith<IllegalStateException> {
-            it.setTransactionSuccessful()
-        }
+        assertFailsWith<IllegalStateException>(block = it::setTransactionSuccessful)
     }
 
     @ParameterizedTest

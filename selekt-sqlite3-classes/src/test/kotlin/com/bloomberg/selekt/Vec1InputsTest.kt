@@ -1765,7 +1765,7 @@ internal object Vec1SecurityProbeMain {
 
     private fun vectorBytes(vararg values: Float): ByteArray =
         ByteBuffer.allocate(values.size * SIZEOF_F32).order(ByteOrder.nativeOrder()).apply {
-            values.forEach { putFloat(it) }
+            values.forEach(::putFloat)
         }.array()
 
     private fun validIndexBlob(): ByteArray =

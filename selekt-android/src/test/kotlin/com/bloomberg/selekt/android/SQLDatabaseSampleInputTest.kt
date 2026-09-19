@@ -50,7 +50,7 @@ internal class SampleArgumentsProvider : ArgumentsProvider {
         "tricky.txt"
     ) * arrayOf(SQLiteJournalMode.DELETE)).map {
         SQLSampleInputs(it.first, it.second, ByteArray(32) { 0x42 })
-    }.stream().map { Arguments.of(it) }
+    }.stream().map(Arguments::of)
 }
 
 private fun createFile(

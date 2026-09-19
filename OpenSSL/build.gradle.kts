@@ -107,7 +107,7 @@ fun openSslWorkingDir(target: String): Provider<Directory> = archive.run {
 }
 
 arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").forEach { abi ->
-    val titleCaseName = abi.replaceFirstChar { c -> c.uppercaseChar() }
+    val titleCaseName = abi.replaceFirstChar(Char::uppercaseChar)
     val removeStaleTask = tasks.register<RemoveStaleOpenSslSources>("removeStaleOpenSsl$titleCaseName") {
         generatedTargetDirectory.set(layout.buildDirectory.dir("generated/$abi"))
         expectedDirectoryName.set("openssl-${openSslVersion()}")

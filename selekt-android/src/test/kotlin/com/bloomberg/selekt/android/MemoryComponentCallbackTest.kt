@@ -84,9 +84,7 @@ internal class MemoryComponentCallbackTest {
                 TRIM_MEMORY_RUNNING_LOW,
                 TRIM_MEMORY_RUNNING_CRITICAL,
                 TRIM_MEMORY_UI_HIDDEN
-            ).forEach {
-                MemoryComponentCallback.onTrimMemory(it)
-            }
+            ).forEach(MemoryComponentCallback::onTrimMemory)
             verify(database, never()).releaseMemory(any())
         } finally {
             SQLiteDatabaseRegistry.unregister(database)

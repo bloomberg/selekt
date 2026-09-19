@@ -24,7 +24,7 @@ import java.util.Properties
 object SelektVersion {
     private val properties = Properties().also { p ->
         SelektVersion::class.java.getResourceAsStream("/com/bloomberg/selekt/selekt-version.properties")
-            ?.use { p.load(it) }
+            ?.use(p::load)
     }
 
     val version: String = requireNotNull(properties.getProperty("version"))

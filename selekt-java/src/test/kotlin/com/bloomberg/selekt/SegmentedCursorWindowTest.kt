@@ -97,7 +97,7 @@ internal class SegmentedCursorWindowTest {
     fun isImmutable() {
         SegmentedCursorWindow(listOf(window(0, 1)), 4).use {
             listOf<() -> Any?>(
-                { it.allocateRow() },
+                it::allocateRow,
                 { it.put(byteArrayOf(1)) },
                 { it.put(1.0) },
                 { it.put(1.0f) },
@@ -105,8 +105,8 @@ internal class SegmentedCursorWindowTest {
                 { it.put(1L) },
                 { it.put(1.toShort()) },
                 { it.put("one") },
-                { it.putNull() },
-                { it.clear() }
+                it::putNull,
+                it::clear
             ).forEach { operation ->
                 assertFailsWith<UnsupportedOperationException> { operation() }
             }

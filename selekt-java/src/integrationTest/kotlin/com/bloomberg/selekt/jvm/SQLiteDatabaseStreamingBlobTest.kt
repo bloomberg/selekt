@@ -28,7 +28,7 @@ internal class SQLiteDatabaseStreamingBlobTest {
     @Test
     fun streamsRowsThroughJniBackend() = createInMemoryDatabase().use { database ->
         database.exec("CREATE TABLE files (id INTEGER PRIMARY KEY, data BLOB NOT NULL)")
-        val payloads = listOf(byteArrayOf(), byteArrayOf(1, 2, 3), ByteArray(1_025) { it.toByte() })
+        val payloads = listOf(byteArrayOf(), byteArrayOf(1, 2, 3), ByteArray(1_025, Int::toByte))
         val batch = StreamingBlobBatch(
             "files",
             "data",

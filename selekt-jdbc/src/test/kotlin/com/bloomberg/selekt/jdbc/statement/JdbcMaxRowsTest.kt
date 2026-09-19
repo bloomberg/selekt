@@ -68,9 +68,7 @@ internal class JdbcMaxRowsTest {
             connection.prepareStatement("SELECT id FROM entries WHERE id >= ? ORDER BY id").use { statement ->
                 statement.setInt(1, 1)
                 statement.maxRows = MAXIMUM_ROWS
-                statement.executeQuery().use { resultSet ->
-                    assertRows(resultSet)
-                }
+                statement.executeQuery().use(::assertRows)
             }
         }
     }
@@ -100,9 +98,7 @@ internal class JdbcMaxRowsTest {
         DriverManager.getConnection(url).use { connection ->
             connection.createStatement().use { statement ->
                 statement.maxRows = MAXIMUM_ROWS
-                statement.executeQuery(sql).use { resultSet ->
-                    assertRows(resultSet)
-                }
+                statement.executeQuery(sql).use(::assertRows)
             }
         }
     }

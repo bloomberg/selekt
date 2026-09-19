@@ -35,9 +35,7 @@ internal class SupportSQLiteOpenHelperKtTest {
             .callback(mock())
             .build()
             .let {
-                assertFailsWith<IllegalArgumentException> {
-                    it.asSelektConfiguration()
-                }
+                assertFailsWith<IllegalArgumentException>(block = it::asSelektConfiguration)
             }
     }
 

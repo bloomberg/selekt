@@ -228,26 +228,26 @@ internal class SQLDatabaseTest {
             it.step()
             assertTrue(database.inTransaction)
         }
-        database.prepare("END TRANSACTION").use { it.step() }
+        database.prepare("END TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
         verifyCommit()
     }
 
     @Test
     fun rawStatementBeginAndRollbackTransaction() {
-        database.prepare("BEGIN DEFERRED TRANSACTION").use { it.step() }
-        database.prepare("ROLLBACK TRANSACTION").use { it.step() }
+        database.prepare("BEGIN DEFERRED TRANSACTION").use(ISQLRawStatement::step)
+        database.prepare("ROLLBACK TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
         verifyRollback()
     }
 
     @Test
     fun rawStatementNestedBeginCommitsViaSavepoint() {
-        database.prepare("BEGIN EXCLUSIVE TRANSACTION").use { it.step() }
-        database.prepare("BEGIN IMMEDIATE TRANSACTION").use { it.step() }
-        database.prepare("END TRANSACTION").use { it.step() }
+        database.prepare("BEGIN EXCLUSIVE TRANSACTION").use(ISQLRawStatement::step)
+        database.prepare("BEGIN IMMEDIATE TRANSACTION").use(ISQLRawStatement::step)
+        database.prepare("END TRANSACTION").use(ISQLRawStatement::step)
         assertTrue(database.inTransaction)
-        database.prepare("END TRANSACTION").use { it.step() }
+        database.prepare("END TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
         verifyCommit()
     }
@@ -353,7 +353,7 @@ internal class SQLDatabaseTest {
     @Test
     fun pragmaAcceptsAllowListedKey(): Unit = database.run {
         whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn ""
-        SQLitePragma.entries.forEach { pragma(it) }
+        SQLitePragma.entries.forEach(::pragma)
     }
 
     @Test

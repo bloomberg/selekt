@@ -288,9 +288,7 @@ internal class SelektDriverTest {
 
     @Test
     fun privateMemoryDatabaseForcesSingleConnectionPool() {
-        driver.connect("jdbc:sqlite::memory:?poolSize=10", Properties())!!.use { connection ->
-            verifyPrivateMemoryRoundTrip(connection)
-        }
+        driver.connect("jdbc:sqlite::memory:?poolSize=10", Properties())!!.use(::verifyPrivateMemoryRoundTrip)
     }
 
     @Test

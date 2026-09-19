@@ -101,8 +101,8 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun sameObject() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        val obj = borrowObject().also(::returnObject)
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -110,25 +110,25 @@ internal class SingleObjectPoolTest {
         val obj = borrowObject()
         evict()
         returnObject(obj)
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
     fun earlyInitialEvictionFails() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         evict()
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
     fun evictionAfterSuccessfulEvictionFails() = pool.run {
-        val one = borrowObject().also { returnObject(it) }
+        val one = borrowObject().also(::returnObject)
         evict()
         evict()
-        val two = borrowObject().also { returnObject(it) }
+        val two = borrowObject().also(::returnObject)
         assertNotSame(one, two)
         evict()
-        assertSame(two, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        assertSame(two, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -168,10 +168,10 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun newObjectAfterSuccessfulEviction() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         evict()
         evict()
-        assertNotSame(obj, borrowObject().also { returnObject(it) }, "Pool must not return the same object.")
+        assertNotSame(obj, borrowObject().also(::returnObject), "Pool must not return the same object.")
     }
 
     @Test
@@ -198,7 +198,7 @@ internal class SingleObjectPoolTest {
         }
         evict()
         evict()
-        assertNotSame(obj, borrowObject().also { returnObject(it) }, "Pool must not return the same object.")
+        assertNotSame(obj, borrowObject().also(::returnObject), "Pool must not return the same object.")
     }
 
     @Test
@@ -324,7 +324,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun borrowKeyedObject(): Unit = pool.run {
-        val obj = borrowObject("").also { returnObject(it) }
+        val obj = borrowObject("").also(::returnObject)
         assertSame(obj, borrowObject())
     }
 
@@ -363,8 +363,8 @@ internal class SingleObjectPoolTest {
         val factory = mock<IObjectFactory<IPooledObject<String>>>()
         whenever(factory.makePrimaryObject()) doThrow IOException()
         SingleObjectPool(factory, executor, 5_000L, 20_000L).use {
-            assertFailsWith<IOException> { it.borrowObject() }
-            assertFailsWith<IOException> { it.borrowObject() }
+            assertFailsWith<IOException>(block = it::borrowObject)
+            assertFailsWith<IOException>(block = it::borrowObject)
         }
     }
 
@@ -443,7 +443,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun concurrentAccess() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         val workerCount = 4
         val ready = CountDownLatch(workerCount)
         val start = CountDownLatch(1)
@@ -456,7 +456,7 @@ internal class SingleObjectPoolTest {
                     repeat(10_000) {
                         assertSame(
                             obj,
-                            borrowObject().also { returnObject(it) },
+                            borrowObject().also(::returnObject),
                             "Pool must return the same object."
                         )
                     }
@@ -479,7 +479,7 @@ internal class SingleObjectPoolTest {
                     repeat(100_000) { evict() }
                 }
                 launch {
-                    repeat(100_000) { borrowObject().also { returnObject(it) } }
+                    repeat(100_000) { borrowObject().also(::returnObject) }
                 }
             }
         }
@@ -487,7 +487,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun clearHighPriorityEvictsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         clear(Priority.HIGH)
         awaitPendingTasks()
         assertNotSame(obj, borrowObject())
@@ -495,7 +495,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun clearLowPriorityKeepsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         clear(Priority.LOW)
         awaitPendingTasks()
         assertSame(obj, borrowObject())
@@ -503,7 +503,7 @@ internal class SingleObjectPoolTest {
 
     @Test
     fun clearLowPriorityAfterEvictionAttemptClearsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         evict()
         clear(Priority.LOW)
         awaitPendingTasks()

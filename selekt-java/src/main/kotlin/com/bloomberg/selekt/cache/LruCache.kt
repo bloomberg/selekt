@@ -35,7 +35,7 @@ class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> U
             }
         }
 
-        override fun remove(key: String): T? = super.remove(key)?.also { disposal(it) }
+        override fun remove(key: String): T? = super.remove(key)?.also(disposal)
     }
 
     fun evict(key: String) {
@@ -45,7 +45,7 @@ class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> U
     fun evictAll() {
         store.values.toList()
             .also { store.clear() }
-            .forEach { disposal(it) }
+            .forEach(disposal)
     }
 
     inline operator fun get(key: String, supplier: () -> T): T = store.getOrPut(key, supplier)

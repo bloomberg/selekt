@@ -54,9 +54,7 @@ inline fun <T> Iterable<T>.forEachCatching(action: (T) -> Unit): Iterable<Throwa
     forEach {
         runCatching {
             action(it)
-        }.exceptionOrNull()?.let { e ->
-            throwables.add(e)
-        }
+        }.exceptionOrNull()?.let(throwables::add)
     }
     return throwables
 }

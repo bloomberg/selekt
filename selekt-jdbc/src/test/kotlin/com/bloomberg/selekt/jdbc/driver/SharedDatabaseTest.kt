@@ -51,7 +51,7 @@ internal class SharedDatabaseTest {
             key = null,
             random = CommonThreadLocalRandom
         )
-        return SharedDatabase(db, onClose).also { databases.add(it) }
+        return SharedDatabase(db, onClose).also(databases::add)
     }
 
     @AfterEach

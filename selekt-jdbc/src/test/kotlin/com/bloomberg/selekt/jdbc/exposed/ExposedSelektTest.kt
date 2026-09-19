@@ -97,7 +97,7 @@ internal class ExposedSelektTest {
         val database = connect()
         transaction(database) {
             SchemaUtils.create(Users, Posts)
-            val tables = SchemaUtils.listTables().map { it.lowercase() }
+            val tables = SchemaUtils.listTables().map(String::lowercase)
             assertTrue(tables.contains("users"))
             assertTrue(tables.contains("posts"))
         }

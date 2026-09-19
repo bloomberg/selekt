@@ -435,7 +435,7 @@ internal class JdbcPreparedStatementTest {
             updateStatement().apply {
                 setInt(1, 42)
                 setString(2, "test")
-            }.use { it.executeUpdate() }
+            }.use(JdbcPreparedStatement::executeUpdate)
         }
         verify(mockStatement).close()
     }

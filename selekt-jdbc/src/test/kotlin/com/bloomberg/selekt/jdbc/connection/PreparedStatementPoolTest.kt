@@ -48,7 +48,7 @@ internal class PreparedStatementPoolTest {
         val scrollClose = statement("SELECT 1", SCROLL_INSENSITIVE, CLOSE_AT_COMMIT)
         val scrollHold = statement("SELECT 1", SCROLL_INSENSITIVE, HOLD_OVER_COMMIT)
         val updatable = statement("SELECT 1", resultSetConcurrency = UPDATABLE)
-        listOf(forwardClose, forwardHold, scrollClose, scrollHold, updatable).forEach { pool.put(it) }
+        listOf(forwardClose, forwardHold, scrollClose, scrollHold, updatable).forEach(pool::put)
         assertSame(scrollHold, pool.take("SELECT 1", SCROLL_INSENSITIVE, READ_ONLY, HOLD_OVER_COMMIT))
         assertSame(updatable, pool.take("SELECT 1", FORWARD_ONLY, UPDATABLE, CLOSE_AT_COMMIT))
         assertSame(forwardClose, pool.take("SELECT 1", FORWARD_ONLY, READ_ONLY, CLOSE_AT_COMMIT))

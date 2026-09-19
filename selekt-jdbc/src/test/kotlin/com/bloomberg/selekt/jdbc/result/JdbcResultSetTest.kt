@@ -857,9 +857,7 @@ internal class JdbcResultSetTest {
             whenever(getString(1)) doReturn "unicode"
         }
         @Suppress("DEPRECATION")
-        resultSet.getUnicodeStream(2).use {
-            assertNotNull(it)
-        }
+        resultSet.getUnicodeStream(2).use(::assertNotNull)
     }
 
     @Test
@@ -869,9 +867,7 @@ internal class JdbcResultSetTest {
             whenever(getString(1)) doReturn "unicode"
         }
         @Suppress("DEPRECATION")
-        resultSet.getUnicodeStream("name").use {
-            assertNotNull(it)
-        }
+        resultSet.getUnicodeStream("name").use(::assertNotNull)
     }
 
     @Test

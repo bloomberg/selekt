@@ -106,9 +106,9 @@ internal class DatabaseKeyTest {
             startLatch.await()
             key.close()
         }
-        (workers + closer).forEach { it.start() }
+        (workers + closer).forEach(Thread::start)
         startLatch.countDown()
-        (workers + closer).forEach { it.join() }
+        (workers + closer).forEach(Thread::join)
         assertEquals(0, unexpectedFailures.get())
         verify(sqlite, times(1)).freeSecret(eq(KEY_POINTER), eq(KEY_SIZE))
     }

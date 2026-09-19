@@ -98,8 +98,8 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun sameObject() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        val obj = borrowObject().also(::returnObject)
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -109,14 +109,14 @@ internal class CommonObjectPoolTest {
             returnObject(borrowObject())
         }.join()
         returnObject(first)
-        assertNotSame(first, borrowObject("not").also { returnObject(it) }, "Pool must return the first object.")
+        assertNotSame(first, borrowObject("not").also(::returnObject), "Pool must return the first object.")
     }
 
     @Test
     fun sameObjectForKey() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
-        thread { borrowObject().also { returnObject(it) } }.join()
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        val obj = borrowObject().also(::returnObject)
+        thread { borrowObject().also(::returnObject) }.join()
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -124,7 +124,7 @@ internal class CommonObjectPoolTest {
         val obj = borrowObject()
         evict()
         returnObject(obj)
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -134,13 +134,13 @@ internal class CommonObjectPoolTest {
             returnObject(borrowObject())
         }
         evict()
-        assertSame(obj, borrowObject().also { returnObject(it) }, "Pool must return the same object.")
+        assertSame(obj, borrowObject().also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
     fun sameSingleObjectForNewKey() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
-        assertSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must return the same object.")
+        val obj = borrowObject().also(::returnObject)
+        assertSame(obj, borrowObject("not").also(::returnObject), "Pool must return the same object.")
     }
 
     @Test
@@ -173,16 +173,16 @@ internal class CommonObjectPoolTest {
         val other = executor.submit<PooledObject> { borrowObject() }.get()
         returnObject(obj)
         executor.submit { returnObject(other) }.get()
-        assertSame(obj, borrowObject("not").also { returnObject(it) }, "Pool must not return the same object.")
+        assertSame(obj, borrowObject("not").also(::returnObject), "Pool must not return the same object.")
         executor.shutdown()
     }
 
     @Test
     fun newObjectAfterSuccessfulEviction() = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         evict()
         evict()
-        assertNotSame(obj, borrowObject().also { returnObject(it) }, "Pool must not return the same object.")
+        assertNotSame(obj, borrowObject().also(::returnObject), "Pool must not return the same object.")
     }
 
     @Test
@@ -192,7 +192,7 @@ internal class CommonObjectPoolTest {
         returnObject(first)
         evict()
         evict()
-        val third = borrowObject().also { returnObject(it) }
+        val third = borrowObject().also(::returnObject)
         assertNotSame(first, third, "Pool must not return the same object.")
     }
 
@@ -221,7 +221,7 @@ internal class CommonObjectPoolTest {
             key = UUID.randomUUID().toString()
             val other = borrowObject()
             thread {
-                borrowObject().also { returnObject(it) }
+                borrowObject().also(::returnObject)
             }.join()
             returnObject(other)
         }.join()
@@ -463,7 +463,7 @@ internal class CommonObjectPoolTest {
                     }
                 }
             }
-        }.forEach { it.join() }
+        }.forEach(Thread::join)
         assertTrue(objects.isNotEmpty())
         assertTrue(
             objects.size <= configuration.maxTotal,
@@ -485,7 +485,7 @@ internal class CommonObjectPoolTest {
                     }
                 }
             }
-        }.forEach { it.join() }
+        }.forEach(Thread::join)
         evictionThread.join()
     }
 
@@ -513,7 +513,7 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun clearHighPriorityEvictsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         clear(Priority.HIGH)
         awaitPendingTasks()
         assertNotSame(obj, borrowObject())
@@ -521,7 +521,7 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun clearLowPriorityKeepsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         clear(Priority.LOW)
         awaitPendingTasks()
         assertSame(obj, borrowObject())
@@ -529,7 +529,7 @@ internal class CommonObjectPoolTest {
 
     @Test
     fun clearLowPriorityAfterEvictionAttemptClearsIdle(): Unit = pool.run {
-        val obj = borrowObject().also { returnObject(it) }
+        val obj = borrowObject().also(::returnObject)
         evict()
         clear(Priority.LOW)
         awaitPendingTasks()
@@ -566,9 +566,7 @@ internal class CommonObjectPoolTest {
 
             override fun makePrimaryObject() = throw IOException("Oh no!")
         }, executor, configuration, other).use {
-            assertFailsWith<IOException> {
-                it.borrowObject()
-            }
+            assertFailsWith<IOException>(block = it::borrowObject)
         }
     }
 
@@ -584,7 +582,7 @@ internal class CommonObjectPoolTest {
             override fun makePrimaryObject() = throw IOException("Oh no!")
         }, executor, configuration, other).use {
             repeat(configuration.maxTotal + 1) { _ ->
-                runCatching { it.borrowObject() }
+                runCatching(it::borrowObject)
             }
         }
     }
@@ -649,7 +647,7 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
     @Test
     fun concurrentAccess() = pool.run {
         val key = "abc"
-        val obj = borrowObject(key).also { returnObject(it) }
+        val obj = borrowObject(key).also(::returnObject)
         Array(2 * configuration.maxTotal) {
             thread {
                 val localKey = key + UUID.randomUUID()
@@ -660,6 +658,6 @@ internal class CommonObjectPoolAsSingleObjectPoolTest {
                     }, "Pool must return the same object.")
                 }
             }
-        }.forEach { it.join() }
+        }.forEach(Thread::join)
     }
 }

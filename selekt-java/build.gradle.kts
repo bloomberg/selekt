@@ -259,9 +259,10 @@ val generateVersionProperties by tasks.registering {
     inputs.property("version", version)
     outputs.dir(outputDir)
     doLast {
-        outputDir.get().asFile.resolve("com/bloomberg/selekt").also {
-            it.mkdirs()
-        }.resolve("selekt-version.properties").writeText("version=$version\n")
+        outputDir.get().asFile.resolve("com/bloomberg/selekt")
+            .also(File::mkdirs)
+            .resolve("selekt-version.properties")
+            .writeText("version=$version\n")
     }
 }
 

@@ -424,9 +424,7 @@ internal class SelektDataSourceTest {
     fun privateMemoryDatabaseForcesSingleConnectionPool(): Unit = dataSource.run {
         databasePath = ":memory:"
         maxPoolSize = 10
-        getConnection().use { connection ->
-            verifyPrivateMemoryRoundTrip(connection)
-        }
+        getConnection().use(::verifyPrivateMemoryRoundTrip)
     }
 
     private fun verifyPrivateMemoryRoundTrip(connection: java.sql.Connection) {

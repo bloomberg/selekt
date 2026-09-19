@@ -128,7 +128,7 @@ private class SelektSQLiteConnection(private val database: SQLDatabase) : SQLite
         SelektSQLiteStatement(database.prepare(sql))
     }
 
-    override fun close() = translatingSQLiteExceptions { database.close() }
+    override fun close() = translatingSQLiteExceptions(database::close)
 }
 
 private class SelektSQLiteStatement(private val statement: ISQLRawStatement) : SQLiteStatement {
@@ -162,13 +162,13 @@ private class SelektSQLiteStatement(private val statement: ISQLRawStatement) : S
 
     override fun getColumnType(index: Int) = translatingSQLiteExceptions { statement.columnType(index) }
 
-    override fun step() = translatingSQLiteExceptions { statement.step() }
+    override fun step() = translatingSQLiteExceptions(statement::step)
 
-    override fun reset() = translatingSQLiteExceptions { statement.reset() }
+    override fun reset() = translatingSQLiteExceptions(statement::reset)
 
-    override fun clearBindings() = translatingSQLiteExceptions { statement.clearBindings() }
+    override fun clearBindings() = translatingSQLiteExceptions(statement::clearBindings)
 
-    override fun close() = translatingSQLiteExceptions { statement.close() }
+    override fun close() = translatingSQLiteExceptions(statement::close)
 }
 
 private object SQLite : com.bloomberg.selekt.SQLite(sqlite)

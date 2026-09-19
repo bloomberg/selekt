@@ -28,11 +28,11 @@ fun <T : Any> NamedDomainObjectContainer<T>.release(configure: T.() -> Unit) = g
 
 fun Project.gitCommit(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "HEAD")
-}.standardOutput.asText.map { it.trim() }
+}.standardOutput.asText.map(String::trim)
 
 fun Project.gitCommitShort(): Provider<String> = providers.exec {
     commandLine("git", "rev-parse", "--short", "HEAD")
-}.standardOutput.asText.map { it.trim() }
+}.standardOutput.asText.map(String::trim)
 
 fun Project.isRelease() = hasProperty("release")
 

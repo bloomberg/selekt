@@ -108,9 +108,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
                 evictions(priority)
             }
         }
-    }?.let {
-        factory.destroyObject(it)
-    }
+    }?.let(factory::destroyObject)
 
     @GuardedBy("mutex")
     private fun acquireObject(): T {
@@ -164,9 +162,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
             evictions(null)
         } finally {
             mutex.unlock()
-        }?.let {
-            factory.destroyObject(it)
-        }
+        }?.let(factory::destroyObject)
     }
 
     private infix fun T.shouldBeRemovedAt(priority: Priority?) =

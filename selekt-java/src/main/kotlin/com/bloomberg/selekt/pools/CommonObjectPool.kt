@@ -154,9 +154,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                 return@run emptyList()
             }
             if (priority != null) {
-                idleObjects.reverseMutableIterator().forEach {
-                    it.releaseMemory()
-                }
+                idleObjects.reverseMutableIterator().forEach(IPooledObject<*>::releaseMemory)
             }
             evictions(priority)
         }
@@ -220,9 +218,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     private fun Iterable<T>.destroyEach() {
-        forEachCatching {
-            factory.destroyObject(it)
-        }.firstOrNull()?.let {
+        forEachCatching(factory::destroyObject).firstOrNull()?.let {
             throw it
         }
     }

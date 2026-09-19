@@ -156,9 +156,15 @@ internal class SQLConnectionFactory(
     }
 
     override fun makeObject() = busyLock.withLock {
-        SQLConnection(path, sqlite, configuration, SQL_OPEN_READONLY, random, key, ::progressHandlerSetting).also {
-            connections.add(it)
-        }
+        SQLConnection(
+            path,
+            sqlite,
+            configuration,
+            SQL_OPEN_READONLY,
+            random,
+            key,
+            ::progressHandlerSetting
+        ).also(connections::add)
     }
 
     override fun makePrimaryObject() = busyLock.withLock {
@@ -170,9 +176,7 @@ internal class SQLConnectionFactory(
             random,
             key,
             ::progressHandlerSetting
-        ).also {
-            connections.add(it)
-        }
+        ).also(connections::add)
     }
 
     private companion object {

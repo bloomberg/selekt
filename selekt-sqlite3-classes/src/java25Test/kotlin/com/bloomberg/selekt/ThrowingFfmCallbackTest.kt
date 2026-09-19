@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
+import java.io.BufferedReader
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -74,7 +75,7 @@ internal class ThrowingFfmCallbackTest {
         if (!exited) {
             process.destroyForcibly()
         }
-        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val output = process.inputStream.bufferedReader().use(BufferedReader::readText)
         assertTrue(exited, "Child JVM timed out: $output")
         assertEquals(0, process.exitValue(), "Child JVM terminated: $output")
         assertTrue("THROWABLE=${scenario.expectedThrowable}" in output, "Unexpected child throwable: $output")

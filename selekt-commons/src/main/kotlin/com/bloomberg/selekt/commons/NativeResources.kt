@@ -92,17 +92,15 @@ internal fun libraryNames(
 
 @Throws(IOException::class)
 fun loadEmbeddedLibrary(loader: ClassLoader, parentDirectory: String, name: String) {
-    val url = checkNotNull(libraryNames(parentDirectory, name).firstNotNullOfOrNull {
-        loader.getResource(it)
-    }) { "Failed to find resource with name: $name in directory: $parentDirectory" }
+    val url = checkNotNull(libraryNames(parentDirectory, name).firstNotNullOfOrNull(loader::getResource)) {
+        "Failed to find resource with name: $name in directory: $parentDirectory"
+    }
 
     @Suppress("NewApi") // Not used by Android.
     val file = createTempFile("lib$name").toFile()
     try {
         url.openStream().use { inputStream ->
-            FileOutputStream(file).use {
-                inputStream.copyTo(it)
-            }
+            FileOutputStream(file).use(inputStream::copyTo)
         }
         @Suppress("UnsafeDynamicallyLoadedCode")
         System.load(file.absolutePath)
@@ -119,9 +117,7 @@ private fun loadLibrary(
 ) {
     val path = libraryNames(parentDirectory, name).map {
         Path(libraryPath, it)
-    }.first {
-        Files.exists(it)
-    }.toAbsolutePath()
+    }.first(Files::exists).toAbsolutePath()
     @Suppress("UnsafeDynamicallyLoadedCode")
     System.load(path.toString())
 }
