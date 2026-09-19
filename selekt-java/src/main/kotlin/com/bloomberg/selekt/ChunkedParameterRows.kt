@@ -21,6 +21,11 @@ import javax.annotation.concurrent.NotThreadSafe
 private const val DEFAULT_INITIAL_CHUNK_CAPACITY = 1024
 private const val MAX_RETAINED_CAPACITY_FACTOR = 16
 
+/** Uses a primitive offset; a generic Kotlin function type would box it once per row. */
+internal fun interface PackedRowAction {
+    fun accept(tags: ByteArray, values: LongArray, objects: Array<Any?>, offset: Int): Boolean
+}
+
 @NotThreadSafe
 class ChunkedParameterRows(
     private val parameterCount: Int,
@@ -89,13 +94,11 @@ class ChunkedParameterRows(
         size = 0
     }
 
-    internal fun forEachPackedRow(
-        action: (tags: ByteArray, values: LongArray, objects: Array<Any?>, offset: Int) -> Boolean
-    ): Boolean {
+    internal fun forEachPackedRow(action: PackedRowAction): Boolean {
         var chunk = firstChunk
         while (chunk != null) {
             for (index in 0 until chunk.count) {
-                if (!action(chunk.tags, chunk.values, chunk.objects, index * parameterCount)) {
+                if (!action.accept(chunk.tags, chunk.values, chunk.objects, index * parameterCount)) {
                     return false
                 }
             }
