@@ -318,6 +318,7 @@ internal class JdbcMetadataSqlIsolationFuzzTest {
             seed(MetadataOperation.TABLES, "%'; ATTACH DATABASE ':memory:' AS evil;--"),
             seed(MetadataOperation.COLUMNS, "%", "%"),
             seed(MetadataOperation.COLUMNS, "%", "' UNION SELECT 'injected';--"),
+            seed(MetadataOperation.COLUMNS, "view' OR 1*=1;--%"),
             seed(MetadataOperation.PRIMARY_KEYS, ADVERSARIAL_TABLE),
             seed(MetadataOperation.PRIMARY_KEYS, "'; PRAGMA writable_schema=ON;--"),
             seed(MetadataOperation.INDEXES, ADVERSARIAL_TABLE),
