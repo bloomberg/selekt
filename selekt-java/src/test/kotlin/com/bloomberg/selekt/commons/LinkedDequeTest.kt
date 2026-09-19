@@ -137,9 +137,7 @@ internal class LinkedDequeTest {
             putFirst(Any())
             reverseMutableIterator().let {
                 it.next()
-                assertFailsWith<NoSuchElementException> {
-                    it.next()
-                }
+                assertFailsWith<NoSuchElementException>(block = it::next)
             }
         }
     }

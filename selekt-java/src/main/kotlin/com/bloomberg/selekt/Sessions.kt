@@ -472,7 +472,7 @@ internal class SQLSession(
     }
 
     private fun rollbackQuietly() {
-        runCatching { rollback() }
+        runCatching(::rollback)
     }
 
     private fun checkInTransaction() = check(inTransaction) { "This thread is not in a transaction." }

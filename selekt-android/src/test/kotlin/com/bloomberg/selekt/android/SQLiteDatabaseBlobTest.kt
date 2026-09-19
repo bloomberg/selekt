@@ -256,7 +256,7 @@ internal class SQLiteDatabaseBlobTest {
                     }
                 }
             }
-        ).forEach { it.join() }
+        ).forEach(Thread::join)
         ByteArrayOutputStream(size).use {
             readFromBlob("Foo", "data", 1L, 0, size, it)
             it.toByteArray().forEachIndexed { index, byte -> assertEquals(index.toByte(), byte) }

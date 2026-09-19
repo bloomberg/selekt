@@ -70,9 +70,7 @@ internal class Mutex {
     /**
      * Best effort to unpark all waiting threads.
      */
-    fun attemptUnparkWaiters() = waiters.forEach {
-        LockSupport.unpark(it)
-    }
+    fun attemptUnparkWaiters() = waiters.forEach(LockSupport::unpark)
 
     inline fun <R> withTryLock(
         block: () -> R

@@ -244,14 +244,14 @@ internal class ExternalSQLite(
         block()
     } else {
         SlabArena().use { slab ->
-            ScopedValue.where(SCOPED_SLAB, slab).call<T, Throwable> { block() }
+            ScopedValue.where(SCOPED_SLAB, slab).call<T, Throwable>(block)
         }
     }
 
     private inline fun <T> withSlab(block: (SlabArena) -> T): T = if (SCOPED_SLAB.isBound()) {
         block(SCOPED_SLAB.get().also(SlabArena::reset))
     } else {
-        SlabArena().use { block(it) }
+        SlabArena().use(block)
     }
 
     private fun requireRawKeyLength(length: Int) {

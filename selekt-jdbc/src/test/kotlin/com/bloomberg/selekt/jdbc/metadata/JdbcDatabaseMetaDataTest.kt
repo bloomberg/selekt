@@ -722,9 +722,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getColumns(null, null, "%", "%").use {
-            assertNotNull(it)
-        }
+        metaData.getColumns(null, null, "%", "%").use(::assertNotNull)
     }
 
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
@@ -796,9 +794,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getPrimaryKeys(null, null, "test_table").use {
-            assertNotNull(it)
-        }
+        metaData.getPrimaryKeys(null, null, "test_table").use(::assertNotNull)
     }
 
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
@@ -885,9 +881,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getColumns(null, null, "%", "%").use {
-            assertNotNull(it)
-        }
+        metaData.getColumns(null, null, "%", "%").use(::assertNotNull)
     }
 
     @Test
@@ -920,9 +914,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getColumns(null, null, "%", "%").use {
-            assertNotNull(it)
-        }
+        metaData.getColumns(null, null, "%", "%").use(::assertNotNull)
     }
 
     @Suppress("Detekt.CognitiveComplexMethod", "Detekt.LongMethod")
@@ -995,9 +987,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getPrimaryKeys(null, null, "test_table").use {
-            assertNotNull(it)
-        }
+        metaData.getPrimaryKeys(null, null, "test_table").use(::assertNotNull)
     }
 
     @Test
@@ -1016,9 +1006,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getTables(null, null, null, null).use {
-            assertNotNull(it)
-        }
+        metaData.getTables(null, null, null, null).use(::assertNotNull)
     }
 
     @Test
@@ -1037,9 +1025,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getTables(null, null, "test_%", null).use {
-            assertNotNull(it)
-        }
+        metaData.getTables(null, null, "test_%", null).use(::assertNotNull)
     }
 
     @Test
@@ -1059,9 +1045,7 @@ internal class JdbcDatabaseMetaDataTest {
                 else -> mockCursor
             }
         }
-        metaData.getIndexInfo(null, null, "test_table", unique = true, approximate = false).use {
-            assertNotNull(it)
-        }
+        metaData.getIndexInfo(null, null, "test_table", unique = true, approximate = false).use(::assertNotNull)
     }
 
     @Test

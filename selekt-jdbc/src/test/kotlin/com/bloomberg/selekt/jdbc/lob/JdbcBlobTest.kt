@@ -35,8 +35,8 @@ internal class JdbcBlobTest {
     fun constructorWithInitialContent() {
         val blob = JdbcBlob(testData)
         assertEquals(testData.size.toLong(), blob.length())
-        assertEquals(testData.joinToString(",") { it.toString() },
-            blob.getBytes(1, testData.size).joinToString(",") { it.toString() })
+        assertEquals(testData.joinToString(",", transform = Byte::toString),
+            blob.getBytes(1, testData.size).joinToString(",", transform = Byte::toString))
     }
 
     @Test
@@ -176,8 +176,8 @@ internal class JdbcBlobTest {
         val newBytes = "Hello".toByteArray()
         val written = blob.setBytes(1, newBytes)
         assertEquals(5, written)
-        assertEquals(newBytes.joinToString(",") { it.toString() },
-            blob.getBytes(1, 5).joinToString(",") { it.toString() })
+        assertEquals(newBytes.joinToString(",", transform = Byte::toString),
+            blob.getBytes(1, 5).joinToString(",", transform = Byte::toString))
     }
 
     @Test
@@ -227,8 +227,8 @@ internal class JdbcBlobTest {
         stream.flush()
         stream.close()
         val result = blob.getBytes(1, testData.size)
-        assertEquals(testData.joinToString(",") { it.toString() },
-            result.joinToString(",") { it.toString() })
+        assertEquals(testData.joinToString(",", transform = Byte::toString),
+            result.joinToString(",", transform = Byte::toString))
     }
 
     @Test
@@ -317,8 +317,8 @@ internal class JdbcBlobTest {
     fun asBytes() {
         val blob = JdbcBlob(testData)
         val result = blob.asBytes()
-        assertEquals(testData.joinToString(",") { it.toString() },
-            result.joinToString(",") { it.toString() })
+        assertEquals(testData.joinToString(",", transform = Byte::toString),
+            result.joinToString(",", transform = Byte::toString))
     }
 
     @Test

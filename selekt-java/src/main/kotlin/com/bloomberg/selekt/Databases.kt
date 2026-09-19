@@ -431,7 +431,7 @@ class SQLDatabase(
             query.sql,
             query.sql.resolvedSqlStatementType(),
             query.argCount
-        ).also { query.bindTo(it) }
+        ).also(query::bindTo)
     )
 
     /**
@@ -557,7 +557,7 @@ class SQLDatabase(
             query.sql,
             query.sql.resolvedSqlStatementType(),
             query.argCount
-        ).also { query.bindTo(it) },
+        ).also(query::bindTo),
         cancellationSignal
     )
 
@@ -800,7 +800,7 @@ class SQLDatabase(
         stream: InputStream
     ): Unit = transact {
         blob(name, table, column, row, false).use { b ->
-            b.outputStream(offset).use { stream.copyTo(it) }
+            b.outputStream(offset).use(stream::copyTo)
         }
     }
 

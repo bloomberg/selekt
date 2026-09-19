@@ -47,9 +47,7 @@ internal class SQLConnection(
     private val progressHandlerSetting: () -> ProgressHandlerSetting? = { null }
 ) : CloseableSQLExecutor {
     private val databaseHandle = sqlite.open(path, flags)
-    private val preparedStatements = LruCache<SQLPreparedStatement>(configuration.maxSqlCacheSize) {
-        it.close()
-    }
+    private val preparedStatements = LruCache(configuration.maxSqlCacheSize, SQLPreparedStatement::close)
     private var commitListener: SQLTransactionListener? = null
 
     @Volatile

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import java.io.InputStream
 import java.util.zip.ZipFile
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
@@ -52,7 +53,7 @@ abstract class VerifyEmbeddedSbom : DefaultTask() {
                 val entry = requireNotNull(zip.getEntry(expectedEntryName)) {
                     "${archive.name} does not contain $expectedEntryName"
                 }
-                val embedded = zip.getInputStream(entry).use { it.readBytes() }
+                val embedded = zip.getInputStream(entry).use(InputStream::readBytes)
                 require(expected.contentEquals(embedded)) {
                     "$expectedEntryName in ${archive.name} differs from the published CycloneDX SBOM"
                 }

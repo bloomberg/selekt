@@ -281,8 +281,8 @@ internal class NativeCursorWindowTest {
     fun mutatorsAreUnsupported() {
         NativeCursorWindow(cursorWindowBuffer(), mock(), 0).use { window ->
             listOf<() -> Any?>(
-                { window.allocateRow() },
-                { window.clear() },
+                window::allocateRow,
+                window::clear,
                 { window.put(1) },
                 { window.put(1L) },
                 { window.put(1.0) },
@@ -290,7 +290,7 @@ internal class NativeCursorWindowTest {
                 { window.put(1.toShort()) },
                 { window.put("a") },
                 { window.put(byteArrayOf(1)) },
-                { window.putNull() }
+                window::putNull
             ).forEach {
                 assertFailsWith<UnsupportedOperationException> { it() }
             }

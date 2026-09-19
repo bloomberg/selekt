@@ -243,9 +243,7 @@ internal class SQLDatabaseTransactionTest {
     fun earlyEnd(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertFailsWith<IllegalStateException> {
-            it.endTransaction()
-        }
+        assertFailsWith<IllegalStateException>(block = it::endTransaction)
     }
 
     @ParameterizedTest
@@ -393,9 +391,7 @@ internal class SQLDatabaseTransactionTest {
     fun yieldTransactionThrows(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertFailsWith<IllegalStateException> {
-            it.yieldTransaction()
-        }
+        assertFailsWith<IllegalStateException>(block = it::yieldTransaction)
     }
 
     @ParameterizedTest
@@ -406,9 +402,7 @@ internal class SQLDatabaseTransactionTest {
         it.beginExclusiveTransaction()
         try {
             it.setTransactionSuccessful()
-            assertFailsWith<IllegalStateException> {
-                it.yieldTransaction()
-            }
+            assertFailsWith<IllegalStateException>(block = it::yieldTransaction)
         } finally {
             it.endTransaction()
         }
@@ -809,9 +803,7 @@ internal class SQLDatabaseTransactionTest {
     fun setSavepointFailsOutsideTransaction(
         input: SQLiteJournalMode
     ): Unit = SQLDatabase(createFile(input).absolutePath, SQLite, input.databaseConfiguration, key = null).use {
-        assertFailsWith<IllegalStateException> {
-            it.setSavepoint()
-        }
+        assertFailsWith<IllegalStateException>(block = it::setSavepoint)
     }
 
     @ParameterizedTest

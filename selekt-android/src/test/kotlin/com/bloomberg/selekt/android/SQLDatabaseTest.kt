@@ -59,7 +59,7 @@ internal class SampleSQLArgumentsProvider : ArgumentsProvider {
     ): Stream<out Arguments> = (SQLiteJournalMode.entries.filter { it != SQLiteJournalMode.MEMORY } *
         arrayOf(ByteArray(32) { 0x42 }, null)).map {
         SQLInputs(it.first, it.second)
-    }.map { Arguments.of(it) }.stream()
+    }.map(Arguments::of).stream()
 }
 
 @Suppress("DEPRECATION")

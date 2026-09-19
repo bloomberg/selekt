@@ -39,8 +39,8 @@ class CLIActivity : AppCompatActivity() {
         if (KeyEvent.KEYCODE_ENTER == keyCode) {
             if (KeyEvent.ACTION_UP == keyEvent.action) {
                 binding.input.text.apply {
-                    takeUnless { it.isBlank() }?.toString()?.let {
-                        runCatching { executeSQL(it) }.exceptionOrNull()?.let { e -> log(e) }
+                    takeUnless(CharSequence::isBlank)?.toString()?.let {
+                        runCatching { executeSQL(it) }.exceptionOrNull()?.let(::log)
                     }
                     clear()
                 }

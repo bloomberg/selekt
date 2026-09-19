@@ -417,9 +417,9 @@ internal class JdbcConnectionTest {
                 close()
             }
         }.apply {
-            forEach { it.start() }
+            forEach(Thread::start)
         }.apply {
-            forEach { it.join() }
+            forEach(Thread::join)
         }
         assertTrue(isClosed)
     }
@@ -1349,7 +1349,7 @@ internal class JdbcConnectionTest {
         val statements = characteristics.map { (type, holdability) ->
             connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)
         }
-        statements.forEach { it.close() }
+        statements.forEach(AutoCloseable::close)
 
         characteristics.forEachIndexed { index, (type, holdability) ->
             val reopened = connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)
@@ -1786,9 +1786,7 @@ internal class JdbcConnectionTest {
                             }
                         }
                     }
-                }.onFailure {
-                    readError.set(it)
-                }
+                }.onFailure(readError::set)
                 readCompleted.countDown()
             }
 
@@ -1855,9 +1853,7 @@ internal class JdbcConnectionTest {
                         }
                     }
                     readerConnection.commit()
-                }.onFailure {
-                    readError.set(it)
-                }
+                }.onFailure(readError::set)
                 readCompleted.countDown()
             }
 

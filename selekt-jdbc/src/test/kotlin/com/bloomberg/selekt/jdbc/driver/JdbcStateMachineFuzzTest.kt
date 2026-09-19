@@ -251,7 +251,7 @@ internal class JdbcStateMachineFuzzTest {
             boundTextSeed("'; DROP TABLE fuzz_guard;--"),
             boundTextSeed("'; ATTACH ':memory:' AS evil;--"),
             boundTextSeed("nul\u0000'; PRAGMA writable_schema=ON"),
-            ByteArray(64) { it.toByte() }
+            ByteArray(64, Int::toByte)
         )
     }
 }
