@@ -79,6 +79,45 @@ class ParameterRow(
         System.arraycopy(other.objects, 0, objects, 0, size)
     }
 
+    internal fun copyToPacked(
+        targetTags: ByteArray,
+        targetValues: LongArray,
+        targetObjects: Array<Any?>,
+        offset: Int,
+        targetSize: Int
+    ) {
+        for (i in 0 until targetSize) {
+            val target = offset + i
+            val tag = tags[i]
+            targetTags[target] = tag
+            targetValues[target] = when (tag) {
+                TAG_INT -> ints[i].toLong()
+                TAG_LONG -> longs[i]
+                TAG_DOUBLE -> doubles[i].toRawBits()
+                else -> 0L
+            }
+            targetObjects[target] = if (tag == TAG_OBJECT) { objects[i] } else { null }
+        }
+    }
+
+    internal fun copyFromPacked(
+        sourceTags: ByteArray,
+        sourceValues: LongArray,
+        sourceObjects: Array<Any?>,
+        offset: Int
+    ) {
+        for (i in 0 until size) {
+            val source = offset + i
+            when (sourceTags[source]) {
+                TAG_INT -> setInt(i, sourceValues[source].toInt())
+                TAG_LONG -> setLong(i, sourceValues[source])
+                TAG_DOUBLE -> setDouble(i, Double.fromBits(sourceValues[source]))
+                TAG_OBJECT -> setObject(i, sourceObjects[source])
+                else -> setNull(i)
+            }
+        }
+    }
+
     fun materializeTo(target: Array<Any?>) {
         for (i in 0 until size) {
             target[i] = when (tags[i]) {

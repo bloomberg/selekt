@@ -1019,6 +1019,42 @@ internal class ExternalSQLiteTest {
             )
         }
 
+    @Test
+    fun `packed row binds every tag from a non-zero offset`() =
+        withStatement("SELECT ?, ?, ?, ?, ?, ?, ?") { statement ->
+            val fixture = TypedRowFixture()
+            val offset = 3
+            val tags = ByteArray(offset + fixture.tags.size)
+            val values = LongArray(tags.size)
+            val objects = arrayOfNulls<Any>(tags.size)
+            fixture.tags.copyInto(tags, offset)
+            values[offset] = fixture.ints[0].toLong()
+            values[offset + 1] = fixture.longs[1]
+            values[offset + 2] = fixture.doubles[2].toRawBits()
+            fixture.objects.copyInto(objects, offset)
+
+            assertEquals(
+                SQL_OK,
+                sqlite.bindRowPacked(
+                    sqlite.newStatementHandle(statement),
+                    tags,
+                    values,
+                    objects,
+                    offset,
+                    fixture.tags.size,
+                    BooleanArray(fixture.tags.size + 1)
+                )
+            )
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals(7, sqlite.columnInt(statement, 0))
+            assertEquals(8L, sqlite.columnInt64(statement, 1))
+            assertEquals(2.5, sqlite.columnDouble(statement, 2))
+            assertEquals("café", sqlite.columnText(statement, 3))
+            assertContentEquals(fixture.blob, sqlite.columnBlob(statement, 4))
+            assertEquals(SQL_NULL, sqlite.columnType(statement, 5))
+            assertEquals(SQL_NULL, sqlite.columnType(statement, 6))
+        }
+
     private class TypedRowFixture {
         val tags = byteArrayOf(1, 2, 3, 4, 4, 4, 0)
         val ints = intArrayOf(7, 0, 0, 0, 0, 0, 0)

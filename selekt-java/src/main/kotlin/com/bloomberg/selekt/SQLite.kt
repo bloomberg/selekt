@@ -170,6 +170,19 @@ open class SQLite(
         )
     )
 
+    fun bindRowPacked(
+        statement: StatementHandle,
+        tags: ByteArray,
+        values: LongArray,
+        objects: Array<out Any?>,
+        offset: Int,
+        size: Int,
+        utf8TextParameters: BooleanArray
+    ) = checkBindSQLCode(
+        statement,
+        sqlite.bindRowPacked(statement, tags, values, objects, offset, size, utf8TextParameters)
+    )
+
     fun <T> withScopedArena(block: () -> T): T = sqlite.withScopedArena(block)
 
     fun blobBytes(blob: Long) = sqlite.blobBytes(blob)

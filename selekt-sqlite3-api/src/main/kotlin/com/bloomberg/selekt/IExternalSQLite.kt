@@ -301,6 +301,36 @@ interface IExternalSQLite {
         return SQL_OK
     }
 
+    /**
+     * Binds one row from row-major packed batch storage beginning at [offset]. Primitive values share [values]: integers
+     * are widened, longs are stored directly, and doubles use their raw IEEE 754 bits.
+     */
+    fun bindRowPacked(
+        statement: StatementHandle,
+        tags: ByteArray,
+        values: LongArray,
+        objects: Array<out Any?>,
+        offset: Int,
+        size: Int,
+        utf8TextParameters: BooleanArray
+    ): SQLCode {
+        for (i in 0 until size) {
+            val source = offset + i
+            val position = i + 1
+            val result = when (tags[source]) {
+                1.toByte() -> bindInt(statement, position, values[source].toInt())
+                2.toByte() -> bindInt64(statement, position, values[source])
+                3.toByte() -> bindDouble(statement, position, Double.fromBits(values[source]))
+                4.toByte() -> bindObject(statement.pointer, position, objects[source], utf8TextParameters)
+                else -> bindNull(statement, position)
+            }
+            if (result != SQL_OK) {
+                return result
+            }
+        }
+        return SQL_OK
+    }
+
     private fun bindObject(
         statement: Long,
         position: Int,

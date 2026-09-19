@@ -114,6 +114,15 @@ internal class SQLPreparedStatement(
         sqlite.bindRow(statement, row, utf8TextParameters)
     }
 
+    fun bindPackedRow(
+        tags: ByteArray,
+        values: LongArray,
+        objects: Array<out Any?>,
+        offset: Int
+    ) {
+        sqlite.bindRowPacked(statement, tags, values, objects, offset, parameterCount, utf8TextParameters)
+    }
+
     fun clearBindings() {
         sqlite.clearBindings(statement)
     }

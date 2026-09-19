@@ -460,6 +460,41 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `packed row binding reads the requested row offset`() {
+        val sqlite = handleAwareMock()
+        val blob = byteArrayOf(12, 13)
+        val tags = byteArrayOf(0, 0, 0, 0, 1, 2, 3, 4, 4, 0)
+        val values = longArrayOf(
+            0L,
+            0L,
+            0L,
+            0L,
+            7L,
+            8L,
+            2.5.toRawBits(),
+            0L,
+            0L,
+            0L
+        )
+        val objects = arrayOfNulls<Any>(tags.size).also {
+            it[7] = "ascii"
+            it[8] = blob
+        }
+
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRowPacked(statementHandle, tags, values, objects, 4, 6, BooleanArray(7))
+        )
+
+        verify(sqlite).bindInt(statement, 1, 7)
+        verify(sqlite).bindInt64(statement, 2, 8L)
+        verify(sqlite).bindDouble(statement, 3, 2.5)
+        verify(sqlite).bindTextAscii(statement, 4, "ascii")
+        verify(sqlite).bindBlob(statement, 5, blob, blob.size)
+        verify(sqlite).bindNull(statement, 6)
+    }
+
+    @Test
     fun `newDatabaseHandle default wraps pointer`() {
         val sqlite = mock<IExternalSQLite> {
             on { newDatabaseHandle(any()) }.thenCallRealMethod()
@@ -1175,6 +1210,9 @@ internal class IExternalSQLiteTest {
         on { bindRowTyped(any<StatementHandle>(), any(), any(), any(), any(), any(), any()) }.thenCallRealMethod()
         on {
             bindRowTyped(any<StatementHandle>(), any(), any(), any(), any(), any(), any(), any())
+        }.thenCallRealMethod()
+        on {
+            bindRowPacked(any<StatementHandle>(), any(), any(), any(), any(), any(), any())
         }.thenCallRealMethod()
         on { bindText(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()
         on { bindTextAscii(any<StatementHandle>(), any(), any()) }.thenCallRealMethod()

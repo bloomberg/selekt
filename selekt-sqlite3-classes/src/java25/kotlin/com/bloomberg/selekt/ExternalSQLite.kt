@@ -699,6 +699,41 @@ internal class ExternalSQLite(
         return SQL_OK
     }
 
+    override fun bindRowPacked(
+        statement: StatementHandle,
+        tags: ByteArray,
+        values: LongArray,
+        objects: Array<out Any?>,
+        offset: Int,
+        size: Int,
+        utf8TextParameters: BooleanArray
+    ): SQLCode {
+        val statementSegment = statementSegment(statement)
+        for (i in 0 until size) {
+            val source = offset + i
+            val position = i + 1
+            val result = when (tags[source]) {
+                1.toByte() -> sqlite3_bind_int.invoke(statementSegment, position, values[source].toInt()) as Int
+                2.toByte() -> sqlite3_bind_int64.invoke(statementSegment, position, values[source]) as Int
+                3.toByte() -> sqlite3_bind_double.invoke(
+                    statementSegment,
+                    position,
+                    Double.fromBits(values[source])
+                ) as Int
+                4.toByte() -> when (val obj = objects[source]) {
+                    is String -> bindText(statementSegment, position, obj, utf8TextParameters)
+                    is ByteArray -> bindBlob(statementSegment, position, obj, obj.size)
+                    else -> sqlite3_bind_null.invoke(statementSegment, position) as Int
+                }
+                else -> sqlite3_bind_null.invoke(statementSegment, position) as Int
+            }
+            if (result != SQL_OK) {
+                return result
+            }
+        }
+        return SQL_OK
+    }
+
     private fun bindBlob(
         statement: MemorySegment,
         index: Int,
