@@ -178,15 +178,31 @@ internal class SQLConnection(
     ) = withPreparedStatement(sql) {
         sqlite.withScopedArena {
             val changes = sqlite.totalChanges(databaseHandle)
-            bindArgs.forEach {
-                reset()
-                bindRow(it)
-                if (SQL_DONE != step()) {
-                    return@withScopedArena -1
-                }
+            if (!executeBatchRows(bindArgs)) {
+                return@withScopedArena -1
             }
             sqlite.totalChanges(databaseHandle) - changes
         }
+    }
+
+    private fun SQLPreparedStatement.executeBatchRows(
+        bindArgs: Iterable<ParameterRow>
+    ): Boolean = if (bindArgs is ChunkedParameterRows) {
+        bindArgs.forEachPackedRow { tags, values, objects, offset ->
+            reset()
+            bindPackedRow(tags, values, objects, offset)
+            SQL_DONE == step()
+        }
+    } else {
+        val iterator = bindArgs.iterator()
+        var completed = true
+        while (completed && iterator.hasNext()) {
+            val row = iterator.next()
+            reset()
+            bindRow(row)
+            completed = SQL_DONE == step()
+        }
+        completed
     }
 
     @Suppress("DuplicatedCode")

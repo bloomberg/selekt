@@ -105,6 +105,18 @@ internal class ChunkedParameterRowsTest {
         assertEquals(5, rows.size)
     }
 
+    @Test
+    fun oversizedRowsDoNotWriteBeyondTheirPackedRow() {
+        val rows = ChunkedParameterRows(parameterCount = 1, initialChunkCapacity = 2)
+        rows.add(ParameterRow(2).apply {
+            setInt(0, 1)
+            setObject(1, "must not leak")
+        })
+        rows.add(ParameterRow(1).apply { setInt(0, 2) })
+
+        assertEquals(listOf(1, 2), rows.map { it.ints[0] })
+    }
+
     private fun collectChunkChain(head: Any): List<Any> = buildList {
         var node: Any? = head
         while (node != null) {
@@ -124,25 +136,14 @@ internal class ChunkedParameterRowsTest {
 
     private fun assertChunkFullyCleared(chunk: Any) {
         assertEquals(0, readField<Int>(chunk, "count"), "chunk count should be reset to 0")
-        @Suppress("UNCHECKED_CAST")
-        val storedRows = readField<Array<Any?>>(chunk, "data")!!
-        for (row in storedRows) {
-            val parameterRow = row as? ParameterRow ?: continue
-            parameterRow.tags.forEach {
-                assertEquals(0.toByte(), it, "no ParameterRow.tags slot should retain a type tag")
-            }
-            parameterRow.ints.forEach {
-                assertEquals(0, it, "no ParameterRow.ints slot should retain a value")
-            }
-            parameterRow.longs.forEach {
-                assertEquals(0L, it, "no ParameterRow.longs slot should retain a value")
-            }
-            parameterRow.doubles.forEach {
-                assertEquals(0.0, it, "no ParameterRow.doubles slot should retain a value")
-            }
-            parameterRow.objects.forEach {
-                assertNull(it, "no ParameterRow.objects slot should retain a reference")
-            }
+        readField<ByteArray>(chunk, "tags")!!.forEach {
+            assertEquals(0.toByte(), it, "no packed tag slot should retain a type tag")
+        }
+        readField<LongArray>(chunk, "values")!!.forEach {
+            assertEquals(0L, it, "no packed value slot should retain a value")
+        }
+        readField<Array<Any?>>(chunk, "objects")!!.forEach {
+            assertNull(it, "no packed object slot should retain a reference")
         }
     }
 

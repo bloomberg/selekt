@@ -28,7 +28,10 @@ class ChunkedParameterRows(
 ) : Iterable<ParameterRow> {
     @Suppress("Detekt.UseDataClass")
     private class Chunk(val capacity: Int, parameterCount: Int) {
-        val data = Array(capacity) { ParameterRow(parameterCount) }
+        private val slotCount = Math.multiplyExact(capacity, parameterCount)
+        val tags = ByteArray(slotCount)
+        val values = LongArray(slotCount)
+        val objects = arrayOfNulls<Any>(slotCount)
         var count = 0
         var next: Chunk? = null
     }
@@ -54,7 +57,7 @@ class ChunkedParameterRows(
             }
         }
         currentChunk!!.run {
-            data[count].copyFrom(row)
+            row.copyToPacked(tags, values, objects, count * parameterCount, parameterCount)
             ++count
         }
         ++size
@@ -66,11 +69,13 @@ class ChunkedParameterRows(
         var retainedCapacity = 0
         var retaining = true
         while (chunk != null) {
-            val rows = chunk.data
-            for (i in 0 until chunk.count) {
-                rows[i].clear()
+            chunk.apply {
+                val usedSlots = count * parameterCount
+                tags.fill(0, 0, usedSlots)
+                values.fill(0L, 0, usedSlots)
+                objects.fill(null, 0, usedSlots)
+                count = 0
             }
-            chunk.count = 0
             if (retaining && chunk.capacity <= maximumRetainedCapacity - retainedCapacity) {
                 retainedCapacity += chunk.capacity
                 lastRetainedChunk = chunk
@@ -84,6 +89,21 @@ class ChunkedParameterRows(
         size = 0
     }
 
+    internal fun forEachPackedRow(
+        action: (tags: ByteArray, values: LongArray, objects: Array<Any?>, offset: Int) -> Boolean
+    ): Boolean {
+        var chunk = firstChunk
+        while (chunk != null) {
+            for (index in 0 until chunk.count) {
+                if (!action(chunk.tags, chunk.values, chunk.objects, index * parameterCount)) {
+                    return false
+                }
+            }
+            chunk = chunk.next
+        }
+        return true
+    }
+
     override fun iterator() = object : Iterator<ParameterRow> {
         private var chunk: Chunk? = firstChunk
         private var index = 0
@@ -95,7 +115,9 @@ class ChunkedParameterRows(
                 throw NoSuchElementException()
             }
             val current = chunk ?: throw NoSuchElementException()
-            val row = current.data[index]
+            val row = ParameterRow(parameterCount).apply {
+                copyFromPacked(current.tags, current.values, current.objects, index * parameterCount)
+            }
             if (++index >= current.count) {
                 chunk = current.next
                 index = 0

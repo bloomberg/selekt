@@ -590,6 +590,40 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun packedBatchRowsBindDirectlyFromChunkStorage(): Unit = sqlite.run {
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = 43L
+            SQL_OK
+        }
+        whenever(bindParameterCount(any<Long>())) doReturn 2
+        whenever(step(any<Long>())) doReturn SQL_DONE
+        whenever(totalChanges(any<Long>())).thenReturn(10, 12)
+        val scratch = ParameterRow(2)
+        val rows = ChunkedParameterRows(parameterCount = 2, initialChunkCapacity = 2).apply {
+            scratch.setInt(0, 7)
+            scratch.setDouble(1, 2.5)
+            add(scratch)
+            scratch.setLong(0, 8L)
+            scratch.setObject(1, "value")
+            add(scratch)
+        }
+
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            assertEquals(2, it.executeBatchForChangedRowCountRows("INSERT INTO Foo VALUES (?, ?)", rows))
+        }
+
+        verify(this, times(1)).bindRowPacked(
+            any<StatementHandle>(), any(), any(), any(), eq(0), eq(2), any()
+        )
+        verify(this, times(1)).bindRowPacked(
+            any<StatementHandle>(), any(), any(), any(), eq(2), eq(2), any()
+        )
+        verify(this, never()).bindRow(
+            any<StatementHandle>(), any<ParameterRow>(), any<BooleanArray>()
+        )
+    }
+
+    @Test
     fun batchExecuteForChangedRowCountEmptyArrayChecksDone(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
