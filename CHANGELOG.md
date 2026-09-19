@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.6.2
+
+* Preserve slab allocations during SQL preparation.
+* Pack chunked parameter rows for direct batch binding.
+* Avoid primitive boxing in cursor refills and batch execution.
+
 ## Version 1.6.1
 
 * Optimize FFM column byte copying.
