@@ -31,9 +31,29 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private fun escapeSql(value: String): String = value.replace("'", "''")
 
-private fun escapeGlob(value: String): String = value.replace("[", "[[]")
-    .replace("]", "[]]")
-    .replace("?", "[?]")
+private fun jdbcPatternToGlob(pattern: String): String = buildString(pattern.length) {
+    var index = 0
+    while (index < pattern.length) {
+        val character = pattern[index]
+        when {
+            character == '\\' && index + 1 < pattern.length -> appendGlobLiteral(pattern[++index])
+            character == '%' -> append('*')
+            character == '_' -> append('?')
+            else -> appendGlobLiteral(character)
+        }
+        ++index
+    }
+}
+
+private fun StringBuilder.appendGlobLiteral(character: Char) {
+    when (character) {
+        '[' -> append("[[]")
+        ']' -> append("[]]")
+        '*' -> append("[*]")
+        '?' -> append("[?]")
+        else -> append(character)
+    }
+}
 
 @JvmField
 internal val SAFE_JDBC_TYPE_NAME: Regex = Regex("^[A-Z_][A-Z0-9_]*(?: [A-Z][A-Z0-9_]*)*$")
@@ -442,7 +462,7 @@ internal class JdbcDatabaseMetaData(
         tableNamePattern: String?,
         types: Array<out String>?
     ): ResultSet {
-        val namePattern = tableNamePattern?.let { escapeGlob(it).replace("%", "*") } ?: "*"
+        val namePattern = tableNamePattern?.let(::jdbcPatternToGlob) ?: "*"
         val whereClause = if (tableNamePattern != null) {
             "AND name GLOB '${escapeSql(namePattern)}'"
         } else {
