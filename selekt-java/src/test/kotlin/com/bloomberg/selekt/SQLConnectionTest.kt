@@ -59,6 +59,9 @@ internal class SQLConnectionTest {
             @Suppress("UNCHECKED_CAST")
             (it.arguments[0] as () -> Any?).invoke()
         }
+        whenever(sqlite.withScopedIntArena(any())) doAnswer {
+            (it.arguments[0] as ScopedIntAction).run()
+        }
         whenever(sqlite.newDatabaseHandle(any<Long>())) doAnswer { DatabaseHandle(it.getArgument(0)) }
         whenever(sqlite.newStatementHandle(any<Long>())) doAnswer { StatementHandle(it.getArgument(0)) }
         whenever(sqlite.newBlobHandle(any<Long>())) doAnswer { BlobHandle(it.getArgument(0)) }

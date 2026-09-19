@@ -153,13 +153,13 @@ internal class SQLConnection(
         sql: String,
         bindArgs: Iterable<Array<out Any?>>
     ) = withPreparedStatement(sql) {
-        sqlite.withScopedArena {
+        sqlite.withScopedIntArena {
             val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEach {
                 reset()
                 bindRow(it)
                 if (SQL_DONE != step()) {
-                    return@withScopedArena -1
+                    return@withScopedIntArena -1
                 }
             }
             sqlite.totalChanges(databaseHandle) - changes
@@ -176,10 +176,10 @@ internal class SQLConnection(
         sql: String,
         bindArgs: Iterable<ParameterRow>
     ) = withPreparedStatement(sql) {
-        sqlite.withScopedArena {
+        sqlite.withScopedIntArena {
             val changes = sqlite.totalChanges(databaseHandle)
             if (!executeBatchRows(bindArgs)) {
-                return@withScopedArena -1
+                return@withScopedIntArena -1
             }
             sqlite.totalChanges(databaseHandle) - changes
         }
@@ -210,13 +210,13 @@ internal class SQLConnection(
         sql: String,
         bindArgs: List<Array<out Any?>>
     ) = withPreparedStatement(sql) {
-        sqlite.withScopedArena {
+        sqlite.withScopedIntArena {
             val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEachByIndexUntil { _, args ->
                 reset()
                 bindRow(args)
                 if (SQL_DONE != step()) {
-                    return@withScopedArena -1
+                    return@withScopedIntArena -1
                 }
             }
             sqlite.totalChanges(databaseHandle) - changes
@@ -230,13 +230,13 @@ internal class SQLConnection(
         fromIndex: Int,
         toIndex: Int
     ) = withPreparedStatement(sql) {
-        sqlite.withScopedArena {
+        sqlite.withScopedIntArena {
             val changes = sqlite.totalChanges(databaseHandle)
             bindArgs.forEachByIndexUntil { _, args ->
                 reset()
                 bindRow(args)
                 if (SQL_DONE != step()) {
-                    return@withScopedArena -1
+                    return@withScopedIntArena -1
                 }
             }
             sqlite.totalChanges(databaseHandle) - changes
@@ -450,7 +450,7 @@ internal class SQLConnection(
         val transferBuffer = ByteArray(batch.transferBufferSize)
         var blob: SQLBlob? = null
         val completed = try {
-            sqlite.withScopedArena {
+            sqlite.withScopedIntArena {
                 var completed = 0
                 rows.forEach { row ->
                     cancellationSignal?.throwIfCancelled()
