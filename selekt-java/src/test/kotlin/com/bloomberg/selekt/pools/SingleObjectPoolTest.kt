@@ -36,7 +36,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import java.io.IOException
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -442,20 +444,30 @@ internal class SingleObjectPoolTest {
     @Test
     fun concurrentAccess() = pool.run {
         val obj = borrowObject().also { returnObject(it) }
-        runBlocking(Dispatchers.IO) {
-            coroutineScope {
-                repeat(4) {
-                    launch {
-                        repeat(100_000) {
-                            assertSame(
-                                obj,
-                                borrowObject().also { returnObject(it) },
-                                "Pool must return the same object."
-                            )
-                        }
+        val workerCount = 4
+        val ready = CountDownLatch(workerCount)
+        val start = CountDownLatch(1)
+        val workers = Executors.newFixedThreadPool(workerCount)
+        try {
+            val futures = List(workerCount) {
+                workers.submit {
+                    ready.countDown()
+                    start.await()
+                    repeat(10_000) {
+                        assertSame(
+                            obj,
+                            borrowObject().also { returnObject(it) },
+                            "Pool must return the same object."
+                        )
                     }
                 }
             }
+            assertTrue(ready.await(5L, TimeUnit.SECONDS), "Concurrent workers did not become ready.")
+            start.countDown()
+            futures.forEach(Future<*>::get)
+        } finally {
+            start.countDown()
+            workers.shutdownNow()
         }
     }
 

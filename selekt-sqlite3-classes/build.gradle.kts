@@ -149,6 +149,10 @@ listOf(JvmTarget.JVM_25).forEach {
         }
     }
 
+    kotlin.target.compilations.named("${variantName}Test") {
+        associateWith(kotlin.target.compilations.getByName(variantName))
+    }
+
     configurations["${variantName}TestImplementation"].run {
         extendsFrom(configurations.getByName("${variantName}Implementation"))
         extendsFrom(configurations.getByName("testImplementation"))
