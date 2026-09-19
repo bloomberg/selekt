@@ -20,22 +20,31 @@ import java.lang.foreign.Arena
 import java.lang.foreign.MemoryLayout
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout.JAVA_BYTE
+import javax.annotation.concurrent.NotThreadSafe
 
 private const val FIRST_NON_ASCII_CODE_POINT = 0x80
 
+@NotThreadSafe
 internal class SlabArena(
     capacity: Long = DEFAULT_CAPACITY
 ) : AutoCloseable {
     private var backingArena = Arena.ofConfined()
     private var slab: MemorySegment = backingArena.allocate(capacity)
+    private val retiredArenas = mutableListOf<Arena>()
     private var offset: Long = 0L
 
     private fun grow(required: Long) {
-        backingArena.use { _ ->
-            backingArena = Arena.ofConfined()
-            slab = backingArena.allocate(maxOf(slab.byteSize() * 2, offset + required))
-            offset = 0L
+        val grownArena = Arena.ofConfined()
+        val grownSlab = try {
+            grownArena.allocate(maxOf(slab.byteSize() * 2, offset + required))
+        } catch (failure: Throwable) {
+            grownArena.close()
+            throw failure
         }
+        retiredArenas += backingArena
+        backingArena = grownArena
+        slab = grownSlab
+        offset = 0L
     }
 
     fun allocate(byteSize: Long): MemorySegment {
@@ -104,11 +113,18 @@ internal class SlabArena(
     }
 
     fun reset() {
+        retiredArenas.forEach(Arena::close)
+        retiredArenas.clear()
         offset = 0L
     }
 
     override fun close() {
-        backingArena.close()
+        try {
+            backingArena.close()
+        } finally {
+            retiredArenas.forEach(Arena::close)
+            retiredArenas.clear()
+        }
     }
 
     companion object {

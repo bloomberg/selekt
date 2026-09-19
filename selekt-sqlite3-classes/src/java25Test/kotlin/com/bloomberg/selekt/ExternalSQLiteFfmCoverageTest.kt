@@ -63,6 +63,20 @@ internal class ExternalSQLiteFfmCoverageTest {
     }
 
     @Test
+    fun `prepare keeps output pointer alive when SQL grows the allocation slab`() {
+        val dbHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, dbHolder))
+        val statementHolder = LongArray(1)
+        val sql = "SELECT '${"x".repeat(8_192)}'"
+        try {
+            assertEquals(SQL_OK, sqlite.prepareV2(dbHolder.single(), sql, sql.length, statementHolder))
+        } finally {
+            statementHolder.single().takeIf { it != 0L }?.let(sqlite::finalize)
+            sqlite.closeV2(dbHolder.single())
+        }
+    }
+
+    @Test
     fun `empty cursor window native result codes are translated`() {
         assertFailsWith<OutOfMemoryError> { emptyCursorWindow(-2) }
         assertFailsWith<OutOfMemoryError> { emptyCursorWindow(-3) }

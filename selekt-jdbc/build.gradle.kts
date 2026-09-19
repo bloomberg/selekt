@@ -100,6 +100,8 @@ val jvmFuzzTargets = mapOf(
     "jvmFuzzConnectionUrl" to "com.bloomberg.selekt.jdbc.util.ConnectionURLFuzzTest.fuzzConnectionUrl",
     "jvmFuzzKeyEncoding" to "com.bloomberg.selekt.jdbc.driver.KeyEncodingFuzzTest.fuzzKeyEncoding",
     "jvmFuzzTypeMapping" to "com.bloomberg.selekt.jdbc.util.TypeMappingFuzzTest.fuzzTypeMapping",
+    "jvmFuzzMetadataSqlIsolation" to
+        "com.bloomberg.selekt.jdbc.metadata.JdbcMetadataSqlIsolationFuzzTest.fuzzMetadataSqlIsolation",
     "jvmFuzzStateMachine" to "com.bloomberg.selekt.jdbc.driver.JdbcStateMachineFuzzTest.fuzzJdbcStateMachine"
 )
 val jvmFuzzTasks = jvmFuzzTargets.map { (taskName, testName) ->
@@ -137,7 +139,7 @@ tasks.register("jvmFuzz") {
 kover {
     currentProject {
         instrumentation {
-            disabledForTestTasks.addAll(jvmFuzzTargets.keys)
+            disabledForTestTasks.addAll(jvmFuzzTargets.keys + "jvmFuzzMetadataSqlIsolationJava25")
         }
     }
 }
@@ -186,6 +188,36 @@ val java25TestRuntimeClasspath = configurations.create("java25TestRuntimeClasspa
         attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
     }
+}
+
+val jvmFuzzMetadataSqlIsolationJava25 = tasks.register<Test>("jvmFuzzMetadataSqlIsolationJava25") {
+    description = "Runs the metadata SQL-isolation Jazzer campaign on the Java 25 FFM backend."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().output + sourceSets.main.get().output + java25TestRuntimeClasspath
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    })
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    environment("JAZZER_FUZZ", "1")
+    filter {
+        includeTestsMatching(
+            "com.bloomberg.selekt.jdbc.metadata.JdbcMetadataSqlIsolationFuzzTest.fuzzMetadataSqlIsolation"
+        )
+    }
+    systemProperty("jazzer.instrument", "com.bloomberg.selekt.jdbc.**")
+    systemProperty("jazzer.max_duration", jvmFuzzDuration)
+    systemProperty("jazzer.reproducer_path", layout.buildDirectory.get().asFile.absolutePath)
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty("junit.jupiter.execution.timeout.mode", "disabled")
+    maxHeapSize = "1g"
+    outputs.upToDateWhen { false }
+    workingDir(layout.buildDirectory.get().asFile)
+    mustRunAfter(jvmFuzzTasks.last())
+}
+
+tasks.named("jvmFuzz") {
+    dependsOn(jvmFuzzMetadataSqlIsolationJava25)
 }
 
 jmh {

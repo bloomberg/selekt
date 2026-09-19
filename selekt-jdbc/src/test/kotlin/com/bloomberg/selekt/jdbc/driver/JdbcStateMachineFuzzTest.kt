@@ -35,7 +35,9 @@ internal class JdbcStateMachineFuzzTest {
     @MethodSource("inputs")
     @FuzzTest
     fun fuzzJdbcStateMachine(input: ByteArray) {
-        if (input.size > MAX_INPUT_SIZE) return
+        if (input.size > MAX_INPUT_SIZE) {
+            return
+        }
 
         val program = Program(input)
         val dataSource = SelektDataSource().apply {
@@ -55,6 +57,11 @@ internal class JdbcStateMachineFuzzTest {
         connection.use { connection ->
             connection.createStatement().use {
                 assertFalse(it.execute("CREATE TABLE fuzz_items (id INTEGER PRIMARY KEY, value TEXT, payload BLOB)"))
+                assertFalse(it.execute("CREATE TABLE fuzz_guard (id INTEGER PRIMARY KEY, token TEXT NOT NULL)"))
+            }
+            connection.prepareStatement("INSERT INTO fuzz_guard VALUES (1, ?)").use {
+                it.setString(1, GUARD_TOKEN)
+                assertEquals(1, it.executeUpdate())
             }
             while (program.hasRemaining) {
                 when (program.nextUnsignedByte() % OPERATION_COUNT) {
@@ -68,7 +75,33 @@ internal class JdbcStateMachineFuzzTest {
                     7 -> connection.closeStatementTwice()
                 }
             }
-            if (!connection.autoCommit) connection.rollback()
+            if (!connection.autoCommit) {
+                connection.rollback()
+            }
+            connection.assertSqlIsolationGuard()
+        }
+    }
+
+    private fun Connection.assertSqlIsolationGuard() {
+        createStatement().use { statement ->
+            statement.executeQuery("SELECT token FROM fuzz_guard WHERE id = 1").use { resultSet ->
+                assertTrue(resultSet.next())
+                assertEquals(GUARD_TOKEN, resultSet.getString(1))
+                assertFalse(resultSet.next())
+            }
+            statement.executeQuery(
+                "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            ).use { resultSet ->
+                val tables = buildList {
+                    while (resultSet.next()) add(resultSet.getString(1))
+                }
+                assertEquals(listOf("fuzz_guard", "fuzz_items"), tables)
+            }
+            statement.executeQuery("PRAGMA database_list").use { resultSet ->
+                assertTrue(resultSet.next())
+                assertEquals("main", resultSet.getString("name"))
+                assertFalse(resultSet.next())
+            }
         }
     }
 
@@ -131,7 +164,11 @@ internal class JdbcStateMachineFuzzTest {
         if (autoCommit) {
             autoCommit = false
         } else {
-            if (program.nextUnsignedByte() % 2 == 0) commit() else rollback()
+            if (program.nextUnsignedByte() % 2 == 0) {
+                commit()
+            } else {
+                rollback()
+            }
             autoCommit = true
         }
     }
@@ -174,7 +211,11 @@ internal class JdbcStateMachineFuzzTest {
         val hasRemaining: Boolean
             get() = position < input.size
 
-        fun nextUnsignedByte(): Int = if (hasRemaining) input[position++].toInt() and 0xFF else 0
+        fun nextUnsignedByte(): Int = if (hasRemaining) {
+            input[position++].toInt() and 0xFF
+        } else {
+            0
+        }
 
         fun nextId(): Int = nextUnsignedByte() % MAX_ROW_ID
 
@@ -191,7 +232,14 @@ internal class JdbcStateMachineFuzzTest {
         private const val MAX_VALUE_SIZE = 32
         private const val MAX_ROW_ID = 64
         private const val OPERATION_COUNT = 8
+        private const val GUARD_TOKEN = "jdbc-state-fuzz-guard"
         private const val UPSERT_SQL = "INSERT OR REPLACE INTO fuzz_items (id, value, payload) VALUES (?, ?, ?)"
+
+        private fun boundTextSeed(payload: String): ByteArray {
+            val bytes = payload.toByteArray()
+            require(bytes.size <= MAX_VALUE_SIZE)
+            return byteArrayOf(3, 1, bytes.size.toByte()) + bytes + byteArrayOf(0)
+        }
 
         @JvmStatic
         fun inputs(): Stream<ByteArray> = Stream.of(
@@ -199,6 +247,10 @@ internal class JdbcStateMachineFuzzTest {
             byteArrayOf(0, 1, 'a'.code.toByte(), 1, 1),
             byteArrayOf(3, 1, 0, 0),
             byteArrayOf(3, 2, 4, 't'.code.toByte(), 'e'.code.toByte(), 's'.code.toByte(), 't'.code.toByte(), 3, 1, 2, 3),
+            boundTextSeed("' OR 1=1--"),
+            boundTextSeed("'; DROP TABLE fuzz_guard;--"),
+            boundTextSeed("'; ATTACH ':memory:' AS evil;--"),
+            boundTextSeed("nul\u0000'; PRAGMA writable_schema=ON"),
             ByteArray(64) { it.toByte() }
         )
     }
