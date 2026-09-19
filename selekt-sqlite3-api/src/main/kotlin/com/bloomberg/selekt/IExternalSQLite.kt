@@ -46,6 +46,10 @@ data class BlobHandle(
     val attachment: Any? = null
 )
 
+fun interface ScopedIntAction {
+    fun run(): Int
+}
+
 @Suppress(
     "Detekt.ComplexInterface",
     "Detekt.LongParameterList",
@@ -193,6 +197,8 @@ interface IExternalSQLite {
     ): SQLCode = bindZeroBlob(statement.pointer, index, length)
 
     fun <T> withScopedArena(block: () -> T): T = block()
+
+    fun withScopedIntArena(action: ScopedIntAction): Int = action.run()
 
     /**
      * Bind all arguments to a prepared statement.

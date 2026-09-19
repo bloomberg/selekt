@@ -248,6 +248,12 @@ internal class ExternalSQLite(
         }
     }
 
+    override fun withScopedIntArena(action: ScopedIntAction): Int = if (SCOPED_SLAB.isBound()) {
+        action.run()
+    } else {
+        withScopedArena(action::run)
+    }
+
     private inline fun <T> withSlab(block: (SlabArena) -> T): T = if (SCOPED_SLAB.isBound()) {
         block(SCOPED_SLAB.get().also(SlabArena::reset))
     } else {

@@ -90,12 +90,16 @@ interface ICursor : Closeable {
     fun type(index: Int): ColumnType
 }
 
+internal fun interface CursorWindowRefill {
+    fun refill(startPosition: Int): CursorWindowPage
+}
+
 @NotThreadSafe
 internal class WindowedCursor(
     private val columnNames: Array<out String>,
     page: CursorWindowPage,
     onClose: (() -> Unit)? = null,
-    refill: ((startPosition: Int) -> CursorWindowPage)? = null
+    refill: CursorWindowRefill? = null
 ) : ICursor {
     private var closed = false
     private var position = -1
@@ -118,7 +122,7 @@ internal class WindowedCursor(
         if (position - windowStart !in 0 until window.numberOfRows()) {
             val next = requireNotNull(refill) {
                 "Position $position lies outside a cursor window that cannot be refilled."
-            }(startPositionFor(position, window.numberOfRows()))
+            }.refill(startPositionFor(position, window.numberOfRows()))
             if (position - next.startPosition !in 0 until next.window.numberOfRows()) {
                 next.window.close()
                 error(

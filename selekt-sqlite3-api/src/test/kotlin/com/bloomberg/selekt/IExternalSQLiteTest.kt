@@ -1196,6 +1196,14 @@ internal class IExternalSQLiteTest {
         assertEquals(42, sqlite.withScopedArena { 42 })
     }
 
+    @Test
+    fun `withScopedIntArena default returns a primitive result`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { withScopedIntArena(any()) }.thenCallRealMethod()
+        }
+        assertEquals(42, sqlite.withScopedIntArena { 42 })
+    }
+
     private fun handleAwareMock() = mock<IExternalSQLite> {
         on { bindText(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
         on { bindInt(any<Long>(), any(), any()) }.thenReturn(SQL_OK)

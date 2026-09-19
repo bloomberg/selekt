@@ -185,6 +185,8 @@ open class SQLite(
 
     fun <T> withScopedArena(block: () -> T): T = sqlite.withScopedArena(block)
 
+    fun withScopedIntArena(action: ScopedIntAction): Int = sqlite.withScopedIntArena(action)
+
     fun blobBytes(blob: Long) = sqlite.blobBytes(blob)
 
     fun blobBytes(blob: BlobHandle) = sqlite.blobBytes(blob)
