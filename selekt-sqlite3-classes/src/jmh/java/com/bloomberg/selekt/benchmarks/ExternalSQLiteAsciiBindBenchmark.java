@@ -104,7 +104,7 @@ public class ExternalSQLiteAsciiBindBenchmark {
     @TearDown(Level.Trial)
     public void tearDown() {
         if (statement != 0L) {
-            SQLITE.finalize(statement);
+            SQLITE.finalize(statementHandle);
         }
         if (database != 0L) {
             SQLITE.closeV2(database);

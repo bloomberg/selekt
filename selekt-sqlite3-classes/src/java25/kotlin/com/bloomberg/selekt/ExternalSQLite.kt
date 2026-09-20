@@ -92,9 +92,9 @@ internal class ExternalSQLite(
     private val callbackFailures = ThreadLocal<CallbackFailureStack>()
 
     private class StatementAttachment(pointer: Long) {
+        private val asciiTextArena = Arena.ofShared()
         val statement: MemorySegment = MemorySegment.ofAddress(pointer)
-        // sqlite3_bind_text receives SQLITE_TRANSIENT and copies before returning, so this buffer is immediately reusable.
-        var asciiText: MemorySegment? = MemorySegment.ofArray(ByteArray(ASCII_BIND_BUFFER_SIZE))
+        var asciiText: MemorySegment? = asciiTextArena.allocate(ASCII_BIND_BUFFER_SIZE.toLong())
             private set
 
         fun wipeAsciiText() {
@@ -102,10 +102,12 @@ internal class ExternalSQLite(
         }
 
         fun release() {
-            // Heap-backed segments are GC-managed rather than closeable. Drop the reference when SQLite destroys the
-            // statement so a retained, closed statement wrapper cannot retain its buffer.
-            wipeAsciiText()
-            asciiText = null
+            try {
+                wipeAsciiText()
+            } finally {
+                asciiText = null
+                asciiTextArena.close()
+            }
         }
     }
 
@@ -1735,12 +1737,9 @@ internal class ExternalSQLite(
             FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS),
             criticalNoHeapOption
         )
-        // allowHeapAccess is required for the statement-owned MemorySegment.ofArray scratch buffer. This critical call is
-        // bounded and cannot call back into Java; SQLITE_TRANSIENT makes SQLite copy the text before returning.
         private val sqlite3_bind_text: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_text").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS)
         )
         private val sqlite3_bind_zeroblob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_zeroblob").orElseThrow(),
