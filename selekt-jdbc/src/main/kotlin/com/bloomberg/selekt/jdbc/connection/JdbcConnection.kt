@@ -634,9 +634,9 @@ internal class JdbcConnection(
     }
 
     private fun checkResultSetType(resultSetType: Int) {
-        if (resultSetType != ResultSet.TYPE_FORWARD_ONLY && resultSetType != ResultSet.TYPE_SCROLL_INSENSITIVE) {
+        if (resultSetType != ResultSet.TYPE_FORWARD_ONLY && resultSetType != ResultSet.TYPE_SCROLL_SENSITIVE) {
             throw SQLException(
-                "SQLite supports TYPE_FORWARD_ONLY and TYPE_SCROLL_INSENSITIVE result sets, not $resultSetType"
+                "SQLite supports TYPE_FORWARD_ONLY and TYPE_SCROLL_SENSITIVE result sets, not $resultSetType"
             )
         }
     }

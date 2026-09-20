@@ -364,14 +364,14 @@ internal class JdbcDatabaseMetaData(
     override fun supportsGetGeneratedKeys(): Boolean = true
 
     override fun supportsResultSetType(type: Int): Boolean = when (type) {
-        ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE -> true
+        ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_SENSITIVE -> true
         else -> false
     }
 
     override fun supportsResultSetConcurrency(
         type: Int,
         concurrency: Int
-    ): Boolean = ResultSet.CONCUR_READ_ONLY == concurrency
+    ): Boolean = supportsResultSetType(type) && ResultSet.CONCUR_READ_ONLY == concurrency
 
     override fun supportsResultSetHoldability(holdability: Int): Boolean = ResultSet.CLOSE_CURSORS_AT_COMMIT == holdability
 

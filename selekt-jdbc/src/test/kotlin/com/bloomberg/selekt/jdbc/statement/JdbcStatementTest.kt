@@ -346,7 +346,7 @@ internal class JdbcStatementTest {
         val scrollable = JdbcStatement(
             mockConnection,
             mockDatabase,
-            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.TYPE_SCROLL_SENSITIVE,
             ResultSet.CONCUR_READ_ONLY
         ).apply { maxRows = 5 }
         whenever(

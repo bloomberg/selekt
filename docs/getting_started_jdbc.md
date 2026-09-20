@@ -245,8 +245,9 @@ Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exact
 ### Cursor memory and scrolling
 
 Scrollable JVM cursors retain at most 1,024 rows and an estimated 2 MiB by default. Moving outside the retained window
-re-runs the query to refill it; use a transaction when scrolling must observe a stable snapshot. A row whose estimated
-size exceeds 2 MiB is rejected rather than copied into the cursor window.
+re-runs the query to refill it, so request `ResultSet.TYPE_SCROLL_SENSITIVE`. Selekt does not advertise or accept
+`TYPE_SCROLL_INSENSITIVE`; use a transaction when scrolling must observe a stable snapshot. A row whose estimated size
+exceeds 2 MiB is rejected rather than copied into the cursor window.
 
 Auto-commit `TYPE_FORWARD_ONLY` result sets—the JDBC default—stream rows and do not use these window limits. Selekt may
 materialise a forward-only query inside a manual read-only transaction to avoid pinning its SQLite snapshot after the

@@ -77,7 +77,7 @@ internal class JdbcMaxRowsTest {
     fun scrollableResultCannotReachRowsPastMaximum() {
         DriverManager.getConnection(url).use { connection ->
             connection.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE,
+                ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_READ_ONLY
             ).use { statement ->
                 statement.maxRows = MAXIMUM_ROWS

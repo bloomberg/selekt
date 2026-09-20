@@ -173,7 +173,7 @@ internal class JdbcTransactionOwnershipTest {
         createSchema(url)
         DriverManager.getConnection(url).use { first ->
             DriverManager.getConnection(url).use { second ->
-                first.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).use {
+                first.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY).use {
                     it.execute("BEGIN IMMEDIATE")
                     assertEquals(1, it.executeUpdate("INSERT INTO test(value) VALUES ('first')"))
                 }
@@ -183,7 +183,7 @@ internal class JdbcTransactionOwnershipTest {
                     }
                 }
                 assertEquals(0, rowCount(second))
-                first.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).use {
+                first.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY).use {
                     it.execute("ROLLBACK")
                 }
                 second.createStatement().use {
