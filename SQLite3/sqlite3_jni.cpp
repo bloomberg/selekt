@@ -858,7 +858,7 @@ static void freeProgressHandlerContext(ProgressHandlerContext* ctx) {
         } else {
             env = static_cast<JNIEnv*>(envVoid);
         }
-        if (env != nullptr) {
+        if (env != nullptr && ctx->handler != nullptr) {
             env->DeleteGlobalRef(ctx->handler);
         }
         delete ctx;
@@ -929,6 +929,25 @@ static ProgressHandlerContext* detachProgressHandler(sqlite3* db) {
     auto context = it->second;
     progressHandlerMap.erase(it);
     return context;
+}
+
+static void deactivateProgressHandler(JNIEnv* env, sqlite3* db) {
+    // Retain the native context until close, but release the registered handler's object graph immediately.
+    jobject oldHandler = nullptr;
+    {
+        std::scoped_lock lock(progressHandlerMapMutex);
+        sqlite3_progress_handler(db, 0, nullptr, nullptr);
+        auto it = progressHandlerMap.find(db);
+        if (it != progressHandlerMap.end()) {
+            std::scoped_lock contextLock(it->second->mutex);
+            oldHandler = it->second->handler;
+            it->second->handler = nullptr;
+            it->second->onProgressMethod = nullptr;
+        }
+    }
+    if (oldHandler != nullptr) {
+        env->DeleteGlobalRef(oldHandler);
+    }
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -1552,18 +1571,18 @@ Java_com_bloomberg_selekt_ExternalSQLite_progressHandler(
     auto db = reinterpret_cast<sqlite3*>(jdb);
     bool const unregister = (handler == nullptr || instructionCount <= 0);
     if (unregister) {
-        freeProgressHandlerContext(detachProgressHandler(db));
+        deactivateProgressHandler(env, db);
         return;
     }
     jclass handlerClass = env->GetObjectClass(handler);
     jmethodID onProgressMethod = env->GetMethodID(handlerClass, "onProgress", "()I");
     if (onProgressMethod == nullptr) {
-        freeProgressHandlerContext(detachProgressHandler(db));
+        deactivateProgressHandler(env, db);
         return;
     }
     auto globalHandler = env->NewGlobalRef(handler);
     if (globalHandler == nullptr) {
-        freeProgressHandlerContext(detachProgressHandler(db));
+        deactivateProgressHandler(env, db);
         throwOutOfMemoryError(env, "NewGlobalRef");
         return;
     }
