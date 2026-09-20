@@ -75,6 +75,21 @@ internal class WindowedCursorTest {
     }
 
     @Test
+    fun cachedColumnIndexPreservesFirstDuplicateAndCase() {
+        val columns = Array(16) { "column_$it" }.apply {
+            this[1] = "duplicate"
+            this[10] = "duplicate"
+            this[11] = "DUPLICATE"
+        }
+        val cursor = windowedCursor(columns, mock())
+
+        assertEquals(1, cursor.columnIndex("duplicate"))
+        assertEquals(1, cursor.columnIndex("duplicate"))
+        assertEquals(11, cursor.columnIndex("DUPLICATE"))
+        assertEquals(-1, cursor.columnIndex("Duplicate"))
+    }
+
+    @Test
     fun columnName() {
         val cursor = windowedCursor(arrayOf("a"), mock())
         assertEquals("a", cursor.columnName(0))

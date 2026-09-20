@@ -94,6 +94,15 @@ internal fun interface CursorWindowRefill {
     fun refill(startPosition: Int): CursorWindowPage
 }
 
+private const val MIN_COLUMNS_FOR_INDEX_CACHE = 16
+private const val LOOKUPS_BEFORE_INDEX_CACHE = 1
+private const val HASH_MAP_LOAD_FACTOR = 0.75f
+
+private fun Array<out String>.columnIndexMap(): Map<String, Int> =
+    HashMap<String, Int>((size / HASH_MAP_LOAD_FACTOR).toInt() + 1).also { indices ->
+        forEachIndexed { index, name -> indices.putIfAbsent(name, index) }
+    }
+
 @NotThreadSafe
 internal class WindowedCursor(
     private val columnNames: Array<out String>,
@@ -108,6 +117,8 @@ internal class WindowedCursor(
 
     private var window = page.window
     private var windowStart = page.startPosition
+    private var columnIndexLookups = 0
+    private var columnIndices: Map<String, Int>? = null
 
     override val columnCount = columnNames.size
 
@@ -152,7 +163,18 @@ internal class WindowedCursor(
         failure?.let { throw it }
     }
 
-    override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }
+    override fun columnIndex(name: String): Int {
+        val indices = columnIndices
+        return when {
+            indices != null -> indices[name] ?: -1
+            columnNames.size < MIN_COLUMNS_FOR_INDEX_CACHE ||
+                columnIndexLookups++ < LOOKUPS_BEFORE_INDEX_CACHE -> columnNames.indexOfFirst { it == name }
+            else -> columnNames.columnIndexMap().let {
+                columnIndices = it
+                it[name] ?: -1
+            }
+        }
+    }
 
     override fun columnName(index: Int) = columnNames[index]
 
@@ -232,6 +254,8 @@ internal class ForwardCursor(
     private var statement: SQLPreparedStatement? = statement
 
     private val columnNames = statement.columnNames
+    private var columnIndexLookups = 0
+    private var columnIndices: Map<String, Int>? = null
 
     override val columnCount = columnNames.size
 
@@ -246,7 +270,18 @@ internal class ForwardCursor(
         releaseResources()
     }
 
-    override fun columnIndex(name: String) = columnNames.indexOfFirst { it == name }
+    override fun columnIndex(name: String): Int {
+        val indices = columnIndices
+        return when {
+            indices != null -> indices[name] ?: -1
+            columnNames.size < MIN_COLUMNS_FOR_INDEX_CACHE ||
+                columnIndexLookups++ < LOOKUPS_BEFORE_INDEX_CACHE -> columnNames.indexOfFirst { it == name }
+            else -> columnNames.columnIndexMap().let {
+                columnIndices = it
+                it[name] ?: -1
+            }
+        }
+    }
 
     override fun columnName(index: Int) = columnNames[index]
 
