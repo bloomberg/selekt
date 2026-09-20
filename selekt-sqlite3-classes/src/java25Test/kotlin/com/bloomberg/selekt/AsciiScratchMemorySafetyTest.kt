@@ -96,10 +96,14 @@ internal class AsciiScratchMemorySafetyTest {
 
     @Test
     fun `finalize wipes and releases statement scratch memory`() = withStatement { handle, scratch ->
-        scratch.segment.fill(0x5a)
+        val inspectableScratch = MemorySegment.ofArray(ByteArray(scratch.segment.byteSize().toInt()) { 0x5a })
+        scratch.field.set(scratch.owner, inspectableScratch)
         assertEquals(SQL_OK, sqlite.finalize(handle))
-        scratch.assertWiped()
+        assertWiped(inspectableScratch)
         assertNull(scratch.field.get(scratch.owner))
+        assertFailsWith<IllegalStateException> {
+            scratch.segment.get(JAVA_BYTE, 0L)
+        }
     }
 
     private inline fun withStatement(block: (StatementHandle, Scratch) -> Unit) {
@@ -127,7 +131,9 @@ internal class AsciiScratchMemorySafetyTest {
         val owner = checkNotNull(handle.attachment)
         val field = owner.javaClass.getDeclaredField("asciiText")
         assertTrue(field.trySetAccessible())
-        return Scratch(owner, field, checkNotNull(field.get(owner) as? MemorySegment))
+        return Scratch(owner, field, checkNotNull(field.get(owner) as? MemorySegment).also {
+            assertTrue(it.isNative)
+        })
     }
 
     private data class Scratch(
