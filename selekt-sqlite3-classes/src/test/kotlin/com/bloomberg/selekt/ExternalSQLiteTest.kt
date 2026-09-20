@@ -772,6 +772,18 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `large bindBlob takes ownership independently of the source array`() {
+        val blob = ByteArray(BLOB_SLAB_THRESHOLD + 1, Int::toByte)
+        val expected = blob.copyOf()
+        withStatement("SELECT ?") { statement ->
+            assertEquals(SQL_OK, sqlite.bindBlob(statement, 1, blob, blob.size))
+            blob.fill(0)
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertContentEquals(expected, sqlite.columnBlob(statement, 0))
+        }
+    }
+
+    @Test
     fun `can bind and retrieve text with unicode`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
@@ -1627,6 +1639,39 @@ internal class ExternalSQLiteTest {
                 sqlite.blobClose(blob)
             }
         } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
+    fun `closing writable blob propagates commit hook`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "blob-hook.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        var commits = 0
+        var rollbacks = 0
+        val listener = object : SQLCommitListener {
+            override fun onCommit(): Int {
+                commits++
+                return 0
+            }
+
+            override fun onRollback() {
+                rollbacks++
+            }
+        }
+        try {
+            sqlite.exec(db, "CREATE TABLE test (id INTEGER PRIMARY KEY, data BLOB)")
+            sqlite.exec(db, "INSERT INTO test VALUES (1, zeroblob(1))")
+            assertEquals(SQL_OK, sqlite.commitHook(db, true, listener))
+            val blobHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.blobOpen(db, "main", "test", "data", 1, 1, blobHolder))
+            assertEquals(SQL_OK, sqlite.blobWrite(blobHolder[0], 0, byteArrayOf(1), 0, 1))
+            assertEquals(SQL_OK, sqlite.blobClose(blobHolder[0]))
+            assertEquals(1, commits)
+            assertEquals(0, rollbacks)
+        } finally {
+            sqlite.commitHook(db, false, null)
             sqlite.closeV2(db)
         }
     }

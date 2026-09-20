@@ -350,12 +350,20 @@ internal class ExternalSQLite(
         if (capacity < 0 || length > capacity) {
             throw IndexOutOfBoundsException("storeSecret: length is out of bounds.")
         }
-        val result = selekt_secret_store.invoke(
-            MemorySegment.ofAddress(pointer),
-            capacity,
-            MemorySegment.ofArray(source),
-            length
-        ) as Int
+        val result = withSlab { slab ->
+            val nativeSource = slab.allocate(length.toLong())
+            try {
+                MemorySegment.copy(source, 0, nativeSource, JAVA_BYTE, 0, length)
+                selekt_secret_store.invoke(
+                    MemorySegment.ofAddress(pointer),
+                    capacity,
+                    nativeSource,
+                    length
+                ) as Int
+            } finally {
+                nativeSource.fill(0)
+            }
+        }
         if (result != SQL_OK) {
             throw IndexOutOfBoundsException("storeSecret: capacity does not match the allocation size.")
         }
@@ -753,10 +761,22 @@ internal class ExternalSQLite(
         withSlab { slab ->
             val segment = slab.allocate(length.toLong())
             MemorySegment.copy(blob, 0, segment, JAVA_BYTE, 0, length)
-            sqlite3_bind_blob_offheap.invoke(statement, index, segment, length, sqliteTransient) as Int
+            sqlite3_bind_blob.invoke(statement, index, segment, length, sqliteTransient) as Int
         }
     } else {
-        sqlite3_bind_blob_onheap.invoke(statement, index, MemorySegment.ofArray(blob), length, sqliteTransient) as Int
+        val allocation = sqlite3_malloc64.invoke(length.toLong()) as MemorySegment
+        if (allocation.address() == 0L) {
+            SQL_NOMEM
+        } else {
+            val segment = allocation.reinterpret(length.toLong())
+            MemorySegment.copy(blob, 0, segment, JAVA_BYTE, 0, length)
+            try {
+                sqlite3_bind_blob.invoke(statement, index, segment, length, sqliteFree) as Int
+            } catch (failure: Throwable) {
+                sqlite3_free.invoke(allocation)
+                throw failure
+            }
+        }
     }
 
     private fun bindText(
@@ -1684,7 +1704,6 @@ internal class ExternalSQLite(
         private val sqliteTransient = MemorySegment.ofAddress(-1L)
         private val sqliteFree = symbolLookup.find("sqlite3_free").orElseThrow()
 
-        private val criticalOption = Linker.Option.critical(true)
         private val criticalNoHeapOption = Linker.Option.critical(false)
 
         private val sqliteValueAddress = ADDRESS.withTargetLayout(
@@ -1697,15 +1716,9 @@ internal class ExternalSQLite(
 
         private val SCOPED_SLAB: ScopedValue<SlabArena> = ScopedValue.newInstance()
 
-        private val sqlite3_bind_blob_offheap: MethodHandle = linker.downcallHandle(
+        private val sqlite3_bind_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
-            criticalNoHeapOption
-        )
-        private val sqlite3_bind_blob_onheap: MethodHandle = linker.downcallHandle(
-            symbolLookup.find("sqlite3_bind_blob").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS)
         )
         private val sqlite3_bind_double: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_double").orElseThrow(),
@@ -1734,8 +1747,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_bind_parameter_index: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_parameter_index").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)
         )
         private val sqlite3_bind_text: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_bind_text").orElseThrow(),
@@ -1753,8 +1765,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_blob_close: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_close").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_blob_open: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_open").orElseThrow(),
@@ -1766,8 +1777,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_blob_reopen: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_reopen").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_LONG),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_LONG)
         )
         private val sqlite3_blob_write: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_blob_write").orElseThrow(),
@@ -1785,8 +1795,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_clear_bindings: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_clear_bindings").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_close_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_close_v2").orElseThrow(),
@@ -1794,13 +1803,11 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_blob: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_blob").orElseThrow(),
-            FunctionDescriptor.of(sqliteValueAddress, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(sqliteValueAddress, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_bytes: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_bytes").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_count: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_count").orElseThrow(),
@@ -1809,18 +1816,15 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_double: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_double").orElseThrow(),
-            FunctionDescriptor.of(JAVA_DOUBLE, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_DOUBLE, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_int: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_int").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_int64: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_int64").orElseThrow(),
-            FunctionDescriptor.of(JAVA_LONG, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_LONG, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_name: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_name").orElseThrow(),
@@ -1829,8 +1833,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_text: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_text").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_type: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_type").orElseThrow(),
@@ -1864,13 +1867,11 @@ internal class ExternalSQLite(
         )
         private val sqlite3_db_release_memory: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_db_release_memory").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
         )
         private val sqlite3_db_status: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_db_status").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val sqlite3_errcode: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_errcode").orElseThrow(),
@@ -1888,8 +1889,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_expanded_sql: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_expanded_sql").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(ADDRESS, ADDRESS)
         )
         private val sqlite3_extended_errcode: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_extended_errcode").orElseThrow(),
@@ -1907,8 +1907,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_malloc64: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_malloc64").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, JAVA_LONG),
-            criticalNoHeapOption
+            FunctionDescriptor.of(ADDRESS, JAVA_LONG)
         )
         private val sqlite3_free: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_free").orElseThrow(),
@@ -1937,8 +1936,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_key").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val selekt_secret_alloc: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_alloc").orElseThrow(),
@@ -1950,23 +1948,19 @@ internal class ExternalSQLite(
         )
         private val selekt_secret_store: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_store").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT),
-            criticalOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_INT)
         )
         private val selekt_secret_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_key").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val selekt_raw_key: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_raw_key").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val selekt_secret_rekey: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_secret_rekey").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val sqlite3_keyword_count: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_keyword_count").orElseThrow(),
@@ -1999,8 +1993,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_prepare_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_prepare_v2").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS)
         )
         private val sqlite3_progress_handler: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_progress_handler").orElseThrow(),
@@ -2008,13 +2001,11 @@ internal class ExternalSQLite(
         )
         private val sqlite3_rekey: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_rekey").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT)
         )
         private val sqlite3_release_memory: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_release_memory").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, JAVA_INT),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, JAVA_INT)
         )
         private val sqlite3_reset: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_reset").orElseThrow(),
@@ -2084,8 +2075,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_value_dup: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_value_dup").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(ADDRESS, ADDRESS)
         )
         private val sqlite3_value_free: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_value_free").orElseThrow(),
@@ -2104,8 +2094,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_wal_checkpoint_v2: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_wal_checkpoint_v2").orElseThrow(),
-            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS),
-            criticalNoHeapOption
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, ADDRESS)
         )
     }
 }
