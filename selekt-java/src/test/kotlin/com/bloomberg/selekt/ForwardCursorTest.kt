@@ -54,6 +54,24 @@ internal class ForwardCursorTest {
     }
 
     @Test
+    fun cachedColumnIndexPreservesFirstDuplicateAndCase() {
+        val columns = Array(16) { "column_$it" }.apply {
+            this[1] = "duplicate"
+            this[10] = "duplicate"
+            this[11] = "DUPLICATE"
+        }
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn columns
+        }
+        val cursor = ForwardCursor(statement)
+
+        assertEquals(1, cursor.columnIndex("duplicate"))
+        assertEquals(1, cursor.columnIndex("duplicate"))
+        assertEquals(11, cursor.columnIndex("DUPLICATE"))
+        assertEquals(-1, cursor.columnIndex("Duplicate"))
+    }
+
+    @Test
     fun columnName() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")
