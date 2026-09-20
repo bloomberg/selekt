@@ -1426,7 +1426,7 @@ internal class ExternalSQLite(
                 sqlite3_progress_handler.invoke(segment, instructionCount, registration.stub, MemorySegment.NULL)
             } else {
                 sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
-                progressHandlerRegistrations.remove(db)?.close()
+                progressHandlerRegistrations[db]?.dispatcher?.delegate = null
             }
         }
     }
