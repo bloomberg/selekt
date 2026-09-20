@@ -73,6 +73,16 @@ internal class SingleObjectPoolTest {
         }, executor, 1_000L, 20_000L)
     }
 
+    private fun capturingExecutor(onScheduled: (Runnable) -> Unit) =
+        object : ScheduledExecutorService by executor {
+            override fun scheduleWithFixedDelay(
+                command: Runnable,
+                initialDelay: Long,
+                delay: Long,
+                unit: TimeUnit
+            ) = executor.schedule({}, 1L, TimeUnit.DAYS).also { onScheduled(command) }
+        }
+
     @AfterEach
     fun tearDown() {
         pool.close()
@@ -175,18 +185,22 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    fun scheduledEviction(): Unit = SingleObjectPool(object : IObjectFactory<PooledObject> {
-        override fun close() = Unit
+    fun scheduledEviction() {
+        lateinit var scheduledEviction: Runnable
+        SingleObjectPool(object : IObjectFactory<PooledObject> {
+            override fun close() = Unit
 
-        override fun destroyObject(obj: PooledObject) = Unit
+            override fun destroyObject(obj: PooledObject) = Unit
 
-        override fun makeObject() = makePrimaryObject()
+            override fun makeObject() = makePrimaryObject()
 
-        override fun makePrimaryObject() = PooledObject()
-    }, executor, 500L, 500L).use {
-        val obj = it.borrowObject().apply { it.returnObject(this) }
-        Thread.sleep(1_500L)
-        assertNotSame(obj, it.borrowObject(), "Object was not evicted.")
+            override fun makePrimaryObject() = PooledObject()
+        }, capturingExecutor { scheduledEviction = it }, 500L, 500L).use {
+            val obj = it.borrowObject().apply { it.returnObject(this) }
+            scheduledEviction.run()
+            scheduledEviction.run()
+            assertNotSame(obj, it.borrowObject().also(it::returnObject), "Object was not evicted.")
+        }
     }
 
     @Test
@@ -220,21 +234,24 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
-    fun scheduledEvictionFailsFollowingFurtherUse(): Unit = SingleObjectPool(object : IObjectFactory<IPooledObject<String>> {
-        override fun close() = Unit
+    fun scheduledEvictionFailsFollowingFurtherUse() {
+        lateinit var scheduledEviction: Runnable
+        SingleObjectPool(object : IObjectFactory<IPooledObject<String>> {
+            override fun close() = Unit
 
-        override fun destroyObject(obj: IPooledObject<String>) = Unit
+            override fun destroyObject(obj: IPooledObject<String>) = Unit
 
-        override fun makeObject() = makePrimaryObject()
+            override fun makeObject() = makePrimaryObject()
 
-        override fun makePrimaryObject() = PooledObject()
-    }, executor, 1_000L, 1_000L).use {
-        val obj = it.borrowObject().apply {
-            it.returnObject(this)
-            it.returnObject(it.borrowObject())
+            override fun makePrimaryObject() = PooledObject()
+        }, capturingExecutor { scheduledEviction = it }, 1_000L, 1_000L).use {
+            val obj = it.borrowObject().apply {
+                it.returnObject(this)
+                it.returnObject(it.borrowObject())
+            }
+            scheduledEviction.run()
+            assertSame(obj, it.borrowObject().also(it::returnObject), "Object was evicted.")
         }
-        Thread.sleep(1_500L)
-        assertSame(obj, it.borrowObject(), "Object was evicted.")
     }
 
     @Test
