@@ -330,8 +330,16 @@ listOf(
                 args("-prof", resolved)
             }
         }
-        if (runtimeVersion >= 25) {
-            args("-jvmArgsAppend", "--enable-native-access=ALL-UNNAMED")
+        val benchmarkJvmArgs = buildList {
+            if (runtimeVersion >= 25) {
+                add("--enable-native-access=ALL-UNNAMED")
+            }
+            if (project.hasProperty("jmh.tempDirectory")) {
+                add("-Djava.io.tmpdir=${project.property("jmh.tempDirectory")}")
+            }
+        }
+        if (benchmarkJvmArgs.isNotEmpty()) {
+            args("-jvmArgsAppend", benchmarkJvmArgs.joinToString(" "))
         }
     }
 }
