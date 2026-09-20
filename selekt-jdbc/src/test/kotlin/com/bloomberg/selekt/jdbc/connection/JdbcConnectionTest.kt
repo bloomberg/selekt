@@ -152,13 +152,13 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun createStatementWithScrollInsensitive() {
+    fun createStatementWithScrollSensitive() {
         val statement = connection.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.TYPE_SCROLL_SENSITIVE,
             ResultSet.CONCUR_READ_ONLY
         )
         assertNotNull(statement)
-        assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, statement.resultSetType)
+        assertEquals(ResultSet.TYPE_SCROLL_SENSITIVE, statement.resultSetType)
         statement.close()
     }
 
@@ -171,14 +171,14 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun prepareStatementWithScrollInsensitive() {
+    fun prepareStatementWithScrollSensitive() {
         val preparedStatement = connection.prepareStatement(
             "SELECT * FROM test",
-            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.TYPE_SCROLL_SENSITIVE,
             ResultSet.CONCUR_READ_ONLY
         )
         assertNotNull(preparedStatement)
-        assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, preparedStatement.resultSetType)
+        assertEquals(ResultSet.TYPE_SCROLL_SENSITIVE, preparedStatement.resultSetType)
         preparedStatement.close()
     }
 
@@ -487,7 +487,7 @@ internal class JdbcConnectionTest {
     @Test
     fun createStatementRejectsUnsupportedResultSetType() {
         assertFailsWith<SQLException> {
-            connection.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
         }
     }
 
@@ -1343,8 +1343,8 @@ internal class JdbcConnectionTest {
         val characteristics = listOf(
             ResultSet.TYPE_FORWARD_ONLY to ResultSet.CLOSE_CURSORS_AT_COMMIT,
             ResultSet.TYPE_FORWARD_ONLY to ResultSet.HOLD_CURSORS_OVER_COMMIT,
-            ResultSet.TYPE_SCROLL_INSENSITIVE to ResultSet.CLOSE_CURSORS_AT_COMMIT,
-            ResultSet.TYPE_SCROLL_INSENSITIVE to ResultSet.HOLD_CURSORS_OVER_COMMIT
+            ResultSet.TYPE_SCROLL_SENSITIVE to ResultSet.CLOSE_CURSORS_AT_COMMIT,
+            ResultSet.TYPE_SCROLL_SENSITIVE to ResultSet.HOLD_CURSORS_OVER_COMMIT
         )
         val statements = characteristics.map { (type, holdability) ->
             connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)

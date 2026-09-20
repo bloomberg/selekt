@@ -146,8 +146,8 @@ internal class JdbcDatabaseMetaDataTest {
     @Test
     fun resultSetSupport(): Unit = metaData.run {
         assertTrue(supportsResultSetType(ResultSet.TYPE_FORWARD_ONLY))
-        assertTrue(supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
-        assertFalse(supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE))
+        assertFalse(supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
+        assertTrue(supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE))
         assertTrue(supportsResultSetConcurrency(
             ResultSet.TYPE_FORWARD_ONLY,
             ResultSet.CONCUR_READ_ONLY
@@ -482,13 +482,21 @@ internal class JdbcDatabaseMetaDataTest {
     }
 
     @Test
-    fun supportsResultSetTypeScrollInsensitive() {
-        assertTrue(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
+    fun doesNotSupportResultSetTypeScrollInsensitive() {
+        assertFalse(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE))
     }
 
     @Test
     fun supportsResultSetTypeScrollSensitive() {
-        assertFalse(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE))
+        assertTrue(metaData.supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE))
+    }
+
+    @Test
+    fun unsupportedResultSetTypeDoesNotSupportReadOnlyConcurrency() {
+        assertFalse(metaData.supportsResultSetConcurrency(
+            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.CONCUR_READ_ONLY
+        ))
     }
 
     @Test

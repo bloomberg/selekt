@@ -1203,7 +1203,7 @@ internal class JdbcResultSetTest {
         val scrollable = JdbcResultSet(
             mockCursor,
             mockStatement,
-            ResultSet.TYPE_SCROLL_INSENSITIVE,
+            ResultSet.TYPE_SCROLL_SENSITIVE,
             ResultSet.CONCUR_READ_ONLY
         )
         whenever(mockCursor.moveToFirst()) doReturn true

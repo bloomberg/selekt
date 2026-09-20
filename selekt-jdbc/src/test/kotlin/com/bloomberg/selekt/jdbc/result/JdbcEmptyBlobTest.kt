@@ -36,7 +36,7 @@ internal class JdbcEmptyBlobTest {
         val url = "jdbc:sqlite:${tempDir.resolve("empty-blob.db")}?poolSize=1"
         DriverManager.getConnection(url).use { connection ->
             connection.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE,
+                ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_READ_ONLY
             ).use { statement ->
                 statement.executeQuery("SELECT x'' AS empty_blob, NULL AS absent").use { resultSet ->

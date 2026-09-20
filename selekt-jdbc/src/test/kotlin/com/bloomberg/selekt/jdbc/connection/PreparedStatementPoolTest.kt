@@ -45,14 +45,14 @@ internal class PreparedStatementPoolTest {
         val pool = PreparedStatementPool(5)
         val forwardClose = statement("SELECT 1", FORWARD_ONLY, CLOSE_AT_COMMIT)
         val forwardHold = statement("SELECT 1", FORWARD_ONLY, HOLD_OVER_COMMIT)
-        val scrollClose = statement("SELECT 1", SCROLL_INSENSITIVE, CLOSE_AT_COMMIT)
-        val scrollHold = statement("SELECT 1", SCROLL_INSENSITIVE, HOLD_OVER_COMMIT)
+        val scrollClose = statement("SELECT 1", SCROLL_SENSITIVE, CLOSE_AT_COMMIT)
+        val scrollHold = statement("SELECT 1", SCROLL_SENSITIVE, HOLD_OVER_COMMIT)
         val updatable = statement("SELECT 1", resultSetConcurrency = UPDATABLE)
         listOf(forwardClose, forwardHold, scrollClose, scrollHold, updatable).forEach(pool::put)
-        assertSame(scrollHold, pool.take("SELECT 1", SCROLL_INSENSITIVE, READ_ONLY, HOLD_OVER_COMMIT))
+        assertSame(scrollHold, pool.take("SELECT 1", SCROLL_SENSITIVE, READ_ONLY, HOLD_OVER_COMMIT))
         assertSame(updatable, pool.take("SELECT 1", FORWARD_ONLY, UPDATABLE, CLOSE_AT_COMMIT))
         assertSame(forwardClose, pool.take("SELECT 1", FORWARD_ONLY, READ_ONLY, CLOSE_AT_COMMIT))
-        assertSame(scrollClose, pool.take("SELECT 1", SCROLL_INSENSITIVE, READ_ONLY, CLOSE_AT_COMMIT))
+        assertSame(scrollClose, pool.take("SELECT 1", SCROLL_SENSITIVE, READ_ONLY, CLOSE_AT_COMMIT))
         assertSame(forwardHold, pool.take("SELECT 1", FORWARD_ONLY, READ_ONLY, HOLD_OVER_COMMIT))
         assertTrue(pool.isEmpty())
     }
@@ -139,7 +139,7 @@ internal class PreparedStatementPoolTest {
 
     private companion object {
         private const val FORWARD_ONLY = ResultSet.TYPE_FORWARD_ONLY
-        private const val SCROLL_INSENSITIVE = ResultSet.TYPE_SCROLL_INSENSITIVE
+        private const val SCROLL_SENSITIVE = ResultSet.TYPE_SCROLL_SENSITIVE
         private const val READ_ONLY = ResultSet.CONCUR_READ_ONLY
         private const val UPDATABLE = ResultSet.CONCUR_UPDATABLE
         private const val CLOSE_AT_COMMIT = ResultSet.CLOSE_CURSORS_AT_COMMIT

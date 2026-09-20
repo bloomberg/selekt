@@ -91,7 +91,7 @@ public class JdbcScrollableCursorBenchmark {
     @Benchmark
     public void fullScan(final Blackhole blackhole) throws SQLException {
         try (Statement statement = connection.createStatement(
-                 ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                 ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
              ResultSet resultSet = statement.executeQuery(SELECT_ALL_SQL)) {
             while (resultSet.next()) {
                 blackhole.consume(resultSet.getInt(1));
