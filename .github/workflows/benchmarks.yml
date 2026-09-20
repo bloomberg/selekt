@@ -89,14 +89,17 @@ jobs:
           echo 'org.gradle.caching=false' >> gradle.properties
           echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
 
+      - name: 'Prepare RAM-backed benchmark storage'
+        run: mkdir -p /dev/shm/selekt-jmh
+
       - name: 'Run Java 25 JDBC batch-insert benchmarks'
-        run: ./gradlew :selekt-jdbc:jmhFfm -Pjmh.includes="JdbcBatchBenchmark\..*BatchInsert" -Pjmh.profilers=gc -Pjmh.params="batchSize=1000"
+        run: ./gradlew :selekt-jdbc:jmhFfm -Pjmh.includes="JdbcBatchBenchmark\..*BatchInsert" -Pjmh.profilers=gc -Pjmh.params="batchSize=1000" -Pjmh.tempDirectory=/dev/shm/selekt-jmh
 
       - name: 'Preserve Java 25 batch-insert results'
         run: cp selekt-jdbc/build/results/jmhFfm/results.json /tmp/jdbc-batch-java25-results.json
 
       - name: 'Run Java 11 JNI batch-insert benchmarks'
-        run: ./gradlew :selekt-jdbc:jmhJni -Pjmh.includes="JdbcBatchBenchmark\.selekt.*BatchInsert" -Pjmh.profilers=gc -Pjmh.params="batchSize=1000"
+        run: ./gradlew :selekt-jdbc:jmhJni -Pjmh.includes="JdbcBatchBenchmark\.selekt.*BatchInsert" -Pjmh.profilers=gc -Pjmh.params="batchSize=1000" -Pjmh.tempDirectory=/dev/shm/selekt-jmh
 
       - name: 'Label Java 11 JNI batch-insert results'
         run: |
