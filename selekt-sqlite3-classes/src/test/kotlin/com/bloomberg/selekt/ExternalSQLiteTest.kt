@@ -242,6 +242,36 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `native cursor window keeps an unbounded row limit within the byte cap on every backend`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "unbounded-window.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT 1"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                val nativeSQLite = assertIs<INativeCursorWindowSQLite>(sqlite)
+                val buffer = assertNotNull(
+                    nativeSQLite.fillCursorWindow(statement, 0, Int.MAX_VALUE, true, 128)
+                ).order(ByteOrder.nativeOrder())
+                try {
+                    assertEquals(1, buffer.getInt(0))
+                    assertEquals(1, buffer.getInt(Int.SIZE_BYTES))
+                    assertEquals(21, buffer.capacity())
+                } finally {
+                    nativeSQLite.freeCursorWindow(buffer)
+                }
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `native cursor window rejects a row exceeding its byte limit on every backend`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "bounded-window.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)

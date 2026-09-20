@@ -76,7 +76,7 @@ public class JdbcForwardOnlyBenchmark {
     private PreparedStatement selektForwardOnlyStatement;
     private PreparedStatement selektReadOnlyForwardOnlyStatement;
     private PreparedStatement selektReadOnlyManualTransactionForwardOnlyStatement;
-    private PreparedStatement selektScrollInsensitiveStatement;
+    private PreparedStatement selektScrollSensitiveStatement;
     private PreparedStatement xerialForwardOnlyStatement;
 
     @Setup(Level.Iteration)
@@ -104,7 +104,7 @@ public class JdbcForwardOnlyBenchmark {
         selektReadOnlyManualTransactionForwardOnlyStatement =
             selektReadOnlyManualTransactionConnection.prepareStatement(
                 SELECT_BY_ID_SQL, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-        selektScrollInsensitiveStatement = selektConnection.prepareStatement(
+        selektScrollSensitiveStatement = selektConnection.prepareStatement(
             SELECT_BY_ID_SQL, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
         xerialForwardOnlyStatement = xerialConnection.prepareStatement(
             SELECT_BY_ID_SQL, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -115,7 +115,7 @@ public class JdbcForwardOnlyBenchmark {
         closeQuietly(selektForwardOnlyStatement);
         closeQuietly(selektReadOnlyForwardOnlyStatement);
         closeQuietly(selektReadOnlyManualTransactionForwardOnlyStatement);
-        closeQuietly(selektScrollInsensitiveStatement);
+        closeQuietly(selektScrollSensitiveStatement);
         closeQuietly(xerialForwardOnlyStatement);
         closeQuietly(selektConnection);
         closeQuietly(selektReadOnlyConnection);
@@ -147,7 +147,7 @@ public class JdbcForwardOnlyBenchmark {
     }
 
     @Benchmark
-    public void selektScrollInsensitiveFullScan(final Blackhole blackhole) throws SQLException {
+    public void selektScrollSensitiveFullScan(final Blackhole blackhole) throws SQLException {
         fullScan(selektConnection, ResultSet.TYPE_SCROLL_SENSITIVE, blackhole);
     }
 
@@ -157,7 +157,7 @@ public class JdbcForwardOnlyBenchmark {
     }
 
     @Benchmark
-    public void selektScrollInsensitivePointQuery(final Blackhole blackhole) throws SQLException {
+    public void selektScrollSensitivePointQuery(final Blackhole blackhole) throws SQLException {
         pointQuery(selektConnection, ResultSet.TYPE_SCROLL_SENSITIVE, blackhole);
     }
 
@@ -183,8 +183,8 @@ public class JdbcForwardOnlyBenchmark {
     }
 
     @Benchmark
-    public void selektScrollInsensitivePointQueryReuse(final Blackhole blackhole) throws SQLException {
-        pointQueryReuse(selektScrollInsensitiveStatement, blackhole);
+    public void selektScrollSensitivePointQueryReuse(final Blackhole blackhole) throws SQLException {
+        pointQueryReuse(selektScrollSensitiveStatement, blackhole);
     }
 
     @Benchmark
