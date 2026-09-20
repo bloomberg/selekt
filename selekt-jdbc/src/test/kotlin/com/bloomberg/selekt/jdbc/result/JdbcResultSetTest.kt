@@ -131,6 +131,7 @@ internal class JdbcResultSetTest {
     @Test
     fun scalarGettersHandleNulls() {
         whenever(mockCursor.isNull(0)) doReturn true
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
 
         resultSet.run {
             assertFalse(getBoolean(1))
@@ -149,6 +150,7 @@ internal class JdbcResultSetTest {
         val cursor = mock<ICursor> {
             whenever(it.columnCount) doReturn 1
             whenever(it.isNull(0)) doThrow SQLException("failure")
+            whenever(it.type(0)) doThrow SQLException("failure")
         }
         val failing = JdbcResultSet(cursor, mockStatement)
         val getters = listOf<(JdbcResultSet) -> Any?>(
@@ -231,6 +233,71 @@ internal class JdbcResultSetTest {
         whenever(mockCursor.type(0)) doReturn ColumnType.FLOAT
         whenever(mockCursor.getDouble(0)) doReturn 2.5
         assertEquals(2.5, resultSet.getObject(1))
+    }
+
+    @Test
+    fun getIntUsesOneTypeProbeAndOneValueRead() {
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.type(0)) doReturn ColumnType.INTEGER
+            whenever(it.getInt(0)) doReturn 42
+        }
+
+        assertEquals(42, JdbcResultSet(cursor, mockStatement).getInt(1))
+
+        verify(cursor).type(0)
+        verify(cursor).getInt(0)
+        verify(cursor, never()).isNull(0)
+    }
+
+    @Test
+    fun getDoubleUsesOneTypeProbeAndOneValueRead() {
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.type(0)) doReturn ColumnType.STRING
+            whenever(it.getString(0)) doReturn "12.5"
+        }
+
+        assertEquals(12.5, JdbcResultSet(cursor, mockStatement).getDouble(1))
+
+        verify(cursor).type(0)
+        verify(cursor).getString(0)
+        verify(cursor, never()).isNull(0)
+    }
+
+    @Test
+    fun getObjectUsesOneTypeProbeAndOneValueRead() {
+        val bytes = byteArrayOf(1, 2)
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.type(0)) doReturn ColumnType.BLOB
+            whenever(it.getBlob(0)) doReturn bytes
+        }
+
+        assertSame(bytes, JdbcResultSet(cursor, mockStatement).getObject(1))
+
+        verify(cursor).type(0)
+        verify(cursor).getBlob(0)
+        verify(cursor, never()).isNull(0)
+    }
+
+    @Test
+    fun nullGetterUsesOneTypeProbeAndNoValueRead() {
+        val cursor = mock<ICursor> {
+            whenever(it.columnCount) doReturn 1
+            whenever(it.type(0)) doReturn ColumnType.NULL
+        }
+        val nullResultSet = JdbcResultSet(cursor, mockStatement)
+
+        assertNull(nullResultSet.getObject(1))
+        assertTrue(nullResultSet.wasNull())
+
+        verify(cursor).type(0)
+        verify(cursor, never()).isNull(0)
+        verify(cursor, never()).getLong(0)
+        verify(cursor, never()).getDouble(0)
+        verify(cursor, never()).getString(0)
+        verify(cursor, never()).getBlob(0)
     }
 
     @Test
@@ -385,7 +452,7 @@ internal class JdbcResultSetTest {
 
     @Test
     fun wasNull() {
-        whenever(mockCursor.isNull(0)) doReturn true
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
         resultSet.run {
             getInt(1)
             assertTrue(wasNull())
@@ -546,6 +613,7 @@ internal class JdbcResultSetTest {
     @Test
     fun nullValues() {
         whenever(mockCursor.isNull(0)) doReturn true
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
         resultSet.run {
             assertEquals(0, getInt(1))
             assertTrue(wasNull())
@@ -1033,7 +1101,7 @@ internal class JdbcResultSetTest {
 
     @Test
     fun getObjectWithTypeNull() {
-        whenever(mockCursor.isNull(0)) doReturn true
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
         assertNull(resultSet.getObject(1, String::class.java))
     }
 
@@ -1391,7 +1459,7 @@ internal class JdbcResultSetTest {
 
     @Test
     fun getObjectWithNullType() {
-        whenever(mockCursor.isNull(0)) doReturn true
+        whenever(mockCursor.type(0)) doReturn ColumnType.NULL
         resultSet.run {
             assertNull(getObject(1, String::class.java))
             assertTrue(wasNull())
