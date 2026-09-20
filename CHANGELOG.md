@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 1.6.3
+
+* Reuse progress-handler infrastructure per connection.
+* Audit restricting critical SQLite downcalls to safe operations.
+* Optimize JDBC typed result getters.
+* Cache column-label indexes for wide result sets.
+
 ## Version 1.6.2
 
 * Preserve slab allocations during SQL preparation.
