@@ -428,21 +428,15 @@ internal class JdbcResultSet(
         checkClosed()
         validateColumnIndex(columnIndex)
         return try {
-            if (cursor.isNull(columnIndex - 1)) {
-                wasNull = true
-                0
-            } else {
-                wasNull = false
-                when (cursor.type(columnIndex - 1)) {
-                    ColumnType.INTEGER -> cursor.getInt(columnIndex - 1)
-                    ColumnType.STRING -> {
-                        val stringValue = cursor.getString(columnIndex - 1)
-                        TypeMapping.convertFromSQLite(stringValue, Types.INTEGER) as Int
-                    }
-                    ColumnType.FLOAT -> cursor.getDouble(columnIndex - 1).toInt()
-                    ColumnType.NULL -> 0
-                    ColumnType.BLOB -> 0 // Cannot convert blob to int
+            val cursorIndex = columnIndex - 1
+            when (columnType(cursorIndex)) {
+                ColumnType.INTEGER -> cursor.getInt(cursorIndex)
+                ColumnType.FLOAT -> cursor.getDouble(cursorIndex).toInt()
+                ColumnType.STRING -> {
+                    val stringValue = cursor.getString(cursorIndex)
+                    TypeMapping.convertFromSQLite(stringValue, Types.INTEGER) as Int
                 }
+                ColumnType.NULL, ColumnType.BLOB -> 0
             }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
@@ -512,23 +506,15 @@ internal class JdbcResultSet(
         checkClosed()
         validateColumnIndex(columnIndex)
         return try {
-            if (cursor.isNull(columnIndex - 1)) {
-                wasNull = true
-                0.0
-            } else {
-                wasNull = false
-                val columnType = cursor.type(columnIndex - 1)
-
-                when (columnType) {
-                    ColumnType.FLOAT -> cursor.getDouble(columnIndex - 1)
-                    ColumnType.INTEGER -> cursor.getInt(columnIndex - 1).toDouble()
-                    ColumnType.STRING -> {
-                        val stringValue = cursor.getString(columnIndex - 1)
-                        TypeMapping.convertFromSQLite(stringValue, Types.DOUBLE) as Double
-                    }
-                    ColumnType.NULL -> 0.0
-                    ColumnType.BLOB -> 0.0 // Cannot convert blob to double
+            val cursorIndex = columnIndex - 1
+            when (columnType(cursorIndex)) {
+                ColumnType.INTEGER -> cursor.getInt(cursorIndex).toDouble()
+                ColumnType.FLOAT -> cursor.getDouble(cursorIndex)
+                ColumnType.STRING -> {
+                    val stringValue = cursor.getString(cursorIndex)
+                    TypeMapping.convertFromSQLite(stringValue, Types.DOUBLE) as Double
                 }
+                ColumnType.NULL, ColumnType.BLOB -> 0.0
             }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
@@ -739,19 +725,13 @@ internal class JdbcResultSet(
         checkClosed()
         validateColumnIndex(columnIndex)
         return try {
-            if (cursor.isNull(columnIndex - 1)) {
-                wasNull = true
-                null
-            } else {
-                wasNull = false
-                val columnType = cursor.type(columnIndex - 1)
-                when (columnType) {
-                    ColumnType.INTEGER -> cursor.getLong(columnIndex - 1)
-                    ColumnType.FLOAT -> cursor.getDouble(columnIndex - 1)
-                    ColumnType.STRING -> cursor.getString(columnIndex - 1)
-                    ColumnType.BLOB -> cursor.getBlob(columnIndex - 1)
-                    ColumnType.NULL -> null
-                }
+            val cursorIndex = columnIndex - 1
+            when (columnType(cursorIndex)) {
+                ColumnType.INTEGER -> cursor.getLong(cursorIndex)
+                ColumnType.FLOAT -> cursor.getDouble(cursorIndex)
+                ColumnType.STRING -> cursor.getString(cursorIndex)
+                ColumnType.BLOB -> cursor.getBlob(cursorIndex)
+                ColumnType.NULL -> null
             }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
@@ -1324,5 +1304,9 @@ internal class JdbcResultSet(
         if (columnIndex < 1 || columnIndex > cursor.columnCount) {
             throw SQLException("Column index $columnIndex is out of range (1, ${cursor.columnCount})")
         }
+    }
+
+    private fun columnType(cursorIndex: Int): ColumnType = cursor.type(cursorIndex).also {
+        wasNull = it == ColumnType.NULL
     }
 }
