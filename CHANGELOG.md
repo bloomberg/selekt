@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 1.6.4
+
+* Report refillable cursors as scroll-sensitive.
+* Pre-size native cursor window buffers.
+
 ## Version 1.6.3
 
 * Reuse progress-handler infrastructure per connection.
