@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789891839020,
+  "lastUpdate": 1789968562934,
   "repoUrl": "https://github.com/bloomberg/selekt",
   "entries": {
     "JDBC Allocations": [
@@ -8728,6 +8728,244 @@ window.BENCHMARK_DATA = {
           {
             "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniCharacterStreamUTF16",
             "value": 3200770.4783477695,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ken Shackleton",
+            "username": "kennethshackleton",
+            "email": "kennethshackleton@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "b3389218a6556bab9463e957db05b5e693823d98",
+          "message": "Merge pull request #1249 from kennethshackleton/prepare-1.6.4\n\nPrepare version 1.6.4",
+          "timestamp": "2026-09-21T05:04:35Z",
+          "url": "https://github.com/bloomberg/selekt/commit/b3389218a6556bab9463e957db05b5e693823d98"
+        },
+        "date": 1789968562515,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 1133.5745678313915,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 1206.435380544765,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 2781.4136035023907,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 1177.709868895447,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 1141.4471082223797,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 2740.2356485724426,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 101704.23156585798,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 101721.3952637899,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 110457.0241917199,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 68489.43657012662,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 68507.62197888215,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.xerialReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 77251.69591835947,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 806.8360118230378,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 829.479444467401,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 2955.7863147734183,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"SIMPLE\"} )",
+            "value": 805.9937442929331,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"MIXED\"} )",
+            "value": 854.113618905363,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcBatchBenchmark.selektJniReusedBatchInsert ( {\"batchSize\":\"1000\",\"dataType\":\"LARGE_BLOBS\"} )",
+            "value": 2480.7719768207144,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektAsciiStreamASCII",
+            "value": 2800643.6106180344,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektAsciiStreamLATIN1",
+            "value": 2800664.004997018,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektAsciiStreamUTF16",
+            "value": 2800631.8011971703,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialAsciiStreamASCII",
+            "value": 10000261.400340136,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialAsciiStreamLATIN1",
+            "value": 11584266.577777777,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialAsciiStreamUTF16",
+            "value": 15984270.418604651,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektCharacterStreamASCII",
+            "value": 3200622.5279046674,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektCharacterStreamLATIN1",
+            "value": 3200643.60023733,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektCharacterStreamUTF16",
+            "value": 3200645.1753000584,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialCharacterStreamASCII",
+            "value": 11200259.280000003,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialCharacterStreamLATIN1",
+            "value": 12792263.063829785,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.xerialCharacterStreamUTF16",
+            "value": 15600266.577777779,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniAsciiStreamASCII",
+            "value": 3200712.4572025267,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniAsciiStreamLATIN1",
+            "value": 3200757.7205524636,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniAsciiStreamUTF16",
+            "value": 3200757.688632859,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniCharacterStreamASCII",
+            "value": 3200738.934578044,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniCharacterStreamLATIN1",
+            "value": 3200778.396156486,
+            "unit": "B/op",
+            "extra": "iterations: 10\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.bloomberg.selekt.jdbc.benchmarks.JdbcStringStreamBenchmark.selektJniCharacterStreamUTF16",
+            "value": 3200749.994772277,
             "unit": "B/op",
             "extra": "iterations: 10\nforks: 1\nthreads: 1"
           }
