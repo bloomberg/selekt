@@ -16,6 +16,7 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -1758,6 +1759,34 @@ Java_com_bloomberg_selekt_ExternalSQLite_step(
 namespace {
     constexpr size_t CURSOR_WINDOW_HEADER_SIZE = 2 * sizeof(int32_t);
     constexpr size_t CURSOR_WINDOW_SLOT_SIZE = 1 + sizeof(int64_t);
+    // maxRows may be INT_MAX. Reserve only a bounded fixed-metadata prefix and grow payloads normally.
+    constexpr size_t CURSOR_WINDOW_MAX_INITIAL_RESERVE_SIZE = 128 * 1024;
+    constexpr size_t CURSOR_WINDOW_MAX_INITIAL_ROWS = 4096;
+
+    size_t cursorWindowRowsToReserve(
+        int32_t maxRows,
+        int columnCount,
+        size_t reserveLimit
+    ) {
+        if (columnCount <= 0) {
+            return 0;
+        }
+        auto const columnCountSize = static_cast<size_t>(columnCount);
+        if (columnCountSize >
+            (std::numeric_limits<size_t>::max() - sizeof(int32_t)) / CURSOR_WINDOW_SLOT_SIZE) {
+            return 0;
+        }
+        auto const fixedRowSize = columnCountSize * CURSOR_WINDOW_SLOT_SIZE + sizeof(int32_t);
+        if (reserveLimit <= CURSOR_WINDOW_HEADER_SIZE) {
+            return 0;
+        }
+        auto const rowsWithinLimit = (reserveLimit - CURSOR_WINDOW_HEADER_SIZE) / fixedRowSize;
+        return std::min({
+            static_cast<size_t>(maxRows),
+            CURSOR_WINDOW_MAX_INITIAL_ROWS,
+            rowsWithinLimit
+        });
+    }
 
     class CursorWindowBuffer {
     public:
@@ -1771,6 +1800,13 @@ namespace {
 
         [[nodiscard]] size_t size() const {
             return size_;
+        }
+
+        void reserve(size_t capacity) {
+            if (capacity > maxSize_) {
+                throw std::length_error("Cursor window reserve exceeds its maximum capacity");
+            }
+            ensureCapacity(capacity);
         }
 
         size_t appendUninitialised(size_t size) {
@@ -2044,12 +2080,25 @@ extern "C" uint8_t* selekt_fill_cursor_window(
     }
     try {
         auto columnCount = sqlite3_column_count(statement);
-        CursorWindowBuffer buffer(static_cast<size_t>(maxBytes));
+        auto const maxSize = static_cast<size_t>(maxBytes);
+        auto const bufferRowsToReserve = cursorWindowRowsToReserve(
+            maxRows,
+            columnCount,
+            std::min(maxSize, CURSOR_WINDOW_MAX_INITIAL_RESERVE_SIZE)
+        );
+        auto const offsetRowsToReserve = cursorWindowRowsToReserve(
+            maxRows,
+            columnCount,
+            maxSize
+        );
+        CursorWindowBuffer buffer(maxSize);
+        auto const slotBytesToReserve =
+            bufferRowsToReserve * static_cast<size_t>(columnCount) * CURSOR_WINDOW_SLOT_SIZE;
+        auto const offsetBytesToReserve = bufferRowsToReserve * sizeof(int32_t);
+        buffer.reserve(CURSOR_WINDOW_HEADER_SIZE + slotBytesToReserve + offsetBytesToReserve);
         buffer.appendUninitialised(CURSOR_WINDOW_HEADER_SIZE);
         std::vector<int32_t> rowOffsets;
-        if (maxRows < 4096) {
-            rowOffsets.reserve(static_cast<size_t>(maxRows));
-        }
+        rowOffsets.reserve(offsetRowsToReserve);
         int64_t rowNo = 0;
         int result = SQLITE_DONE;
         bool windowFull = false;
