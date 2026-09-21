@@ -464,26 +464,17 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindBlob(
     jint length
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    if (length < 0 || length > env->GetArrayLength(jvalue)) {
-        throwIndexOutOfBoundsException(env, "Byte-array length is out of bounds.");
-        return SQLITE_ERROR;
-    }
-    if (length == 0) {
-        return sqlite3_bind_zeroblob(statement, index, 0);
-    }
-    if (length > sqlite3_limit(sqlite3_db_handle(statement), SQLITE_LIMIT_LENGTH, -1)) {
-        return SQLITE_TOOBIG;
-    }
-    auto* value = sqlite3_malloc64(static_cast<sqlite3_uint64>(length));
-    if (value == nullptr) {
+    try {
+        AutoJByteArray value(env, jvalue, length);
+        if (value.length() == 0) {
+            return sqlite3_bind_zeroblob(statement, index, 0);
+        }
+        return sqlite3_bind_blob(statement, index, value.data(), value.length(), SQLITE_TRANSIENT);
+    } catch (const JniOutOfMemoryError&) {
         return SQLITE_NOMEM;
-    }
-    env->GetByteArrayRegion(jvalue, 0, length, static_cast<jbyte*>(value));
-    if (env->ExceptionCheck()) {
-        sqlite3_free(value);
+    } catch (const JniArrayLengthError&) {
         return SQLITE_ERROR;
     }
-    return sqlite3_bind_blob(statement, index, value, length, sqlite3_free);
 }
 
 extern "C" JNIEXPORT jint JNICALL
