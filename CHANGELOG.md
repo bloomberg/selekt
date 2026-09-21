@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.6.5
+
+* Support Java 11 backend selection in selekt-jvm.
+
 ## Version 1.6.4
 
 * Report refillable cursors as scroll-sensitive.
