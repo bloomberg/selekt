@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.bloomberg.selekt.samples</groupId>
-    <artifactId>selekt-jdbc-maven-consumer</artifactId>
+    <artifactId>selekt-jvm-maven-consumer</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -30,7 +30,7 @@
     <dependencies>
         <dependency>
             <groupId>com.bloomberg.selekt</groupId>
-            <artifactId>selekt-jdbc</artifactId>
+            <artifactId>selekt-jvm</artifactId>
         </dependency>
     </dependencies>
 
@@ -49,13 +49,13 @@
                 <version>3.6.2</version>
                 <executions>
                     <execution>
-                        <id>jdbc-smoke-test</id>
+                        <id>jvm-smoke-test</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.bloomberg.selekt.samples.JdbcSmokeTest</mainClass>
+                            <mainClass>com.bloomberg.selekt.samples.JvmSmokeTest</mainClass>
                             <arguments>
                                 <argument>${selekt.expected.backend}</argument>
                             </arguments>
