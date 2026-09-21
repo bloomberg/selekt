@@ -607,10 +607,10 @@ jobs:
             :selekt-sqlite3-sqlcipher:jar \
             ${{ env.SCAN }}
 
-      - name: 'Test JDBC Gradle and Maven consumers'
+      - name: 'Test JDBC and JVM Gradle and Maven consumers'
         run: |
-          VERSION="$(sed -n 's/^version=//p' gradle.properties)-jdbc-consumer-test"
-          REPOSITORY="$GITHUB_WORKSPACE/build/jdbc-consumer-m2"
+          VERSION="$(sed -n 's/^version=//p' gradle.properties)-consumer-test"
+          REPOSITORY="$GITHUB_WORKSPACE/build/consumer-m2"
           ./gradlew -Dmaven.repo.local="$REPOSITORY" -Pversion="$VERSION" \
             :selekt-api:publishMainPublicationToMavenLocal \
             :selekt-bom:publishMainPublicationToMavenLocal \
@@ -646,6 +646,22 @@ jobs:
             run \
             --args=FFM \
             --no-configuration-cache
+          JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew \
+            -p integration-tests/jvm-gradle \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -PselektVersion="$VERSION" \
+            -PconsumerJavaVersion=11 \
+            run \
+            --args=JNI \
+            --no-configuration-cache
+          JAVA_HOME="$JAVA_HOME_25_X64" ./gradlew \
+            -p integration-tests/jvm-gradle \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -PselektVersion="$VERSION" \
+            -PconsumerJavaVersion=25 \
+            run \
+            --args=FFM \
+            --no-configuration-cache
           JAVA_HOME="$JAVA_HOME_11_X64" mvn \
             --batch-mode \
             --no-transfer-progress \
@@ -653,6 +669,24 @@ jobs:
             -Dmaven.repo.local="$REPOSITORY" \
             -Dselekt.version="$VERSION" \
             -Dconsumer.java.version=11 \
+            -Dselekt.expected.backend=JNI \
+            verify
+          JAVA_HOME="$JAVA_HOME_11_X64" mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            --file integration-tests/jvm-maven/pom.xml \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -Dselekt.version="$VERSION" \
+            -Dconsumer.java.version=11 \
+            -Dselekt.expected.backend=JNI \
+            verify
+          JAVA_HOME="$JAVA_HOME_25_X64" MAVEN_OPTS='--enable-native-access=ALL-UNNAMED' mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            --file integration-tests/jvm-maven/pom.xml \
+            -Dmaven.repo.local="$REPOSITORY" \
+            -Dselekt.version="$VERSION" \
+            -Dconsumer.java.version=25 \
             -Dselekt.expected.backend=JNI \
             verify
           JAVA_HOME="$JAVA_HOME_25_X64" MAVEN_OPTS='--enable-native-access=ALL-UNNAMED' mvn \

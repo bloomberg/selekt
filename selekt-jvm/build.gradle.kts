@@ -15,7 +15,6 @@
 */
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 description = "Selekt SQLite JVM library."
 
@@ -44,28 +43,19 @@ disableKotlinCompilerAssertions()
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
     withJavadocJar()
     withSourcesJar()
 }
 
-tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
-    kotlinJavaToolchain.toolchain.use(
-        javaToolchains.launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(25))
-        }
-    )
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_11)
 }
 
 dependencies {
     api(projects.selektJava)
-    implementation(projects.selektSqlite3Classes) {
-        capabilities {
-            requireCapability("com.bloomberg.selekt:selekt-sqlite3-classes-java25")
-        }
-    }
+    implementation(projects.selektSqlite3Classes)
     runtimeOnly(projects.selektSqlite3Sqlcipher)
 }
 

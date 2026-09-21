@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
     implementation(platform("com.bloomberg.selekt:selekt-bom:${selektVersion.get()}"))
-    implementation("com.bloomberg.selekt:selekt-jdbc")
+    implementation("com.bloomberg.selekt:selekt-jvm")
 }
 
 java {
@@ -30,7 +30,7 @@ sourceSets {
 }
 
 application {
-    mainClass.set("com.bloomberg.selekt.samples.JdbcSmokeTest")
+    mainClass.set("com.bloomberg.selekt.samples.JvmSmokeTest")
     if (consumerJavaVersion >= 25) {
         applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
     }
