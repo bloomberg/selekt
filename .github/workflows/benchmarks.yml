@@ -187,7 +187,7 @@ jobs:
         run: git checkout -- .
 
       - name: 'Store benchmark results'
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc
         with:
           name: 'JDBC Benchmarks'
           tool: 'jmh'
@@ -200,7 +200,7 @@ jobs:
           fail-on-alert: false
 
       - name: 'Store allocation results'
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc
         with:
           name: 'JDBC Allocations'
           tool: 'jmh'
