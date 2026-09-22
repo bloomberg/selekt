@@ -151,10 +151,16 @@ internal class ExternalSQLite(
 
     external override fun columnName(statement: Long, index: Int): String
 
-    override fun columnText(statement: Long, index: Int): String? =
-        columnTextBytes(statement, index)?.toString(Charsets.UTF_8)
+    override fun columnText(statement: Long, index: Int): String? = when (
+        val value = columnTextOptimized(statement, index)
+    ) {
+        is String -> value
+        is ByteArray -> value.toString(Charsets.UTF_8)
+        null -> null
+        else -> error("Unexpected native text representation: ${value::class.java.name}")
+    }
 
-    private external fun columnTextBytes(statement: Long, index: Int): ByteArray?
+    private external fun columnTextOptimized(statement: Long, index: Int): Any?
 
     external override fun columnType(statement: Long, index: Int): SQLDataType
 
