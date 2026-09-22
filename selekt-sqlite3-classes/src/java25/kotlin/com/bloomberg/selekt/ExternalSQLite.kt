@@ -34,6 +34,7 @@ import java.lang.invoke.MethodType
 import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
+import javax.annotation.concurrent.NotThreadSafe
 import kotlin.concurrent.withLock
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
@@ -91,11 +92,45 @@ internal class ExternalSQLite(
     private val progressHandlerRegistrations = mutableMapOf<Long, ProgressHandlerRegistration>()
     private val callbackFailures = ThreadLocal<CallbackFailureStack>()
 
+    @NotThreadSafe
     private class StatementAttachment(pointer: Long) {
         private val asciiTextArena = Arena.ofShared()
         val statement: MemorySegment = MemorySegment.ofAddress(pointer)
         var asciiText: MemorySegment? = asciiTextArena.allocate(ASCII_BIND_BUFFER_SIZE.toLong())
             private set
+        private var textReadBuffer: ByteArray? = null
+        private var exactTextColumns = BooleanArray(0)
+
+        fun textReadBuffer(index: Int, size: Int): ByteArray? {
+            if (index < exactTextColumns.size && exactTextColumns[index]) {
+                return null
+            }
+            val current = textReadBuffer
+            return when {
+                size == 0 -> EMPTY_BYTE_ARRAY
+                current != null && current.size >= size -> current
+                size > MAX_RETAINED_TEXT_READ_BUFFER_SIZE -> ByteArray(size)
+                else -> {
+                    var capacity = maxOf(INITIAL_TEXT_READ_BUFFER_SIZE, current?.size ?: 0)
+                    while (capacity < size) {
+                        capacity *= 2
+                    }
+                    current?.fill(0)
+                    ByteArray(capacity).also { textReadBuffer = it }
+                }
+            }
+        }
+
+        fun recordTextRead(index: Int, byteSize: Int, value: String) {
+            // A shorter decoded value proves multibyte UTF-8. Exact-sized arrays are faster for those values on JDK 25.
+            // Equality is only a performance hint: both paths still use the same length-bounded UTF-8 decoder.
+            if (value.length != byteSize) {
+                if (index >= exactTextColumns.size) {
+                    exactTextColumns = exactTextColumns.copyOf(index + 1)
+                }
+                exactTextColumns[index] = true
+            }
+        }
 
         fun wipeAsciiText() {
             asciiText?.fill(0)
@@ -104,8 +139,11 @@ internal class ExternalSQLite(
         fun release() {
             try {
                 wipeAsciiText()
+                textReadBuffer?.fill(0)
             } finally {
                 asciiText = null
+                textReadBuffer = null
+                exactTextColumns = BooleanArray(0)
                 asciiTextArena.close()
             }
         }
@@ -459,8 +497,11 @@ internal class ExternalSQLite(
     override fun columnName(statement: StatementHandle, index: Int): String =
         (sqlite3_column_name.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
 
-    override fun columnText(statement: StatementHandle, index: Int): String? =
-        columnText(statementSegment(statement), index)
+    override fun columnText(statement: StatementHandle, index: Int): String? = columnText(
+        statementSegment(statement),
+        index,
+        statement.attachment as? StatementAttachment
+    )
 
     override fun columnType(statement: StatementHandle, index: Int): SQLDataType =
         sqlite3_column_type.invoke(statementSegment(statement), index) as Int
@@ -905,13 +946,20 @@ internal class ExternalSQLite(
         }
     }
 
-    private fun columnText(statement: MemorySegment, index: Int): String? {
+    private fun columnText(
+        statement: MemorySegment,
+        index: Int,
+        attachment: StatementAttachment? = null
+    ): String? {
         val text = sqlite3_column_text.invoke(statement, index) as MemorySegment
+        if (text.address() == 0L) {
+            return null
+        }
         val size = sqlite3_column_bytes.invoke(statement, index) as Int
-        return if (text.address() == 0L) {
-            null
-        } else {
-            text.reinterpret(size.toLong()).toArray(JAVA_BYTE).toString(Charsets.UTF_8)
+        val bytes = attachment?.textReadBuffer(index, size) ?: ByteArray(size)
+        MemorySegment.copy(text, JAVA_BYTE, 0, bytes, 0, size)
+        return String(bytes, 0, size, Charsets.UTF_8).also { value ->
+            attachment?.recordTextRead(index, size, value)
         }
     }
 
@@ -1687,6 +1735,8 @@ internal class ExternalSQLite(
     companion object {
         private const val DIRECT_ASCII_BIND_MAX_LENGTH = 64
         private const val BLOB_SLAB_THRESHOLD = 2_048
+        private const val INITIAL_TEXT_READ_BUFFER_SIZE = 64
+        private const val MAX_RETAINED_TEXT_READ_BUFFER_SIZE = 64 * 1_024
         // sqlite3_bind_text receives an explicit byte count, but retaining a trailing NUL also satisfies its text contract.
         private const val ASCII_BIND_BUFFER_SIZE = DIRECT_ASCII_BIND_MAX_LENGTH + 1
         private const val INITIAL_CALLBACK_DEPTH = 4
@@ -1833,7 +1883,7 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_text: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_text").orElseThrow(),
-            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT)
+            FunctionDescriptor.of(sqliteValueAddress, ADDRESS, JAVA_INT)
         )
         private val sqlite3_column_type: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_type").orElseThrow(),

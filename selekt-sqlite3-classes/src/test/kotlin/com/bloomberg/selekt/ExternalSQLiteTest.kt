@@ -930,8 +930,8 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
-    fun `columnText preserves ASCII boundary and fallback values`() = withStatement("SELECT ?") { statement ->
-        listOf(
+    fun `columnText preserves ASCII boundary and fallback values`() = withStatementHandle("SELECT ?") { statement ->
+        val values = listOf(
             "",
             "a".repeat(63),
             "a".repeat(64),
@@ -939,13 +939,18 @@ internal class ExternalSQLiteTest {
             "a\u0000b",
             "é",
             "€",
-            "mixed ASCII, café, and €"
-        ).forEach { expected ->
+            "mixed ASCII, café, and €",
+            "ASCII after UTF-8"
+        )
+        val results = values.map { expected ->
             assertEquals(SQL_OK, sqlite.bindText(statement, 1, expected))
             assertEquals(SQL_ROW, sqlite.step(statement))
-            assertEquals(expected, sqlite.columnText(statement, 0))
+            val result = sqlite.columnText(statement, 0)
+            assertEquals(expected, result)
             assertEquals(SQL_OK, sqlite.reset(statement))
+            result
         }
+        assertEquals(values, results)
     }
 
     @Test
@@ -1215,6 +1220,17 @@ internal class ExternalSQLiteTest {
         val statementHolder = LongArray(1)
         assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.toByteArray(Charsets.UTF_8).size, statementHolder))
         val statement = statementHolder[0]
+        try {
+            block(statement)
+        } finally {
+            sqlite.finalize(statement)
+        }
+    }
+
+    private inline fun withStatementHandle(sql: String, block: (StatementHandle) -> Unit) = withDatabase { db ->
+        val statementHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.toByteArray(Charsets.UTF_8).size, statementHolder))
+        val statement = sqlite.newStatementHandle(statementHolder[0])
         try {
             block(statement)
         } finally {
