@@ -930,6 +930,25 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `columnText preserves ASCII boundary and fallback values`() = withStatement("SELECT ?") { statement ->
+        listOf(
+            "",
+            "a".repeat(63),
+            "a".repeat(64),
+            "a".repeat(65),
+            "a\u0000b",
+            "é",
+            "€",
+            "mixed ASCII, café, and €"
+        ).forEach { expected ->
+            assertEquals(SQL_OK, sqlite.bindText(statement, 1, expected))
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            assertEquals(expected, sqlite.columnText(statement, 0))
+            assertEquals(SQL_OK, sqlite.reset(statement))
+        }
+    }
+
+    @Test
     fun `malformed surrogates bind identically through ASCII and UTF-8 paths`() =
         withStatement("SELECT ?") { statement ->
             listOf(

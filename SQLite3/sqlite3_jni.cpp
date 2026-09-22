@@ -16,6 +16,9 @@
 
 #include <jni.h>
 #include <sqlite3/sqlite3.h>
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -38,6 +41,11 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 
 namespace {
     constexpr jsize DIRECT_ASCII_BIND_MAX_LENGTH = 256;
+#if defined(__aarch64__)
+    // Apple Silicon JMH results show that direct widening wins through 64 bytes,
+    // while HotSpot's UTF-8 decoder is faster above it. See benchmarks_jdbc.md.
+    constexpr jsize DIRECT_ASCII_COLUMN_MAX_LENGTH = 64;
+#endif
     constexpr std::int32_t RAW_KEY_SIZE = 32;
     constexpr auto INVALID_SECRET_POINTER_MESSAGE =
         "Secret pointer must reference a live allocation whose size matches the key length.";
@@ -60,6 +68,30 @@ namespace {
         static SecretAllocationRegistry registry;
         return registry;
     }
+
+#if defined(__aarch64__)
+    bool tryWidenAscii(const unsigned char* source, jchar* destination, int length) noexcept {
+        static_assert(sizeof(jchar) == sizeof(uint16_t));
+        int index = 0;
+        auto const highBit = vdupq_n_u8(0x80);
+        auto const vectorizedLength = length & ~15;
+        for (; index < vectorizedLength; index += 16) {
+            auto const bytes = vld1q_u8(source + index);
+            if (vmaxvq_u8(vandq_u8(bytes, highBit)) != 0) {
+                return false;
+            }
+            vst1q_u16(destination + index, vmovl_u8(vget_low_u8(bytes)));
+            vst1q_u16(destination + index + 8, vmovl_u8(vget_high_u8(bytes)));
+        }
+        for (; index < length; ++index) {
+            if ((source[index] & 0x80) != 0) {
+                return false;
+            }
+            destination[index] = source[index];
+        }
+        return true;
+    }
+#endif
 
     void* pointerFromJLong(jlong value) noexcept {
         auto const address = static_cast<std::uintptr_t>(value);
@@ -1046,8 +1078,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnName(
     return name != nullptr ? env->NewStringUTF(name) : nullptr;
 }
 
-extern "C" JNIEXPORT jbyteArray JNICALL
-Java_com_bloomberg_selekt_ExternalSQLite_columnTextBytes(
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnTextOptimized(
     JNIEnv* env,
     jobject obj,
     jlong jstatement,
@@ -1055,8 +1087,19 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextBytes(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto text = sqlite3_column_text(statement, index);
+    if (text == nullptr) {
+        return nullptr;
+    }
     auto length = sqlite3_column_bytes(statement, index);
-    return text != nullptr ? newByteArray(env, text, length) : nullptr;
+#if defined(__aarch64__)
+    if (length > 0 && length <= DIRECT_ASCII_COLUMN_MAX_LENGTH) {
+        std::array<jchar, DIRECT_ASCII_COLUMN_MAX_LENGTH> characters;
+        if (tryWidenAscii(text, characters.data(), length)) {
+            return env->NewString(characters.data(), length);
+        }
+    }
+#endif
+    return newByteArray(env, text, length);
 }
 
 extern "C" JNIEXPORT jint JNICALL
