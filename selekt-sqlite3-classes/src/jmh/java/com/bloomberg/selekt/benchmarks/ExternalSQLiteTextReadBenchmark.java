@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.benchmarks;
 
 import com.bloomberg.selekt.IExternalSQLite;
+import com.bloomberg.selekt.StatementHandle;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -56,6 +57,7 @@ public class ExternalSQLiteTextReadBenchmark {
 
     private long database;
     private long statement;
+    private StatementHandle statementHandle;
 
     @Setup(Level.Trial)
     public void setUp() {
@@ -67,19 +69,20 @@ public class ExternalSQLiteTextReadBenchmark {
         final String sql = "SELECT ?";
         SQLITE.prepareV2(database, sql, sql.length(), statementHolder);
         statement = statementHolder[0];
+        statementHandle = SQLITE.newStatementHandle(statement);
         SQLITE.bindText(statement, 1, text());
         SQLITE.step(statement);
     }
 
     @TearDown(Level.Trial)
     public void tearDown() {
-        SQLITE.finalize(statement);
+        SQLITE.finalize(statementHandle);
         SQLITE.closeV2(database);
     }
 
     @Benchmark
     public String readText() {
-        return SQLITE.columnText(statement, 0);
+        return SQLITE.columnText(statementHandle, 0);
     }
 
     private String text() {
