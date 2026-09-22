@@ -18,6 +18,8 @@
 #include <sqlite3/sqlite3.h>
 #if defined(__aarch64__)
 #include <arm_neon.h>
+#elif defined(__x86_64__) || defined(_M_X64)
+#include <emmintrin.h>
 #endif
 #include <algorithm>
 #include <array>
@@ -41,9 +43,10 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 
 namespace {
     constexpr jsize DIRECT_ASCII_BIND_MAX_LENGTH = 256;
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__) || defined(_M_X64)
     // Apple Silicon JMH results show that direct widening wins through 64 bytes,
-    // while HotSpot's UTF-8 decoder is faster above it. See benchmarks_jdbc.md.
+    // while HotSpot's UTF-8 decoder is faster above it. Keep x86-64 equally
+    // bounded until its platform-specific crossover is measured. See benchmarks_jdbc.md.
     constexpr jsize DIRECT_ASCII_COLUMN_MAX_LENGTH = 64;
 #endif
     constexpr std::int32_t RAW_KEY_SIZE = 32;
@@ -84,7 +87,32 @@ namespace {
             vst1q_u16(destination + index + 8, vmovl_u8(vget_high_u8(bytes)));
         }
         for (; index < length; ++index) {
-            if ((source[index] & 0x80) != 0) {
+            if (source[index] > 0x7f) {
+                return false;
+            }
+            destination[index] = source[index];
+        }
+        return true;
+    }
+#elif defined(__x86_64__) || defined(_M_X64)
+    bool tryWidenAscii(const unsigned char* source, jchar* destination, int length) noexcept {
+        static_assert(sizeof(jchar) == sizeof(uint16_t));
+        int index = 0;
+        auto const zero = _mm_setzero_si128();
+        auto const vectorizedLength = length & ~15;
+        for (; index < vectorizedLength; index += 16) {
+            __m128i bytes;
+            std::memcpy(&bytes, source + index, sizeof(bytes));
+            if (_mm_movemask_epi8(bytes) != 0) {
+                return false;
+            }
+            auto const lower = _mm_unpacklo_epi8(bytes, zero);
+            auto const upper = _mm_unpackhi_epi8(bytes, zero);
+            std::memcpy(destination + index, &lower, sizeof(lower));
+            std::memcpy(destination + index + 8, &upper, sizeof(upper));
+        }
+        for (; index < length; ++index) {
+            if (source[index] > 0x7f) {
                 return false;
             }
             destination[index] = source[index];
@@ -1091,7 +1119,7 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextOptimized(
         return nullptr;
     }
     auto length = sqlite3_column_bytes(statement, index);
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__) || defined(_M_X64)
     if (length > 0 && length <= DIRECT_ASCII_COLUMN_MAX_LENGTH) {
         std::array<jchar, DIRECT_ASCII_COLUMN_MAX_LENGTH> characters;
         if (tryWidenAscii(text, characters.data(), length)) {
