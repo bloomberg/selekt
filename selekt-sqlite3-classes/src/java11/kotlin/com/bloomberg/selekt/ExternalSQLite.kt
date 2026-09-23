@@ -18,8 +18,15 @@ package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.loadLibrary
 import java.nio.ByteBuffer
+import javax.annotation.concurrent.NotThreadSafe
 
 private const val DIRECT_ASCII_BIND_MAX_LENGTH = 256
+private const val DIRECT_ASCII_COLUMN_MAX_LENGTH = 64
+// End-to-end scan benchmarks show that packing wins from four adjacent short text columns onward.
+private const val MIN_PACKED_TEXT_COLUMNS = 4
+private const val MAX_PACKED_TEXT_COLUMNS = 16
+private const val PACKED_TEXT_NULL = 0xff
+private const val PACKED_TEXT_EXACT = 0xfe
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -37,6 +44,25 @@ internal class ExternalSQLite(
 ) : IExternalSQLite, INativeCursorWindowSQLite {
     private val cursorWindowOwnership = CursorWindowOwnershipRegistry()
 
+    @NotThreadSafe
+    private class StatementAttachment {
+        var packedText = ByteArray(0)
+            private set
+        var packedTextReadsEnabled = true
+            private set
+
+        fun prepareTextBatch(count: Int) {
+            val byteCapacity = count * (DIRECT_ASCII_COLUMN_MAX_LENGTH + 1)
+            if (packedText.size < byteCapacity) {
+                packedText = ByteArray(byteCapacity)
+            }
+        }
+
+        fun disablePackedTextReads() {
+            packedTextReadsEnabled = false
+        }
+    }
+
     init {
         loader()
         nativeInit(configuration.softHeapLimit)
@@ -53,6 +79,9 @@ internal class ExternalSQLite(
             instance ?: ExternalSQLite(configuration, loader).also { instance = it }
         }
     }
+
+    override fun newStatementHandle(pointer: Long): StatementHandle =
+        StatementHandle(pointer, if (pointer == 0L) null else StatementAttachment())
 
     external override fun allocateSecret(size: Int): Long
 
@@ -161,6 +190,85 @@ internal class ExternalSQLite(
     }
 
     private external fun columnTextOptimized(statement: Long, index: Int): Any?
+
+    override fun columnTexts(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>
+    ) {
+        if (destination.isEmpty()) {
+            return
+        }
+        val attachment = statement.attachment as? StatementAttachment
+        if (attachment == null) {
+            super<IExternalSQLite>.columnTexts(statement, firstIndex, destination)
+            return
+        }
+        if (!attachment.packedTextReadsEnabled) {
+            for (offset in destination.indices) {
+                destination[offset] = columnText(statement.pointer, firstIndex + offset)
+            }
+            return
+        }
+
+        var destinationOffset = 0
+        while (destinationOffset < destination.size) {
+            if (!attachment.packedTextReadsEnabled) {
+                for (offset in destinationOffset until destination.size) {
+                    destination[offset] = columnText(statement.pointer, firstIndex + offset)
+                }
+                return
+            }
+            val columnIndex = firstIndex + destinationOffset
+            val count = minOf(MAX_PACKED_TEXT_COLUMNS, destination.size - destinationOffset)
+            if (count < MIN_PACKED_TEXT_COLUMNS) {
+                repeat(count) { offset ->
+                    destination[destinationOffset + offset] = columnText(statement.pointer, columnIndex + offset)
+                }
+            } else {
+                columnTextsAsciiPacked(statement.pointer, columnIndex, count, destination, destinationOffset, attachment)
+            }
+            destinationOffset += count
+        }
+    }
+
+    private fun columnTextsAsciiPacked(
+        statement: Long,
+        firstIndex: Int,
+        count: Int,
+        destination: Array<String?>,
+        destinationOffset: Int,
+        attachment: StatementAttachment
+    ) {
+        attachment.prepareTextBatch(count)
+        columnTextsAsciiPacked(
+            statement,
+            firstIndex,
+            count,
+            attachment.packedText
+        )
+        var packedOffset = count
+        for (offset in 0 until count) {
+            val byteLength = attachment.packedText[offset].toInt() and 0xff
+            destination[destinationOffset + offset] = when (byteLength) {
+                PACKED_TEXT_NULL -> null
+                PACKED_TEXT_EXACT -> {
+                    attachment.disablePackedTextReads()
+                    columnText(statement, firstIndex + offset)
+                }
+                else -> String(attachment.packedText, packedOffset, byteLength, Charsets.ISO_8859_1).also {
+                    packedOffset += byteLength
+                }
+            }
+        }
+    }
+
+    private external fun columnTextsAsciiPacked(
+        statement: Long,
+        firstIndex: Int,
+        count: Int,
+        packedText: ByteArray
+    )
 
     external override fun columnType(statement: Long, index: Int): SQLDataType
 
