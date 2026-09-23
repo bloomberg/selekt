@@ -43,12 +43,15 @@ extern "C" int sqlite3_vec1_extra_init(const char* z);
 
 namespace {
     constexpr jsize DIRECT_ASCII_BIND_MAX_LENGTH = 256;
-#if defined(__aarch64__) || defined(__x86_64__) || defined(_M_X64)
     // Apple Silicon JMH results show that direct widening wins through 64 bytes,
     // while HotSpot's UTF-8 decoder is faster above it. Keep x86-64 equally
     // bounded until its platform-specific crossover is measured. See benchmarks_jdbc.md.
     constexpr jsize DIRECT_ASCII_COLUMN_MAX_LENGTH = 64;
-#endif
+    // The packed JNI buffer starts with one length/status byte per column, followed by ASCII payloads.
+    // Limiting each call to 16 columns keeps pointer metadata on the stack and bounds the critical section.
+    constexpr jsize MAX_PACKED_TEXT_COLUMNS = 16;
+    constexpr unsigned char PACKED_TEXT_NULL = 0xff;
+    constexpr unsigned char PACKED_TEXT_EXACT = 0xfe;
     constexpr std::int32_t RAW_KEY_SIZE = 32;
     constexpr auto INVALID_SECRET_POINTER_MESSAGE =
         "Secret pointer must reference a live allocation whose size matches the key length.";
@@ -120,6 +123,38 @@ namespace {
         return true;
     }
 #endif
+
+    bool tryCopyAscii(const unsigned char* source, unsigned char* destination, int length) noexcept {
+        int index = 0;
+#if defined(__aarch64__)
+        auto const highBit = vdupq_n_u8(0x80);
+        auto const vectorizedLength = length & ~15;
+        for (; index < vectorizedLength; index += 16) {
+            auto const bytes = vld1q_u8(source + index);
+            if (vmaxvq_u8(vandq_u8(bytes, highBit)) != 0) {
+                return false;
+            }
+            vst1q_u8(destination + index, bytes);
+        }
+#elif defined(__x86_64__) || defined(_M_X64)
+        auto const vectorizedLength = length & ~15;
+        for (; index < vectorizedLength; index += 16) {
+            __m128i bytes;
+            std::memcpy(&bytes, source + index, sizeof(bytes));
+            if (_mm_movemask_epi8(bytes) != 0) {
+                return false;
+            }
+            std::memcpy(destination + index, &bytes, sizeof(bytes));
+        }
+#endif
+        for (; index < length; ++index) {
+            if (source[index] > 0x7f) {
+                return false;
+            }
+            destination[index] = source[index];
+        }
+        return true;
+    }
 
     void* pointerFromJLong(jlong value) noexcept {
         auto const address = static_cast<std::uintptr_t>(value);
@@ -1128,6 +1163,68 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextOptimized(
     }
 #endif
     return newByteArray(env, text, length);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnTextsAsciiPacked(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint firstColumn,
+    jint count,
+    jbyteArray jpackedText
+) {
+    if (jpackedText == nullptr) {
+        throwIllegalArgumentException(env, "Packed text buffer must not be null.");
+        return;
+    }
+    if (count < 0 || count > MAX_PACKED_TEXT_COLUMNS) {
+        throwIllegalArgumentException(env, "Packed text column count is out of bounds.");
+        return;
+    }
+    if (count == 0) {
+        return;
+    }
+    if (env->GetArrayLength(jpackedText) < count * (DIRECT_ASCII_COLUMN_MAX_LENGTH + 1)) {
+        throwIllegalArgumentException(env, "Packed text buffer is too small.");
+        return;
+    }
+
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    std::array<const unsigned char*, MAX_PACKED_TEXT_COLUMNS> texts{};
+    std::array<jint, MAX_PACKED_TEXT_COLUMNS> byteLengths{};
+    for (jint offset = 0; offset < count; ++offset) {
+        auto text = sqlite3_column_text(statement, firstColumn + offset);
+        texts[offset] = text;
+        byteLengths[offset] = text == nullptr
+            ? -1
+            : sqlite3_column_bytes(statement, firstColumn + offset);
+    }
+
+    // Resolve every SQLite pointer before pinning. The critical section performs CPU/memory work only and
+    // contains no SQLite or JNI calls until the matching release.
+    auto packedText = static_cast<unsigned char*>(env->GetPrimitiveArrayCritical(jpackedText, nullptr));
+    if (packedText == nullptr) {
+        throwOutOfMemoryError(env, "GetPrimitiveArrayCritical packed text");
+        return;
+    }
+    jint packedOffset = count;
+    for (jint offset = 0; offset < count; ++offset) {
+        auto const byteLength = byteLengths[offset];
+        if (byteLength < 0) {
+            packedText[offset] = PACKED_TEXT_NULL;
+        } else if (
+            byteLength <= DIRECT_ASCII_COLUMN_MAX_LENGTH
+            && tryCopyAscii(texts[offset], packedText + packedOffset, byteLength)
+        ) {
+            packedText[offset] = static_cast<unsigned char>(byteLength);
+            packedOffset += byteLength;
+        } else {
+            packedText[offset] = PACKED_TEXT_EXACT;
+        }
+    }
+
+    env->ReleasePrimitiveArrayCritical(jpackedText, packedText, 0);
 }
 
 extern "C" JNIEXPORT void selekt_column_text_batch(

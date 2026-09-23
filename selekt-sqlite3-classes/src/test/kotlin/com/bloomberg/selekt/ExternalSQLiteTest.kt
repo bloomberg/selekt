@@ -997,6 +997,26 @@ internal class ExternalSQLiteTest {
         }
 
     @Test
+    fun `columnTexts preserves a column after switching from ASCII to exact UTF-8 decoding`() =
+        withStatementHandle("SELECT ?, ?, ?, ?") { statement ->
+            val rows = listOf(
+                listOf("first", "all ASCII", "a\u0000b", "x".repeat(64)),
+                listOf("second", "café", "€", "mixed ASCII and 🌍"),
+                listOf("third", "ASCII again", "plain", "x".repeat(65))
+            )
+            val destination = arrayOfNulls<String>(4)
+            rows.forEach { expected ->
+                expected.forEachIndexed { index, value ->
+                    assertEquals(SQL_OK, sqlite.bindText(statement, index + 1, value))
+                }
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                sqlite.columnTexts(statement, 0, destination)
+                assertEquals(expected, destination.toList())
+                assertEquals(SQL_OK, sqlite.reset(statement))
+            }
+        }
+
+    @Test
     fun `malformed surrogates bind identically through ASCII and UTF-8 paths`() =
         withStatement("SELECT ?") { statement ->
             listOf(
