@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.6.7
+
+Replayed release of 1.6.6.
+
 ## Version 1.6.6
 
 * Optimise short ARM64 JNI text reads with NEON.
