@@ -502,6 +502,16 @@ interface IExternalSQLite {
         index: Int
     ): String? = columnText(statement.pointer, index)
 
+    fun columnTexts(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>
+    ) {
+        for (offset in destination.indices) {
+            destination[offset] = columnText(statement, firstIndex + offset)
+        }
+    }
+
     fun columnType(statement: Long, index: Int): SQLDataType
 
     fun columnType(
