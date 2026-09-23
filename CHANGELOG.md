@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+## Version 1.6.6
+
+* Optimise short ARM64 JNI text reads with NEON.
+* Optimise x86-64 JNI text reads with SSE2.
+* Optimise Java 25 FFM text reads with reusable buffers.
+* Optimize Java 25 FFM text reads with adaptive native batching.
+
 ## Version 1.6.5
 
 * Support Java 11 backend selection in selekt-jvm.
