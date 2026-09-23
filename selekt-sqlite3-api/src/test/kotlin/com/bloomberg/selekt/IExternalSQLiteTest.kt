@@ -1169,6 +1169,22 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `columnTexts delegates contiguous columns`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnText(any<StatementHandle>(), any()) }.thenAnswer { "value-${it.getArgument<Int>(1)}" }
+            on { columnTexts(any(), any(), any()) }.thenCallRealMethod()
+        }
+        val destination = arrayOfNulls<String>(3)
+
+        sqlite.columnTexts(statementHandle, 2, destination)
+
+        assertEquals(listOf("value-2", "value-3", "value-4"), destination.toList())
+        verify(sqlite).columnText(statementHandle, 2)
+        verify(sqlite).columnText(statementHandle, 3)
+        verify(sqlite).columnText(statementHandle, 4)
+    }
+
+    @Test
     fun `columnType with StatementHandle delegates`() {
         val sqlite = mock<IExternalSQLite> {
             on { columnType(any<Long>(), any()) }.thenReturn(1)

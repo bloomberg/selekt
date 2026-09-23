@@ -94,12 +94,22 @@ internal class ExternalSQLite(
 
     @NotThreadSafe
     private class StatementAttachment(pointer: Long) {
-        private val asciiTextArena = Arena.ofShared()
+        class TextBatchDescriptors(
+            private val arena: Arena,
+            val pointers: MemorySegment,
+            val lengths: MemorySegment,
+            val capacity: Int
+        ) {
+            fun close() = arena.close()
+        }
+
+        private val statementArena = Arena.ofShared()
         val statement: MemorySegment = MemorySegment.ofAddress(pointer)
-        var asciiText: MemorySegment? = asciiTextArena.allocate(ASCII_BIND_BUFFER_SIZE.toLong())
+        var asciiText: MemorySegment? = statementArena.allocate(ASCII_BIND_BUFFER_SIZE.toLong())
             private set
         private var textReadBuffer: ByteArray? = null
         private var exactTextColumns = BooleanArray(0)
+        private var textBatchDescriptors: TextBatchDescriptors? = null
 
         fun textReadBuffer(index: Int, size: Int): ByteArray? {
             if (index < exactTextColumns.size && exactTextColumns[index]) {
@@ -132,6 +142,36 @@ internal class ExternalSQLite(
             }
         }
 
+        fun requiresExactTextRead(index: Int): Boolean =
+            index >= 0 && index < exactTextColumns.size && exactTextColumns[index]
+
+        fun hasExactTextReads(): Boolean = exactTextColumns.isNotEmpty()
+
+        fun textBatchDescriptors(count: Int): TextBatchDescriptors {
+            val current = textBatchDescriptors
+            if (current != null && current.capacity >= count) {
+                return current
+            }
+            val arena = Arena.ofShared()
+            try {
+                val pointers = arena.allocate(
+                    Math.multiplyExact(ADDRESS.byteSize(), count.toLong()),
+                    ADDRESS.byteAlignment()
+                )
+                val lengths = arena.allocate(
+                    Math.multiplyExact(JAVA_INT.byteSize(), count.toLong()),
+                    JAVA_INT.byteAlignment()
+                )
+                return TextBatchDescriptors(arena, pointers, lengths, count).also { descriptors ->
+                    textBatchDescriptors?.close()
+                    textBatchDescriptors = descriptors
+                }
+            } catch (exception: Throwable) {
+                arena.close()
+                throw exception
+            }
+        }
+
         fun wipeAsciiText() {
             asciiText?.fill(0)
         }
@@ -144,7 +184,9 @@ internal class ExternalSQLite(
                 asciiText = null
                 textReadBuffer = null
                 exactTextColumns = BooleanArray(0)
-                asciiTextArena.close()
+                textBatchDescriptors?.close()
+                textBatchDescriptors = null
+                statementArena.close()
             }
         }
     }
@@ -502,6 +544,83 @@ internal class ExternalSQLite(
         index,
         statement.attachment as? StatementAttachment
     )
+
+    override fun columnTexts(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>
+    ) {
+        if (destination.isEmpty()) {
+            return
+        }
+        val attachment = statement.attachment as? StatementAttachment
+        if (attachment == null) {
+            super<IExternalSQLite>.columnTexts(statement, firstIndex, destination)
+            return
+        }
+        val statementSegment = statementSegment(statement)
+        if (!attachment.hasExactTextReads()) {
+            if (destination.size == 1) {
+                destination[0] = columnText(statementSegment, firstIndex, attachment)
+            } else {
+                columnTexts(statementSegment, firstIndex, destination, 0, destination.size, attachment)
+            }
+            return
+        }
+        var destinationOffset = 0
+        while (destinationOffset < destination.size) {
+            val columnIndex = firstIndex + destinationOffset
+            if (attachment.requiresExactTextRead(columnIndex)) {
+                destination[destinationOffset] = columnText(statementSegment, columnIndex, attachment)
+                ++destinationOffset
+                continue
+            }
+            var runEnd = destinationOffset + 1
+            while (
+                runEnd < destination.size &&
+                !attachment.requiresExactTextRead(firstIndex + runEnd)
+            ) {
+                ++runEnd
+            }
+            val count = runEnd - destinationOffset
+            if (count == 1) {
+                destination[destinationOffset] = columnText(statementSegment, columnIndex, attachment)
+            } else {
+                columnTexts(
+                    statementSegment,
+                    columnIndex,
+                    destination,
+                    destinationOffset,
+                    count,
+                    attachment
+                )
+            }
+            destinationOffset = runEnd
+        }
+    }
+
+    private fun columnTexts(
+        statement: MemorySegment,
+        firstIndex: Int,
+        destination: Array<String?>,
+        destinationOffset: Int,
+        count: Int,
+        attachment: StatementAttachment
+    ) {
+        val descriptors = attachment.textBatchDescriptors(count)
+        selekt_column_text_batch.invoke(
+            statement,
+            firstIndex,
+            count,
+            descriptors.pointers,
+            descriptors.lengths
+        )
+        for (offset in 0 until count) {
+            val address = descriptors.pointers.getAtIndex(ADDRESS, offset.toLong()).address()
+            val size = descriptors.lengths.getAtIndex(JAVA_INT, offset.toLong())
+            destination[destinationOffset + offset] = columnText(address, size, firstIndex + offset, attachment)
+        }
+    }
 
     override fun columnType(statement: StatementHandle, index: Int): SQLDataType =
         sqlite3_column_type.invoke(statementSegment(statement), index) as Int
@@ -958,9 +1077,30 @@ internal class ExternalSQLite(
         val size = sqlite3_column_bytes.invoke(statement, index) as Int
         val bytes = attachment?.textReadBuffer(index, size) ?: ByteArray(size)
         MemorySegment.copy(text, JAVA_BYTE, 0, bytes, 0, size)
-        return String(bytes, 0, size, Charsets.UTF_8).also { value ->
-            attachment?.recordTextRead(index, size, value)
+        return decodeColumnText(bytes, size, index, attachment)
+    }
+
+    private fun columnText(
+        address: Long,
+        size: Int,
+        index: Int,
+        attachment: StatementAttachment?
+    ): String? {
+        if (address == 0L) {
+            return null
         }
+        val bytes = attachment?.textReadBuffer(index, size) ?: ByteArray(size)
+        MemorySegment.copy(NATIVE_READER, JAVA_BYTE, address, bytes, 0, size)
+        return decodeColumnText(bytes, size, index, attachment)
+    }
+
+    private fun decodeColumnText(
+        bytes: ByteArray,
+        size: Int,
+        index: Int,
+        attachment: StatementAttachment?
+    ): String = String(bytes, 0, size, Charsets.UTF_8).also { value ->
+        attachment?.recordTextRead(index, size, value)
     }
 
     override fun blobBytes(
@@ -1884,6 +2024,10 @@ internal class ExternalSQLite(
         private val sqlite3_column_text: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_text").orElseThrow(),
             FunctionDescriptor.of(sqliteValueAddress, ADDRESS, JAVA_INT)
+        )
+        private val selekt_column_text_batch: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_column_text_batch").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_INT, ADDRESS, ADDRESS)
         )
         private val sqlite3_column_type: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_type").orElseThrow(),

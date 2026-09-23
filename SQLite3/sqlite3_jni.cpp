@@ -1130,6 +1130,20 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextOptimized(
     return newByteArray(env, text, length);
 }
 
+extern "C" JNIEXPORT void selekt_column_text_batch(
+    sqlite3_stmt* statement,
+    std::int32_t firstColumn,
+    std::int32_t count,
+    const unsigned char** texts,
+    std::int32_t* lengths
+) {
+    for (std::int32_t offset = 0; offset < count; ++offset) {
+        auto text = sqlite3_column_text(statement, firstColumn + offset);
+        texts[offset] = text;
+        lengths[offset] = text == nullptr ? 0 : sqlite3_column_bytes(statement, firstColumn + offset);
+    }
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_columnType(
     JNIEnv* env,

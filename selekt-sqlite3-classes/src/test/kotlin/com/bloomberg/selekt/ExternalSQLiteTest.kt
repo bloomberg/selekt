@@ -954,6 +954,49 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `columnTexts preserves values and retained results across descriptor growth`() =
+        withStatementHandle("SELECT 'skip', ?, ?, ?, ?, ?, ?, ?, ?") { statement ->
+            val expected = listOf(
+                "",
+                "a".repeat(63),
+                "a".repeat(64),
+                "a".repeat(65),
+                "a\u0000b",
+                "é € mixed ASCII and UTF-8",
+                "🌍",
+                null
+            )
+            expected.forEachIndexed { index, value ->
+                if (value == null) {
+                    assertEquals(SQL_OK, sqlite.bindNull(statement, index + 1))
+                } else {
+                    assertEquals(SQL_OK, sqlite.bindText(statement, index + 1, value))
+                }
+            }
+            assertEquals(SQL_ROW, sqlite.step(statement))
+
+            val firstPair = arrayOfNulls<String>(2)
+            sqlite.columnTexts(statement, 1, firstPair)
+            assertEquals(expected.take(2), firstPair.toList())
+
+            val destination = arrayOfNulls<String>(expected.size)
+            sqlite.columnTexts(statement, 1, destination)
+            assertEquals(expected, destination.toList())
+            val retained = destination.copyOf()
+
+            assertEquals(SQL_OK, sqlite.reset(statement))
+            expected.indices.forEach { index ->
+                assertEquals(SQL_OK, sqlite.bindText(statement, index + 1, "replacement-$index"))
+            }
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            sqlite.columnTexts(statement, 1, destination)
+
+            assertEquals(expected, retained.toList())
+            assertEquals(expected.indices.map { "replacement-$it" }, destination.toList())
+            sqlite.columnTexts(statement, 0, emptyArray())
+        }
+
+    @Test
     fun `malformed surrogates bind identically through ASCII and UTF-8 paths`() =
         withStatement("SELECT ?") { statement ->
             listOf(
