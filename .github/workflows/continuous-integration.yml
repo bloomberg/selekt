@@ -609,7 +609,7 @@ jobs:
 
       - name: 'Test JDBC and JVM Gradle and Maven consumers'
         run: |
-          VERSION="$(sed -n 's/^version=//p' gradle.properties)-consumer-test"
+          VERSION="0.0.0-consumer-test-${GITHUB_SHA::12}"
           REPOSITORY="$GITHUB_WORKSPACE/build/consumer-m2"
           ./gradlew -Dmaven.repo.local="$REPOSITORY" -Pversion="$VERSION" \
             :selekt-api:publishMainPublicationToMavenLocal \

@@ -7,21 +7,51 @@ on:
 permissions:
   contents: read
 
+env:
+  ORG_GRADLE_PROJECT_version: ${{ github.event.release.tag_name }}
+
 jobs:
+  validate-release:
+    name: 'Validate release tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout release tag'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 1
+      - name: 'Validate release tag'
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "Invalid release version: $RELEASE_VERSION"
+            exit 1
+          fi
+          TAG_SHA="$(git rev-parse "${RELEASE_VERSION}^{commit}")"
+          if [[ "$TAG_SHA" != "$RELEASE_SHA" ]]; then
+            echo "Release tag $RELEASE_VERSION points to $TAG_SHA, expected $RELEASE_SHA"
+            exit 1
+          fi
+
   native-fuzzing:
     name: 'Native fuzzing release gate / Linux'
+    needs: validate-release
     uses: ./.github/workflows/native-fuzzing.yml
     with:
       profile: release
 
   jvm-fuzzing:
     name: 'JVM fuzzing release gate / Linux'
+    needs: validate-release
     uses: ./.github/workflows/jvm-fuzzing.yml
     with:
       profile: release
 
   build-native-jars:
     name: 'Build Native JARs / ${{ matrix.display }}'
+    needs: validate-release
     strategy:
       matrix:
         include:
@@ -305,6 +335,7 @@ jobs:
 
   build-native-jar-musl-aarch64:
     name: 'Build Native JARs (linux-aarch64-musl)'
+    needs: validate-release
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     steps:
@@ -322,6 +353,7 @@ jobs:
             -e SELEKT_LIBC=musl \
             -e SELEKT_ENABLE_VEC1=ON \
             -e SELEKT_VEC1_ENABLE_X86_AVX2=OFF \
+            -e ORG_GRADLE_PROJECT_version="${{ github.event.release.tag_name }}" \
             -e CC=gcc \
             -e CXX=g++ \
             -e LDFLAGS='-s' \
