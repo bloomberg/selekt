@@ -27,6 +27,7 @@ private const val MIN_PACKED_TEXT_COLUMNS = 4
 private const val MAX_PACKED_TEXT_COLUMNS = 16
 private const val PACKED_TEXT_NULL = 0xff
 private const val PACKED_TEXT_EXACT = 0xfe
+private const val PACKED_TEXT_DEFERRED = 0xfd
 
 fun externalSQLiteSingleton() = externalSQLiteSingleton(SQLiteConfiguration())
 
@@ -41,7 +42,7 @@ fun externalSQLiteSingleton(
 internal class ExternalSQLite(
     configuration: SQLiteConfiguration,
     loader: () -> Unit
-) : IExternalSQLite, INativeCursorWindowSQLite {
+) : IExternalSQLite, IBatchedTextValuesSQLite, INativeCursorWindowSQLite {
     private val cursorWindowOwnership = CursorWindowOwnershipRegistry()
 
     @NotThreadSafe
@@ -82,6 +83,9 @@ internal class ExternalSQLite(
 
     override fun newStatementHandle(pointer: Long): StatementHandle =
         StatementHandle(pointer, if (pointer == 0L) null else StatementAttachment())
+
+    override fun useBatchedTextValues(statement: StatementHandle): Boolean =
+        (statement.attachment as? StatementAttachment)?.packedTextReadsEnabled == true
 
     external override fun allocateSecret(size: Int): Long
 
@@ -247,23 +251,78 @@ internal class ExternalSQLite(
             count,
             attachment.packedText
         )
+        decodePackedTextValues(statement, firstIndex, count, destination, destinationOffset, null, attachment)
+    }
+
+    private fun decodePackedTextValues(
+        statement: Long,
+        firstIndex: Int,
+        count: Int,
+        destination: Array<String?>,
+        destinationOffset: Int,
+        loaded: BooleanArray?,
+        attachment: StatementAttachment
+    ) {
         var packedOffset = count
         for (offset in 0 until count) {
             val byteLength = attachment.packedText[offset].toInt() and 0xff
             destination[destinationOffset + offset] = when (byteLength) {
-                PACKED_TEXT_NULL -> null
+                PACKED_TEXT_NULL -> {
+                    loaded?.set(destinationOffset + offset, true)
+                    null
+                }
+                PACKED_TEXT_DEFERRED -> {
+                    checkNotNull(loaded) { "Deferred text is only valid for storage-class-preserving reads." }
+                    loaded[destinationOffset + offset] = false
+                    null
+                }
                 PACKED_TEXT_EXACT -> {
+                    loaded?.set(destinationOffset + offset, true)
                     attachment.disablePackedTextReads()
                     columnText(statement, firstIndex + offset)
                 }
-                else -> String(attachment.packedText, packedOffset, byteLength, Charsets.ISO_8859_1).also {
-                    packedOffset += byteLength
+                else -> {
+                    loaded?.set(destinationOffset + offset, true)
+                    String(attachment.packedText, packedOffset, byteLength, Charsets.ISO_8859_1).also {
+                        packedOffset += byteLength
+                    }
                 }
             }
         }
     }
 
     private external fun columnTextsAsciiPacked(
+        statement: Long,
+        firstIndex: Int,
+        count: Int,
+        packedText: ByteArray
+    )
+
+    override fun columnTextValues(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>,
+        loaded: BooleanArray
+    ) {
+        require(destination.size == loaded.size) { "Text values and loaded flags must have equal sizes." }
+        if (destination.isEmpty()) {
+            return
+        }
+        val attachment = statement.attachment as? StatementAttachment
+        if (
+            destination.size !in MIN_PACKED_TEXT_COLUMNS..MAX_PACKED_TEXT_COLUMNS ||
+            attachment == null ||
+            !attachment.packedTextReadsEnabled
+        ) {
+            super<IExternalSQLite>.columnTextValues(statement, firstIndex, destination, loaded)
+            return
+        }
+        attachment.prepareTextBatch(destination.size)
+        columnTextValuesAsciiPacked(statement.pointer, firstIndex, destination.size, attachment.packedText)
+        decodePackedTextValues(statement.pointer, firstIndex, destination.size, destination, 0, loaded, attachment)
+    }
+
+    private external fun columnTextValuesAsciiPacked(
         statement: Long,
         firstIndex: Int,
         count: Int,

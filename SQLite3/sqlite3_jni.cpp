@@ -52,6 +52,7 @@ namespace {
     constexpr jsize MAX_PACKED_TEXT_COLUMNS = 16;
     constexpr unsigned char PACKED_TEXT_NULL = 0xff;
     constexpr unsigned char PACKED_TEXT_EXACT = 0xfe;
+    constexpr unsigned char PACKED_TEXT_DEFERRED = 0xfd;
     constexpr std::int32_t RAW_KEY_SIZE = 32;
     constexpr auto INVALID_SECRET_POINTER_MESSAGE =
         "Secret pointer must reference a live allocation whose size matches the key length.";
@@ -1165,6 +1166,81 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextOptimized(
     return newByteArray(env, text, length);
 }
 
+namespace {
+    bool validatePackedTextRequest(JNIEnv* env, jint count, jbyteArray packedText) {
+        if (packedText == nullptr) {
+            throwIllegalArgumentException(env, "Packed text buffer must not be null.");
+            return false;
+        }
+        if (count < 0 || count > MAX_PACKED_TEXT_COLUMNS) {
+            throwIllegalArgumentException(env, "Packed text column count is out of bounds.");
+            return false;
+        }
+        if (env->GetArrayLength(packedText) < count * (DIRECT_ASCII_COLUMN_MAX_LENGTH + 1)) {
+            throwIllegalArgumentException(env, "Packed text buffer is too small.");
+            return false;
+        }
+        return true;
+    }
+
+    bool packColumnTexts(
+        JNIEnv* env,
+        sqlite3_stmt* statement,
+        jint firstColumn,
+        jint count,
+        jbyteArray jpackedText,
+        bool preserveStorageClasses
+    ) {
+        std::array<const unsigned char*, MAX_PACKED_TEXT_COLUMNS> texts{};
+        std::array<jint, MAX_PACKED_TEXT_COLUMNS> byteLengths{};
+        for (jint offset = 0; offset < count; ++offset) {
+            auto const column = firstColumn + offset;
+            if (preserveStorageClasses) {
+                auto const type = sqlite3_column_type(statement, column);
+                if (type == SQLITE_NULL) {
+                    byteLengths[offset] = -1;
+                    continue;
+                }
+                if (type != SQLITE_TEXT) {
+                    byteLengths[offset] = -2;
+                    continue;
+                }
+            }
+            auto text = sqlite3_column_text(statement, column);
+            texts[offset] = text;
+            byteLengths[offset] = text == nullptr ? -1 : sqlite3_column_bytes(statement, column);
+        }
+
+        // Resolve every SQLite pointer before pinning. The critical section performs CPU/memory work only and
+        // contains no SQLite or JNI calls until the matching release.
+        auto packedText = static_cast<unsigned char*>(env->GetPrimitiveArrayCritical(jpackedText, nullptr));
+        if (packedText == nullptr) {
+            throwOutOfMemoryError(env, "GetPrimitiveArrayCritical packed text");
+            return false;
+        }
+        jint packedOffset = count;
+        for (jint offset = 0; offset < count; ++offset) {
+            auto const byteLength = byteLengths[offset];
+            if (byteLength == -1) {
+                packedText[offset] = PACKED_TEXT_NULL;
+            } else if (byteLength == -2) {
+                packedText[offset] = PACKED_TEXT_DEFERRED;
+            } else if (
+                byteLength <= DIRECT_ASCII_COLUMN_MAX_LENGTH
+                && tryCopyAscii(texts[offset], packedText + packedOffset, byteLength)
+            ) {
+                packedText[offset] = static_cast<unsigned char>(byteLength);
+                packedOffset += byteLength;
+            } else {
+                packedText[offset] = PACKED_TEXT_EXACT;
+            }
+        }
+
+        env->ReleasePrimitiveArrayCritical(jpackedText, packedText, 0);
+        return true;
+    }
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_columnTextsAsciiPacked(
     JNIEnv* env,
@@ -1174,57 +1250,29 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnTextsAsciiPacked(
     jint count,
     jbyteArray jpackedText
 ) {
-    if (jpackedText == nullptr) {
-        throwIllegalArgumentException(env, "Packed text buffer must not be null.");
-        return;
-    }
-    if (count < 0 || count > MAX_PACKED_TEXT_COLUMNS) {
-        throwIllegalArgumentException(env, "Packed text column count is out of bounds.");
-        return;
-    }
-    if (count == 0) {
-        return;
-    }
-    if (env->GetArrayLength(jpackedText) < count * (DIRECT_ASCII_COLUMN_MAX_LENGTH + 1)) {
-        throwIllegalArgumentException(env, "Packed text buffer is too small.");
+    if (!validatePackedTextRequest(env, count, jpackedText) || count == 0) {
         return;
     }
 
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    std::array<const unsigned char*, MAX_PACKED_TEXT_COLUMNS> texts{};
-    std::array<jint, MAX_PACKED_TEXT_COLUMNS> byteLengths{};
-    for (jint offset = 0; offset < count; ++offset) {
-        auto text = sqlite3_column_text(statement, firstColumn + offset);
-        texts[offset] = text;
-        byteLengths[offset] = text == nullptr
-            ? -1
-            : sqlite3_column_bytes(statement, firstColumn + offset);
-    }
+    packColumnTexts(env, statement, firstColumn, count, jpackedText, false);
+}
 
-    // Resolve every SQLite pointer before pinning. The critical section performs CPU/memory work only and
-    // contains no SQLite or JNI calls until the matching release.
-    auto packedText = static_cast<unsigned char*>(env->GetPrimitiveArrayCritical(jpackedText, nullptr));
-    if (packedText == nullptr) {
-        throwOutOfMemoryError(env, "GetPrimitiveArrayCritical packed text");
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnTextValuesAsciiPacked(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint firstColumn,
+    jint count,
+    jbyteArray jpackedText
+) {
+    if (!validatePackedTextRequest(env, count, jpackedText) || count == 0) {
         return;
     }
-    jint packedOffset = count;
-    for (jint offset = 0; offset < count; ++offset) {
-        auto const byteLength = byteLengths[offset];
-        if (byteLength < 0) {
-            packedText[offset] = PACKED_TEXT_NULL;
-        } else if (
-            byteLength <= DIRECT_ASCII_COLUMN_MAX_LENGTH
-            && tryCopyAscii(texts[offset], packedText + packedOffset, byteLength)
-        ) {
-            packedText[offset] = static_cast<unsigned char>(byteLength);
-            packedOffset += byteLength;
-        } else {
-            packedText[offset] = PACKED_TEXT_EXACT;
-        }
-    }
 
-    env->ReleasePrimitiveArrayCritical(jpackedText, packedText, 0);
+    auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
+    packColumnTexts(env, statement, firstColumn, count, jpackedText, true);
 }
 
 extern "C" JNIEXPORT void selekt_column_text_batch(

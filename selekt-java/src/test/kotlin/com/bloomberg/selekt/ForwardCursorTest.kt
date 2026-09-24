@@ -300,6 +300,97 @@ internal class ForwardCursorTest {
     }
 
     @Test
+    fun `contiguous string access adapts to batched row reads`() {
+        val columns = Array(6) { "column_$it" }
+        var steps = 0
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn columns
+            whenever(useBatchedTextValues()) doReturn true
+            whenever(step()) doAnswer { if (steps++ < 2) SQL_ROW else SQL_DONE }
+            whenever(columnString(any())) doAnswer { "first-${it.getArgument<Int>(0)}" }
+            whenever(columnTextValues(eq(1), any(), any())) doAnswer {
+                val destination = it.getArgument<Array<String?>>(1)
+                val loaded = it.getArgument<BooleanArray>(2)
+                destination.indices.forEach { offset -> destination[offset] = "second-${offset + 1}" }
+                loaded.fill(true)
+            }
+        }
+        val cursor = ForwardCursor(statement)
+
+        assertTrue(cursor.moveToNext())
+        (1..4).forEach { assertEquals("first-$it", cursor.getString(it)) }
+
+        assertTrue(cursor.moveToNext())
+        (1..4).forEach { assertEquals("second-$it", cursor.getString(it)) }
+
+        assertFalse(cursor.moveToNext())
+        verify(statement, times(3)).step()
+        verify(statement, times(1)).columnTextValues(eq(1), any(), any())
+        verify(statement, times(4)).columnString(any())
+    }
+
+    @Test
+    fun `deferred batched values retain scalar string conversion`() {
+        var steps = 0
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn Array(4) { "column_$it" }
+            whenever(useBatchedTextValues()) doReturn true
+            whenever(step()) doAnswer { if (steps++ < 2) SQL_ROW else SQL_DONE }
+            whenever(columnString(any())) doAnswer { "scalar-${it.getArgument<Int>(0)}" }
+            whenever(columnTextValues(eq(0), any(), any())) doAnswer {
+                val destination = it.getArgument<Array<String?>>(1)
+                val loaded = it.getArgument<BooleanArray>(2)
+                destination.indices.forEach { offset -> destination[offset] = "prefetched-$offset" }
+                loaded.fill(true)
+                destination[2] = null
+                loaded[2] = false
+            }
+        }
+        val cursor = ForwardCursor(statement)
+
+        assertTrue(cursor.moveToNext())
+        (0..3).forEach { assertEquals("scalar-$it", cursor.getString(it)) }
+
+        assertTrue(cursor.moveToNext())
+        assertEquals("prefetched-0", cursor.getString(0))
+        assertEquals("scalar-2", cursor.getString(2))
+
+        verify(statement, times(1)).columnTextValues(eq(0), any(), any())
+        verify(statement, times(5)).columnString(any())
+    }
+
+    @Test
+    fun `adaptive reads stop when the statement disables batching`() {
+        var steps = 0
+        var batchingEnabled = true
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn Array(4) { "column_$it" }
+            whenever(useBatchedTextValues()) doAnswer { batchingEnabled }
+            whenever(step()) doAnswer { if (steps++ < 3) SQL_ROW else SQL_DONE }
+            whenever(columnString(any())) doAnswer { "scalar-${it.getArgument<Int>(0)}" }
+            whenever(columnTextValues(eq(0), any(), any())) doAnswer {
+                val destination = it.getArgument<Array<String?>>(1)
+                destination.indices.forEach { offset -> destination[offset] = "prefetched-$offset" }
+                it.getArgument<BooleanArray>(2).fill(true)
+                batchingEnabled = false
+            }
+        }
+        val cursor = ForwardCursor(statement)
+
+        assertTrue(cursor.moveToNext())
+        (0..3).forEach { assertEquals("scalar-$it", cursor.getString(it)) }
+
+        assertTrue(cursor.moveToNext())
+        (0..3).forEach { assertEquals("prefetched-$it", cursor.getString(it)) }
+
+        assertTrue(cursor.moveToNext())
+        (0..3).forEach { assertEquals("scalar-$it", cursor.getString(it)) }
+
+        verify(statement, times(1)).columnTextValues(eq(0), any(), any())
+        verify(statement, times(8)).columnString(any())
+    }
+
+    @Test
     fun exhaustionReleasesResourcesWithoutClosingCursor() {
         val statement = mock<SQLPreparedStatement>().apply {
             whenever(columnNames) doReturn arrayOf("bar")

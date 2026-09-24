@@ -1185,6 +1185,25 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `columnTextValues reads text and null without converting other types`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnTextValues(any(), any(), any(), any()) }.thenCallRealMethod()
+            on { columnType(any<StatementHandle>(), eq(1)) }.thenReturn(3)
+            on { columnType(any<StatementHandle>(), eq(2)) }.thenReturn(5)
+            on { columnType(any<StatementHandle>(), eq(3)) }.thenReturn(1)
+            on { columnText(any<StatementHandle>(), eq(1)) }.thenReturn("value")
+        }
+        val destination = arrayOf<String?>("old", "old", "old")
+        val loaded = BooleanArray(3)
+
+        sqlite.columnTextValues(statementHandle, 1, destination, loaded)
+
+        assertEquals(listOf("value", null, null), destination.toList())
+        assertEquals(listOf(true, true, false), loaded.toList())
+        verify(sqlite, never()).columnText(statementHandle, 3)
+    }
+
+    @Test
     fun `columnType with StatementHandle delegates`() {
         val sqlite = mock<IExternalSQLite> {
             on { columnType(any<Long>(), any()) }.thenReturn(1)

@@ -324,13 +324,7 @@ internal class JdbcResultSet(
         checkClosed()
         validateColumnIndex(columnIndex)
         return try {
-            if (cursor.isNull(columnIndex - 1)) {
-                wasNull = true
-                null
-            } else {
-                wasNull = false
-                cursor.getString(columnIndex - 1)
-            }
+            cursor.getString(columnIndex - 1).also { wasNull = it == null }
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {

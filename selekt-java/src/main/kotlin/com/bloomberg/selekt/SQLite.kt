@@ -31,6 +31,7 @@ open class SQLite(
     private val sqlite: IExternalSQLite
 ) {
     private val nativeCursorSQLite = sqlite as? INativeCursorWindowSQLite
+    private val batchedTextValuesSQLite = sqlite as? IBatchedTextValuesSQLite
 
     open val capabilities: PlatformCapabilities = PlatformCapabilities(
         useNativeCursorWindow = nativeCursorSQLite != null
@@ -335,6 +336,16 @@ open class SQLite(
     fun columnText(statement: Long, index: Int) = sqlite.columnText(statement, index)
 
     fun columnText(statement: StatementHandle, index: Int) = sqlite.columnText(statement, index)
+
+    fun columnTextValues(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>,
+        loaded: BooleanArray
+    ) = sqlite.columnTextValues(statement, firstIndex, destination, loaded)
+
+    fun useBatchedTextValues(statement: StatementHandle) =
+        batchedTextValuesSQLite?.useBatchedTextValues(statement) == true
 
     fun columnType(statement: Long, index: Int) = sqlite.columnType(statement, index)
 

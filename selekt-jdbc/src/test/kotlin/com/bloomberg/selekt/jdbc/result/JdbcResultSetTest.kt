@@ -151,6 +151,7 @@ internal class JdbcResultSetTest {
             whenever(it.columnCount) doReturn 1
             whenever(it.isNull(0)) doThrow SQLException("failure")
             whenever(it.type(0)) doThrow SQLException("failure")
+            whenever(it.getString(0)) doThrow SQLException("failure")
         }
         val failing = JdbcResultSet(cursor, mockStatement)
         val getters = listOf<(JdbcResultSet) -> Any?>(
@@ -356,6 +357,15 @@ internal class JdbcResultSetTest {
             whenever(getString(1)) doReturn "John Doe"
         }
         assertEquals("John Doe", resultSet.getString("name"))
+    }
+
+    @Test
+    fun `getString derives null state from its nullable result`() {
+        whenever(mockCursor.getString(1)) doReturn null
+
+        assertNull(resultSet.getString(2))
+        assertTrue(resultSet.wasNull())
+        verify(mockCursor, never()).isNull(1)
     }
 
     @Test
