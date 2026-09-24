@@ -145,6 +145,11 @@ internal class SQLPreparedStatement(
 
     fun columnString(index: Int) = sqlite.columnText(statement, index)
 
+    fun columnTextValues(firstIndex: Int, destination: Array<String?>, loaded: BooleanArray) =
+        sqlite.columnTextValues(statement, firstIndex, destination, loaded)
+
+    fun useBatchedTextValues() = sqlite.useBatchedTextValues(statement)
+
     fun columnType(index: Int) = sqlite.columnType(statement, index)
 
     fun fillCursorWindow(

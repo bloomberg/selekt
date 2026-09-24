@@ -17,6 +17,7 @@
 package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.lang.ref.WeakReference
@@ -48,6 +49,8 @@ internal class ExternalSQLiteTest {
         const val SQL_OPEN_READWRITE_OR_CREATE = SQL_OPEN_READWRITE or SQL_OPEN_CREATE
         const val SQL_CONSTRAINT = 19
         const val SQL_ROW = 100
+        const val SQL_INTEGER = 1
+        const val SQL_TEXT = 3
         const val SQL_BLOB = 4
         const val SQL_NULL = 5
         const val KEY_SIZE = 32
@@ -1014,6 +1017,44 @@ internal class ExternalSQLiteTest {
                 assertEquals(expected, destination.toList())
                 assertEquals(SQL_OK, sqlite.reset(statement))
             }
+        }
+
+    @Test
+    fun `columnTextValues preserves unread storage classes and nulls`() =
+        withStatementHandle("SELECT 'text', NULL, 42, x'610062'") { statement ->
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            val destination = arrayOf<String?>("old", "old", "old", "old")
+            val loaded = BooleanArray(4)
+
+            sqlite.columnTextValues(statement, 0, destination, loaded)
+
+            assertEquals(listOf("text", null, null, null), destination.toList())
+            assertEquals(listOf(true, true, false, false), loaded.toList())
+            assertEquals(SQL_INTEGER, sqlite.columnType(statement, 2))
+            assertEquals(SQL_BLOB, sqlite.columnType(statement, 3))
+            assertEquals("42", sqlite.columnText(statement, 2))
+            assertEquals("a\u0000b", sqlite.columnText(statement, 3))
+        }
+
+    @Test
+    fun `columnTextValues requires matching destinations`() = withStatementHandle("SELECT 1") { statement ->
+        assertFailsWith<IllegalArgumentException> {
+            sqlite.columnTextValues(statement, 0, arrayOfNulls(1), BooleanArray(0))
+        }
+    }
+
+    @Test
+    fun `columnTextValues disables batching after general UTF-8`() =
+        withStatementHandle("SELECT 'é', 'ascii', 'ascii', 'ascii'") { statement ->
+            assertEquals(SQL_ROW, sqlite.step(statement))
+            val batchedSQLite = sqlite as? IBatchedTextValuesSQLite
+            assumeTrue(batchedSQLite != null, "Packed text reads are implemented by the JNI backend.")
+            checkNotNull(batchedSQLite)
+            assertTrue(batchedSQLite.useBatchedTextValues(statement))
+
+            sqlite.columnTextValues(statement, 0, arrayOfNulls(4), BooleanArray(4))
+
+            assertFalse(batchedSQLite.useBatchedTextValues(statement))
         }
 
     @Test

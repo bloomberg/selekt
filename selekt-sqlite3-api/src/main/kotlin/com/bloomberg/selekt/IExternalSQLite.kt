@@ -20,6 +20,8 @@ import com.bloomberg.selekt.commons.forEachByPosition
 import java.nio.ByteBuffer
 
 private const val DEFAULT_SOFT_HEAP_LIMIT = 8 * 1024 * 1024L
+private const val SQLITE_TEXT_STORAGE_CLASS = 3
+private const val SQLITE_NULL_STORAGE_CLASS = 5
 
 private fun unsupportedBindArgument(arg: Any, position: Int): Nothing =
     throw IllegalArgumentException("Cannot bind arg of class ${arg.javaClass} at position $position.")
@@ -512,6 +514,37 @@ interface IExternalSQLite {
         }
     }
 
+    /**
+     * Reads adjacent `TEXT` and `NULL` values without converting other SQLite storage classes.
+     *
+     * [loaded] is set for values written to [destination]. A false entry leaves that column available for a later
+     * scalar read without having triggered SQLite's type conversion rules.
+     */
+    fun columnTextValues(
+        statement: StatementHandle,
+        firstIndex: Int,
+        destination: Array<String?>,
+        loaded: BooleanArray
+    ) {
+        require(destination.size == loaded.size) { "Text values and loaded flags must have equal sizes." }
+        for (offset in destination.indices) {
+            when (columnType(statement, firstIndex + offset)) {
+                SQLITE_TEXT_STORAGE_CLASS -> {
+                    destination[offset] = columnText(statement, firstIndex + offset)
+                    loaded[offset] = true
+                }
+                SQLITE_NULL_STORAGE_CLASS -> {
+                    destination[offset] = null
+                    loaded[offset] = true
+                }
+                else -> {
+                    destination[offset] = null
+                    loaded[offset] = false
+                }
+            }
+        }
+    }
+
     fun columnType(statement: Long, index: Int): SQLDataType
 
     fun columnType(
@@ -801,6 +834,12 @@ interface IExternalSQLite {
         name: String?,
         mode: Int
     ): SQLCode = walCheckpointV2(db.pointer, name, mode)
+}
+
+/** Backend whose [IExternalSQLite.columnTextValues] implementation can batch native reads efficiently. */
+fun interface IBatchedTextValuesSQLite {
+    /** Returns whether [statement] should continue using batched text reads. */
+    fun useBatchedTextValues(statement: StatementHandle): Boolean
 }
 
 /**

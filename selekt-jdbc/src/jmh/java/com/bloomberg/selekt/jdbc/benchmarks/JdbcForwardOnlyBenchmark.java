@@ -57,6 +57,7 @@ public class JdbcForwardOnlyBenchmark {
     private static final String INSERT_SQL =
         "INSERT OR IGNORE INTO bench (id, name, value, category) VALUES (?, ?, ?, ?)";
     private static final String SELECT_ALL_SQL = "SELECT id, name, value, category FROM bench";
+    private static final String SELECT_TEXT_SQL = "SELECT name, category, name, category FROM bench";
     private static final String SELECT_BY_ID_SQL = "SELECT id, name, value, category FROM bench WHERE id = ?";
 
     private static final int DATA_SIZE = 10_000;
@@ -147,6 +148,16 @@ public class JdbcForwardOnlyBenchmark {
     }
 
     @Benchmark
+    public void selektForwardOnlyTextFullScan(final Blackhole blackhole) throws SQLException {
+        textFullScan(selektConnection, blackhole);
+    }
+
+    @Benchmark
+    public void xerialForwardOnlyTextFullScan(final Blackhole blackhole) throws SQLException {
+        textFullScan(xerialConnection, blackhole);
+    }
+
+    @Benchmark
     public void selektScrollSensitiveFullScan(final Blackhole blackhole) throws SQLException {
         fullScan(selektConnection, ResultSet.TYPE_SCROLL_SENSITIVE, blackhole);
     }
@@ -198,6 +209,19 @@ public class JdbcForwardOnlyBenchmark {
         try (Statement stmt = conn.createStatement(resultSetType, ResultSet.CONCUR_READ_ONLY);
              ResultSet rs = stmt.executeQuery(sql)) {
             consumeAll(rs, blackhole);
+        }
+    }
+
+    private void textFullScan(final Connection connection, final Blackhole blackhole) throws SQLException {
+        final String sql = SELECT_TEXT_SQL + " LIMIT " + rowCount;
+        try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                blackhole.consume(resultSet.getString(1));
+                blackhole.consume(resultSet.getString(2));
+                blackhole.consume(resultSet.getString(3));
+                blackhole.consume(resultSet.getString(4));
+            }
         }
     }
 

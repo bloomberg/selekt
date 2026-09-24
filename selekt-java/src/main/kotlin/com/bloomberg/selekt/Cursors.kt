@@ -97,6 +97,9 @@ internal fun interface CursorWindowRefill {
 private const val MIN_COLUMNS_FOR_INDEX_CACHE = 16
 private const val LOOKUPS_BEFORE_INDEX_CACHE = 1
 private const val HASH_MAP_LOAD_FACTOR = 0.75f
+private const val MIN_ADAPTIVE_TEXT_BATCH_SIZE = 4
+private const val MAX_ADAPTIVE_TEXT_BATCH_SIZE = 16
+private const val NO_ADAPTIVE_TEXT_BATCH = -1L
 
 private fun Array<out String>.columnIndexMap(): Map<String, Int> =
     HashMap<String, Int>((size / HASH_MAP_LOAD_FACTOR).toInt() + 1).also { indices ->
@@ -256,6 +259,12 @@ internal class ForwardCursor(
     private val columnNames = statement.columnNames
     private var columnIndexLookups = 0
     private var columnIndices: Map<String, Int>? = null
+    private val textColumnsRead = BooleanArray(columnNames.size)
+    private var useBatchedTextValues = statement.useBatchedTextValues()
+    private var textColumnReadCount = 0
+    private var prefetchedTextFirstIndex = -1
+    private var prefetchedText = emptyArray<String?>()
+    private var prefetchedTextLoaded = BooleanArray(0)
 
     override val columnCount = columnNames.size
 
@@ -295,7 +304,27 @@ internal class ForwardCursor(
 
     override fun getLong(index: Int) = statement().columnLong(index)
 
-    override fun getString(index: Int) = statement().columnString(index)
+    override fun getString(index: Int): String? {
+        val currentStatement = statement()
+        if (
+            useBatchedTextValues &&
+            index in textColumnsRead.indices &&
+            !textColumnsRead[index]
+        ) {
+            textColumnsRead[index] = true
+            textColumnReadCount += 1
+        }
+        val prefetchedIndex = index - prefetchedTextFirstIndex
+        return if (
+            prefetchedTextFirstIndex >= 0 &&
+            prefetchedIndex in prefetchedText.indices &&
+            prefetchedTextLoaded[prefetchedIndex]
+        ) {
+            prefetchedText[prefetchedIndex]
+        } else {
+            currentStatement.columnString(index)
+        }
+    }
 
     override fun getTextBytes(index: Int) = if (statement().columnType(index) == SQL_TEXT) {
         statement().columnBlob(index)
@@ -330,9 +359,30 @@ internal class ForwardCursor(
             return false
         }
         return try {
-            if (SQL_ROW == statement().step()) {
+            val currentStatement = statement()
+            val textBatch = adaptiveTextBatch()
+            if (textColumnReadCount != 0) {
+                textColumnsRead.fill(false)
+                textColumnReadCount = 0
+            }
+            val result = currentStatement.step()
+            if (result == SQL_ROW && textBatch != NO_ADAPTIVE_TEXT_BATCH) {
+                val firstIndex = (textBatch ushr Int.SIZE_BITS).toInt()
+                val count = textBatch.toInt()
+                if (prefetchedText.size != count) {
+                    prefetchedText = arrayOfNulls(count)
+                    prefetchedTextLoaded = BooleanArray(count)
+                }
+                prefetchedTextFirstIndex = firstIndex
+                currentStatement.columnTextValues(firstIndex, prefetchedText, prefetchedTextLoaded)
+                useBatchedTextValues = currentStatement.useBatchedTextValues()
+            } else {
+                prefetchedTextFirstIndex = -1
+            }
+            if (SQL_ROW == result) {
                 true
             } else {
+                prefetchedTextFirstIndex = -1
                 exhausted = true
                 releaseResources()
                 false
@@ -352,6 +402,35 @@ internal class ForwardCursor(
 
     override fun type(index: Int) = ColumnType.toColumnType(statement().columnType(index))
 
+    private fun adaptiveTextBatch(): Long {
+        if (!useBatchedTextValues || textColumnReadCount < MIN_ADAPTIVE_TEXT_BATCH_SIZE) {
+            return NO_ADAPTIVE_TEXT_BATCH
+        }
+        var bestStart = -1
+        var bestSize = 0
+        var index = 0
+        while (index < textColumnsRead.size) {
+            if (!textColumnsRead[index]) {
+                index += 1
+                continue
+            }
+            val start = index
+            while (index < textColumnsRead.size && textColumnsRead[index]) {
+                index += 1
+            }
+            val size = minOf(index - start, MAX_ADAPTIVE_TEXT_BATCH_SIZE)
+            if (size > bestSize) {
+                bestStart = start
+                bestSize = size
+            }
+        }
+        return if (bestSize >= MIN_ADAPTIVE_TEXT_BATCH_SIZE) {
+            bestStart.toLong() shl Int.SIZE_BITS or bestSize.toLong()
+        } else {
+            NO_ADAPTIVE_TEXT_BATCH
+        }
+    }
+
     private fun statement() = checkNotNull(statement) { "Cursor no longer identifies a row." }
 
     private fun releaseResources() {
@@ -359,6 +438,9 @@ internal class ForwardCursor(
             return
         }
         resourcesReleased = true
+        prefetchedTextFirstIndex = -1
+        prefetchedText = emptyArray()
+        prefetchedTextLoaded = BooleanArray(0)
         val statement = checkNotNull(statement)
         this.statement = null
         if (onClose != null) {
