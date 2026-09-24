@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+## Version 1.6.8
+
+* Optimise adaptive JNI text reads in JDBC cursors.
+
 ## Version 1.6.7
 
 Replayed release of 1.6.6.
