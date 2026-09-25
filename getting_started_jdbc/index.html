@@ -1003,7 +1003,7 @@
 <span class="p">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.6.8&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.6.9&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-jdbc&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -1014,7 +1014,7 @@
 <span class="o">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="o">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.6.8&#39;</span><span class="o">)</span>
+<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.6.9&#39;</span><span class="o">)</span>
 <span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="s1">&#39;com.bloomberg.selekt:selekt-jdbc&#39;</span>
 <span class="o">}</span>
 </code></pre></div>
@@ -1027,7 +1027,7 @@
 <span class="w">        </span><span class="nt">&lt;dependency&gt;</span>
 <span class="w">            </span><span class="nt">&lt;groupId&gt;</span>com.bloomberg.selekt<span class="nt">&lt;/groupId&gt;</span>
 <span class="w">            </span><span class="nt">&lt;artifactId&gt;</span>selekt-bom<span class="nt">&lt;/artifactId&gt;</span>
-<span class="w">            </span><span class="nt">&lt;version&gt;</span>1.6.8<span class="nt">&lt;/version&gt;</span>
+<span class="w">            </span><span class="nt">&lt;version&gt;</span>1.6.9<span class="nt">&lt;/version&gt;</span>
 <span class="w">            </span><span class="nt">&lt;type&gt;</span>pom<span class="nt">&lt;/type&gt;</span>
 <span class="w">            </span><span class="nt">&lt;scope&gt;</span>import<span class="nt">&lt;/scope&gt;</span>
 <span class="w">        </span><span class="nt">&lt;/dependency&gt;</span>
@@ -1311,7 +1311,10 @@ query call.</p>
 </div>
 </div>
 </div>
-<p>Selekt may reuse the driver-owned update-count array returned by <code>executeBatch()</code>. Treat the array as read-only and copy it before another batch execution or before closing the statement if the counts need to be retained.</p>
+<p><code>executeBatch()</code> returns a caller-owned update-count array that remains independent of later executions. Applications that deliberately want to avoid this copy can unwrap <code>SelektPreparedStatement</code> and request a shared array:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">updateCounts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">statement</span><span class="p">.</span><span class="na">unwrap</span><span class="o">&lt;</span><span class="n">SelektPreparedStatement</span><span class="o">&gt;</span><span class="p">().</span><span class="na">executeBatchShared</span><span class="p">()</span>
+</code></pre></div>
+<p>The shared array is driver-owned and must be treated as read-only. A later batch execution or closing and pooling the statement may reuse it.</p>
 <h3 id="transactions">Transactions</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Kotlin</label><label for="__tabbed_10_2">Java</label></div>
 <div class="tabbed-content">
