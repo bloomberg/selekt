@@ -1359,6 +1359,24 @@ internal class JdbcConnectionTest {
     }
 
     @Test
+    fun staleHandleCannotModifyReusedStatementState() {
+        val sql = "SELECT 1"
+        val staleStatement = connection.prepareStatement(sql)
+        staleStatement.close()
+        val currentStatement = connection.prepareStatement(sql)
+
+        assertFailsWith<SQLException> {
+            staleStatement.maxRows = 7
+        }
+        assertFailsWith<SQLException> {
+            staleStatement.cancel()
+        }
+
+        assertEquals(0, currentStatement.maxRows)
+        assertFalse(currentStatement.isClosed)
+    }
+
+    @Test
     fun preparedStatementPoolSeparatesResultSetCharacteristics() {
         val sql = "SELECT 1"
         val characteristics = listOf(

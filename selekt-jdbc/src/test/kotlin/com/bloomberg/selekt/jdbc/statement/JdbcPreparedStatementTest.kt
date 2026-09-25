@@ -1585,7 +1585,7 @@ internal class JdbcPreparedStatementTest {
         preparedStatement.setString(2, "sensitive-parameter-value")
         preparedStatement.executeQuery()
         preparedStatement.clearParameters()
-        val entry = assertNotNull(readField<PreparedStatementCacheEntry>(preparedStatement, "cacheEntry"))
+        val entry = preparedStatement.cacheEntry
         val row = entry.parameterRow
         assertTrue(row.tags.all { it == 0.toByte() })
         assertTrue(row.ints.all { it == 0 })
@@ -1606,7 +1606,7 @@ internal class JdbcPreparedStatementTest {
             addBatch()
             executeBatchShared()
         }
-        val entry = assertNotNull(readField<PreparedStatementCacheEntry>(statement, "cacheEntry"))
+        val entry = statement.cacheEntry
         val batchRowsBeforeClose = entry.batchRows
         val batchChunkBeforeClose = assertNotNull(readField<Any>(batchRowsBeforeClose, "firstChunk"))
         statement.apply {

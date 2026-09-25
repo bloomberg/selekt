@@ -59,19 +59,20 @@ private const val READER_BUFFER_SIZE = 8_192
 
 internal class PreparedStatementCacheEntry(
     val sql: String,
-    val resultSetType: Int,
-    val resultSetConcurrency: Int,
-    val resultSetHoldability: Int,
+    resultSetType: Int,
+    resultSetConcurrency: Int,
+    resultSetHoldability: Int,
     val parameterCount: Int,
     val readOnly: Boolean
-) {
+) : JdbcStatementState(resultSetType, resultSetConcurrency, resultSetHoldability) {
     val parameterRow = ParameterRow(parameterCount)
     val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     var totalBatchCount = 0
     private var successArray: IntArray? = null
     private var previousSuccessArray: IntArray? = null
 
-    fun reset() {
+    override fun reset() {
+        super.reset()
         parameterRow.clear()
         batchRows.clear()
         totalBatchCount = 0
@@ -166,24 +167,42 @@ private fun prepareCacheEntry(
  */
 @Suppress("LongParameterList", "TooGenericExceptionCaught")
 @NotThreadSafe
-internal open class JdbcPreparedStatement(
+internal class JdbcPreparedStatement private constructor(
     connection: JdbcConnection,
-    private val database: SQLDatabase,
-    sql: String,
-    resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
-    resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
-    resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
-    cachedEntry: PreparedStatementCacheEntry? = null
-) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement,
+    database: SQLDatabase,
+    cacheEntry: PreparedStatementCacheEntry
+) : JdbcStatement(
+    connection,
+    database,
+    cacheEntry.resultSetType,
+    cacheEntry.resultSetConcurrency,
+    cacheEntry.resultSetHoldability,
+    cacheEntry
+), PreparedStatement,
     SelektPreparedStatement {
-    private val cacheEntry = cachedEntry ?: prepareCacheEntry(
+    constructor(
+        connection: JdbcConnection,
+        database: SQLDatabase,
+        sql: String,
+        resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
+        resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
+        resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
+        cachedEntry: PreparedStatementCacheEntry? = null
+    ) : this(
         connection,
         database,
-        sql,
-        resultSetType,
-        resultSetConcurrency,
-        resultSetHoldability
+        cachedEntry ?: prepareCacheEntry(
+            connection,
+            database,
+            sql,
+            resultSetType,
+            resultSetConcurrency,
+            resultSetHoldability
+        )
     )
+
+    internal val cacheEntry: PreparedStatementCacheEntry
+        get() = sharedStatementState() as PreparedStatementCacheEntry
     val sql: String get() = cacheEntry.sql
     private val parameterCount: Int get() = cacheEntry.parameterCount
     private val readOnly: Boolean get() = cacheEntry.readOnly
@@ -311,10 +330,8 @@ internal open class JdbcPreparedStatement(
     }
 
     override fun close() {
-        if (!isClosed) {
-            closeDependentResultSets()
+        if (closeOnce()) {
             cacheEntry.reset()
-            super.close()
             connection.returnPreparedStatement(cacheEntry)
         }
     }
