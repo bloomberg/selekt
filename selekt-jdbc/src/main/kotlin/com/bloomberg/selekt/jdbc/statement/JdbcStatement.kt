@@ -50,6 +50,47 @@ internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
 
+internal open class JdbcStatementState(
+    internal val resultSetType: Int,
+    internal val resultSetConcurrency: Int,
+    internal val resultSetHoldability: Int
+) {
+    internal var dependentResultSets: MutableSet<ResultSet>? = null
+    internal var closingDependentResultSets = false
+    internal var updateCount = -1
+    internal var lastGeneratedKey = -1L
+    internal var fetchSize = 0
+    internal var maxRows = 0
+    @Volatile
+    internal var queryTimeout = 0
+    @Volatile
+    internal var currentSignal: CancellationSignal? = null
+    @Volatile
+    internal var currentWatchdog: ScheduledFuture<*>? = null
+    internal var maxFieldSize = 0
+    internal var poolable = false
+    internal var closeOnCompletion = false
+    internal var batchedSqlStatements: MutableList<String>? = null
+    internal var escapeProcessing = true
+
+    internal open fun reset() {
+        dependentResultSets?.clear()
+        closingDependentResultSets = false
+        updateCount = -1
+        lastGeneratedKey = -1L
+        fetchSize = 0
+        maxRows = 0
+        queryTimeout = 0
+        currentSignal = null
+        currentWatchdog = null
+        maxFieldSize = 0
+        poolable = false
+        closeOnCompletion = false
+        batchedSqlStatements?.clear()
+        escapeProcessing = true
+    }
+}
+
 /**
  * @since 0.28.0
  */
@@ -57,10 +98,15 @@ internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
 @Suppress("TooGenericExceptionCaught")
 open class JdbcStatement internal constructor(
     internal val connection: JdbcConnection,
-    private val database: SQLDatabase,
-    private val resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
-    private val resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
-    private val resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
+    protected val database: SQLDatabase,
+    resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
+    resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
+    resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
+    private val statementState: JdbcStatementState = JdbcStatementState(
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability
+    )
 ) : Statement {
     companion object {
         private val CLOSED: VarHandle = MethodHandles.lookup()
@@ -81,25 +127,19 @@ open class JdbcStatement internal constructor(
     @Volatile
     private var closed = false
     private var currentResultSet: ResultSet? = null
-    private val dependentResultSets = mutableSetOf<ResultSet>()
-    private var closingDependentResultSets = false
-    private var updateCount = -1
-    protected var lastGeneratedKey = -1L
-    private var fetchSize = 0
-    private var maxRows = 0
-    @Volatile
-    private var queryTimeout = 0
-    @Volatile
-    private var currentSignal: CancellationSignal? = null
-    @Volatile
-    private var currentWatchdog: ScheduledFuture<*>? = null
-    private var maxFieldSize = 0
-    private var poolable = false
-    private var closeOnCompletion = false
-    private val batchedSqlStatements = mutableListOf<String>()
+    protected var lastGeneratedKey: Long
+        get() = statementState.lastGeneratedKey
+        set(value) {
+            statementState.lastGeneratedKey = value
+        }
 
-    var escapeProcessing: Boolean = true
-        private set
+    val escapeProcessing: Boolean
+        get() {
+            checkClosed()
+            return statementState.escapeProcessing
+        }
+
+    protected fun sharedStatementState(): Any = statementState
 
     override fun executeQuery(sql: String): ResultSet {
         checkClosed()
@@ -113,7 +153,13 @@ open class JdbcStatement internal constructor(
                 throw it.translateCancellation()
             }
             return trackResultSet(
-                JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability)
+                JdbcResultSet(
+                    cursor,
+                    this,
+                    statementState.resultSetType,
+                    statementState.resultSetConcurrency,
+                    statementState.resultSetHoldability
+                )
             )
         } catch (e: Exception) {
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
@@ -179,13 +225,21 @@ open class JdbcStatement internal constructor(
 
     private fun executeQueryInternal(sql: String, signal: CancellationSignal) {
         val cursor = queryWithMaxRows(sql, emptyArray(), signal)
-        trackResultSet(JdbcResultSet(cursor, this, resultSetType, resultSetConcurrency, resultSetHoldability))
+        trackResultSet(
+            JdbcResultSet(
+                cursor,
+                this,
+                statementState.resultSetType,
+                statementState.resultSetConcurrency,
+                statementState.resultSetHoldability
+            )
+        )
     }
 
     protected fun <T : ResultSet> trackResultSet(resultSet: T): T {
         currentResultSet = resultSet
-        dependentResultSets.add(resultSet)
-        updateCount = -1
+        dependentResultSets().add(resultSet)
+        statementState.updateCount = -1
         return resultSet
     }
 
@@ -198,12 +252,12 @@ open class JdbcStatement internal constructor(
         // A read-only manual transaction deliberately materialises its result. Keeping a streaming
         // SQLite statement open there would pin a WAL snapshot beyond this call and can block a
         // FULL checkpoint. Auto-commit read-only queries have no such transaction-lifetime contract.
-        val shouldStream = resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
+        val shouldStream = statementState.resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
             (!connection.isReadOnly || connection.autoCommit)
         if (shouldStream) {
             database.queryForwardOnly(sql, args, signal)
-        } else if (maxRows > 0) {
-            database.queryUpTo(sql, args, maxRows, signal)
+        } else if (statementState.maxRows > 0) {
+            database.queryUpTo(sql, args, statementState.maxRows, signal)
         } else {
             database.query(sql, args, signal)
         }
@@ -218,12 +272,12 @@ open class JdbcStatement internal constructor(
         if (connection.isReadOnly && !isReadOnly) {
             connection.checkWritable()
         }
-        val shouldStream = resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
+        val shouldStream = statementState.resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
             (!connection.isReadOnly || connection.autoCommit)
         if (shouldStream) {
             database.queryForwardOnly(sql, args, signal)
-        } else if (maxRows > 0) {
-            database.queryUpTo(sql, args, maxRows, signal)
+        } else if (statementState.maxRows > 0) {
+            database.queryUpTo(sql, args, statementState.maxRows, signal)
         } else {
             database.query(sql, args, signal)
         }
@@ -254,17 +308,17 @@ open class JdbcStatement internal constructor(
             statement.run {
                 if (isReadOnly) {
                     lastGeneratedKey = -1L
-                    updateCount = 0
+                    statementState.updateCount = 0
                 } else if (isInsertSql(sql)) {
                     lastGeneratedKey = executeInsert()
-                    updateCount = 1
+                    statementState.updateCount = 1
                 } else {
                     lastGeneratedKey = -1L
-                    updateCount = executeUpdateDelete()
+                    statementState.updateCount = executeUpdateDelete()
                 }
             }
             currentResultSet = null
-            updateCount
+            statementState.updateCount
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
@@ -273,19 +327,29 @@ open class JdbcStatement internal constructor(
     }
 
     override fun close() {
-        if (CLOSED.compareAndSet(this, false, true)) {
-            deactivateCancellationSignal()
-            closeDependentResultSets()
+        closeOnce()
+    }
+
+    protected fun closeOnce(): Boolean {
+        if (!CLOSED.compareAndSet(this, false, true)) {
+            return false
         }
+        deactivateCancellationSignal()
+        closeDependentResultSets()
+        return true
     }
 
     override fun isClosed(): Boolean = closed
 
     override fun getResultSet(): ResultSet? = currentResultSet
 
-    override fun getUpdateCount(): Int = updateCount
+    override fun getUpdateCount(): Int {
+        checkClosed()
+        return statementState.updateCount
+    }
 
     override fun getMoreResults(): Boolean {
+        checkClosed()
         currentResultSet?.close()
         return false
     }
@@ -301,29 +365,35 @@ open class JdbcStatement internal constructor(
     override fun setCursorName(name: String?) = throw SQLFeatureNotSupportedException("Named cursors not supported")
 
     override fun setEscapeProcessing(enable: Boolean) {
-        escapeProcessing = enable
+        checkClosed()
+        statementState.escapeProcessing = enable
     }
 
     override fun setQueryTimeout(seconds: Int) {
+        checkClosed()
         if (seconds < 0) {
             throw SQLException("Query timeout must be non-negative")
         }
-        queryTimeout = seconds
+        statementState.queryTimeout = seconds
     }
 
-    override fun getQueryTimeout(): Int = queryTimeout
+    override fun getQueryTimeout(): Int {
+        checkClosed()
+        return statementState.queryTimeout
+    }
 
     override fun cancel() {
-        currentSignal?.cancel()
+        checkClosed()
+        statementState.currentSignal?.cancel()
     }
 
     internal fun activateCancellationSignal(): CancellationSignal {
         deactivateCancellationSignal()
         val signal = CancellationSignal()
-        currentSignal = signal
-        val seconds = queryTimeout
+        statementState.currentSignal = signal
+        val seconds = statementState.queryTimeout
         if (seconds > 0) {
-            currentWatchdog = TIMEOUT_SCHEDULER.schedule(
+            statementState.currentWatchdog = TIMEOUT_SCHEDULER.schedule(
                 signal::cancel,
                 seconds.toLong(),
                 TimeUnit.SECONDS
@@ -333,9 +403,9 @@ open class JdbcStatement internal constructor(
     }
 
     internal fun deactivateCancellationSignal() {
-        currentWatchdog?.cancel(false)
-        currentWatchdog = null
-        currentSignal = null
+        statementState.currentWatchdog?.cancel(false)
+        statementState.currentWatchdog = null
+        statementState.currentSignal = null
     }
 
     private fun Throwable.translateCancellation(): Throwable = when {
@@ -353,56 +423,70 @@ open class JdbcStatement internal constructor(
     override fun getFetchDirection(): Int = ResultSet.FETCH_FORWARD
 
     override fun setFetchSize(rows: Int) {
+        checkClosed()
         if (rows < 0) {
             throw SQLException("Fetch size must be non-negative")
         }
-        fetchSize = rows
+        statementState.fetchSize = rows
     }
 
-    override fun getFetchSize(): Int = fetchSize
+    override fun getFetchSize(): Int {
+        checkClosed()
+        return statementState.fetchSize
+    }
 
     override fun setMaxRows(max: Int) {
+        checkClosed()
         if (max < 0) {
             throw SQLException("Max rows must be non-negative")
         }
-        maxRows = max
+        statementState.maxRows = max
     }
 
-    override fun getMaxRows(): Int = maxRows
+    override fun getMaxRows(): Int {
+        checkClosed()
+        return statementState.maxRows
+    }
 
     override fun setMaxFieldSize(max: Int) {
         if (max < 0) {
             throw SQLException("Max field size must be non-negative")
         }
         checkClosed()
-        maxFieldSize = max
+        statementState.maxFieldSize = max
     }
 
-    override fun getMaxFieldSize(): Int = maxFieldSize
+    override fun getMaxFieldSize(): Int {
+        checkClosed()
+        return statementState.maxFieldSize
+    }
 
-    override fun getResultSetConcurrency(): Int = resultSetConcurrency
+    override fun getResultSetConcurrency(): Int = statementState.resultSetConcurrency
 
-    override fun getResultSetType(): Int = resultSetType
+    override fun getResultSetType(): Int = statementState.resultSetType
 
-    override fun getResultSetHoldability(): Int = resultSetHoldability
+    override fun getResultSetHoldability(): Int = statementState.resultSetHoldability
 
     override fun addBatch(sql: String) {
         checkClosed()
         if (sql.isBlank()) {
             throw SQLException("SQL statement cannot be empty")
         }
-        batchedSqlStatements.add(sql)
+        val statements = statementState.batchedSqlStatements ?: mutableListOf<String>().also {
+            statementState.batchedSqlStatements = it
+        }
+        statements.add(sql)
     }
 
     override fun clearBatch() {
         checkClosed()
-        batchedSqlStatements.clear()
+        statementState.batchedSqlStatements?.clear()
     }
 
     override fun executeBatch(): IntArray {
         checkClosed()
         closeCurrentResultSet()
-        return if (batchedSqlStatements.isEmpty()) {
+        return if (statementState.batchedSqlStatements.isNullOrEmpty()) {
             emptyIntArray
         } else {
             val signal = activateCancellationSignal()
@@ -421,8 +505,9 @@ open class JdbcStatement internal constructor(
     }
 
     private fun executeBatchStatements(): IntArray {
+        val statements = checkNotNull(statementState.batchedSqlStatements)
         val results = mutableListOf<Int>()
-        for (sql in batchedSqlStatements) {
+        for (sql in statements) {
             runCatching {
                 validateBatchSql(sql)
                 connection.checkWritable()
@@ -464,17 +549,23 @@ open class JdbcStatement internal constructor(
 
     override fun setPoolable(poolable: Boolean) {
         checkClosed()
-        this.poolable = poolable
+        statementState.poolable = poolable
     }
 
-    override fun isPoolable(): Boolean = poolable
+    override fun isPoolable(): Boolean {
+        checkClosed()
+        return statementState.poolable
+    }
 
     override fun closeOnCompletion() {
         checkClosed()
-        closeOnCompletion = true
+        statementState.closeOnCompletion = true
     }
 
-    override fun isCloseOnCompletion(): Boolean = closeOnCompletion
+    override fun isCloseOnCompletion(): Boolean {
+        checkClosed()
+        return statementState.closeOnCompletion
+    }
 
     override fun executeUpdate(sql: String, autoGeneratedKeys: Int): Int = executeUpdate(sql)
 
@@ -490,7 +581,7 @@ open class JdbcStatement internal constructor(
 
     override fun getGeneratedKeys(): ResultSet {
         checkClosed()
-        return GeneratedKeysResultSet(lastGeneratedKey, this).also(dependentResultSets::add)
+        return GeneratedKeysResultSet(lastGeneratedKey, this).also(dependentResultSets()::add)
     }
 
     override fun <T> unwrap(iface: Class<T>): T = if (iface.isAssignableFrom(this::class.java)) {
@@ -508,8 +599,8 @@ open class JdbcStatement internal constructor(
         signal: CancellationSignal
     ): ICursor {
         val cursor = queryWithSignal(sql, args, signal)
-        return if (maxRows > 0) {
-            RowLimitedCursor(cursor, maxRows)
+        return if (statementState.maxRows > 0) {
+            RowLimitedCursor(cursor, statementState.maxRows)
         } else {
             cursor
         }
@@ -522,8 +613,8 @@ open class JdbcStatement internal constructor(
         isReadOnly: Boolean
     ): ICursor {
         val cursor = queryWithSignal(sql, args, signal, isReadOnly)
-        return if (maxRows > 0) {
-            RowLimitedCursor(cursor, maxRows)
+        return if (statementState.maxRows > 0) {
+            RowLimitedCursor(cursor, statementState.maxRows)
         } else {
             cursor
         }
@@ -544,32 +635,42 @@ open class JdbcStatement internal constructor(
     internal fun hasOpenResultSet(): Boolean = currentResultSet?.isClosed == false
 
     internal fun onResultSetClosed(resultSet: ResultSet, exhausted: Boolean = false) {
-        val wasCurrent = currentResultSet === resultSet
-        if (wasCurrent) {
-            if (!exhausted) {
-                currentResultSet = null
+        if (!isClosed) {
+            val wasCurrent = currentResultSet === resultSet
+            if (wasCurrent) {
+                if (!exhausted) {
+                    currentResultSet = null
+                }
+                deactivateCancellationSignal()
             }
-            deactivateCancellationSignal()
+            val resultSets = statementState.dependentResultSets
+            val shouldClose = !exhausted &&
+                resultSets?.remove(resultSet) == true &&
+                resultSets.isEmpty() &&
+                statementState.closeOnCompletion &&
+                !statementState.closingDependentResultSets &&
+                !isClosed
+            if (shouldClose) {
+                close()
+            }
         }
-        if (exhausted || !dependentResultSets.remove(resultSet) || dependentResultSets.isNotEmpty()) {
-            return
-        }
-        if (!closeOnCompletion || closingDependentResultSets || isClosed) {
-            return
-        }
-        close()
     }
 
     protected fun closeDependentResultSets() {
-        closingDependentResultSets = true
+        statementState.closingDependentResultSets = true
         try {
-            dependentResultSets.toList().forEach { resultSet ->
+            statementState.dependentResultSets?.toList()?.forEach { resultSet ->
                 resultSet.close()
             }
         } finally {
-            dependentResultSets.clear()
+            statementState.dependentResultSets?.clear()
             currentResultSet = null
-            closingDependentResultSets = false
+            statementState.closingDependentResultSets = false
         }
     }
+
+    private fun dependentResultSets(): MutableSet<ResultSet> =
+        statementState.dependentResultSets ?: mutableSetOf<ResultSet>().also {
+            statementState.dependentResultSets = it
+        }
 }
