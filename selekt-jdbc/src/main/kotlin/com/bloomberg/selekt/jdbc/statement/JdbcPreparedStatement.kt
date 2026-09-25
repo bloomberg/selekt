@@ -21,6 +21,7 @@ import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.jdbc.SelektPreparedStatement
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
@@ -88,6 +89,7 @@ internal class PreparedStatementCacheEntry(
             previousSuccessArray = current
             successArray = result
         }
+        result.fill(Statement.SUCCESS_NO_INFO)
         return result
     }
 }
@@ -172,7 +174,8 @@ internal open class JdbcPreparedStatement(
     resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
     resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
     cachedEntry: PreparedStatementCacheEntry? = null
-) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
+) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement,
+    SelektPreparedStatement {
     private val cacheEntry = cachedEntry ?: prepareCacheEntry(
         connection,
         database,
@@ -333,12 +336,15 @@ internal open class JdbcPreparedStatement(
         totalBatchCount = 0
     }
 
-    /**
-     * Returns a driver-owned array that must be treated as read-only. Selekt reports every successful command as
-     * [Statement.SUCCESS_NO_INFO], so the array may be reused by subsequent batch executions. Callers that need to
-     * retain the update counts after another call to this method or after closing the statement must copy the array.
-     */
-    override fun executeBatch(): IntArray {
+    override fun executeBatch(): IntArray = executeBatchShared().let { updateCounts ->
+        if (updateCounts.isEmpty()) {
+            updateCounts
+        } else {
+            updateCounts.copyOf()
+        }
+    }
+
+    override fun executeBatchShared(): IntArray {
         checkClosed()
         closeCurrentResultSet()
         if (totalBatchCount == 0) {

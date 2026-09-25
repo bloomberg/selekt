@@ -23,6 +23,9 @@ import com.bloomberg.selekt.ISQLStatement
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.jdbc.SelektPreparedStatement
+import com.bloomberg.selekt.jdbc.isWrapperFor
+import com.bloomberg.selekt.jdbc.unwrap
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.connection.testSharedDatabase
 import com.bloomberg.selekt.jdbc.lob.JdbcBlob
@@ -52,6 +55,7 @@ import java.sql.ResultSet
 import java.sql.RowId
 import java.sql.SQLException
 import java.sql.SQLXML
+import java.sql.Statement
 import java.sql.Time
 import java.sql.Timestamp
 import java.sql.Types
@@ -575,31 +579,62 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun executeBatchCachesDriverOwnedUpdateCountsForTwoMostRecentBatchSizes() {
+    fun executeBatchReturnsCallerOwnedUpdateCounts() {
         val batchStatement = updateStatement()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
 
-        fun executeBatch(batchSize: Int) = batchStatement.run {
+        fun runBatch(): IntArray = batchStatement.run {
+            repeat(3) {
+                setInt(2, it)
+                addBatch()
+            }
+            this.executeBatch()
+        }
+
+        val first = runBatch()
+        first[0] = Statement.EXECUTE_FAILED
+        val second = runBatch()
+
+        assertNotSame(first, second)
+        assertContentEquals(intArrayOf(Statement.EXECUTE_FAILED, -2, -2), first)
+        assertContentEquals(intArrayOf(-2, -2, -2), second)
+    }
+
+    @Test
+    fun executeBatchSharedCachesAndRestoresDriverOwnedUpdateCounts() {
+        val batchStatement = updateStatement()
+        whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
+        whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
+
+        fun executeBatchShared(batchSize: Int) = batchStatement.run {
             repeat(batchSize) {
                 setInt(2, it)
                 addBatch()
             }
-            executeBatch()
+            this.executeBatchShared()
         }
 
-        val fullBatch = executeBatch(3)
-        assertSame(fullBatch, executeBatch(3))
+        val fullBatch = executeBatchShared(3)
+        fullBatch[0] = Statement.EXECUTE_FAILED
+        assertSame(fullBatch, executeBatchShared(3))
+        assertContentEquals(intArrayOf(-2, -2, -2), fullBatch)
 
-        val firstTail = executeBatch(2)
-        assertSame(fullBatch, executeBatch(3))
-        assertSame(fullBatch, executeBatch(3))
+        val firstTail = executeBatchShared(2)
+        assertSame(fullBatch, executeBatchShared(3))
+        assertSame(fullBatch, executeBatchShared(3))
 
-        val secondTail = executeBatch(1)
-        assertSame(fullBatch, executeBatch(3))
+        val secondTail = executeBatchShared(1)
+        assertSame(fullBatch, executeBatchShared(3))
 
         assertTrue(firstTail !== secondTail)
         assertContentEquals(intArrayOf(-2, -2, -2), fullBatch)
+    }
+
+    @Test
+    fun unwrapSelektPreparedStatement() {
+        assertTrue(preparedStatement.isWrapperFor<SelektPreparedStatement>())
+        assertSame(preparedStatement, preparedStatement.unwrap<SelektPreparedStatement>())
     }
 
     @Test
@@ -1569,7 +1604,7 @@ internal class JdbcPreparedStatementTest {
             setString(1, "batched-sensitive-value")
             setInt(2, 1)
             addBatch()
-            executeBatch()
+            executeBatchShared()
         }
         val entry = assertNotNull(readField<PreparedStatementCacheEntry>(statement, "cacheEntry"))
         val batchRowsBeforeClose = entry.batchRows

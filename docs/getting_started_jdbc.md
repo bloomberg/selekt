@@ -325,7 +325,13 @@ query call.
     }
     ```
 
-Selekt may reuse the driver-owned update-count array returned by `executeBatch()`. Treat the array as read-only and copy it before another batch execution or before closing the statement if the counts need to be retained.
+`executeBatch()` returns a caller-owned update-count array that remains independent of later executions. Applications that deliberately want to avoid this copy can unwrap `SelektPreparedStatement` and request a shared array:
+
+``` kotlin
+val updateCounts = statement.unwrap<SelektPreparedStatement>().executeBatchShared()
+```
+
+The shared array is driver-owned and must be treated as read-only. A later batch execution or closing and pooling the statement may reuse it.
 
 ### Transactions
 

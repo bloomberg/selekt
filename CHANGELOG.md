@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+## Version 1.6.9
+
+* Fix JDBC prepared statement handle reuse.
+* Return caller-owned JDBC batch results by default.
+
 ## Version 1.6.8
 
 * Optimise adaptive JNI text reads in JDBC cursors.
