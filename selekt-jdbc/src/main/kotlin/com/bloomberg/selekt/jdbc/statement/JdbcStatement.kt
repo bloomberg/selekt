@@ -279,28 +279,6 @@ open class JdbcStatement internal constructor(
         }
     }
 
-    internal open fun onReturned() {
-        deactivateCancellationSignal()
-        currentResultSet = null
-        dependentResultSets.clear()
-        closingDependentResultSets = false
-        updateCount = -1
-        lastGeneratedKey = -1L
-        fetchSize = 0
-        maxRows = 0
-        queryTimeout = 0
-        maxFieldSize = 0
-        poolable = false
-        closeOnCompletion = false
-        batchedSqlStatements.clear()
-        escapeProcessing = true
-        CLOSED.set(this, true)
-    }
-
-    protected fun markOpen() {
-        CLOSED.set(this, false)
-    }
-
     override fun isClosed(): Boolean = closed
 
     override fun getResultSet(): ResultSet? = currentResultSet

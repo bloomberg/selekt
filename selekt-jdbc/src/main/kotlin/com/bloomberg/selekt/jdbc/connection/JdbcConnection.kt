@@ -22,7 +22,6 @@ import com.bloomberg.selekt.CancellationSignal
 import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.StreamingBlobBatch
 import com.bloomberg.selekt.StreamingBlobRow
-import com.bloomberg.selekt.commons.forEachCatching
 import com.bloomberg.selekt.jdbc.SelektConnection
 import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
@@ -30,6 +29,7 @@ import com.bloomberg.selekt.jdbc.lob.JdbcClob
 import com.bloomberg.selekt.jdbc.metadata.JdbcDatabaseMetaData
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
+import com.bloomberg.selekt.jdbc.statement.PreparedStatementCacheEntry
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import com.bloomberg.selekt.jdbc.util.getStrictBooleanProperty
 import java.lang.invoke.MethodHandles
@@ -156,7 +156,7 @@ internal class JdbcConnection(
         checkClosed()
         checkResultSetType(resultSetType)
         checkResultSetConcurrency(resultSetConcurrency)
-        val pooled = poolLock.withLock {
+        val cachedEntry = poolLock.withLock {
             if (closed) {
                 null
             } else {
@@ -168,12 +168,15 @@ internal class JdbcConnection(
                 )
             }
         }
-        return if (pooled != null) {
-            pooled.reopen()
-            pooled
-        } else {
-            JdbcPreparedStatement(this, database, sql, resultSetType, resultSetConcurrency, resultSetHoldability)
-        }
+        return JdbcPreparedStatement(
+            this,
+            database,
+            sql,
+            resultSetType,
+            resultSetConcurrency,
+            resultSetHoldability,
+            cachedEntry
+        )
     }
 
     override fun prepareStatement(
@@ -385,36 +388,22 @@ internal class JdbcConnection(
     }
 
     private fun closePreparedStatementPool() {
-        val snapshot = poolLock.withLock {
-            val pool = preparedStatementPool
-            if (pool == null || pool.isEmpty()) {
-                return
-            }
-            pool.drain()
+        poolLock.withLock {
+            preparedStatementPool = null
         }
-        snapshot.forEachCatching(JdbcPreparedStatement::closePooled)
     }
 
-    internal fun returnPreparedStatement(statement: JdbcPreparedStatement): Boolean {
-        if (statement.hasOpenResultSet()) {
-            return false
-        }
-        statement.onReturned()
-        var accepted = false
-        var evicted: JdbcPreparedStatement? = null
+    internal fun returnPreparedStatement(entry: PreparedStatementCacheEntry) {
         if (!closed) {
             poolLock.withLock {
                 if (!closed) {
-                    accepted = true
                     val pool = preparedStatementPool ?: PreparedStatementPool(MAX_POOLED_STATEMENTS).also {
                         preparedStatementPool = it
                     }
-                    evicted = pool.put(statement)
+                    pool.put(entry)
                 }
             }
         }
-        evicted?.let { runCatching(it::closePooled) }
-        return accepted
     }
 
     override fun isClosed(): Boolean = closed

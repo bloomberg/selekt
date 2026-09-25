@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.connection
 
-import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
+import com.bloomberg.selekt.jdbc.statement.PreparedStatementCacheEntry
 import java.sql.ResultSet
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -24,8 +24,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 
 internal class PreparedStatementPoolTest {
     @Test
@@ -130,12 +128,14 @@ internal class PreparedStatementPoolTest {
         resultSetType: Int = FORWARD_ONLY,
         resultSetHoldability: Int = CLOSE_AT_COMMIT,
         resultSetConcurrency: Int = READ_ONLY
-    ): JdbcPreparedStatement = mock {
-        on { this.sql } doReturn sql
-        on { this.resultSetType } doReturn resultSetType
-        on { this.resultSetConcurrency } doReturn resultSetConcurrency
-        on { this.resultSetHoldability } doReturn resultSetHoldability
-    }
+    ): PreparedStatementCacheEntry = PreparedStatementCacheEntry(
+        sql,
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability,
+        parameterCount = 0,
+        readOnly = true
+    )
 
     private companion object {
         private const val FORWARD_ONLY = ResultSet.TYPE_FORWARD_ONLY

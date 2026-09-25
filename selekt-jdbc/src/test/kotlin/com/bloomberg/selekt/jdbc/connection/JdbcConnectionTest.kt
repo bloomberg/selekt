@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.test.assertNotSame
-import kotlin.test.assertSame
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -53,6 +52,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -571,8 +571,10 @@ internal class JdbcConnectionTest {
         val first = connection.prepareStatement(sql, java.sql.Statement.NO_GENERATED_KEYS) as JdbcPreparedStatement
         first.close()
         val second = connection.prepareStatement(sql, java.sql.Statement.NO_GENERATED_KEYS)
-        assertSame(first, second)
+        assertNotSame(first, second)
+        assertTrue(first.isClosed)
         assertFalse(second.isClosed)
+        verify(mockDatabase).prepare(sql)
     }
 
     @Test
@@ -592,7 +594,9 @@ internal class JdbcConnectionTest {
         val first = connection.prepareStatement(sql, intArrayOf()) as JdbcPreparedStatement
         first.close()
         val second = connection.prepareStatement(sql, intArrayOf())
-        assertSame(first, second)
+        assertNotSame(first, second)
+        assertTrue(first.isClosed)
+        verify(mockDatabase).prepare(sql)
     }
 
     @Test
@@ -612,7 +616,9 @@ internal class JdbcConnectionTest {
         val first = connection.prepareStatement(sql, arrayOf<String>()) as JdbcPreparedStatement
         first.close()
         val second = connection.prepareStatement(sql, arrayOf<String>())
-        assertSame(first, second)
+        assertNotSame(first, second)
+        assertTrue(first.isClosed)
+        verify(mockDatabase).prepare(sql)
     }
 
     @Test
@@ -1328,13 +1334,28 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun preparedStatementPoolReturnsPooledInstance() {
+    fun preparedStatementCacheReturnsDistinctHandle() {
         val sql = "SELECT 1"
         val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
         preparedStatement.close()
-        val reusedStatement = connection.prepareStatement(sql)
-        assertSame(preparedStatement, reusedStatement)
-        assertFalse(reusedStatement.isClosed)
+        val cachedStatement = connection.prepareStatement(sql)
+        assertNotSame(preparedStatement, cachedStatement)
+        assertTrue(preparedStatement.isClosed)
+        assertFalse(cachedStatement.isClosed)
+        verify(mockDatabase).prepare(sql)
+    }
+
+    @Test
+    fun closingStaleHandleDoesNotCloseNewHandle() {
+        val sql = "SELECT 1"
+        val staleStatement = connection.prepareStatement(sql)
+        staleStatement.close()
+        val currentStatement = connection.prepareStatement(sql)
+
+        staleStatement.close()
+
+        assertTrue(staleStatement.isClosed)
+        assertFalse(currentStatement.isClosed)
     }
 
     @Test
@@ -1353,7 +1374,8 @@ internal class JdbcConnectionTest {
 
         characteristics.forEachIndexed { index, (type, holdability) ->
             val reopened = connection.prepareStatement(sql, type, ResultSet.CONCUR_READ_ONLY, holdability)
-            assertSame(statements[index], reopened)
+            assertNotSame(statements[index], reopened)
+            assertTrue(statements[index].isClosed)
             assertEquals(type, reopened.resultSetType)
             assertEquals(ResultSet.CONCUR_READ_ONLY, reopened.resultSetConcurrency)
             assertEquals(holdability, reopened.resultSetHoldability)
@@ -1380,7 +1402,8 @@ internal class JdbcConnectionTest {
         preparedStatement.close()
 
         val reopened = connection.prepareStatement(sql)
-        assertSame(preparedStatement, reopened)
+        assertNotSame(preparedStatement, reopened)
+        assertTrue(preparedStatement.isClosed)
         assertEquals(0, reopened.maxRows)
         assertEquals(0, reopened.maxFieldSize)
         assertEquals(0, reopened.fetchSize)
@@ -1404,15 +1427,16 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun preparedStatementPoolReplacesOnSecondReturn() {
+    fun preparedStatementCacheEntryCanBeReusedRepeatedly() {
         val sql = "SELECT 1"
         val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
         preparedStatement.close()
         val reusedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
-        assertSame(preparedStatement, reusedStatement)
+        assertNotSame(preparedStatement, reusedStatement)
         reusedStatement.close()
         val reusedAgain = connection.prepareStatement(sql) as JdbcPreparedStatement
-        assertSame(preparedStatement, reusedAgain)
+        assertNotSame(reusedStatement, reusedAgain)
+        verify(mockDatabase).prepare(sql)
     }
 
     @Test
@@ -1428,12 +1452,13 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun preparedStatementNotPooledWhenConnectionClosed() {
+    fun preparedStatementCanCloseAfterConnectionCloses() {
         val sql = "SELECT 1"
         val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
         connection.close()
         assertTrue(connection.isClosed)
-        assertFalse(connection.returnPreparedStatement(preparedStatement))
+        preparedStatement.close()
+        assertTrue(preparedStatement.isClosed)
     }
 
     @Test
@@ -1452,9 +1477,10 @@ internal class JdbcConnectionTest {
         }
         statements.forEach(JdbcPreparedStatement::close)
         val extraStatement = connection.prepareStatement("SELECT 99") as JdbcPreparedStatement
-        assertTrue(connection.returnPreparedStatement(extraStatement))
+        extraStatement.close()
         val reused = connection.prepareStatement("SELECT 99") as JdbcPreparedStatement
-        assertSame(extraStatement, reused)
+        assertNotSame(extraStatement, reused)
+        verify(mockDatabase).prepare("SELECT 99")
     }
 
     @Test
@@ -1467,14 +1493,16 @@ internal class JdbcConnectionTest {
         extraStatement.close()
         val evictedStatement = connection.prepareStatement("SELECT 0") as JdbcPreparedStatement
         assertNotSame(statements[0], evictedStatement)
+        verify(mockDatabase, times(2)).prepare("SELECT 0")
     }
 
     @Test
-    fun preparedStatementPoolReturnRejectedAfterCloseDoesNotLeak() {
+    fun preparedStatementCloseAfterConnectionCloseDoesNotLeak() {
         val sql = "SELECT 1"
         val preparedStatement = connection.prepareStatement(sql) as JdbcPreparedStatement
         connection.close()
-        assertFalse(connection.returnPreparedStatement(preparedStatement))
+        preparedStatement.close()
+        assertTrue(preparedStatement.isClosed)
         assertFailsWith<SQLException> { connection.prepareStatement(sql) }
     }
 

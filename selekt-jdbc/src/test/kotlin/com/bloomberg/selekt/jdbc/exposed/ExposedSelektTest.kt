@@ -203,6 +203,22 @@ internal class ExposedSelektTest {
     }
 
     @Test
+    fun repeatedParameterizedSelectInSameTransaction() {
+        val database = connect()
+        transaction(database) {
+            SchemaUtils.create(Users)
+            Users.insert { it[name] = "Alice"; it[email] = null }
+            Users.insert { it[name] = "Bob"; it[email] = null }
+
+            val alice = Users.selectAll().where { Users.name eq "Alice" }.single()
+            val bob = Users.selectAll().where { Users.name eq "Bob" }.single()
+
+            assertEquals("Alice", alice[Users.name])
+            assertEquals("Bob", bob[Users.name])
+        }
+    }
+
+    @Test
     fun selectCount() {
         val database = connect()
         transaction(database) {

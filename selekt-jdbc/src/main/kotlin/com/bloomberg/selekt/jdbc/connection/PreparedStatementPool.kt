@@ -16,7 +16,7 @@
 
 package com.bloomberg.selekt.jdbc.connection
 
-import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
+import com.bloomberg.selekt.jdbc.statement.PreparedStatementCacheEntry
 import javax.annotation.concurrent.NotThreadSafe
 
 private const val EMPTY = -1
@@ -24,15 +24,15 @@ private const val EMPTY = -1
 private const val HASH_MULTIPLIER = 31
 
 /**
- * A fixed-capacity, insertion-ordered hash table specialized for pooled statements.
+ * A fixed-capacity, insertion-ordered hash table specialized for prepared-statement cache entries.
  *
- * The table uses preallocated primitive arrays and the statement itself as its key. Consequently, both [take] and
+ * The table uses preallocated primitive arrays and the cache entry itself as its key. Consequently, both [take] and
  * [put] are allocation-free. This class is not thread-safe; [JdbcConnection] serializes access with its pool lock.
  */
 @NotThreadSafe
 internal class PreparedStatementPool(private val capacity: Int) {
     private val bucketHeads: IntArray
-    private val statements: Array<JdbcPreparedStatement?>
+    private val entries: Array<PreparedStatementCacheEntry?>
     private val hashes: IntArray
     private val nextInBucket: IntArray
     private val previousInOrder: IntArray
@@ -49,7 +49,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
         require(capacity > 0) { "Capacity must be positive" }
         val bucketCount = bucketCount(capacity)
         bucketHeads = IntArray(bucketCount) { EMPTY }
-        statements = arrayOfNulls(capacity)
+        entries = arrayOfNulls(capacity)
         hashes = IntArray(capacity)
         nextInBucket = IntArray(capacity) { EMPTY }
         previousInOrder = IntArray(capacity) { EMPTY }
@@ -62,14 +62,14 @@ internal class PreparedStatementPool(private val capacity: Int) {
         resultSetType: Int,
         resultSetConcurrency: Int,
         resultSetHoldability: Int
-    ): JdbcPreparedStatement? {
+    ): PreparedStatementCacheEntry? {
         val hash = hash(sql, resultSetType, resultSetConcurrency, resultSetHoldability)
         val bucket = hash and bucketHeads.size - 1
         var previous = EMPTY
         var slot = bucketHeads[bucket]
         while (slot != EMPTY) {
-            val statement = checkNotNull(statements[slot])
-            if (hashes[slot] == hash && statement.matches(
+            val entry = checkNotNull(entries[slot])
+            if (hashes[slot] == hash && entry.matches(
                     sql,
                     resultSetType,
                     resultSetConcurrency,
@@ -79,7 +79,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
                 unlinkFromBucket(bucket, previous, slot)
                 unlinkFromOrder(slot)
                 release(slot)
-                return statement
+                return entry
             }
             previous = slot
             slot = nextInBucket[slot]
@@ -88,16 +88,16 @@ internal class PreparedStatementPool(private val capacity: Int) {
     }
 
     /**
-     * Adds [statement], returning a replaced statement or the eldest statement evicted at capacity.
+     * Adds [entry], returning a replaced entry or the eldest entry evicted at capacity.
      */
-    fun put(statement: JdbcPreparedStatement): JdbcPreparedStatement? {
-        val hash = statement.poolHash()
+    fun put(entry: PreparedStatementCacheEntry): PreparedStatementCacheEntry? {
+        val hash = entry.poolHash()
         val bucket = hash and bucketHeads.size - 1
         var slot = bucketHeads[bucket]
         while (slot != EMPTY) {
-            val current = checkNotNull(statements[slot])
-            if (hashes[slot] == hash && current.hasSamePoolKey(statement)) {
-                statements[slot] = statement
+            val current = checkNotNull(entries[slot])
+            if (hashes[slot] == hash && current.hasSamePoolKey(entry)) {
+                entries[slot] = entry
                 return current
             }
             slot = nextInBucket[slot]
@@ -105,7 +105,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
 
         val evicted = if (size == capacity) { remove(eldest) } else { null }
         slot = claim()
-        statements[slot] = statement
+        entries[slot] = entry
         hashes[slot] = hash
         nextInBucket[slot] = bucketHeads[bucket]
         bucketHeads[bucket] = slot
@@ -115,18 +115,18 @@ internal class PreparedStatementPool(private val capacity: Int) {
 
     fun isEmpty(): Boolean = size == 0
 
-    fun drain(): List<JdbcPreparedStatement> {
-        val snapshot = ArrayList<JdbcPreparedStatement>(size)
+    fun drain(): List<PreparedStatementCacheEntry> {
+        val snapshot = ArrayList<PreparedStatementCacheEntry>(size)
         var slot = eldest
         while (slot != EMPTY) {
-            snapshot += checkNotNull(statements[slot])
+            snapshot += checkNotNull(entries[slot])
             slot = nextInOrder[slot]
         }
         reset()
         return snapshot
     }
 
-    private fun remove(slot: Int): JdbcPreparedStatement {
+    private fun remove(slot: Int): PreparedStatementCacheEntry {
         val bucket = hashes[slot] and bucketHeads.size - 1
         var previous = EMPTY
         var current = bucketHeads[bucket]
@@ -135,11 +135,11 @@ internal class PreparedStatementPool(private val capacity: Int) {
             previous = current
             current = nextInBucket[current]
         }
-        val statement = checkNotNull(statements[slot])
+        val entry = checkNotNull(entries[slot])
         unlinkFromBucket(bucket, previous, slot)
         unlinkFromOrder(slot)
         release(slot)
-        return statement
+        return entry
     }
 
     private fun unlinkFromBucket(bucket: Int, previous: Int, slot: Int) {
@@ -166,7 +166,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
     }
 
     private fun release(slot: Int) {
-        statements[slot] = null
+        entries[slot] = null
         hashes[slot] = 0
         nextInBucket[slot] = EMPTY
         previousInOrder[slot] = EMPTY
@@ -197,7 +197,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
 
     private fun reset() {
         bucketHeads.fill(EMPTY)
-        statements.fill(null)
+        entries.fill(null)
         hashes.fill(0)
         nextInBucket.fill(EMPTY)
         previousInOrder.fill(EMPTY)
@@ -211,14 +211,14 @@ internal class PreparedStatementPool(private val capacity: Int) {
         size = 0
     }
 
-    private fun JdbcPreparedStatement.poolHash(): Int = hash(
+    private fun PreparedStatementCacheEntry.poolHash(): Int = hash(
         sql,
         resultSetType,
         resultSetConcurrency,
         resultSetHoldability
     )
 
-    private fun JdbcPreparedStatement.matches(
+    private fun PreparedStatementCacheEntry.matches(
         sql: String,
         resultSetType: Int,
         resultSetConcurrency: Int,
@@ -228,7 +228,7 @@ internal class PreparedStatementPool(private val capacity: Int) {
         this.resultSetConcurrency == resultSetConcurrency &&
         this.resultSetHoldability == resultSetHoldability
 
-    private fun JdbcPreparedStatement.hasSamePoolKey(other: JdbcPreparedStatement): Boolean = matches(
+    private fun PreparedStatementCacheEntry.hasSamePoolKey(other: PreparedStatementCacheEntry): Boolean = matches(
         other.sql,
         other.resultSetType,
         other.resultSetConcurrency,
