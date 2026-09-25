@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.benchmarks;
 
+import com.bloomberg.selekt.StatementHandle;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -45,6 +46,7 @@ public class ExternalSQLiteBenchmark {
     private static final String LARGE_UTF8_TEXT = "x".repeat(1024 * 1024 - 2) + "🌍";
     private File tempDir;
     private long db;
+    private StatementHandle reusableStatement;
 
     @Setup(Level.Iteration)
     public void setUp() throws IOException {
@@ -59,10 +61,16 @@ public class ExternalSQLiteBenchmark {
         final long statement = statementHolder[0];
         sqlite.step(statement);
         sqlite.finalize(statement);
+        final String reusableSql = "SELECT 1";
+        sqlite.prepareV2(db, reusableSql, reusableSql.length(), statementHolder);
+        reusableStatement = sqlite.newStatementHandle(statementHolder[0]);
     }
 
     @TearDown(Level.Iteration)
     public void tearDown() {
+        if (reusableStatement != null) {
+            sqlite.finalize(reusableStatement);
+        }
         if (db != 0L) {
             sqlite.closeV2(db);
         }
@@ -101,6 +109,11 @@ public class ExternalSQLiteBenchmark {
         final int finalizeResult = sqlite.finalize(stmtHolder[0]);
 
         return prepareResult + finalizeResult;
+    }
+
+    @Benchmark
+    public int stepAndResetStatement() {
+        return sqlite.step(reusableStatement) + sqlite.reset(reusableStatement);
     }
 
     @Benchmark
