@@ -56,6 +56,42 @@ private const val MAX_STREAM_LENGTH = 1_000_000_000
 
 private const val READER_BUFFER_SIZE = 8_192
 
+internal class PreparedStatementCacheEntry(
+    val sql: String,
+    val resultSetType: Int,
+    val resultSetConcurrency: Int,
+    val resultSetHoldability: Int,
+    val parameterCount: Int,
+    val readOnly: Boolean
+) {
+    val parameterRow = ParameterRow(parameterCount)
+    val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
+    var totalBatchCount = 0
+    private var successArray: IntArray? = null
+    private var previousSuccessArray: IntArray? = null
+
+    fun reset() {
+        parameterRow.clear()
+        batchRows.clear()
+        totalBatchCount = 0
+    }
+
+    fun successArray(batchSize: Int): IntArray {
+        val current = successArray
+        val previous = previousSuccessArray
+        val result = when {
+            current?.size == batchSize -> current
+            previous?.size == batchSize -> previous
+            else -> IntArray(batchSize) { Statement.SUCCESS_NO_INFO }
+        }
+        if (result !== current) {
+            previousSuccessArray = current
+            successArray = result
+        }
+        return result
+    }
+}
+
 private fun validatedStreamLength(length: Long): Int {
     if (length !in 0L..MAX_STREAM_LENGTH) {
         throw SQLException("Stream length $length is out of range (0, $MAX_STREAM_LENGTH)")
@@ -98,33 +134,63 @@ private fun InputStream.readBounded(
     return output.toByteArray()
 }
 
+@Suppress("LongParameterList", "TooGenericExceptionCaught")
+private fun prepareCacheEntry(
+    connection: JdbcConnection,
+    database: SQLDatabase,
+    sql: String,
+    resultSetType: Int,
+    resultSetConcurrency: Int,
+    resultSetHoldability: Int
+): PreparedStatementCacheEntry = try {
+    connection.withSession {
+        database.prepare(sql).use { statement ->
+            PreparedStatementCacheEntry(
+                sql,
+                resultSetType,
+                resultSetConcurrency,
+                resultSetHoldability,
+                statement.parameterCount,
+                statement.isReadOnly
+            )
+        }
+    }
+} catch (e: Exception) {
+    throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+}
+
 /**
  * @since 0.28.0
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("LongParameterList", "TooGenericExceptionCaught")
 @NotThreadSafe
 internal open class JdbcPreparedStatement(
     connection: JdbcConnection,
     private val database: SQLDatabase,
-    val sql: String,
+    sql: String,
     resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
     resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
-    resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
+    resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
+    cachedEntry: PreparedStatementCacheEntry? = null
 ) : JdbcStatement(connection, database, resultSetType, resultSetConcurrency, resultSetHoldability), PreparedStatement {
-    private val preparation = try {
-        connection.withSession {
-            database.prepare(sql).use { it.parameterCount to it.isReadOnly }
+    private val cacheEntry = cachedEntry ?: prepareCacheEntry(
+        connection,
+        database,
+        sql,
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability
+    )
+    val sql: String get() = cacheEntry.sql
+    private val parameterCount: Int get() = cacheEntry.parameterCount
+    private val readOnly: Boolean get() = cacheEntry.readOnly
+    private val parameterRow: ParameterRow get() = cacheEntry.parameterRow
+    private val batchRows: ChunkedParameterRows get() = cacheEntry.batchRows
+    private var totalBatchCount: Int
+        get() = cacheEntry.totalBatchCount
+        set(value) {
+            cacheEntry.totalBatchCount = value
         }
-    } catch (e: Exception) {
-        throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
-    }
-    private val parameterCount = preparation.first
-    private val readOnly = preparation.second
-    private val parameterRow = ParameterRow(parameterCount)
-    private val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
-    private var totalBatchCount = 0
-    private var successArray: IntArray? = null
-    private var previousSuccessArray: IntArray? = null
 
     private fun validateParameterIndex(parameterIndex: Int) {
         checkClosed()
@@ -244,25 +310,10 @@ internal open class JdbcPreparedStatement(
     override fun close() {
         if (!isClosed) {
             closeDependentResultSets()
-            if (!connection.returnPreparedStatement(this)) {
-                super.close()
-            }
+            cacheEntry.reset()
+            super.close()
+            connection.returnPreparedStatement(cacheEntry)
         }
-    }
-
-    override fun onReturned() {
-        clearParameters()
-        batchRows.clear()
-        totalBatchCount = 0
-        super.onReturned()
-    }
-
-    internal fun reopen() {
-        markOpen()
-    }
-
-    internal fun closePooled() {
-        super.close()
     }
 
     override fun clearParameters() {
@@ -280,21 +331,6 @@ internal open class JdbcPreparedStatement(
         checkClosed()
         batchRows.clear()
         totalBatchCount = 0
-    }
-
-    private fun successArray(batchSize: Int): IntArray {
-        val current = successArray
-        val previous = previousSuccessArray
-        val result = when {
-            current?.size == batchSize -> current
-            previous?.size == batchSize -> previous
-            else -> IntArray(batchSize) { Statement.SUCCESS_NO_INFO }
-        }
-        if (result !== current) {
-            previousSuccessArray = current
-            successArray = result
-        }
-        return result
     }
 
     /**
@@ -317,7 +353,7 @@ internal open class JdbcPreparedStatement(
                 connection.ensureTransaction()
                 batchRows(sql, batchRows)
             }
-            return successArray(totalBatchCount)
+            return cacheEntry.successArray(totalBatchCount)
         } catch (e: Exception) {
             val mapped = if (e is OperationCancelledException) {
                 SQLExceptionMapper.mapCancellation(e)

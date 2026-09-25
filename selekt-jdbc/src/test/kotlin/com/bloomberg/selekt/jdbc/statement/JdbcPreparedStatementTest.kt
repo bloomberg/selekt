@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.jdbc.statement
 
 import com.bloomberg.selekt.CancellationSignal
-import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.ISQLRawStatement
 import com.bloomberg.selekt.ISQLStatement
@@ -62,6 +61,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -247,7 +247,8 @@ internal class JdbcPreparedStatementTest {
         preparedStatement.executeQuery().close()
         assertTrue(preparedStatement.isClosed)
         val reopened = connection.prepareStatement(preparedStatement.sql)
-        assertSame(preparedStatement, reopened)
+        assertNotSame(preparedStatement, reopened)
+        assertTrue(preparedStatement.isClosed)
         assertFalse(reopened.isCloseOnCompletion)
         reopened.close()
     }
@@ -371,21 +372,23 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun connectionRefusesToPoolStatementWithOpenResultSet() {
+    fun closeClosesOpenResultSetBeforeCachingPreparation() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         preparedStatement.executeQuery()
-        assertFalse(connection.returnPreparedStatement(preparedStatement))
-        assertFalse(preparedStatement.isClosed)
+        preparedStatement.close()
+        verify(cursor).close()
+        assertTrue(preparedStatement.isClosed)
     }
 
     @Test
-    fun pooledStatementIsReusedOnlyAfterItsResultSetIsClosed() {
+    fun cachedPreparationUsesASeparateStatementHandle() {
         whenever(database.query(any<String>(), any<Array<Any?>>())) doReturn cursor
         preparedStatement.executeQuery()
         preparedStatement.close()
         val reused = connection.prepareStatement(preparedStatement.sql)
         verify(cursor).close()
-        assertSame(preparedStatement, reused)
+        assertNotSame(preparedStatement, reused)
+        assertTrue(preparedStatement.isClosed)
         assertFalse(reused.isClosed)
     }
 
@@ -1547,7 +1550,8 @@ internal class JdbcPreparedStatementTest {
         preparedStatement.setString(2, "sensitive-parameter-value")
         preparedStatement.executeQuery()
         preparedStatement.clearParameters()
-        val row = assertNotNull(readField<ParameterRow>(preparedStatement, "parameterRow"))
+        val entry = assertNotNull(readField<PreparedStatementCacheEntry>(preparedStatement, "cacheEntry"))
+        val row = entry.parameterRow
         assertTrue(row.tags.all { it == 0.toByte() })
         assertTrue(row.ints.all { it == 0 })
         assertTrue(row.objects.all { it == null })
@@ -1567,21 +1571,22 @@ internal class JdbcPreparedStatementTest {
             addBatch()
             executeBatch()
         }
-        val batchRowsBeforeClose = assertNotNull(readField<ChunkedParameterRows>(statement, "batchRows"))
+        val entry = assertNotNull(readField<PreparedStatementCacheEntry>(statement, "cacheEntry"))
+        val batchRowsBeforeClose = entry.batchRows
         val batchChunkBeforeClose = assertNotNull(readField<Any>(batchRowsBeforeClose, "firstChunk"))
         statement.apply {
             setString(1, "pending-sensitive-value")
             close()
         }
 
-        val parameterRow = assertNotNull(readField<ParameterRow>(statement, "parameterRow"))
+        val parameterRow = entry.parameterRow
         assertTrue(parameterRow.tags.all { it == 0.toByte() })
         assertTrue(parameterRow.objects.all { it == null })
-        val batchRows = assertNotNull(readField<ChunkedParameterRows>(statement, "batchRows"))
+        val batchRows = entry.batchRows
         assertEquals(0, batchRows.size)
         assertSame(batchRowsBeforeClose, batchRows)
         assertSame(batchChunkBeforeClose, readField<Any>(batchRows, "firstChunk"))
-        assertSame(updateCounts, readField<IntArray>(statement, "successArray"))
+        assertSame(updateCounts, readField<IntArray>(entry, "successArray"))
         assertContentEquals(intArrayOf(-2), updateCounts)
     }
 }
