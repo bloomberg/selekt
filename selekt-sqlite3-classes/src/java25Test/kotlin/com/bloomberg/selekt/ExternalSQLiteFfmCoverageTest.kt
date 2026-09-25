@@ -30,6 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -101,6 +102,52 @@ internal class ExternalSQLiteFfmCoverageTest {
         val scopes = List(5) { enter.invoke(stack) as Int }
 
         scopes.asReversed().forEach { assertNull(leave.invoke(stack, it)) }
+    }
+
+    @Test
+    fun `callback failure bookkeeping only runs while a callback delegate is active`() {
+        val subject = newExternalSQLite(CursorWindowOwnershipRegistry())
+        val callbackFailures = externalType.getDeclaredField("callbackFailures").run {
+            trySetAccessible()
+            get(subject) as ThreadLocal<*>
+        }
+        val databases = LongArray(2)
+        databases.indices.forEach {
+            val holder = LongArray(1)
+            assertEquals(SQL_OK, subject.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, holder))
+            databases[it] = holder.single()
+        }
+        val listener = object : SQLCommitListener {
+            override fun onCommit(): Int = 0
+
+            override fun onRollback() = Unit
+        }
+        try {
+            callbackFailures.remove()
+            prepareAndFinalize(subject, databases[0])
+            assertNull(callbackFailures.get())
+
+            subject.progressHandler(databases[0], 1) { 0 }
+            callbackFailures.remove()
+            prepareAndFinalize(subject, databases[0])
+            assertNotNull(callbackFailures.get())
+
+            assertEquals(SQL_OK, subject.commitHook(databases[1], true, listener))
+            subject.progressHandler(databases[0], 0, null)
+            callbackFailures.remove()
+            prepareAndFinalize(subject, databases[0])
+            assertNotNull(callbackFailures.get())
+
+            assertEquals(SQL_OK, subject.commitHook(databases[1], false, null))
+            callbackFailures.remove()
+            prepareAndFinalize(subject, databases[0])
+            assertNull(callbackFailures.get())
+        } finally {
+            subject.progressHandler(databases[0], 0, null)
+            subject.commitHook(databases[1], false, null)
+            databases.forEach(subject::closeV2)
+            callbackFailures.remove()
+        }
     }
 
     @Test
@@ -197,6 +244,12 @@ internal class ExternalSQLiteFfmCoverageTest {
             CursorWindowOwnershipRegistry::class.java
         ).apply { trySetAccessible() }
             .newInstance(SQLiteConfiguration(), { Unit }, registry) as IExternalSQLite
+
+    private fun prepareAndFinalize(sqlite: IExternalSQLite, database: Long) {
+        val statementHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.prepareV2(database, "SELECT 1", 8, statementHolder))
+        assertEquals(SQL_OK, sqlite.finalize(statementHolder.single()))
+    }
 
     private fun assertNormalized(
         sql: String,

@@ -90,6 +90,8 @@ internal class ExternalSQLite(
     private val activeListeners = mutableMapOf<Long, CommitHookRegistration>()
     @GuardedBy("callbackRegistryLock")
     private val progressHandlerRegistrations = mutableMapOf<Long, ProgressHandlerRegistration>()
+    @Volatile
+    private var callbacksMayRun = false
     private val callbackFailures = ThreadLocal<CallbackFailureStack>()
 
     @NotThreadSafe
@@ -285,7 +287,25 @@ internal class ExternalSQLite(
         callbackFailures.get()?.record(failure)
     }
 
+    @GuardedBy("callbackRegistryLock")
+    private fun refreshCallbacksMayRun() {
+        callbacksMayRun = activeListeners.isNotEmpty() ||
+            progressHandlerRegistrations.values.any { it.dispatcher.delegate != null }
+    }
+
+    private inline fun <T> withCallbackRegistryLock(block: () -> T): T = callbackRegistryLock.withLock {
+        callbacksMayRun = true
+        try {
+            block()
+        } finally {
+            refreshCallbacksMayRun()
+        }
+    }
+
     private inline fun <T> withCallbackFailurePropagation(block: () -> T): T {
+        if (!callbacksMayRun) {
+            return block()
+        }
         val failures = callbackFailures.get() ?: CallbackFailureStack().also(callbackFailures::set)
         val scope = failures.enter()
         val result = try {
@@ -1206,7 +1226,7 @@ internal class ExternalSQLite(
 
     override fun closeV2(
         db: Long
-    ): SQLCode = callbackRegistryLock.withLock {
+    ): SQLCode = withCallbackRegistryLock {
         val segment = MemorySegment.ofAddress(db)
         sqlite3_progress_handler.invoke(segment, 0, MemorySegment.NULL, MemorySegment.NULL)
         sqlite3_commit_hook.invoke(segment, MemorySegment.NULL, MemorySegment.NULL)
@@ -1289,7 +1309,7 @@ internal class ExternalSQLite(
         enabled: Boolean,
         listener: SQLCommitListener?
     ): SQLCode {
-        callbackRegistryLock.withLock {
+        withCallbackRegistryLock {
             val segment = MemorySegment.ofAddress(db)
             if (enabled && listener != null) {
                 val arena = Arena.ofShared()
@@ -1620,7 +1640,7 @@ internal class ExternalSQLite(
         instructionCount: Int,
         handler: SQLProgressHandler?
     ) {
-        callbackRegistryLock.withLock {
+        withCallbackRegistryLock {
             val segment = MemorySegment.ofAddress(db)
             if (handler != null && instructionCount > 0) {
                 val registration = progressHandlerRegistrations[db] ?: run {
