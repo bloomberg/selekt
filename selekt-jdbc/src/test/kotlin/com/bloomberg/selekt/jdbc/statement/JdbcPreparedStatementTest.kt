@@ -24,6 +24,8 @@ import com.bloomberg.selekt.OperationCancelledException
 import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.SelektPreparedStatement
+import com.bloomberg.selekt.jdbc.isWrapperFor
+import com.bloomberg.selekt.jdbc.unwrap
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.connection.testSharedDatabase
 import com.bloomberg.selekt.jdbc.lob.JdbcBlob
@@ -62,7 +64,6 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotSame
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -632,8 +633,8 @@ internal class JdbcPreparedStatementTest {
 
     @Test
     fun unwrapSelektPreparedStatement() {
-        assertTrue(preparedStatement.isWrapperFor(SelektPreparedStatement::class.java))
-        assertSame(preparedStatement, preparedStatement.unwrap(SelektPreparedStatement::class.java))
+        assertTrue(preparedStatement.isWrapperFor<SelektPreparedStatement>())
+        assertSame(preparedStatement, preparedStatement.unwrap<SelektPreparedStatement>())
     }
 
     @Test

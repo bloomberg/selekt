@@ -328,9 +328,7 @@ query call.
 `executeBatch()` returns a caller-owned update-count array that remains independent of later executions. Applications that deliberately want to avoid this copy can unwrap `SelektPreparedStatement` and request a shared array:
 
 ``` kotlin
-val updateCounts = statement
-    .unwrap(SelektPreparedStatement::class.java)
-    .executeBatchShared()
+val updateCounts = statement.unwrap<SelektPreparedStatement>().executeBatchShared()
 ```
 
 The shared array is driver-owned and must be treated as read-only. A later batch execution or closing and pooling the statement may reuse it.
