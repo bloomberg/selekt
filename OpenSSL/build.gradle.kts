@@ -20,6 +20,7 @@ import java.util.Locale
 import java.util.Properties
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     base
     alias(libs.plugins.undercouch.download)
 }

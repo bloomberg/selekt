@@ -20,7 +20,8 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPom
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
 
-val <T : Any> NamedDomainObjectContainer<T>.debug: T get() = getByName("debug")
+val <T : Any> NamedDomainObjectContainer<T>.debug: T
+    get() = getByName("debug")
 
 fun <T : Any> NamedDomainObjectContainer<T>.debug(configure: T.() -> Unit) = getByName("debug", configure)
 

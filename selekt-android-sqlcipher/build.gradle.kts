@@ -22,6 +22,7 @@ version = sqlcipherVersion
 logger.quiet("SQLCipher version: {}", version)
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     id("com.android.library")
     `maven-publish`
     signing

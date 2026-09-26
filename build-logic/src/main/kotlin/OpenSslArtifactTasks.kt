@@ -32,6 +32,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
+/** Removes unpacked OpenSSL source trees that do not match the configured version. */
 abstract class RemoveStaleOpenSslSources @Inject constructor(
     private val fileSystemOperations: FileSystemOperations
 ) : DefaultTask() {

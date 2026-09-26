@@ -17,6 +17,7 @@
 import java.net.URI
 import java.net.URL
 
+/** Versions used directly by the build logic rather than dependency declarations. */
 enum class Versions(
     val version: String,
     private val url: URL
