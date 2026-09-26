@@ -55,7 +55,7 @@ internal open class JdbcStatementState(
     internal val resultSetConcurrency: Int,
     internal val resultSetHoldability: Int
 ) {
-    internal var dependentResultSets: MutableSet<ResultSet>? = null
+    internal var dependentResultSets: MutableList<ResultSet>? = null
     internal var closingDependentResultSets = false
     internal var updateCount = -1
     internal var lastGeneratedKey = -1L
@@ -669,8 +669,8 @@ open class JdbcStatement internal constructor(
         }
     }
 
-    private fun dependentResultSets(): MutableSet<ResultSet> =
-        statementState.dependentResultSets ?: mutableSetOf<ResultSet>().also {
+    private fun dependentResultSets(): MutableList<ResultSet> =
+        statementState.dependentResultSets ?: mutableListOf<ResultSet>().also {
             statementState.dependentResultSets = it
         }
 }

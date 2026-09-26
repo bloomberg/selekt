@@ -55,7 +55,9 @@ internal class SQLConnection(
 
     private val progressHandlerLock = ReentrantLock()
     @GuardedBy("progressHandlerLock")
-    private var installedProgressHandler: ProgressHandlerSetting? = null
+    private var installedProgressHandlerInstructionCount = 0
+    @GuardedBy("progressHandlerLock")
+    private var installedProgressHandler: SQLProgressHandler? = null
 
     override val isAutoCommit: Boolean
         get() = sqlite.getAutocommit(databaseHandle) != 0
@@ -539,7 +541,8 @@ internal class SQLConnection(
 
     override fun setProgressHandler(instructionCount: Int, handler: SQLProgressHandler?) = progressHandlerLock.withLock {
         sqlite.progressHandler(databaseHandle, instructionCount, handler)
-        installedProgressHandler = handler?.let { ProgressHandlerSetting(instructionCount, it) }
+        installedProgressHandlerInstructionCount = if (handler == null) { 0 } else { instructionCount }
+        installedProgressHandler = handler
     }
 
     override fun setProgressHandlerIfIdle(
@@ -558,8 +561,11 @@ internal class SQLConnection(
     override fun onReturned() = progressHandlerLock.withLock {
         checkedOut = false
         val desired = progressHandlerSetting()
-        if (installedProgressHandler != desired) {
-            setProgressHandler(desired?.instructionCount ?: 0, desired?.handler)
+        val desiredInstructionCount = desired?.instructionCount ?: 0
+        if (installedProgressHandlerInstructionCount != desiredInstructionCount ||
+            installedProgressHandler != desired?.handler
+        ) {
+            setProgressHandler(desiredInstructionCount, desired?.handler)
         }
     }
 

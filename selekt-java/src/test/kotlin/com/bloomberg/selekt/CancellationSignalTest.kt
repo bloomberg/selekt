@@ -25,7 +25,9 @@ import kotlin.test.assertEquals
 internal class CancellationSignalTest {
     @Test
     fun initiallyNotCancelled() {
-        assertFalse(CancellationSignal().isCancelled)
+        val signal = CancellationSignal()
+        assertFalse(signal.isCancelled)
+        assertEquals(0, signal.onProgress())
     }
 
     @Test
@@ -33,6 +35,7 @@ internal class CancellationSignalTest {
         val signal = CancellationSignal()
         signal.cancel()
         assertTrue(signal.isCancelled)
+        assertEquals(1, signal.onProgress())
     }
 
     @Test
@@ -59,4 +62,3 @@ internal class CancellationSignalTest {
         assertEquals(500, CancellationSignal(500).instructionCount)
     }
 }
-
