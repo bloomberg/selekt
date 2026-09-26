@@ -15,6 +15,7 @@
  */
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     id("com.android.library")
     alias(libs.plugins.androidx.benchmark)
     alias(libs.plugins.detekt)

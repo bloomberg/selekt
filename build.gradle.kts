@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     base
     alias(libs.plugins.dokka)
     alias(libs.plugins.cyclonedx) apply false
