@@ -568,9 +568,7 @@ class SQLDatabase(
     ): T = pledge {
         cancellationSignal.throwIfCancelled()
         session().execute(primary) { executor ->
-            executor.setProgressHandler(cancellationSignal.instructionCount) {
-                if (cancellationSignal.isCancelled) { 1 } else { 0 }
-            }
+            executor.setProgressHandler(cancellationSignal.instructionCount, cancellationSignal)
             try {
                 block()
             } catch (@Suppress("Detekt.TooGenericExceptionCaught") e: Exception) {

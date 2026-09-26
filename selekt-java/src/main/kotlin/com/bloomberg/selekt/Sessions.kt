@@ -183,9 +183,7 @@ internal class SQLSession(
         val executor = retainSecondary(sql)
         return runCatching {
             signal?.let {
-                executor.setProgressHandler(it.instructionCount) {
-                    if (it.isCancelled) { 1 } else { 0 }
-                }
+                executor.setProgressHandler(it.instructionCount, it)
             }
             executor.block {
                 if (signal != null) {

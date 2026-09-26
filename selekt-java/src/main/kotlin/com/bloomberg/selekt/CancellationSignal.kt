@@ -9,7 +9,7 @@ import javax.annotation.concurrent.ThreadSafe
 @ThreadSafe
 class CancellationSignal(
     internal val instructionCount: Int = DEFAULT_INSTRUCTION_COUNT
-) {
+) : SQLProgressHandler {
     @Suppress("unused")
     @Volatile
     private var cancelled: Int = 0
@@ -20,6 +20,8 @@ class CancellationSignal(
     fun cancel() {
         cancelledUpdater[this] = 1
     }
+
+    override fun onProgress(): Int = if (isCancelled) { 1 } else { 0 }
 
     @JvmSynthetic
     internal fun throwIfCancelled() {
