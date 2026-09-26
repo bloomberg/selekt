@@ -71,7 +71,12 @@ data class DatabaseConfiguration(
      * Android defaults to [UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE] for compatibility. Other JVM runtimes
      * default to [JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE].
      */
-    val cursorWindowByteSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
+    val cursorWindowByteSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE,
+    /**
+     * Database format used for encrypted connections. Defaults to SQLCipher 4 so existing encrypted databases continue
+     * to open after the native runtime moves to SQLCipher 5.
+     */
+    val sqlCipherCompatibility: SQLCipherCompatibility = SQLCipherCompatibility.V4
 ) {
     init {
         require(maxConnectionPoolSize > 0)

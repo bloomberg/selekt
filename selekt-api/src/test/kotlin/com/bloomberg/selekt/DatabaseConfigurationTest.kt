@@ -39,6 +39,7 @@ internal class DatabaseConfigurationTest {
         )
         assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE, configuration.cursorWindowSize)
         assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE, configuration.cursorWindowByteSize)
+        assertEquals(SQLCipherCompatibility.V4, configuration.sqlCipherCompatibility)
     }
 
     @Test

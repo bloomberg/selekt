@@ -20,6 +20,7 @@ import com.bloomberg.selekt.CommonThreadLocalRandom
 import com.bloomberg.selekt.commons.zero
 import com.bloomberg.selekt.DatabaseConfiguration
 import com.bloomberg.selekt.DatabaseKey
+import com.bloomberg.selekt.SQLCipherCompatibility
 import com.bloomberg.selekt.SQLCode
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SQLite
@@ -104,6 +105,7 @@ class SelektDataSource internal constructor(
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
         private const val PROPERTY_POOL_SIZE = "poolSize"
+        private const val PROPERTY_SQLCIPHER_COMPATIBILITY = "sqlCipherCompatibility"
     }
 
     private val logger: Logger = LoggerFactory.getLogger(SelektDataSource::class.java)
@@ -165,6 +167,10 @@ class SelektDataSource internal constructor(
 
     @Volatile
     var foreignKeys: Boolean = true
+
+    /** SQLCipher format used by encrypted connections. Defaults to [SQLCipherCompatibility.V4]. */
+    @Volatile
+    var sqlCipherCompatibility: SQLCipherCompatibility = SQLCipherCompatibility.V4
 
     private val keyLock = Any()
 
@@ -310,6 +316,7 @@ class SelektDataSource internal constructor(
         setProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE, cursorWindowByteSize.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
         setProperty(PROPERTY_FOREIGN_KEYS, foreignKeys.toString())
+        setProperty(PROPERTY_SQLCIPHER_COMPATIBILITY, sqlCipherCompatibility.name)
     }
 
     private fun getOrCreateDatabase(
@@ -363,13 +370,17 @@ class SelektDataSource internal constructor(
         val journalModeValue = SQLiteJournalMode.valueOf(
             properties.getProperty(PROPERTY_JOURNAL_MODE).uppercase()
         )
+        val sqlCipherCompatibilityValue = SQLCipherCompatibility.valueOf(
+            properties.getProperty(PROPERTY_SQLCIPHER_COMPATIBILITY).uppercase()
+        )
         val baseConfig = journalModeValue.databaseConfiguration
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,
             busyTimeoutMillis = busyTimeoutValue,
             useNativeTransactionListeners = true,
             cursorWindowSize = cursorWindowSizeValue,
-            cursorWindowByteSize = cursorWindowByteSizeValue
+            cursorWindowByteSize = cursorWindowByteSizeValue,
+            sqlCipherCompatibility = sqlCipherCompatibilityValue
         )
     }
 
@@ -385,6 +396,7 @@ class SelektDataSource internal constructor(
         append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))
         append("&journalMode=").append(properties.getProperty(PROPERTY_JOURNAL_MODE))
         append("&poolSize=").append(properties.getProperty(PROPERTY_POOL_SIZE))
+        append("&sqlCipherCompatibility=").append(properties.getProperty(PROPERTY_SQLCIPHER_COMPATIBILITY))
         keyHash?.let { append("&keyHash=").append(it) }
     }
 }

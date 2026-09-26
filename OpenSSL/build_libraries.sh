@@ -63,7 +63,7 @@ OPENSSL_CONFIGURE_OPTIONS="-fPIC -fstack-protector-all no-idea no-camellia \
     no-cast no-chacha no-des no-dh no-dsa no-ec no-ecdsa no-ec2m no-ocb no-tls no-dtls no-nextprotoneg \
     no-poly1305 no-rfc3779 no-whirlpool no-scrypt no-srp \
     no-mdc2 no-engine no-ts no-sse2 \
-    no-sm2 no-sm3 no-sm4 no-ocsp no-cmac \
+    no-sm2 no-sm3 no-sm4 no-ocsp \
     no-srtp no-shared no-comp no-ct no-cms no-capieng \
     no-deprecated no-autoerrinit no-stdio no-ui-console \
     no-filenames"

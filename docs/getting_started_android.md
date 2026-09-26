@@ -32,6 +32,21 @@ Selekt Android requires Java 17.
 
 ## Getting a database
 
+### SQLCipher 5 database format
+
+Encrypted connections default to the SQLCipher 4 database format so existing databases continue to open. SQLCipher 5
+is currently a beta intended for testing, not production use. For a new SQLCipher 5 AES-256-GCM database, pass an
+explicit configuration such as
+`SQLiteJournalMode.WAL.databaseConfiguration.copy(sqlCipherCompatibility = SQLCipherCompatibility.V5)` to the APIs that
+accept `DatabaseConfiguration`.
+
+To migrate an existing encrypted database, first back it up and ensure nothing else has it open. Open it once with
+`SQLCipherCompatibility.MIGRATE_TO_V5`, close it, then use `SQLCipherCompatibility.V5` thereafter. Migration is run as
+the first operation after applying the key. Do not use the migration mode as the steady-state configuration.
+
+SQLCipher 5 rejects encryption keys for in-memory databases. Use an unencrypted in-memory database or an encrypted
+file-backed database instead.
+
 ### Using Room
 
 #### Room 2.8 and later (Recommended)

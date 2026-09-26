@@ -168,6 +168,21 @@ Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exact
 
 `SelektDriver` does not accept encryption keys. Encrypted connections must use `SelektDataSource.setEncryption` with an `EncryptionKeySource.Literal` backed by a caller-owned `CharArray`. `SelektDataSource` stores and later zeroes an internal copy; zero the caller-owned array after `setEncryption` returns.
 
+### SQLCipher 5 database format
+
+Selekt uses SQLCipher 5 but defaults encrypted connections to the SQLCipher 4 database format so existing databases keep
+working. SQLCipher 5 is currently a beta intended for testing, not production use. For a new database using SQLCipher
+5's AES-256-GCM format, set
+`dataSource.sqlCipherCompatibility = SQLCipherCompatibility.V5` before opening the first connection.
+
+To migrate an existing database, back it up and ensure no other process or connection has it open. Use a dedicated data
+source configured with `SQLCipherCompatibility.MIGRATE_TO_V5` to open and close one connection. This runs
+`PRAGMA cipher_migrate` immediately after the key, as SQLCipher requires. Close that data source, then create a new one
+configured with `SQLCipherCompatibility.V5` for all future opens. Do not use `MIGRATE_TO_V5` as a steady-state mode.
+
+SQLCipher 5 rejects encryption keys for in-memory databases. Use an unencrypted in-memory database or an encrypted
+file-backed database instead.
+
 ### With a DataSource
 
 === "Kotlin"
@@ -178,6 +193,7 @@ Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exact
 
     val dataSource = SelektDataSource().apply {
         databasePath = "/path/to/encrypted.db"
+        // sqlCipherCompatibility = SQLCipherCompatibility.V5 // New SQLCipher 5 databases only.
     }
     val key = deriveHexEncodedKey()
     try {
@@ -196,6 +212,7 @@ Represent arbitrary key bytes as a `CharArray` containing `0x` followed by exact
 
     final SelektDataSource dataSource = new SelektDataSource();
     dataSource.setDatabasePath("/path/to/encrypted.db");
+    // dataSource.setSqlCipherCompatibility(SQLCipherCompatibility.V5); // New databases only.
     final char[] key = deriveHexEncodedKey();
     try {
         dataSource.setEncryption(new EncryptionKeySource.Literal(key));

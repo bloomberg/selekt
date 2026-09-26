@@ -64,13 +64,32 @@ internal class SelektSQLiteDriverTest {
         val key = ByteArray(32) { 0x42 }
         val expectedKey = key.copyOf()
         val driver = createSelektSQLiteDriver(key = key)
+        val file = createTempFile("selekt-room-driver-keyed", ".db").toFile()
         assertContentEquals(expectedKey, key)
+        key.fill(0)
+        try {
+            driver.use {
+                driver.open(file.absolutePath).use { connection ->
+                    connection.prepare("SELECT 1").use { statement ->
+                        assertTrue(statement.step())
+                        assertEquals(1L, statement.getLong(0))
+                    }
+                }
+            }
+        } finally {
+            deleteDatabase(file)
+        }
+    }
+
+    @Test
+    fun keyedDriverRejectsInMemoryDatabase() {
+        val key = ByteArray(32) { 0x42 }
+        val driver = createSelektSQLiteDriver(key = key)
         key.fill(0)
         driver.use {
             driver.open(":memory:").use { connection ->
-                connection.prepare("SELECT 1").use { statement ->
-                    assertTrue(statement.step())
-                    assertEquals(1L, statement.getLong(0))
+                assertFailsWith<android.database.SQLException> {
+                    connection.prepare("SELECT 1")
                 }
             }
         }
@@ -109,16 +128,22 @@ internal class SelektSQLiteDriverTest {
         val key = ByteArray(32) { 0x42 }
         val driver = createSelektSQLiteDriver(key = key)
         val nativeKey = driver.nativeKey()
+        val file = createTempFile("selekt-room-driver-lifecycle", ".db").toFile()
         key.fill(0)
-        driver.open(":memory:").use { connection ->
-            driver.close()
-            assertTrue(nativeKey.isOpen())
-            connection.prepare("SELECT 1").use { statement ->
-                assertTrue(statement.step())
-                assertEquals(1L, statement.getLong(0))
+        try {
+            driver.open(file.absolutePath).use { connection ->
+                driver.close()
+                assertTrue(nativeKey.isOpen())
+                connection.prepare("SELECT 1").use { statement ->
+                    assertTrue(statement.step())
+                    assertEquals(1L, statement.getLong(0))
+                }
             }
+            assertFalse(nativeKey.isOpen())
+        } finally {
+            driver.close()
+            deleteDatabase(file)
         }
-        assertFalse(nativeKey.isOpen())
     }
 
     @Test

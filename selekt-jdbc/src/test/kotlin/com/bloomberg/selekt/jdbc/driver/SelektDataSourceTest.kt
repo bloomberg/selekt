@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.DatabaseConfiguration
+import com.bloomberg.selekt.SQLCipherCompatibility
 import java.io.File
 import java.io.PrintWriter
 import java.sql.SQLException
@@ -73,6 +74,7 @@ internal class SelektDataSourceTest {
         assertEquals(4 * 1024 * 1024, cursorWindowByteSize)
         assertEquals("WAL", journalMode)
         assertTrue(foreignKeys)
+        assertEquals(SQLCipherCompatibility.V4, sqlCipherCompatibility)
         assertTrue(encryptionEnabled)
     }
 
@@ -449,16 +451,13 @@ internal class SelektDataSourceTest {
     }
 
     @Test
-    fun encryptedPrivateMemoryDatabaseIsReusableBetweenConnections() {
+    fun encryptedPrivateMemoryDatabaseIsRejected() {
         dataSource.close()
         dataSource = SelektDataSource(SharedDatabaseCache(maxIdleEntries = 0))
         dataSource.databasePath = ":memory:"
         dataSource.setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
 
-        dataSource.getConnection().use(::populatePrivateMemoryDatabase)
-        assertEquals(1, dataSource.cachedDatabaseCount)
-        dataSource.getConnection().use(::verifyPrivateMemoryDatabase)
-
+        assertFailsWith<SQLException> { dataSource.getConnection() }
         dataSource.close()
         assertEquals(0, dataSource.cachedDatabaseCount)
     }
@@ -500,6 +499,14 @@ internal class SelektDataSourceTest {
         busyTimeout = 3000
         journalMode = "DELETE"
         foreignKeys = false
+        setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
+        getConnection().close()
+    }
+
+    @Test
+    fun getEncryptedSQLCipher5Connection(): Unit = dataSource.run {
+        databasePath = File(tempDir, "sqlcipher-5.db").absolutePath
+        sqlCipherCompatibility = SQLCipherCompatibility.V5
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         getConnection().close()
     }

@@ -80,7 +80,17 @@ internal class SQLConnection(
 
     init {
         runCatching {
-            key?.let { sqlite.keyConventionally(databaseHandle, it) }
+            key?.let {
+                sqlite.keyConventionally(databaseHandle, it)
+                if (configuration.sqlCipherCompatibility.migrates) {
+                    sqlite.migrateToSQLCipher5(databaseHandle)
+                } else {
+                    sqlite.exec(
+                        databaseHandle,
+                        "PRAGMA cipher_compatibility=${configuration.sqlCipherCompatibility.majorVersion}"
+                    )
+                }
+            }
             sqlite.extendedResultCodes(databaseHandle, 0)
             configuration.trace?.let { sqlite.traceV2(databaseHandle, it()) }
             sqlite.busyTimeout(databaseHandle, configuration.busyTimeoutMillis)
@@ -668,6 +678,21 @@ private fun SQLite.prepare(db: DatabaseHandle, sql: String) = LongArray(1).apply
 }.first().also {
     check(it != NULL)
 }.let(::newStatementHandle)
+
+private fun SQLite.migrateToSQLCipher5(db: DatabaseHandle) {
+    val statement = prepare(db, "PRAGMA cipher_migrate")
+    try {
+        if (step(statement) != SQL_ROW) {
+            throwSQLException(SQL_ERROR, SQL_ERROR, "PRAGMA cipher_migrate did not return a result.", null)
+        }
+        val status = columnInt(statement, 0)
+        if (status != SQL_OK) {
+            throwSQLException(status, status, "PRAGMA cipher_migrate failed with result code $status.", null)
+        }
+    } finally {
+        finalize(statement)
+    }
+}
 
 private fun SQLPreparedStatement.bindArguments(args: Array<out Any?>) {
     require(parameterCount == args.size) {

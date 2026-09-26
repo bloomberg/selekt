@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.android
 
+import com.bloomberg.selekt.SQLCipherCompatibility
 import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.ZeroBlob
 import com.bloomberg.selekt.commons.deleteDatabase
@@ -32,12 +33,14 @@ import kotlin.test.assertTrue
 internal class SQLiteDatabaseAttachTest {
     private val file = createTempFile("test-sql-database-sharding", ".db").toFile().apply { deleteOnExit() }
     private val otherFile = createTempFile("test-sql-database-sharding-other", ".db").toFile().apply { deleteOnExit() }
+    private val configuration = SQLiteJournalMode.DELETE.databaseConfiguration.copy(
+        sqlCipherCompatibility = SQLCipherCompatibility.V5
+    )
 
     // DELETE mode because it has one connection. Databases must be attached per connection.
-    private val database = SQLiteDatabase.openOrCreateDatabase(file, SQLiteJournalMode.DELETE.databaseConfiguration,
-        ByteArray(32) { 0x42 })
+    private val database = SQLiteDatabase.openOrCreateDatabase(file, configuration, ByteArray(32) { 0x42 })
     private val other = SQLiteDatabase.openOrCreateDatabase(
-        otherFile, SQLiteJournalMode.DELETE.databaseConfiguration, ByteArray(32) { 0x42 })
+        otherFile, configuration, ByteArray(32) { 0x42 })
 
     @BeforeEach
     fun setUp() {

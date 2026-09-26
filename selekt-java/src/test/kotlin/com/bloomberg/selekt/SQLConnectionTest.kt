@@ -28,6 +28,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -191,6 +192,88 @@ internal class SQLConnectionTest {
         }
         assertFailsWith<IllegalStateException> {
             SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null)
+        }
+    }
+
+    @Test
+    fun encryptedConnectionAppliesCompatibilityAfterKey(): Unit = sqlite.run {
+        val key = DatabaseKey(mock(), 1L, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        try {
+            SQLConnection(
+                "encrypted.db",
+                this,
+                databaseConfiguration.copy(sqlCipherCompatibility = SQLCipherCompatibility.V5),
+                0,
+                CommonThreadLocalRandom,
+                key
+            ).use {
+                inOrder(this@run) {
+                    verify(this@run).keyConventionally(any<DatabaseHandle>(), same(key))
+                    verify(this@run).exec(eq(DB), eq("PRAGMA cipher_compatibility=5"))
+                }
+            }
+        } finally {
+            key.close()
+        }
+    }
+
+    @Test
+    fun migrationRunsImmediatelyAfterKey(): Unit = sqlite.run {
+        stubMigration(SQL_OK)
+        val key = DatabaseKey(mock(), 1L, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        try {
+            SQLConnection(
+                "encrypted.db",
+                this,
+                databaseConfiguration.copy(sqlCipherCompatibility = SQLCipherCompatibility.MIGRATE_TO_V5),
+                0,
+                CommonThreadLocalRandom,
+                key
+            ).use {
+                inOrder(this@run) {
+                    verify(this@run).keyConventionally(any<DatabaseHandle>(), same(key))
+                    verify(this@run).prepareV2(
+                        any<DatabaseHandle>(),
+                        eq("PRAGMA cipher_migrate"),
+                        any<LongArray>()
+                    )
+                    verify(this@run).step(any<StatementHandle>())
+                }
+                verify(this@run, never()).exec(eq(DB), eq("PRAGMA cipher_compatibility=5"))
+            }
+        } finally {
+            key.close()
+        }
+    }
+
+    @Test
+    fun failedMigrationIsReported(): Unit = sqlite.run {
+        stubMigration(SQL_ERROR)
+        val expected = IllegalStateException("migration failed")
+        // Kotlin inserts a Nothing-return check after Mockito records this stub.
+        runCatching {
+            doThrow(expected).whenever(this).throwSQLException(
+                eq(SQL_ERROR),
+                eq(SQL_ERROR),
+                eq("PRAGMA cipher_migrate failed with result code $SQL_ERROR."),
+                isNull()
+            )
+        }
+        val key = DatabaseKey(mock(), 1L, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        try {
+            assertSame(expected, assertFailsWith<IllegalStateException> {
+                SQLConnection(
+                    "encrypted.db",
+                    this,
+                    databaseConfiguration.copy(sqlCipherCompatibility = SQLCipherCompatibility.MIGRATE_TO_V5),
+                    0,
+                    CommonThreadLocalRandom,
+                    key
+                )
+            })
+            verify(this@run).finalize(any<StatementHandle>())
+        } finally {
+            key.close()
         }
     }
 
@@ -1146,7 +1229,17 @@ internal class SQLConnectionTest {
         verify(this@run, times(11)).step(any<Long>())
     }
 
+    private fun SQLite.stubMigration(status: SQLCode) {
+        whenever(prepareV2(any<DatabaseHandle>(), eq("PRAGMA cipher_migrate"), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = MIGRATION_STATEMENT
+            SQL_OK
+        }
+        whenever(step(any<StatementHandle>())) doReturn SQL_ROW
+        whenever(columnInt(any<StatementHandle>(), eq(0))) doReturn status
+    }
+
     private companion object {
         const val DB = 1L
+        const val MIGRATION_STATEMENT = 2L
     }
 }
