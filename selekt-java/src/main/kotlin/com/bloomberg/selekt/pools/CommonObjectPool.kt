@@ -46,7 +46,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     private val isClosed = AtomicBoolean(false)
 
-    private val lock = ReentrantLock(true)
+    private val lock = ReentrantLock()
     private val available = lock.newCondition()
 
     @GuardedBy("lock")

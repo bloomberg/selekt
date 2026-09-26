@@ -24,12 +24,18 @@ import com.bloomberg.selekt.pools.SingleObjectPool;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +44,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class CommonObjectPoolBenchmark {
+    private static final long SIMULATED_QUERY_WORK = 100L;
+
     static class Task implements com.bloomberg.selekt.pools.IPooledObject<String> {
         private volatile String name;
         private boolean tag = false;
@@ -170,10 +178,81 @@ public class CommonObjectPoolBenchmark {
         }
     }
 
+    @State(Scope.Benchmark)
+    public static class ContendedInput {
+        IObjectPool<String, Task> pool;
+
+        @Param({"1", "4"})
+        int poolSize;
+
+        @Setup(Level.Trial)
+        public void setUp() {
+            final PoolConfiguration configuration = new PoolConfiguration(
+                20_000L,
+                20_000L,
+                poolSize
+            );
+            final IObjectFactory<Task> factory = new IObjectFactory<>() {
+                @Override
+                public void close() {}
+
+                @Override
+                public void destroyObject(@NotNull final Task obj) {}
+
+                @Override
+                public @NotNull Task makeObject() {
+                    return new Task("");
+                }
+
+                @Override
+                public @NotNull Task makePrimaryObject() {
+                    return makeObject();
+                }
+            };
+            pool = new CommonObjectPool<>(
+                factory,
+                BenchmarkExecutors.sharedExecutor,
+                configuration,
+                new SingleObjectPool<>(
+                    factory,
+                    BenchmarkExecutors.sharedExecutor,
+                    configuration.getEvictionDelayMillis(),
+                    configuration.getEvictionIntervalMillis()
+                )
+            );
+
+            final Task[] objects = new Task[poolSize];
+            for (int i = 0; i < poolSize; i++) {
+                objects[i] = pool.borrowObject();
+            }
+            for (Task object : objects) {
+                pool.returnObject(object);
+            }
+        }
+
+        @TearDown(Level.Trial)
+        public void tearDown() throws java.io.IOException {
+            pool.close();
+        }
+    }
+
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public @NotNull Task borrowThenReturnSingleObject(@NotNull final SingleObjectInput input) {
         final Task obj = input.pool.borrowObject("");
+        input.pool.returnObject(obj);
+        return obj;
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput, Mode.SampleTime})
+    @OutputTimeUnit(TimeUnit.MICROSECONDS)
+    @Fork(value = 3, jvmArgsAppend = {"-Xms2g", "-Xmx2g"})
+    @Warmup(iterations = 3, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+    @Measurement(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+    public @NotNull Task contendedBorrowThenReturn(@NotNull final ContendedInput input) {
+        final Task obj = input.pool.borrowObject();
+        Blackhole.consumeCPU(SIMULATED_QUERY_WORK);
         input.pool.returnObject(obj);
         return obj;
     }
