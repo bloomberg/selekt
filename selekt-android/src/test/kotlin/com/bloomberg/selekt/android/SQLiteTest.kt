@@ -158,6 +158,7 @@ internal class SQLiteTest {
     @Test
     fun keyThenRekeySuccessfully() {
         SQLite.key(db, key)
+        SQLite.exec(db, "CREATE TABLE 'Foo' (bar INT)")
         assertEquals(SQL_OK, SQLite.rekey(db, otherKey))
     }
 

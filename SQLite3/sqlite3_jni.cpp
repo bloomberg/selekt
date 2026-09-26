@@ -25,6 +25,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -2612,8 +2613,11 @@ Java_com_bloomberg_selekt_ExternalSQLite_nativeInit(
     jobject obj,
     jlong jSoftHeapLimit
 ) {
-    if (sqlite3_initialize() != SQLITE_OK) {
-        throwIllegalStateException(env, "sqlite3_initialize failed");
+    const auto result = sqlite3_initialize();
+    if (result != SQLITE_OK) {
+        char message[64];
+        std::snprintf(message, sizeof(message), "sqlite3_initialize failed: %d", result);
+        throwIllegalStateException(env, message);
         return;
     }
 #ifdef VEC1_STATIC

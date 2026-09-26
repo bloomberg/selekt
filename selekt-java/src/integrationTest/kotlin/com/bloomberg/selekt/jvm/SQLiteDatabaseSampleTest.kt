@@ -16,8 +16,11 @@
 
 package com.bloomberg.selekt.jvm
 
+import com.bloomberg.selekt.SQLCipherCompatibility
 import com.bloomberg.selekt.SQLiteJournalMode
 import java.io.File
+import java.nio.file.Files
+import kotlin.io.path.createTempFile
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -32,6 +35,31 @@ internal class SQLiteDatabaseSampleTest {
     fun readDatabase() {
         database.query("SELECT * FROM Users", emptyArray()).use {
             assertEquals(1, it.count)
+        }
+    }
+
+    @Test
+    fun migrateSQLCipher4DatabaseTo5() {
+        val migrated = createTempFile("sample-sqlcipher-migrated", ".db").toFile().apply { deleteOnExit() }
+        requireNotNull(javaClass.classLoader?.getResourceAsStream("databases/sample.sqlcipher.db")).use {
+            Files.copy(it, migrated.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+        val migrationConfiguration = SQLiteJournalMode.DELETE.databaseConfiguration.copy(
+            sqlCipherCompatibility = SQLCipherCompatibility.MIGRATE_TO_V5
+        )
+        openOrCreateDatabase(migrated, migrationConfiguration, ByteArray(32) { 0x42 }).use {
+            it.query("SELECT * FROM Users", emptyArray()).use { cursor ->
+                assertEquals(1, cursor.count)
+            }
+        }
+        openOrCreateDatabase(
+            migrated,
+            migrationConfiguration.copy(sqlCipherCompatibility = SQLCipherCompatibility.V5),
+            ByteArray(32) { 0x42 }
+        ).use {
+            it.query("SELECT * FROM Users", emptyArray()).use { cursor ->
+                assertEquals(1, cursor.count)
+            }
         }
     }
 }

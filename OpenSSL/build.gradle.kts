@@ -183,6 +183,10 @@ tasks.register<Copy>("unpackOpenSslHost") {
     into(layout.buildDirectory.dir("generated/${targetIdentifier()}"))
     dependsOn("downloadOpenSsl", removeStaleOpenSslHost)
     mustRunAfter("clean")
+    val configureFile = File(openSslWorkingDir.get().asFile, "Configure")
+    onlyIf("OpenSSL source tree is not already unpacked") {
+        !configureFile.isFile
+    }
 }
 
 tasks.register<Exec>("configureHost") {
@@ -191,7 +195,8 @@ tasks.register<Exec>("configureHost") {
     inputs.property("version", openSslVersion())
     val openSslWorkingDir = openSslWorkingDir.get().asFile
     workingDir(openSslWorkingDir)
-    outputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
+    val configurationMarker = File(openSslWorkingDir, ".selekt-configured")
+    outputs.file(configurationMarker)
         .withPropertyName("configure")
     outputs.cacheIf { false }
     val configArgs = listOf(
@@ -204,9 +209,10 @@ tasks.register<Exec>("configureHost") {
         "no-chacha", "no-des", "no-dh", "no-dsa", "no-ec", "no-ecdsa", "no-ec2m", "no-ocb",
         "no-dtls", "no-nextprotoneg", "no-poly1305", "no-rfc3779", "no-whirlpool",
         "no-scrypt", "no-srp", "no-mdc2", "no-engine", "no-ts", "no-sse2", "no-sm2", "no-sm3",
-        "no-sm4", "no-ocsp", "no-cmac", "no-srtp", "no-shared", "no-comp", "no-ct", "no-cms",
+        "no-sm4", "no-ocsp", "no-srtp", "no-shared", "no-comp", "no-ct", "no-cms",
         "no-capieng", "no-deprecated", "no-autoerrinit", "no-stdio", "no-ui-console", "no-filenames"
     )
+    inputs.property("configureArgs", configArgs)
     if (osName() == "windows") {
         if (isWindowsArm64) {
             val strawberryPerl = System.getenv("STRAWBERRY_PERL")
@@ -226,6 +232,9 @@ tasks.register<Exec>("configureHost") {
         commandLine("./config")
         args(configArgs)
     }
+    doLast {
+        configurationMarker.writeText(configArgs.joinToString(separator = "\n", postfix = "\n"))
+    }
 }
 
 tasks.register<Exec>("makeHost") {
@@ -234,6 +243,8 @@ tasks.register<Exec>("makeHost") {
     inputs.property("version", openSslVersion())
     workingDir(openSslWorkingDir)
     val openSslWorkingDir = openSslWorkingDir.get().asFile
+    inputs.files("$openSslWorkingDir/Makefile", "$openSslWorkingDir/configdata.pm")
+        .withPropertyName("configureOutputs")
     outputs.files("$openSslWorkingDir/libcrypto$hostCryptoExtension")
         .withPropertyName("libcrypto$hostCryptoExtension")
     outputs.files(fileTree("$openSslWorkingDir/include") { include("**/*.h") })

@@ -259,7 +259,11 @@ internal class ExternalSQLiteFfmCoverageTest {
         val dbHolder = LongArray(1)
         assertEquals(
             SQL_OK,
-            sqlite.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+            sqlite.openV2(
+                File.createTempFile("normalized-", ".db", tempDir).absolutePath,
+                SQL_OPEN_READWRITE_OR_CREATE,
+                dbHolder
+            )
         )
         val statementHolder = LongArray(1)
         try {
