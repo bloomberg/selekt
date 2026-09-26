@@ -278,7 +278,7 @@ internal class JdbcResultSet(
     private val resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
 ) : ResultSet {
     private var wasNull = false
-    private val metadata by lazy { JdbcResultSetMetaData(cursor) }
+    private var metadata: JdbcResultSetMetaData? = null
     private var fetchSize = 0
 
     override fun next(): Boolean {
@@ -713,7 +713,9 @@ internal class JdbcResultSet(
         return cursor.moveToPrevious()
     }
 
-    override fun getMetaData(): ResultSetMetaData = metadata
+    override fun getMetaData(): ResultSetMetaData = metadata ?: JdbcResultSetMetaData(cursor).also {
+        metadata = it
+    }
 
     override fun getObject(columnIndex: Int): Any? {
         checkClosed()
