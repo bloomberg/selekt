@@ -19,7 +19,12 @@ package com.bloomberg.selekt.jdbc.driver
 import com.bloomberg.selekt.DatabaseConfiguration
 import java.io.File
 import java.io.PrintWriter
+import java.sql.Connection
 import java.sql.SQLException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -31,10 +36,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 internal class SelektDataSourceTest {
     @TempDir
@@ -61,6 +62,7 @@ internal class SelektDataSourceTest {
         databasePath = "/tmp/test.db"
         maxPoolSize = 20
         busyTimeout = 5_000
+        pageCacheSizeKiB = 2_048
         cursorWindowSize = 64
         cursorWindowByteSize = 4 * 1024 * 1024
         journalMode = "WAL"
@@ -69,6 +71,7 @@ internal class SelektDataSourceTest {
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
         assertEquals(5_000, busyTimeout)
+        assertEquals(2_048, pageCacheSizeKiB)
         assertEquals(64, cursorWindowSize)
         assertEquals(4 * 1024 * 1024, cursorWindowByteSize)
         assertEquals("WAL", journalMode)
@@ -91,6 +94,12 @@ internal class SelektDataSourceTest {
         assertFailsWith<IllegalArgumentException> {
             dataSource.busyTimeout = -1
         }
+    }
+
+    @Test
+    fun invalidPageCacheSize() {
+        assertFailsWith<IllegalArgumentException> { dataSource.pageCacheSizeKiB = 0 }
+        assertFailsWith<IllegalArgumentException> { dataSource.pageCacheSizeKiB = -1 }
     }
 
     @Test
@@ -274,6 +283,11 @@ internal class SelektDataSourceTest {
     @Test
     fun busyTimeoutDefault() {
         assertEquals(2_500, dataSource.busyTimeout)
+    }
+
+    @Test
+    fun pageCacheSizeUsesSQLiteDefaultByDefault() {
+        assertEquals(null, dataSource.pageCacheSizeKiB)
     }
 
     @Test
@@ -471,6 +485,21 @@ internal class SelektDataSourceTest {
     }
 
     @Test
+    fun pageCacheSizeProducesDistinctCachedConfiguration(): Unit = dataSource.run {
+        databasePath = File(tempDir, "page-cache.db").absolutePath
+        val defaultConnection = getConnection()
+        pageCacheSizeKiB = 4_096
+        val configuredConnection = getConnection()
+        try {
+            assertEquals(200, defaultConnection.pageCacheSize())
+            assertEquals(-4_096, configuredConnection.pageCacheSize())
+        } finally {
+            defaultConnection.close()
+            configuredConnection.close()
+        }
+    }
+
+    @Test
     fun getConnectionWithDifferentJournalModes(): Unit = dataSource.run {
         listOf(
             "DELETE",
@@ -498,6 +527,7 @@ internal class SelektDataSourceTest {
         databasePath = File(tempDir, "all-props.db").absolutePath
         maxPoolSize = 15
         busyTimeout = 3000
+        pageCacheSizeKiB = 8_192
         journalMode = "DELETE"
         foreignKeys = false
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
@@ -782,5 +812,12 @@ internal class SelektDataSourceTest {
         running.set(false)
         rotator.join()
         assertEquals(0, failures.get(), "Key rotation race caused $failures unexpected failures")
+    }
+}
+
+private fun Connection.pageCacheSize(): Int = createStatement().use { statement ->
+    statement.executeQuery("PRAGMA cache_size").use { resultSet ->
+        check(resultSet.next())
+        resultSet.getInt(1)
     }
 }

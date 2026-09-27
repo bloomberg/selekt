@@ -120,6 +120,7 @@ internal class SelektDriverTest {
             assertFalse(contains("key"))
             assertTrue(contains("poolSize"))
             assertTrue(contains("busyTimeout"))
+            assertTrue(contains("pageCacheSizeKiB"))
             assertTrue(contains("cursorWindowSize"))
             assertTrue(contains("cursorWindowByteSize"))
             assertTrue(contains("journalMode"))
@@ -169,6 +170,12 @@ internal class SelektDriverTest {
             assertFalse(it.required)
             assertEquals("2500", it.value)
         }
+        find { it.name == "pageCacheSizeKiB" }.let {
+            assertNotNull(it)
+            assertEquals("Approximate page-cache size per physical connection in KiB", it.description)
+            assertFalse(it.required)
+            assertEquals(null, it.value)
+        }
         find { it.name == "cursorWindowSize" }.let {
             assertNotNull(it)
             assertEquals("Maximum rows retained in a scrollable cursor window", it.description)
@@ -201,6 +208,7 @@ internal class SelektDriverTest {
         val properties = Properties().apply {
             setProperty("poolSize", "5")
             setProperty("busyTimeout", "2000")
+            setProperty("pageCacheSizeKiB", "2048")
             setProperty("cursorWindowSize", "64")
             setProperty("cursorWindowByteSize", "4194304")
             setProperty("journalMode", "DELETE")
@@ -209,6 +217,34 @@ internal class SelektDriverTest {
         val connection = driver.connect(url, properties)
         assertNotNull(connection)
         connections.add(connection)
+    }
+
+    @Test
+    fun pageCacheSizeAppliesToDistinctSharedDatabaseConfiguration() {
+        val databaseFile = File(tempDir, "page-cache.db")
+        val url = "jdbc:sqlite:${databaseFile.absolutePath}"
+        val defaultConnection = assertNotNull(driver.connect(url, Properties())).also(connections::add)
+        val configuredConnection = assertNotNull(driver.connect(
+            "$url?pageCacheSizeKiB=2048",
+            Properties()
+        )).also(connections::add)
+
+        assertEquals(200, defaultConnection.pageCacheSize())
+        assertEquals(-2_048, configuredConnection.pageCacheSize())
+    }
+
+    @Test
+    fun invalidPageCacheSizesAreRejectedBeforeDatabaseOpen() {
+        listOf("0", "-1", "invalid").forEachIndexed { index, value ->
+            val databaseFile = File(tempDir, "invalid-page-cache-$index.db")
+            assertFailsWith<SQLException> {
+                driver.connect(
+                    "jdbc:sqlite:${databaseFile.absolutePath}?pageCacheSizeKiB=$value",
+                    Properties()
+                )
+            }
+            assertFalse(databaseFile.exists())
+        }
     }
 
     @Test
@@ -660,5 +696,12 @@ internal class SelektDriverTest {
                 it.execute("INSERT INTO readonly_test VALUES (3, 'after_restore')")
             }
         }
+    }
+}
+
+private fun Connection.pageCacheSize(): Int = createStatement().use { statement ->
+    statement.executeQuery("PRAGMA cache_size").use { resultSet ->
+        check(resultSet.next())
+        resultSet.getInt(1)
     }
 }

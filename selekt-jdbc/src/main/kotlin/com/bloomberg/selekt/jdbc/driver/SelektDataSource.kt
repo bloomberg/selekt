@@ -99,6 +99,7 @@ class SelektDataSource internal constructor(
 
     companion object {
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
+        private const val PROPERTY_PAGE_CACHE_SIZE_KIB = "pageCacheSizeKiB"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
         private const val PROPERTY_CURSOR_WINDOW_BYTE_SIZE = "cursorWindowByteSize"
         private const val PROPERTY_FOREIGN_KEYS = "foreignKeys"
@@ -130,6 +131,17 @@ class SelektDataSource internal constructor(
     var busyTimeout: Int = DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
         set(value) {
             require(value >= 0) { "Busy timeout must be non-negative" }
+            field = value
+        }
+
+    /**
+     * Approximate page-cache size per physical connection in KiB, or `null` for SQLite's default.
+     * Selekt passes this to SQLite as a negative `PRAGMA cache_size` value, denoting KiB rather than pages.
+     */
+    @Volatile
+    var pageCacheSizeKiB: Int? = null
+        set(value) {
+            require(value == null || value > 0) { "Page cache size must be positive when specified" }
             field = value
         }
 
@@ -306,6 +318,7 @@ class SelektDataSource internal constructor(
     private fun buildConnectionProperties(): Properties = Properties().apply {
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
+        pageCacheSizeKiB?.let { setProperty(PROPERTY_PAGE_CACHE_SIZE_KIB, it.toString()) }
         setProperty(PROPERTY_CURSOR_WINDOW_SIZE, cursorWindowSize.toString())
         setProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE, cursorWindowByteSize.toString())
         setProperty(PROPERTY_JOURNAL_MODE, journalMode)
@@ -358,6 +371,7 @@ class SelektDataSource internal constructor(
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
         val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE).toInt()
         val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT).toInt()
+        val pageCacheSizeKiBValue = properties.getPositiveIntProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)
         val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE).toInt()
         val cursorWindowByteSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE).toInt()
         val journalModeValue = SQLiteJournalMode.valueOf(
@@ -367,6 +381,7 @@ class SelektDataSource internal constructor(
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,
             busyTimeoutMillis = busyTimeoutValue,
+            pageCacheSizeKiB = pageCacheSizeKiBValue,
             useNativeTransactionListeners = true,
             cursorWindowSize = cursorWindowSizeValue,
             cursorWindowByteSize = cursorWindowByteSizeValue
@@ -380,6 +395,9 @@ class SelektDataSource internal constructor(
     ): String = buildString {
         append(connectionURL.databasePath)
         append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
+        properties.getProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)?.let {
+            append("&pageCacheSizeKiB=").append(it)
+        }
         append("&cursorWindowSize=").append(properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE))
         append("&cursorWindowByteSize=").append(properties.getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE))
         append("&foreignKeys=").append(properties.getProperty(PROPERTY_FOREIGN_KEYS))

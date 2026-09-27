@@ -39,6 +39,7 @@ internal class DatabaseConfigurationTest {
         )
         assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE, configuration.cursorWindowSize)
         assertEquals(DatabaseConfiguration.PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE, configuration.cursorWindowByteSize)
+        assertEquals(null, configuration.pageCacheSizeKiB)
     }
 
     @Test
@@ -68,6 +69,13 @@ internal class DatabaseConfigurationTest {
         assertFailsWith<IllegalArgumentException> {
             configuration(1).copy(cursorWindowByteSize = DatabaseConfiguration.MINIMUM_CURSOR_WINDOW_BYTE_SIZE - 1)
         }
+    }
+
+    @Test
+    fun pageCacheSizeMustBePositiveWhenSpecified() {
+        assertEquals(2_048, configuration(1).copy(pageCacheSizeKiB = 2_048).pageCacheSizeKiB)
+        assertFailsWith<IllegalArgumentException> { configuration(1).copy(pageCacheSizeKiB = 0) }
+        assertFailsWith<IllegalArgumentException> { configuration(1).copy(pageCacheSizeKiB = -1) }
     }
 
     @Test

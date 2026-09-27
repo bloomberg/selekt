@@ -27,6 +27,8 @@ import java.util.Properties
  * Supported properties:
  * - poolSize: Maximum connection pool size (integer)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer)
+ * - pageCacheSizeKiB: Approximate page-cache size per physical connection in KiB; applied as a negative SQLite
+ *   `PRAGMA cache_size` value so SQLite interprets it as KiB rather than pages (positive integer)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc.)
  * - foreignKeys: Enable foreign key constraints (true/false)
  *
