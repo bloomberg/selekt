@@ -46,7 +46,10 @@ android {
         @Suppress("UnstableApiUsage")
         externalNativeBuild {
             cmake {
-                arguments("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+                arguments(
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    "-DSELEKT_VEC1_ENABLE_X86_AVX2=ON"
+                )
             }
         }
     }

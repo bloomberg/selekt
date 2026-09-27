@@ -90,7 +90,7 @@ val vec1Enabled: String = providers.gradleProperty("selekt.vec1.enabled")
     .get()
 val vec1EnableX86Avx2: String = providers.gradleProperty("selekt.vec1.enableX86Avx2")
     .orElse(providers.environmentVariable("SELEKT_VEC1_ENABLE_X86_AVX2"))
-    .orElse("OFF")
+    .orElse("ON")
     .get()
 
 val sqlcipherDir = file("src/main/external/sqlcipher")

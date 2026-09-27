@@ -11446,13 +11446,14 @@ int sqlite3Vec1InitAVX2(
 
 # if defined(_MSC_VER)
 #  include <intrin.h>
-static int vec1HasAvx2(void)
+static int vec1HasAvx2Fma(void)
 {
   int regs[4];
   __cpuid(regs, 1);
   int ecx = regs[2];
   if (!(ecx & (1 << 28))) return 0;  // AVX
   if (!(ecx & (1 << 27))) return 0;  // OSXSAVE
+  if (!(ecx & (1 << 12))) return 0;  // FMA
   unsigned long long xcr0 = _xgetbv(0);
   if ((xcr0 & 0x6) != 0x6) return 0;
   __cpuidex(regs, 7, 0);
@@ -11460,10 +11461,10 @@ static int vec1HasAvx2(void)
   return (ebx & (1 << 5)) != 0;      // AVX2
 }
 # else
-static int vec1HasAvx2(){
+static int vec1HasAvx2Fma(){
   /* Clang/GCC */
   __builtin_cpu_init();
-  return __builtin_cpu_supports("avx2");
+  return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
 }
 # endif
 
@@ -11473,7 +11474,7 @@ static int initMultiExtension(
   const sqlite3_api_routines *pApi
 ){
   int rc = SQLITE_OK;
-  if( vec1HasAvx2() ){
+  if( vec1HasAvx2Fma() ){
     /* Use AVX2 */
     rc = sqlite3Vec1InitAVX2(db, pzErr, pApi); 
   }else{
