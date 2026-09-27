@@ -25,11 +25,48 @@ configure_file(
 )
 
 option(SELEKT_ENABLE_VEC1 "Build with embedded vec1 extension" ON)
+option(
+  SELEKT_VEC1_ENABLE_X86_AVX2
+  "Build vec1 scalar and AVX2/FMA implementations with runtime dispatch on x86_64"
+  ON
+)
 
 set(SELEKT_VEC1_SOURCE extensions/vec1/vec1.c)
 set(SELEKT_SOURCES generated/cpp/sqlite3.c)
 if(SELEKT_ENABLE_VEC1)
-  list(APPEND SELEKT_SOURCES ${SELEKT_VEC1_SOURCE})
+  if(SELEKT_VEC1_ENABLE_X86_AVX2
+     AND NOT MSVC
+     AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+    # vec1 supports multi-architecture builds by compiling the extension once
+    # for the baseline ISA and once for AVX2/FMA. Only the scalar object exports
+    # the SQLite entry point; it selects the appropriate implementation after
+    # checking the CPU and operating-system AVX state at runtime.
+    add_library(selekt_vec1_scalar OBJECT ${SELEKT_VEC1_SOURCE})
+    add_library(selekt_vec1_avx2 OBJECT ${SELEKT_VEC1_SOURCE})
+    foreach(SELEKT_VEC1_TARGET selekt_vec1_scalar selekt_vec1_avx2)
+      set_target_properties(${SELEKT_VEC1_TARGET} PROPERTIES
+        C_STANDARD 99
+        C_STANDARD_REQUIRED ON
+        POSITION_INDEPENDENT_CODE ON
+      )
+      target_compile_definitions(${SELEKT_VEC1_TARGET} PRIVATE VEC1_STATIC)
+      target_include_directories(${SELEKT_VEC1_TARGET} SYSTEM PRIVATE
+        include
+        generated/include
+        generated/include/sqlite3
+      )
+      target_compile_options(${SELEKT_VEC1_TARGET} PRIVATE -include stdint.h)
+    endforeach()
+    target_compile_definitions(selekt_vec1_scalar PRIVATE VEC1SIMD=SCALAR)
+    target_compile_definitions(selekt_vec1_avx2 PRIVATE VEC1SIMD=AVX2)
+    target_compile_options(selekt_vec1_avx2 PRIVATE -mavx2 -mfma)
+    list(APPEND SELEKT_SOURCES
+      $<TARGET_OBJECTS:selekt_vec1_scalar>
+      $<TARGET_OBJECTS:selekt_vec1_avx2>
+    )
+  else()
+    list(APPEND SELEKT_SOURCES ${SELEKT_VEC1_SOURCE})
+  endif()
 endif()
 
 add_library(selekt SHARED
@@ -83,11 +120,6 @@ target_compile_definitions(selekt PUBLIC
 
 if(SELEKT_ENABLE_VEC1)
   target_compile_definitions(selekt PUBLIC VEC1_STATIC)
-endif()
-
-option(SELEKT_VEC1_ENABLE_X86_AVX2 "Build vec1 with -mavx2 -mfma on x86_64" OFF)
-if(SELEKT_ENABLE_VEC1 AND SELEKT_VEC1_ENABLE_X86_AVX2 AND NOT MSVC AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
-  set_source_files_properties(${SELEKT_VEC1_SOURCE} PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma")
 endif()
 
 if(SELEKT_ENABLE_VEC1
