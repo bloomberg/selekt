@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-rootProject.name = "buildSrc"
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-dependencyResolutionManagement {
-    versionCatalogs {
-        create("libs") {
-            from(files("../gradle/libs.versions.toml"))
-        }
-    }
+/** Makes the shared Selekt build helpers available to Kotlin build scripts. */
+class SelektBuildLogicPlugin : Plugin<Project> {
+    override fun apply(target: Project) = Unit
 }

@@ -21,6 +21,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.register
 
+/** Adds a JMH source set and benchmark task. */
 class JmhPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = target.run {
         sourceSets.create("jmh") {

@@ -20,6 +20,7 @@ import com.android.build.gradle.internal.lint.LintModelWriterTask
 description = "Selekt Android SQLite library."
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     id("com.android.library")
     alias(libs.plugins.dokka)
     alias(libs.plugins.cash.licensee)

@@ -17,6 +17,7 @@
 description = "Selekt BOM."
 
 plugins {
+    id("com.bloomberg.selekt.build-logic")
     `java-platform`
     `maven-publish`
     signing
