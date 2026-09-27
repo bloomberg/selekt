@@ -80,6 +80,9 @@ fun targetIdentifier(): String = "${osName()}-${System.getProperty("os.arch")}".
 logger.quiet("Resolved platform identifier: {}", targetIdentifier())
 
 val isWindows = osName() == "windows"
+val isLinux = osName() == "linux"
+val isMacOs = osName() == "darwin"
+val isMusl = System.getenv("SELEKT_LIBC") == "musl"
 val isWindowsArm64 = isWindows && Regex("(?i)aarch64|arm64").containsMatchIn(
     System.getProperty("os.arch")
 )
@@ -96,6 +99,13 @@ val vec1EnableX86Avx2: String = providers.gradleProperty("selekt.vec1.enableX86A
 val sqlcipherDir = file("src/main/external/sqlcipher")
 val generatedCppDir = file("sqlite3/generated/cpp")
 val generatedIncludeDir = file("sqlite3/generated/include/sqlite3")
+val hostPgoEnabled = providers.gradleProperty("selekt.sqlite.hostPgo")
+    .orElse(providers.environmentVariable("SELEKT_SQLITE_HOST_PGO"))
+    .orElse("OFF")
+    .map { it.equals("ON", ignoreCase = true) }
+val hostPgoSupported = (isLinux && !isMusl) || isMacOs
+val hostPgoDirectory = layout.buildDirectory.dir("profiles/${targetIdentifier()}")
+val hostPgoProfile = hostPgoDirectory.map { it.file("sqlite.profdata") }
 
 tasks.register<Exec>("configureSqlCipher") {
     workingDir = sqlcipherDir
@@ -144,8 +154,35 @@ tasks.register<Copy>("copySQLiteImplementation") {
     into(generatedCppDir)
 }
 
+val generateHostPgoProfile = tasks.register<Exec>("generateHostPgoProfile") {
+    dependsOn(":OpenSSL:assembleHost", "amalgamate")
+    inputs.property("targetIdentifier", targetIdentifier())
+    inputs.property("cCompiler", System.getenv("CC") ?: "clang")
+    inputs.property("cxxCompiler", System.getenv("CXX") ?: "clang++")
+    inputs.file("benchmarks/generate_host_pgo_profile.sh")
+    inputs.file("benchmarks/native_sqlite_benchmark.c")
+    inputs.file("CMakeLists.txt")
+    inputs.file("sqlite3/CMakeLists.txt")
+    inputs.files(fileTree("sqlite3/extensions/vec1") { include("*.c", "*.h") })
+    inputs.file("sqlite3_jni.cpp")
+    inputs.file(generatedCppDir.resolve("sqlite3.c"))
+    inputs.file(rootProject.file("OpenSSL/build/libs/${targetIdentifier()}/libcrypto.a"))
+    inputs.file(rootProject.file("OpenSSL/build/manifests/${targetIdentifier()}/openssl-build.properties"))
+    outputs.file(hostPgoProfile)
+    outputs.cacheIf("LLVM profiles are compiler-version-specific") { false }
+    commandLine(
+        "bash",
+        file("benchmarks/generate_host_pgo_profile.sh").absolutePath,
+        hostPgoDirectory.get().asFile.absolutePath,
+        targetIdentifier()
+    )
+}
+
 tasks.register<Exec>("cmakeSQLite") {
     dependsOn(":OpenSSL:assembleHost", "amalgamate")
+    if (hostPgoEnabled.get() && hostPgoSupported) {
+        dependsOn(generateHostPgoProfile)
+    }
     val workingDir = Paths.get("$projectDir/.cxx-host")
     doFirst {
         Files.createDirectories(workingDir)
@@ -165,6 +202,10 @@ tasks.register<Exec>("cmakeSQLite") {
         "-DSELEKT_ENABLE_VEC1=$vec1Enabled",
         "-DSELEKT_VEC1_ENABLE_X86_AVX2=$vec1EnableX86Avx2"
     )
+    if (hostPgoEnabled.get() && hostPgoSupported) {
+        cmakeArgs.add("-DSELEKT_SQLITE_PGO=USE")
+        cmakeArgs.add("-DSELEKT_SQLITE_PGO_PROFILE=${hostPgoProfile.get().asFile.absolutePath}")
+    }
     if (isWindows) {
         if (isWindowsArm64) {
             cmakeArgs.addAll(0, listOf("-G", "Ninja"))

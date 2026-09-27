@@ -14,6 +14,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      CC: clang
+      CXX: clang++
+      SELEKT_SQLITE_HOST_PGO: 'ON'
     permissions:
       contents: write
       deployments: write

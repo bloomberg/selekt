@@ -30,9 +30,46 @@ option(
   "Build vec1 scalar and AVX2/FMA implementations with runtime dispatch on x86_64"
   ON
 )
+option(SELEKT_ENABLE_THINLTO "Enable ThinLTO for the Selekt native library" OFF)
+option(SELEKT_BUILD_NATIVE_BENCHMARKS "Build the native SQLite/SQLCipher/vec1 benchmark" OFF)
+set(SELEKT_SQLITE_OPTIMIZATION "DEFAULT" CACHE STRING "Optimization level for the SQLite amalgamation")
+set_property(CACHE SELEKT_SQLITE_OPTIMIZATION PROPERTY STRINGS DEFAULT O2 O3)
+set(SELEKT_SQLITE_PGO "AUTO" CACHE STRING "SQLite PGO mode: AUTO, OFF, GENERATE, or USE")
+set_property(CACHE SELEKT_SQLITE_PGO PROPERTY STRINGS AUTO OFF GENERATE USE)
+set(
+  SELEKT_SQLITE_PGO_PROFILE
+  ""
+  CACHE FILEPATH
+  "Merged .profdata file used by SQLite PGO"
+)
+
+string(TOUPPER "${SELEKT_SQLITE_OPTIMIZATION}" SELEKT_SQLITE_OPTIMIZATION)
+if(NOT SELEKT_SQLITE_OPTIMIZATION MATCHES "^(DEFAULT|O2|O3)$")
+  message(FATAL_ERROR "SELEKT_SQLITE_OPTIMIZATION must be DEFAULT, O2, or O3")
+endif()
+string(TOUPPER "${SELEKT_SQLITE_PGO}" SELEKT_SQLITE_PGO)
+if(NOT SELEKT_SQLITE_PGO MATCHES "^(AUTO|OFF|GENERATE|USE)$")
+  message(FATAL_ERROR "SELEKT_SQLITE_PGO must be AUTO, OFF, GENERATE, or USE")
+endif()
+set(SELEKT_SQLITE_PGO_ACTIVE "${SELEKT_SQLITE_PGO}")
+if(SELEKT_SQLITE_PGO STREQUAL "AUTO")
+  set(SELEKT_SQLITE_PGO_ACTIVE "OFF")
+  if(ANDROID
+     AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$"
+     AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
+     AND EXISTS "${SELEKT_SQLITE_PGO_PROFILE}")
+    set(SELEKT_SQLITE_PGO_ACTIVE "USE")
+  endif()
+endif()
+if(SELEKT_SQLITE_PGO_ACTIVE STREQUAL "USE" AND NOT EXISTS "${SELEKT_SQLITE_PGO_PROFILE}")
+  message(FATAL_ERROR
+    "SELEKT_SQLITE_PGO=USE requires an existing SELEKT_SQLITE_PGO_PROFILE (.profdata)"
+  )
+endif()
 
 set(SELEKT_VEC1_SOURCE extensions/vec1/vec1.c)
-set(SELEKT_SOURCES generated/cpp/sqlite3.c)
+set(SELEKT_SQLITE_SOURCE generated/cpp/sqlite3.c)
+set(SELEKT_SOURCES ${SELEKT_SQLITE_SOURCE})
 if(SELEKT_ENABLE_VEC1)
   if(SELEKT_VEC1_ENABLE_X86_AVX2
      AND NOT MSVC
@@ -72,6 +109,35 @@ endif()
 add_library(selekt SHARED
   ${SELEKT_SOURCES}
 )
+
+if(NOT SELEKT_SQLITE_OPTIMIZATION STREQUAL "DEFAULT"
+   AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+  set_property(SOURCE ${SELEKT_SQLITE_SOURCE} APPEND PROPERTY
+    COMPILE_OPTIONS "-${SELEKT_SQLITE_OPTIMIZATION}"
+  )
+endif()
+
+if((NOT SELEKT_SQLITE_PGO_ACTIVE STREQUAL "OFF" OR SELEKT_ENABLE_THINLTO)
+   AND NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+  message(FATAL_ERROR "SQLite PGO and ThinLTO require Clang")
+endif()
+if(SELEKT_SQLITE_PGO_ACTIVE STREQUAL "GENERATE")
+  set_property(SOURCE ${SELEKT_SQLITE_SOURCE} APPEND PROPERTY
+    COMPILE_OPTIONS "-fprofile-instr-generate"
+  )
+  target_link_options(selekt PRIVATE -fprofile-instr-generate)
+elseif(SELEKT_SQLITE_PGO_ACTIVE STREQUAL "USE")
+  set_property(SOURCE ${SELEKT_SQLITE_SOURCE} APPEND PROPERTY
+    COMPILE_OPTIONS "-fprofile-instr-use=${SELEKT_SQLITE_PGO_PROFILE}"
+  )
+  set_property(SOURCE ${SELEKT_SQLITE_SOURCE} APPEND PROPERTY
+    OBJECT_DEPENDS "${SELEKT_SQLITE_PGO_PROFILE}"
+  )
+endif()
+if(SELEKT_ENABLE_THINLTO)
+  target_compile_options(selekt PRIVATE -flto=thin)
+  target_link_options(selekt PRIVATE -flto=thin)
+endif()
 
 set_property(TARGET selekt PROPERTY C_STANDARD 99)
 set_property(TARGET selekt PROPERTY C_STANDARD_REQUIRED ON)
@@ -265,4 +331,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID_ABI AND NOT ANDROID AND NO
       message(FATAL_ERROR "mimalloc not found (required on Linux)")
     endif()
   endif()
+endif()
+
+if(SELEKT_BUILD_NATIVE_BENCHMARKS)
+  add_executable(selekt_native_benchmark ../benchmarks/native_sqlite_benchmark.c)
+  set_property(TARGET selekt_native_benchmark PROPERTY C_STANDARD 99)
+  set_property(TARGET selekt_native_benchmark PROPERTY C_STANDARD_REQUIRED ON)
+  target_include_directories(selekt_native_benchmark SYSTEM PRIVATE
+    include
+    generated/include
+    generated/include/sqlite3
+  )
+  target_compile_definitions(selekt_native_benchmark PRIVATE
+    SELEKT_BENCHMARK_OPTIMIZATION="${SELEKT_SQLITE_OPTIMIZATION}"
+    SELEKT_BENCHMARK_PGO="${SELEKT_SQLITE_PGO_ACTIVE}"
+    SELEKT_BENCHMARK_THINLTO=$<BOOL:${SELEKT_ENABLE_THINLTO}>
+  )
+  target_link_libraries(selekt_native_benchmark PRIVATE selekt)
 endif()
