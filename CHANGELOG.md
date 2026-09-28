@@ -7,7 +7,7 @@ Change Log
 * Reduce connection pool lock contention.
 * Reduce query-path allocation overhead.
 * Add runtime AVX2/FMA dispatch for vec1 on x86-64.
-* Enable SQLite PGO across Android, Linux, and macOS.
+* Enable SQLite PGO on Linux and macOS.
 * Configurable page cache size.
 
 ## Version 1.6.9
