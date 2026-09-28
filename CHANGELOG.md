@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+## Version 1.6.10
+
+* Optimise FFM downcalls when callbacks are inactive.
+* Reduce connection pool lock contention.
+* Reduce query-path allocation overhead.
+* Add runtime AVX2/FMA dispatch for vec1 on x86-64.
+* Enable SQLite PGO across Android, Linux, and macOS.
+* Configurable page cache size.
+
 ## Version 1.6.9
 
 * Fix JDBC prepared statement handle reuse.
