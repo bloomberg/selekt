@@ -298,6 +298,12 @@ endif()
 message(STATUS "Linking to verified OpenSSL ${OPENSSL_VERSION} libcrypto: ${LIBCRYPTO}")
 target_link_libraries(selekt PRIVATE "${LIBCRYPTO}")
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID_ABI AND NOT ANDROID)
+  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+  find_package(Threads REQUIRED)
+  target_link_libraries(selekt PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+endif()
+
 if(WIN32)
   target_link_libraries(selekt PRIVATE ws2_32 crypt32 advapi32 user32 bcrypt gdi32)
   if(MINGW)
