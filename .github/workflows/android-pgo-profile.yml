@@ -1,0 +1,190 @@
+name: 'Android ARM64 PGO profile'
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-pgo-profile.yml'
+      - 'OpenSSL/build.gradle.kts'
+      - 'OpenSSL/build_libraries.sh'
+      - 'OpenSSL/openssl.properties'
+      - 'SQLite3/CMakeLists.txt'
+      - 'SQLite3/build.gradle.kts'
+      - 'SQLite3/benchmarks/native_sqlite_benchmark.c'
+      - 'SQLite3/benchmarks/run_android_optimization_matrix.sh'
+      - 'SQLite3/benchmarks/summarize_android_optimizations.py'
+      - 'SQLite3/sqlite3/CMakeLists.txt'
+      - 'SQLite3/sqlite3/extensions/vec1/**'
+      - 'SQLite3/sqlite3_jni.cpp'
+      - 'SQLite3/src/main/external/sqlcipher'
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    name: 'Generate Android ARM64 PGO profile'
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ANDROID_NDK_VERSION: '27.3.13750724'
+      PGO_OUTPUT_DIRECTORY: ${{ github.workspace }}/build/android-pgo
+      PGO_SYSTEM_IMAGE: 'system-images;android-36;google_apis;arm64-v8a'
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 2
+          submodules: recursive
+
+      - name: 'Setup Java 17'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: 'Setup Android SDK'
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: >-
+            platform-tools
+            emulator
+            ndk;27.3.13750724
+            system-images;android-36;google_apis;arm64-v8a
+
+      - name: 'Calculate profile cache key'
+        id: profile-key
+        shell: bash
+        run: |
+          SYSTEM_IMAGE_PROPERTIES="$ANDROID_HOME/system-images/android-36/google_apis/arm64-v8a/source.properties"
+          EMULATOR_PROPERTIES="$ANDROID_HOME/emulator/source.properties"
+          for properties in "$SYSTEM_IMAGE_PROPERTIES" "$EMULATOR_PROPERTIES"; do
+            if [[ ! -f "$properties" ]]; then
+              echo "Android SDK package metadata not found: $properties" >&2
+              exit 1
+            fi
+          done
+          SYSTEM_IMAGE_REVISION=$(sed -n 's/^Pkg.Revision[[:space:]]*=[[:space:]]*//p' "$SYSTEM_IMAGE_PROPERTIES")
+          EMULATOR_REVISION=$(sed -n 's/^Pkg.Revision[[:space:]]*=[[:space:]]*//p' "$EMULATOR_PROPERTIES")
+          if [[ -z "$SYSTEM_IMAGE_REVISION" || -z "$EMULATOR_REVISION" ]]; then
+            echo 'Could not determine installed Android SDK package revisions.' >&2
+            exit 1
+          fi
+
+          PROFILE_INPUT_HASH=$(
+            {
+              echo 'android-arm64-pgo-format=1'
+              echo "ndk=${ANDROID_NDK_VERSION}"
+              echo "system-image=${PGO_SYSTEM_IMAGE}"
+              echo "system-image-revision=${SYSTEM_IMAGE_REVISION}"
+              echo "emulator-revision=${EMULATOR_REVISION}"
+              for input in \
+                .github/workflows/android-pgo-profile.yml \
+                OpenSSL/build.gradle.kts \
+                OpenSSL/build_libraries.sh \
+                OpenSSL/openssl.properties \
+                SQLite3/CMakeLists.txt \
+                SQLite3/build.gradle.kts \
+                SQLite3/benchmarks/native_sqlite_benchmark.c \
+                SQLite3/benchmarks/run_android_optimization_matrix.sh \
+                SQLite3/benchmarks/summarize_android_optimizations.py \
+                SQLite3/sqlite3/CMakeLists.txt \
+                SQLite3/sqlite3/extensions/vec1 \
+                SQLite3/sqlite3_jni.cpp \
+                SQLite3/src/main/external/sqlcipher
+              do
+                git rev-parse "HEAD:${input}"
+              done
+            } | shasum -a 256 | awk '{print $1}'
+          )
+          echo "key=android-arm64-pgo-${RUNNER_OS}-${RUNNER_ARCH}-${PROFILE_INPUT_HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: 'Restore PGO profile'
+        id: profile-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/android-arm64.profdata
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/android-arm64.profdata.sha256
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/matrix/*.log
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/matrix/summary.md
+          key: ${{ steps.profile-key.outputs.key }}
+
+      - name: 'Build Android ARM64 profiling inputs'
+        if: steps.profile-cache.outputs.cache-hit != 'true'
+        run: |
+          ./gradlew \
+            :OpenSSL:assembleArm64-v8a \
+            :SQLite3:amalgamate
+
+      - name: 'Generate and validate profile'
+        if: steps.profile-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          echo no | avdmanager create avd \
+            --force \
+            --name selekt-pgo \
+            --package "$PGO_SYSTEM_IMAGE" \
+            --device pixel_6
+
+          EMULATOR_LOG="$RUNNER_TEMP/selekt-pgo-emulator.log"
+          emulator \
+            -avd selekt-pgo \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -no-snapshot \
+            -gpu swiftshader_indirect \
+            > "$EMULATOR_LOG" 2>&1 &
+          EMULATOR_PID=$!
+          cleanup() {
+            adb emu kill >/dev/null 2>&1 || true
+            wait "$EMULATOR_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          adb wait-for-device
+          for attempt in $(seq 1 180); do
+            if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == '1' ]]; then
+              break
+            fi
+            if [[ "$attempt" == '180' ]]; then
+              cat "$EMULATOR_LOG"
+              echo 'Android emulator did not finish booting.' >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          adb shell input keyevent 82 >/dev/null 2>&1 || true
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION"
+          SQLite3/benchmarks/run_android_optimization_matrix.sh "$PGO_OUTPUT_DIRECTORY/matrix"
+          mv \
+            "$PGO_OUTPUT_DIRECTORY/matrix/sqlite-arm64.profdata" \
+            "$PGO_OUTPUT_DIRECTORY/android-arm64.profdata"
+
+      - name: 'Verify profile and write checksum'
+        shell: bash
+        run: |
+          test -s "$PGO_OUTPUT_DIRECTORY/android-arm64.profdata"
+          cd "$PGO_OUTPUT_DIRECTORY"
+          shasum -a 256 android-arm64.profdata | tee android-arm64.profdata.sha256
+
+      - name: 'Upload profile and benchmark evidence'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: android-arm64-pgo
+          path: |
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/android-arm64.profdata
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/android-arm64.profdata.sha256
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/matrix/*.log
+            ${{ env.PGO_OUTPUT_DIRECTORY }}/matrix/summary.md
+          if-no-files-found: error
+          retention-days: 30

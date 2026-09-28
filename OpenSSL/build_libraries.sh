@@ -68,10 +68,16 @@ OPENSSL_CONFIGURE_OPTIONS="-fPIC -fstack-protector-all no-idea no-camellia \
     no-deprecated no-autoerrinit no-stdio no-ui-console \
     no-filenames"
 
-TOOLCHAIN_BIN="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/${TOOLCHAIN_SYSTEM}/bin/"
+NDK_DIRECTORY=${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}
+if [[ -z "${NDK_DIRECTORY}" ]]; then
+    echo "ANDROID_NDK_HOME or ANDROID_NDK_ROOT must be set."
+    exit 1
+fi
+export ANDROID_NDK_ROOT=${NDK_DIRECTORY%/}
+TOOLCHAIN_BIN="${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/${TOOLCHAIN_SYSTEM}/bin/"
 PATH=${TOOLCHAIN_BIN}:${PATH}
 
-./config ${ARCH} \
+CC=clang ./Configure ${ARCH} \
     -D__ANDROID_API__=${ANDROID_API} \
     -D_FILE_OFFSET_BITS=${OFFSET} \
     ${OPENSSL_CONFIGURE_OPTIONS}

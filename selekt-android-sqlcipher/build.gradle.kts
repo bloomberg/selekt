@@ -36,6 +36,10 @@ repositories {
 
 val developmentABIs = listOf("arm64-v8a")
 val allABIs = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+val sqliteOptimization = providers.gradleProperty("selekt.sqlite.optimization").orElse("DEFAULT")
+val sqliteThinLto = providers.gradleProperty("selekt.sqlite.thinLto").orElse("OFF")
+val sqlitePgo = providers.gradleProperty("selekt.sqlite.pgo").orElse("AUTO")
+val sqlitePgoProfile = providers.gradleProperty("selekt.sqlite.pgoProfile").orElse("")
 
 android {
     compileSdk = Versions.ANDROID_SDK.version.toInt()
@@ -48,7 +52,11 @@ android {
             cmake {
                 arguments(
                     "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-                    "-DSELEKT_VEC1_ENABLE_X86_AVX2=ON"
+                    "-DSELEKT_VEC1_ENABLE_X86_AVX2=ON",
+                    "-DSELEKT_SQLITE_OPTIMIZATION=${sqliteOptimization.get()}",
+                    "-DSELEKT_ENABLE_THINLTO=${sqliteThinLto.get()}",
+                    "-DSELEKT_SQLITE_PGO=${sqlitePgo.get()}",
+                    "-DSELEKT_SQLITE_PGO_PROFILE=${sqlitePgoProfile.get()}"
                 )
             }
         }
