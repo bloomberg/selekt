@@ -71,7 +71,14 @@ data class DatabaseConfiguration(
      * Android defaults to [UNBOUNDED_CURSOR_WINDOW_BYTE_SIZE] for compatibility. Other JVM runtimes
      * default to [JVM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE].
      */
-    val cursorWindowByteSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE
+    val cursorWindowByteSize: Int = PLATFORM_DEFAULT_CURSOR_WINDOW_BYTE_SIZE,
+    /**
+     * Approximate maximum KiB retained by SQLite's page cache on each physical connection.
+     * Selekt applies this as a negative SQLite `PRAGMA cache_size` value, which SQLite interprets
+     * as KiB rather than a number of pages.
+     * `null` preserves SQLite's compiled default.
+     */
+    val pageCacheSizeKiB: Int? = null
 ) {
     init {
         require(maxConnectionPoolSize > 0)
@@ -84,6 +91,9 @@ data class DatabaseConfiguration(
         ) {
             "Cursor window byte size must be at least $MINIMUM_CURSOR_WINDOW_BYTE_SIZE or the platform default, " +
                 "but was $cursorWindowByteSize."
+        }
+        require(pageCacheSizeKiB == null || pageCacheSizeKiB > 0) {
+            "Page cache size must be positive when specified, but was $pageCacheSizeKiB."
         }
     }
 

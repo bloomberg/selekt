@@ -67,6 +67,7 @@ runtime-inspection and generation details.
         journalMode = "WAL" // is the default
         busyTimeout = 2_500 // milliseconds is the default
         maxPoolSize = 4 // is the default, with 3 read connections
+        pageCacheSizeKiB = 8 * 1024 // optional; null uses SQLite's default
         cursorWindowSize = 1_024 // rows; the default
         cursorWindowByteSize = 2 * 1024 * 1024 // bytes; the default
         foreignKeys = true
@@ -84,6 +85,7 @@ runtime-inspection and generation details.
     dataSource.setJournalMode("WAL"); // is the default
     dataSource.setBusyTimeout(2500); // milliseconds is the default
     dataSource.setMaxPoolSize(4); // is the default, with 3 read connections
+    dataSource.setPageCacheSizeKiB(8 * 1024); // optional; null uses SQLite's default
     dataSource.setCursorWindowSize(1024); // rows; the default
     dataSource.setCursorWindowByteSize(2 * 1024 * 1024); // bytes; the default
     dataSource.setForeignKeys(true);
@@ -115,6 +117,7 @@ Connection properties can be passed via a `Properties` object:
         setProperty("journalMode", "WAL")
         setProperty("busyTimeout", "2500")
         setProperty("poolSize", "4")
+        setProperty("pageCacheSizeKiB", "8192")
         setProperty("cursorWindowSize", "1024")
         setProperty("cursorWindowByteSize", "2097152")
         setProperty("foreignKeys", "true")
@@ -132,6 +135,7 @@ Connection properties can be passed via a `Properties` object:
     properties.setProperty("journalMode", "WAL");
     properties.setProperty("busyTimeout", "2500");
     properties.setProperty("poolSize", "4");
+    properties.setProperty("pageCacheSizeKiB", "8192");
     properties.setProperty("cursorWindowSize", "1024");
     properties.setProperty("cursorWindowByteSize", "2097152");
     properties.setProperty("foreignKeys", "true");
@@ -391,12 +395,16 @@ The shared array is driver-owned and must be treated as read-only. A later batch
 
 ## Connection properties
 
-| Property        | Type    | Default | Description                                                                   |
-|-----------------|---------|---------|-------------------------------------------------------------------------------|
-| `journalMode`   | String  | `WAL`   | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
-| `busyTimeout`   | int     | `2500`  | SQLite busy timeout in milliseconds                                           |
-| `poolSize`      | int     | `4`     | Maximum connection pool size                                                  |
-| `foreignKeys`   | boolean | `true`  | Enable foreign key constraints                                                |
+| Property           | Type    | Default          | Description                                                                   |
+|--------------------|---------|------------------|-------------------------------------------------------------------------------|
+| `journalMode`      | String  | `WAL`            | SQLite journal mode (`DELETE`, `TRUNCATE`, `PERSIST`, `MEMORY`, `WAL`, `OFF`) |
+| `busyTimeout`      | int     | `2500`           | SQLite busy timeout in milliseconds                                           |
+| `poolSize`         | int     | `4`              | Maximum connection pool size                                                  |
+| `pageCacheSizeKiB` | int     | SQLite's default | Approximate page-cache size in KiB per physical connection                    |
+| `foreignKeys`      | boolean | `true`           | Enable foreign key constraints                                                |
+
+`pageCacheSizeKiB` must be positive. Selekt applies a value of `N` as `PRAGMA cache_size=-N`; SQLite interprets the
+negative form as an approximate size in KiB, not as a number of pages.
 
 ## Closing the DataSource
 

@@ -47,6 +47,8 @@ internal const val DEFAULT_JDBC_POOL_SIZE = 4
  * Supported connection properties:
  * - poolSize: Maximum connection pool size (integer, default: 4)
  * - busyTimeout: SQLite busy timeout in milliseconds (integer, default: 2500)
+ * - pageCacheSizeKiB: Approximate page-cache size per physical connection in KiB, applied as a negative SQLite
+ *   `PRAGMA cache_size` value so SQLite interprets it as KiB rather than pages (positive integer, optional)
  * - cursorWindowSize: Maximum rows retained in a scrollable cursor window (positive integer, default: 1024)
  * - cursorWindowByteSize: Maximum estimated bytes retained in a scrollable cursor window (integer, default: 2097152)
  * - journalMode: SQLite journal mode (DELETE, WAL, MEMORY, etc., default: WAL)
@@ -79,6 +81,7 @@ class SelektDriver : Driver {
         private const val PROPERTY_KEY = "key"
         private const val PROPERTY_POOL_SIZE = "poolSize"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
+        private const val PROPERTY_PAGE_CACHE_SIZE_KIB = "pageCacheSizeKiB"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
         private const val PROPERTY_CURSOR_WINDOW_BYTE_SIZE = "cursorWindowByteSize"
         private const val PROPERTY_JOURNAL_MODE = "journalMode"
@@ -162,6 +165,13 @@ class SelektDriver : Driver {
                 required = false
             },
             DriverPropertyInfo(
+                PROPERTY_PAGE_CACHE_SIZE_KIB,
+                info.getProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)
+            ).apply {
+                description = "Approximate page-cache size per physical connection in KiB"
+                required = false
+            },
+            DriverPropertyInfo(
                 PROPERTY_CURSOR_WINDOW_SIZE,
                 info.getProperty(PROPERTY_CURSOR_WINDOW_SIZE, DEFAULT_JDBC_CURSOR_WINDOW_SIZE.toString())
             ).apply {
@@ -239,6 +249,7 @@ class SelektDriver : Driver {
         val poolSize = getProperty(PROPERTY_POOL_SIZE)?.toIntOrNull() ?: DEFAULT_JDBC_POOL_SIZE
         val busyTimeout = getProperty(PROPERTY_BUSY_TIMEOUT)?.toIntOrNull()
             ?: DatabaseConfiguration.COMMON_BUSY_TIMEOUT_MILLIS
+        val pageCacheSizeKiB = getPositiveIntProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)
         val cursorWindowSize = getProperty(PROPERTY_CURSOR_WINDOW_SIZE)?.toIntOrNull()
             ?: DEFAULT_JDBC_CURSOR_WINDOW_SIZE
         val cursorWindowByteSize = getProperty(PROPERTY_CURSOR_WINDOW_BYTE_SIZE)?.toIntOrNull()
@@ -250,6 +261,7 @@ class SelektDriver : Driver {
         baseConfig.copy(
             maxConnectionPoolSize = poolSize,
             busyTimeoutMillis = busyTimeout,
+            pageCacheSizeKiB = pageCacheSizeKiB,
             useNativeTransactionListeners = true,
             cursorWindowSize = cursorWindowSize,
             cursorWindowByteSize = cursorWindowByteSize
@@ -286,6 +298,7 @@ class SelektDriver : Driver {
     ): String {
         val propertiesString = listOf(
             PROPERTY_BUSY_TIMEOUT,
+            PROPERTY_PAGE_CACHE_SIZE_KIB,
             PROPERTY_CURSOR_WINDOW_SIZE,
             PROPERTY_CURSOR_WINDOW_BYTE_SIZE,
             PROPERTY_FOREIGN_KEYS,
@@ -300,4 +313,10 @@ class SelektDriver : Driver {
             append(propertiesString)
         }
     }
+}
+
+internal fun Properties.getPositiveIntProperty(name: String): Int? = getProperty(name)?.let { value ->
+    val parsedValue = requireNotNull(value.toIntOrNull()) { "$name must be an integer" }
+    require(parsedValue > 0) { "$name must be positive" }
+    parsedValue
 }

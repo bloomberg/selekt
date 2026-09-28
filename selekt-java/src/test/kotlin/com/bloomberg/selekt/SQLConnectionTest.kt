@@ -195,6 +195,27 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun configuresPageCacheWhenRequested(): Unit = sqlite.run {
+        SQLConnection(
+            "file::memory:",
+            this,
+            databaseConfiguration.copy(pageCacheSizeKiB = 2_048),
+            0,
+            CommonThreadLocalRandom,
+            null
+        ).use {
+            verify(this@run).exec(DB, "PRAGMA cache_size=-2048")
+        }
+    }
+
+    @Test
+    fun preservesSQLitePageCacheDefaultWhenUnspecified(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            verify(this@run, never()).exec(DB, "PRAGMA cache_size=-2048")
+        }
+    }
+
+    @Test
     fun prepareChecksNull(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L
