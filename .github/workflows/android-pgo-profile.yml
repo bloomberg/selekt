@@ -1,24 +1,7 @@
 name: 'Android ARM64 PGO profile'
 
 on:
-  workflow_call:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/android-pgo-profile.yml'
-      - 'OpenSSL/build.gradle.kts'
-      - 'OpenSSL/build_libraries.sh'
-      - 'OpenSSL/openssl.properties'
-      - 'SQLite3/CMakeLists.txt'
-      - 'SQLite3/build.gradle.kts'
-      - 'SQLite3/benchmarks/native_sqlite_benchmark.c'
-      - 'SQLite3/benchmarks/run_android_optimization_matrix.sh'
-      - 'SQLite3/benchmarks/summarize_android_optimizations.py'
-      - 'SQLite3/sqlite3/CMakeLists.txt'
-      - 'SQLite3/sqlite3/extensions/vec1/**'
-      - 'SQLite3/sqlite3_jni.cpp'
-      - 'SQLite3/src/main/external/sqlcipher'
 
 permissions:
   contents: read
