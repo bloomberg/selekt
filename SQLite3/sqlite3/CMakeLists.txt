@@ -299,9 +299,7 @@ message(STATUS "Linking to verified OpenSSL ${OPENSSL_VERSION} libcrypto: ${LIBC
 target_link_libraries(selekt PRIVATE "${LIBCRYPTO}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID_ABI AND NOT ANDROID)
-  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-  find_package(Threads REQUIRED)
-  target_link_libraries(selekt PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+  target_link_libraries(selekt PRIVATE pthread ${CMAKE_DL_LIBS})
 endif()
 
 if(WIN32)
