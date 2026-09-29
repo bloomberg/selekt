@@ -29,7 +29,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.FutureTask
 import kotlin.concurrent.thread
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -345,15 +345,17 @@ internal class SQLDatabaseTransactionTest {
         it.exec("CREATE TABLE 'Foo' (bar INT)")
         it.transact {
             insert("Foo", ContentValues().apply { put("bar", 42) }, ConflictAlgorithm.REPLACE)
-            val latch = CountDownLatch(1)
-            thread {
-                latch.countDown()
+            val transaction = FutureTask {
                 transact {
                     insert("Foo", ContentValues().apply { put("bar", 43) }, ConflictAlgorithm.REPLACE)
                 }
             }
-            latch.await()
-            yieldTransaction(100L)
+            val worker = thread(block = transaction::run)
+            while (!transaction.isDone) {
+                yieldTransaction(10L)
+            }
+            transaction.get()
+            worker.join()
             query("SELECT * FROM Foo", emptyArray()).use { cursor ->
                 assertEquals(2, cursor.count)
                 arrayOf(42, 43).forEach { x ->
