@@ -50,6 +50,7 @@ val cFlags = arrayOf(
     "-DSQLITE_ENABLE_RTREE",
     "-DSQLITE_ENABLE_STAT4",
     "-DSQLITE_ENABLE_UNLOCK_NOTIFY",
+    "-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT",
     "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
     "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
     "-DSQLITE_HAS_CODEC=1",

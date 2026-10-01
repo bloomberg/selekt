@@ -136,6 +136,42 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `update and delete support order by and limit`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.exec(db, "CREATE TABLE values_to_limit (id INTEGER, marker INTEGER)"))
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "INSERT INTO values_to_limit VALUES (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)")
+            )
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "UPDATE values_to_limit SET marker = 1 ORDER BY id DESC LIMIT 2")
+            )
+            assertEquals(
+                SQL_OK,
+                sqlite.exec(db, "DELETE FROM values_to_limit ORDER BY id LIMIT 1 OFFSET 1")
+            )
+
+            val statementHolder = LongArray(1)
+            val sql = "SELECT group_concat(id || ':' || marker, ',') " +
+                "FROM (SELECT id, marker FROM values_to_limit ORDER BY id)"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals("1:0,3:0,4:1,5:1", sqlite.columnText(statement, 0))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `progress handler can be replaced and cleared`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
