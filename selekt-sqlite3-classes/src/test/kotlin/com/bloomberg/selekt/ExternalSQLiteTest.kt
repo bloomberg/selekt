@@ -136,6 +136,30 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `dbstat virtual table is available`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.exec(db, "CREATE TABLE dbstat_probe (payload TEXT)"))
+            assertEquals(SQL_OK, sqlite.exec(db, "INSERT INTO dbstat_probe VALUES ('payload')"))
+
+            val statementHolder = LongArray(1)
+            val sql = "SELECT count(*) FROM dbstat WHERE name = 'dbstat_probe' AND pagetype = 'leaf'"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertTrue(sqlite.columnInt(statement, 0) > 0)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `update and delete support order by and limit`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
