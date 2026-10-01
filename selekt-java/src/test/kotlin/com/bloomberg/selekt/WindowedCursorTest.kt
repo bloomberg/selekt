@@ -103,6 +103,17 @@ internal class WindowedCursorTest {
     }
 
     @Test
+    fun columnMetadata() {
+        val metadata = ColumnMetadata("INTEGER", "main", "users", "id")
+        val cursor = WindowedCursor(
+            arrayOf("user_id"),
+            CursorWindowPage(mock(), 0, 0),
+            columnMetadata = arrayOf(metadata)
+        )
+        assertSame(metadata, cursor.columnMetadata(0))
+    }
+
+    @Test
     fun getTextBytesDelegatesToWindow() {
         val bytes = "hello".toByteArray()
         val window = mock<ICursorWindow> {

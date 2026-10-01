@@ -1119,6 +1119,26 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `columnDatabaseName with StatementHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnDatabaseName(any<Long>(), any()) } doReturn "main"
+            on { columnDatabaseName(any<StatementHandle>(), any()) }.thenCallRealMethod()
+        }
+        assertEquals("main", sqlite.columnDatabaseName(statementHandle, 0))
+        verify(sqlite).columnDatabaseName(statement, 0)
+    }
+
+    @Test
+    fun `columnDeclType with StatementHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnDeclType(any<Long>(), any()) } doReturn "INTEGER"
+            on { columnDeclType(any<StatementHandle>(), any()) }.thenCallRealMethod()
+        }
+        assertEquals("INTEGER", sqlite.columnDeclType(statementHandle, 0))
+        verify(sqlite).columnDeclType(statement, 0)
+    }
+
+    @Test
     fun `columnDouble with StatementHandle delegates`() {
         val sqlite = mock<IExternalSQLite> {
             on { columnDouble(any<Long>(), any()) }.thenReturn(3.14)
@@ -1156,6 +1176,26 @@ internal class IExternalSQLiteTest {
         }
         assertEquals("col", sqlite.columnName(statementHandle, 0))
         verify(sqlite).columnName(statement, 0)
+    }
+
+    @Test
+    fun `columnOriginName with StatementHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnOriginName(any<Long>(), any()) } doReturn "id"
+            on { columnOriginName(any<StatementHandle>(), any()) }.thenCallRealMethod()
+        }
+        assertEquals("id", sqlite.columnOriginName(statementHandle, 0))
+        verify(sqlite).columnOriginName(statement, 0)
+    }
+
+    @Test
+    fun `columnTableName with StatementHandle delegates`() {
+        val sqlite = mock<IExternalSQLite> {
+            on { columnTableName(any<Long>(), any()) } doReturn "users"
+            on { columnTableName(any<StatementHandle>(), any()) }.thenCallRealMethod()
+        }
+        assertEquals("users", sqlite.columnTableName(statementHandle, 0))
+        verify(sqlite).columnTableName(statement, 0)
     }
 
     @Test

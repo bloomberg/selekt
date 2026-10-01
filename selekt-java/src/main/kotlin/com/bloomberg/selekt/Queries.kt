@@ -24,7 +24,7 @@ import java.lang.StringBuilder
 import javax.annotation.concurrent.NotThreadSafe
 
 private val EMPTY_ARRAY = emptyArray<Any?>()
-private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray())
+private val EMPTY_SQL_STATEMENT_INFORMATION = SQLStatementInformation(false, 0, emptyArray(), emptyArray())
 
 private fun emptyCursorWindowPage() = CursorWindowPage(SimpleCursorWindow(), 0, 0)
 

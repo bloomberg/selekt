@@ -70,6 +70,15 @@ private inline fun MemorySegment.getConfinedString(): String = address().let {
     }
 }
 
+@Suppress("NOTHING_TO_INLINE")
+private inline fun MemorySegment.getNullableConfinedString(): String? = address().let {
+    if (it == 0L) {
+        null
+    } else {
+        NATIVE_READER.getString(it)
+    }
+}
+
 internal inline fun <T> MemorySegment.useSQLiteAllocation(
     free: (MemorySegment) -> Unit,
     block: MemorySegment.() -> T
@@ -547,6 +556,13 @@ internal class ExternalSQLite(
     override fun columnCount(statement: StatementHandle): Int =
         sqlite3_column_count.invoke(statementSegment(statement)) as Int
 
+    override fun columnDatabaseName(statement: StatementHandle, index: Int): String? =
+        (sqlite3_column_database_name.invoke(statementSegment(statement), index) as MemorySegment)
+            .getNullableConfinedString()
+
+    override fun columnDeclType(statement: StatementHandle, index: Int): String? =
+        (sqlite3_column_decltype.invoke(statementSegment(statement), index) as MemorySegment).getNullableConfinedString()
+
     override fun columnDouble(statement: StatementHandle, index: Int): Double =
         sqlite3_column_double.invoke(statementSegment(statement), index) as Double
 
@@ -558,6 +574,12 @@ internal class ExternalSQLite(
 
     override fun columnName(statement: StatementHandle, index: Int): String =
         (sqlite3_column_name.invoke(statementSegment(statement), index) as MemorySegment).run(MemorySegment::getConfinedString)
+
+    override fun columnOriginName(statement: StatementHandle, index: Int): String? =
+        (sqlite3_column_origin_name.invoke(statementSegment(statement), index) as MemorySegment).getNullableConfinedString()
+
+    override fun columnTableName(statement: StatementHandle, index: Int): String? =
+        (sqlite3_column_table_name.invoke(statementSegment(statement), index) as MemorySegment).getNullableConfinedString()
 
     override fun columnText(statement: StatementHandle, index: Int): String? = columnText(
         statementSegment(statement),
@@ -1251,6 +1273,14 @@ internal class ExternalSQLite(
         statement: Long
     ): Int = sqlite3_column_count.invoke(MemorySegment.ofAddress(statement)) as Int
 
+    override fun columnDatabaseName(statement: Long, index: Int): String? =
+        (sqlite3_column_database_name.invoke(MemorySegment.ofAddress(statement), index) as MemorySegment)
+            .getNullableConfinedString()
+
+    override fun columnDeclType(statement: Long, index: Int): String? =
+        (sqlite3_column_decltype.invoke(MemorySegment.ofAddress(statement), index) as MemorySegment)
+            .getNullableConfinedString()
+
     override fun columnDouble(
         statement: Long,
         index: Int
@@ -1282,6 +1312,14 @@ internal class ExternalSQLite(
         MemorySegment.ofAddress(statement),
         index
     ) as MemorySegment).run(MemorySegment::getConfinedString)
+
+    override fun columnOriginName(statement: Long, index: Int): String? =
+        (sqlite3_column_origin_name.invoke(MemorySegment.ofAddress(statement), index) as MemorySegment)
+            .getNullableConfinedString()
+
+    override fun columnTableName(statement: Long, index: Int): String? =
+        (sqlite3_column_table_name.invoke(MemorySegment.ofAddress(statement), index) as MemorySegment)
+            .getNullableConfinedString()
 
     override fun columnText(
         statement: Long,
@@ -2024,6 +2062,16 @@ internal class ExternalSQLite(
             FunctionDescriptor.of(JAVA_INT, ADDRESS),
             criticalNoHeapOption
         )
+        private val sqlite3_column_database_name: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_column_database_name").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val sqlite3_column_decltype: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_column_decltype").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
         private val sqlite3_column_double: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_double").orElseThrow(),
             FunctionDescriptor.of(JAVA_DOUBLE, ADDRESS, JAVA_INT)
@@ -2038,6 +2086,16 @@ internal class ExternalSQLite(
         )
         private val sqlite3_column_name: MethodHandle = linker.downcallHandle(
             symbolLookup.find("sqlite3_column_name").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val sqlite3_column_origin_name: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_column_origin_name").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
+            criticalNoHeapOption
+        )
+        private val sqlite3_column_table_name: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3_column_table_name").orElseThrow(),
             FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT),
             criticalNoHeapOption
         )

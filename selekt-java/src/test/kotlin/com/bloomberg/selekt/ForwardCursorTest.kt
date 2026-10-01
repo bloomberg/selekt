@@ -89,6 +89,16 @@ internal class ForwardCursorTest {
     }
 
     @Test
+    fun columnMetadata() {
+        val metadata = ColumnMetadata("INTEGER", "main", "users", "id")
+        val statement = mock<SQLPreparedStatement>().apply {
+            whenever(columnNames) doReturn arrayOf("user_id")
+            whenever(columnMetadata) doReturn arrayOf(metadata)
+        }
+        assertSame(metadata, ForwardCursor(statement).columnMetadata(0))
+    }
+
+    @Test
     fun countIsUnsupported() {
         assertFailsWith<UnsupportedOperationException> {
             ForwardCursor(mock<SQLPreparedStatement>().apply {

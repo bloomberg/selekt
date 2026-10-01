@@ -317,6 +317,14 @@ open class SQLite(
 
     fun columnCount(statement: StatementHandle) = sqlite.columnCount(statement)
 
+    fun columnDatabaseName(statement: Long, index: Int) = sqlite.columnDatabaseName(statement, index)
+
+    fun columnDatabaseName(statement: StatementHandle, index: Int) = sqlite.columnDatabaseName(statement, index)
+
+    fun columnDeclType(statement: Long, index: Int) = sqlite.columnDeclType(statement, index)
+
+    fun columnDeclType(statement: StatementHandle, index: Int) = sqlite.columnDeclType(statement, index)
+
     fun columnDouble(statement: Long, index: Int) = sqlite.columnDouble(statement, index)
 
     fun columnDouble(statement: StatementHandle, index: Int) = sqlite.columnDouble(statement, index)
@@ -332,6 +340,14 @@ open class SQLite(
     fun columnName(statement: Long, index: Int) = sqlite.columnName(statement, index)
 
     fun columnName(statement: StatementHandle, index: Int) = sqlite.columnName(statement, index)
+
+    fun columnOriginName(statement: Long, index: Int) = sqlite.columnOriginName(statement, index)
+
+    fun columnOriginName(statement: StatementHandle, index: Int) = sqlite.columnOriginName(statement, index)
+
+    fun columnTableName(statement: Long, index: Int) = sqlite.columnTableName(statement, index)
+
+    fun columnTableName(statement: StatementHandle, index: Int) = sqlite.columnTableName(statement, index)
 
     fun columnText(statement: Long, index: Int) = sqlite.columnText(statement, index)
 

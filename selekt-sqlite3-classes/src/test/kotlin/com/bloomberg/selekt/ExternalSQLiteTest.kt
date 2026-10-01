@@ -1536,6 +1536,37 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `can get full column metadata`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            assertEquals(SQL_OK, sqlite.exec(db, "CREATE TABLE metadata_probe (identifier INTEGER, payload TEXT)"))
+            val statementHolder = LongArray(1)
+            val sql = "SELECT payload AS label, identifier + 1 AS computed FROM metadata_probe"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals("label", sqlite.columnName(statement, 0))
+                assertEquals("TEXT", sqlite.columnDeclType(statement, 0))
+                assertEquals("main", sqlite.columnDatabaseName(statement, 0))
+                assertEquals("metadata_probe", sqlite.columnTableName(statement, 0))
+                assertEquals("payload", sqlite.columnOriginName(statement, 0))
+
+                assertEquals("computed", sqlite.columnName(statement, 1))
+                assertNull(sqlite.columnDeclType(statement, 1))
+                assertNull(sqlite.columnDatabaseName(statement, 1))
+                assertNull(sqlite.columnTableName(statement, 1))
+                assertNull(sqlite.columnOriginName(statement, 1))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `can clear bindings`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)

@@ -39,6 +39,17 @@ internal class SQLPreparedStatement(
         Array(columnCount) { columnName(statement, it) }
     }
 
+    val columnMetadata: Array<out ColumnMetadata> = sqlite.run {
+        Array(columnCount) { index ->
+            ColumnMetadata(
+                declaredType = columnDeclType(statement, index),
+                databaseName = columnDatabaseName(statement, index),
+                tableName = columnTableName(statement, index),
+                originName = columnOriginName(statement, index)
+            )
+        }
+    }
+
     /**
      * True if and only if the prepared statement makes no direct changes to the content of the database.
      *
@@ -142,6 +153,8 @@ internal class SQLPreparedStatement(
     fun columnLong(index: Int) = sqlite.columnInt64(statement, index)
 
     fun columnName(index: Int) = sqlite.columnName(statement, index)
+
+    fun columnMetadata(index: Int) = columnMetadata[index]
 
     fun columnString(index: Int) = sqlite.columnText(statement, index)
 

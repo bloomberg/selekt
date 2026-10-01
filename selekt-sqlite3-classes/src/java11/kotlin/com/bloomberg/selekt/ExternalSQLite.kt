@@ -176,6 +176,10 @@ internal class ExternalSQLite(
 
     external override fun columnCount(statement: Long): Int
 
+    external override fun columnDatabaseName(statement: Long, index: Int): String?
+
+    external override fun columnDeclType(statement: Long, index: Int): String?
+
     external override fun columnDouble(statement: Long, index: Int): Double
 
     external override fun columnInt(statement: Long, index: Int): Int
@@ -183,6 +187,10 @@ internal class ExternalSQLite(
     external override fun columnInt64(statement: Long, index: Int): Long
 
     external override fun columnName(statement: Long, index: Int): String
+
+    external override fun columnOriginName(statement: Long, index: Int): String?
+
+    external override fun columnTableName(statement: Long, index: Int): String?
 
     override fun columnText(statement: Long, index: Int): String? = when (
         val value = columnTextOptimized(statement, index)

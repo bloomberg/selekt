@@ -60,6 +60,22 @@ internal object TypeMapping {
         ColumnType.NULL -> Types.NULL
     }
 
+    fun toJdbcType(declaredType: String): Int = declaredType.substringBefore('(').trim().uppercase().let { type ->
+        when {
+            type == "BOOLEAN" -> Types.BOOLEAN
+            type.contains("INT") -> Types.BIGINT
+            type.contains("CHAR") || type.contains("CLOB") || type.contains("TEXT") -> Types.VARCHAR
+            type.contains("BLOB") || type.isEmpty() -> Types.VARBINARY
+            type.contains("REAL") || type.contains("FLOA") || type.contains("DOUB") -> Types.DOUBLE
+            type.contains("DECIMAL") -> Types.DECIMAL
+            type.contains("NUMERIC") -> Types.NUMERIC
+            type == "DATE" -> Types.DATE
+            type == "TIME" -> Types.TIME
+            type.contains("TIMESTAMP") || type.contains("DATETIME") -> Types.TIMESTAMP
+            else -> Types.NUMERIC
+        }
+    }
+
     fun toSelektType(jdbcType: Int): ColumnType = when (jdbcType) {
         Types.BOOLEAN,
         Types.TINYINT,

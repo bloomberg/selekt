@@ -56,6 +56,8 @@ interface ISQLRawStatement : Closeable {
 
     fun columnNames(): Array<out String>
 
+    fun columnMetadata(index: Int): ColumnMetadata? = null
+
     fun columnType(index: Int): Int
 
     fun isNull(index: Int): Boolean
@@ -129,6 +131,8 @@ internal class SQLRawStatement private constructor(
     override fun columnName(index: Int) = statement().columnName(index)
 
     override fun columnNames(): Array<out String> = preparedStatement?.columnNames ?: emptyArray()
+
+    override fun columnMetadata(index: Int) = preparedStatement?.columnMetadata(index)
 
     override fun columnType(index: Int) = statement().columnType(index)
 
