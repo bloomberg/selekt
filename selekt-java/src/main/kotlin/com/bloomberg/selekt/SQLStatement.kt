@@ -354,5 +354,6 @@ internal class SQLStatement private constructor(
 internal class SQLStatementInformation(
     val isReadOnly: Boolean,
     val parameterCount: Int,
-    val columnNames: Array<out String>
+    val columnNames: Array<out String>,
+    val columnMetadata: Array<out ColumnMetadata>
 )

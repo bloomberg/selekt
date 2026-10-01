@@ -1097,6 +1097,28 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnCount(
     return sqlite3_column_count(statement);
 }
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnDatabaseName(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index
+) {
+    auto name = sqlite3_column_database_name(reinterpret_cast<sqlite3_stmt*>(jstatement), index);
+    return name != nullptr ? env->NewStringUTF(name) : nullptr;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnDeclType(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index
+) {
+    auto type = sqlite3_column_decltype(reinterpret_cast<sqlite3_stmt*>(jstatement), index);
+    return type != nullptr ? env->NewStringUTF(type) : nullptr;
+}
+
 extern "C" JNIEXPORT jdouble JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_columnDouble(
     JNIEnv* env,
@@ -1139,6 +1161,28 @@ Java_com_bloomberg_selekt_ExternalSQLite_columnName(
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
     auto name = sqlite3_column_name(statement, index);
+    return name != nullptr ? env->NewStringUTF(name) : nullptr;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnOriginName(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index
+) {
+    auto name = sqlite3_column_origin_name(reinterpret_cast<sqlite3_stmt*>(jstatement), index);
+    return name != nullptr ? env->NewStringUTF(name) : nullptr;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_columnTableName(
+    JNIEnv* env,
+    jobject obj,
+    jlong jstatement,
+    jint index
+) {
+    auto name = sqlite3_column_table_name(reinterpret_cast<sqlite3_stmt*>(jstatement), index);
     return name != nullptr ? env->NewStringUTF(name) : nullptr;
 }
 

@@ -20,6 +20,20 @@ import java.io.Closeable
 import javax.annotation.concurrent.NotThreadSafe
 
 /**
+ * Origin information reported by SQLite for a result column.
+ *
+ * Values are null for expressions and other columns that do not originate directly from a database table.
+ *
+ * @since 1.7.0
+ */
+data class ColumnMetadata(
+    val declaredType: String?,
+    val databaseName: String?,
+    val tableName: String?,
+    val originName: String?
+)
+
+/**
  * @since 0.12.1
  */
 @Suppress("Detekt.ComplexInterface", "Detekt.TooManyFunctions")
@@ -33,6 +47,8 @@ interface ICursor : Closeable {
     fun columnName(index: Int): String
 
     fun columnNames(): Array<out String>
+
+    fun columnMetadata(index: Int): ColumnMetadata? = null
 
     fun getBlob(index: Int): ByteArray?
 
@@ -111,6 +127,7 @@ internal class WindowedCursor(
     private val columnNames: Array<out String>,
     page: CursorWindowPage,
     onClose: (() -> Unit)? = null,
+    private val columnMetadata: Array<out ColumnMetadata> = emptyArray(),
     refill: CursorWindowRefill? = null
 ) : ICursor {
     private var closed = false
@@ -182,6 +199,8 @@ internal class WindowedCursor(
     override fun columnName(index: Int) = columnNames[index]
 
     override fun columnNames() = columnNames
+
+    override fun columnMetadata(index: Int) = columnMetadata.getOrNull(index)
 
     override fun getBlob(index: Int) = read(index) { getBlob(it, index) }
 
@@ -257,6 +276,7 @@ internal class ForwardCursor(
     private var statement: SQLPreparedStatement? = statement
 
     private val columnNames = statement.columnNames
+    private val columnMetadata = statement.columnMetadata
     private var columnIndexLookups = 0
     private var columnIndices: Map<String, Int>? = null
     private val textColumnsRead = BooleanArray(columnNames.size)
@@ -295,6 +315,8 @@ internal class ForwardCursor(
     override fun columnName(index: Int) = columnNames[index]
 
     override fun columnNames() = columnNames
+
+    override fun columnMetadata(index: Int) = columnMetadata.getOrNull(index)
 
     override fun getBlob(index: Int) = statement().columnBlob(index)
 

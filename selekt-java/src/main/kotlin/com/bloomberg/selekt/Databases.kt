@@ -525,7 +525,8 @@ class SQLDatabase(
             }
             WindowedCursor(
                 result.columnNames,
-                result.page.copy(count = result.page.window.numberOfRows())
+                result.page.copy(count = result.page.window.numberOfRows()),
+                columnMetadata = result.columnMetadata
             )
         }
     }
@@ -839,7 +840,12 @@ class SQLDatabase(
     private fun query(query: SQLQuery, cancellationSignal: CancellationSignal? = null): ICursor =
         cursorOperation(cancellationSignal) {
             val (information, page) = query.fill(cursorWindowSize, cursorWindowByteSize)
-            WindowedCursor(information.columnNames, page, query::close) { startPosition ->
+            WindowedCursor(
+                information.columnNames,
+                page,
+                query::close,
+                information.columnMetadata
+            ) { startPosition ->
                 cursorOperation(cancellationSignal) {
                     query.fillWindow(startPosition, cursorWindowSize, cursorWindowByteSize).second
                 }
@@ -857,7 +863,7 @@ class SQLDatabase(
 
     private fun queryUpTo(query: SQLQuery, maximumRows: Int): ICursor = pledge {
         val (information, page) = query.fillUpTo(maximumRows, cursorWindowByteSize)
-        WindowedCursor(information.columnNames, page)
+        WindowedCursor(information.columnNames, page, columnMetadata = information.columnMetadata)
     }
 
     /**

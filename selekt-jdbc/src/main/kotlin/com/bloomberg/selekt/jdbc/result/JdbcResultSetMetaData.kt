@@ -86,12 +86,12 @@ internal class JdbcResultSetMetaData(
 
     override fun getColumnName(column: Int): String {
         validateColumnIndex(column)
-        return cursor.columnName(column - 1)
+        return cursor.columnMetadata(column - 1)?.originName ?: cursor.columnName(column - 1)
     }
 
     override fun getSchemaName(column: Int): String {
         validateColumnIndex(column)
-        return ""
+        return cursor.columnMetadata(column - 1)?.databaseName.orEmpty()
     }
 
     override fun getPrecision(column: Int): Int {
@@ -106,7 +106,7 @@ internal class JdbcResultSetMetaData(
 
     override fun getTableName(column: Int): String {
         validateColumnIndex(column)
-        return ""
+        return cursor.columnMetadata(column - 1)?.tableName.orEmpty()
     }
 
     override fun getCatalogName(column: Int): String {
@@ -116,7 +116,10 @@ internal class JdbcResultSetMetaData(
 
     override fun getColumnType(column: Int): Int {
         validateColumnIndex(column)
-        return if (hasCurrentRow()) {
+        val declaredType = cursor.columnMetadata(column - 1)?.declaredType
+        return if (declaredType != null) {
+            TypeMapping.toJdbcType(declaredType)
+        } else if (hasCurrentRow()) {
             TypeMapping.toJdbcType(cursor.type(column - 1))
         } else {
             Types.VARCHAR
@@ -128,7 +131,7 @@ internal class JdbcResultSetMetaData(
 
     override fun getColumnTypeName(column: Int): String {
         validateColumnIndex(column)
-        return TypeMapping.getJdbcTypeName(getColumnType(column))
+        return cursor.columnMetadata(column - 1)?.declaredType ?: TypeMapping.getJdbcTypeName(getColumnType(column))
     }
 
     override fun isReadOnly(column: Int): Boolean {

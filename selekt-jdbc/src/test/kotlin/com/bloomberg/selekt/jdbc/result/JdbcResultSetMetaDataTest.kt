@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.jdbc.result
 
 import com.bloomberg.selekt.ColumnType
+import com.bloomberg.selekt.ColumnMetadata
 import com.bloomberg.selekt.ICursor
 import java.sql.ResultSetMetaData
 import java.sql.SQLException
@@ -172,6 +173,24 @@ internal class JdbcResultSetMetaDataTest {
         assertTrue(getSchemaName(1).isEmpty())
         assertTrue(getCatalogName(1).isEmpty())
         assertTrue(getTableName(1).isEmpty())
+    }
+
+    @Test
+    fun fullColumnMetadata(): Unit = metaData.run {
+        whenever(mockCursor.columnMetadata(0)) doReturn ColumnMetadata(
+            declaredType = "INTEGER",
+            databaseName = "main",
+            tableName = "users",
+            originName = "user_id"
+        )
+
+        assertEquals("id", getColumnLabel(1))
+        assertEquals("user_id", getColumnName(1))
+        assertEquals("main", getSchemaName(1))
+        assertEquals("users", getTableName(1))
+        assertTrue(getCatalogName(1).isEmpty())
+        assertEquals(Types.BIGINT, getColumnType(1))
+        assertEquals("INTEGER", getColumnTypeName(1))
     }
 
     @Test

@@ -17,6 +17,7 @@
 package com.bloomberg.selekt.cursor.benchmarks;
 
 import com.bloomberg.selekt.ColumnType;
+import com.bloomberg.selekt.ColumnMetadata;
 import com.bloomberg.selekt.CursorWindowPage;
 import com.bloomberg.selekt.ICursor;
 import com.bloomberg.selekt.ICursorWindow;
@@ -326,6 +327,7 @@ public class CursorWindowBenchmark {
                 new String[]{"value"},
                 new CursorWindowPage(window, 0, window.numberOfRows()),
                 null,
+                new ColumnMetadata[0],
                 null);
     }
 }

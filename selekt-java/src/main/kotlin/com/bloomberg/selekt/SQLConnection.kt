@@ -267,6 +267,7 @@ internal class SQLConnection(
     ): PreparedCursorWindow = withPreparedStatement(sql, bindArgs) {
         PreparedCursorWindow(
             columnNames,
+            columnMetadata,
             fillCursorWindowPage(startPosition, windowSize, countAllRows, windowByteSize)
         )
     }
@@ -573,7 +574,7 @@ internal class SQLConnection(
     override fun matches(key: String) = preparedStatements.containsKey(key)
 
     override fun prepare(sql: String) = withPreparedStatement(sql) {
-        SQLStatementInformation(isReadOnly, parameterCount, columnNames)
+        SQLStatementInformation(isReadOnly, parameterCount, columnNames, columnMetadata)
     }
 
     override fun prepareForRawStatement(sql: String): SQLPreparedStatement = acquirePreparedStatement(sql)

@@ -112,5 +112,6 @@ internal interface SQLExecutor : BatchSQLExecutor {
 @Suppress("Detekt.UseDataClass")
 internal class PreparedCursorWindow(
     val columnNames: Array<out String>,
+    val columnMetadata: Array<out ColumnMetadata>,
     val page: CursorWindowPage
 )

@@ -464,6 +464,20 @@ interface IExternalSQLite {
 
     fun columnCount(statement: StatementHandle): Int = columnCount(statement.pointer)
 
+    fun columnDatabaseName(statement: Long, index: Int): String?
+
+    fun columnDatabaseName(
+        statement: StatementHandle,
+        index: Int
+    ): String? = columnDatabaseName(statement.pointer, index)
+
+    fun columnDeclType(statement: Long, index: Int): String?
+
+    fun columnDeclType(
+        statement: StatementHandle,
+        index: Int
+    ): String? = columnDeclType(statement.pointer, index)
+
     fun columnDouble(statement: Long, index: Int): Double
 
     fun columnDouble(
@@ -491,6 +505,20 @@ interface IExternalSQLite {
         statement: StatementHandle,
         index: Int
     ): String = columnName(statement.pointer, index)
+
+    fun columnOriginName(statement: Long, index: Int): String?
+
+    fun columnOriginName(
+        statement: StatementHandle,
+        index: Int
+    ): String? = columnOriginName(statement.pointer, index)
+
+    fun columnTableName(statement: Long, index: Int): String?
+
+    fun columnTableName(
+        statement: StatementHandle,
+        index: Int
+    ): String? = columnTableName(statement.pointer, index)
 
     /**
      * Returns the column decoded as standard UTF-8 using SQLite's explicit byte length.
