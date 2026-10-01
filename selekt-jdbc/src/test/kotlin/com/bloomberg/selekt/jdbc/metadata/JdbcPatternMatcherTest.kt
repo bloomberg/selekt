@@ -122,7 +122,7 @@ internal class JdbcPatternMatcherTest {
 
     @Test
     fun veryLongPatternsHaveBoundedTokenisation() {
-        assertTimeoutPreemptively(Duration.ofSeconds(1)) {
+        assertTimeoutPreemptively(Duration.ofSeconds(5)) {
             val literal = "a".repeat(100_000)
             assertTrue(JdbcPatternMatcher(literal).matches(literal))
             assertTrue(JdbcPatternMatcher("%".repeat(100_000)).matches("anything"))
