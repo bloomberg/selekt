@@ -172,6 +172,29 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `percentile aggregates are available`() {
+        val dbHolder = LongArray(1)
+        sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        val db = dbHolder[0]
+        try {
+            val statementHolder = LongArray(1)
+            val sql = "SELECT percentile(value, 50), median(value) " +
+                "FROM (SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4)"
+            assertEquals(SQL_OK, sqlite.prepareV2(db, sql, sql.length, statementHolder))
+            val statement = statementHolder[0]
+            try {
+                assertEquals(SQL_ROW, sqlite.step(statement))
+                assertEquals(2.5, sqlite.columnDouble(statement, 0))
+                assertEquals(2.5, sqlite.columnDouble(statement, 1))
+            } finally {
+                sqlite.finalize(statement)
+            }
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    @Test
     fun `progress handler can be replaced and cleared`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
