@@ -53,8 +53,15 @@ class DatabaseKey internal constructor(
     }
 
     companion object {
-        /** Required size of raw database encryption keys. */
-        const val REQUIRED_LENGTH_BYTES = 32
+        /** Size of 128-bit database encryption keys. */
+        const val AES_128_LENGTH_BYTES = 16
+
+        /** Size of 256-bit database encryption keys. */
+        const val AES_256_LENGTH_BYTES = 32
+
+        @JvmSynthetic
+        internal fun isSupportedLength(length: Int) =
+            length == AES_128_LENGTH_BYTES || length == AES_256_LENGTH_BYTES
 
         @JvmStatic
         fun of(sqlite: SQLite, key: ByteArray): DatabaseKey = sqlite.newKey(key)

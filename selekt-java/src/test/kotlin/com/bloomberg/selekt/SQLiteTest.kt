@@ -55,16 +55,31 @@ internal class SQLiteTest {
 
     @Test
     fun `native-memory database keys can key and rekey`() {
-        val key = DatabaseKey(externalSqlite, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        val key = DatabaseKey(externalSqlite, KEY_POINTER, DatabaseKey.AES_256_LENGTH_BYTES)
         whenever(
-            externalSqlite.rawKeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+            externalSqlite.rawKeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.AES_256_LENGTH_BYTES)
         ) doReturn SQL_OK
         whenever(
-            externalSqlite.rekeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.REQUIRED_LENGTH_BYTES)
+            externalSqlite.rekeyAt(DB_POINTER, KEY_POINTER, DatabaseKey.AES_256_LENGTH_BYTES)
         ) doReturn SQL_OK
 
         assertEquals(SQL_OK, sqlite.rawKey(DB_POINTER, key))
         assertEquals(SQL_OK, sqlite.rekey(DB_POINTER, key))
+        key.close()
+    }
+
+    @Test
+    fun `16 byte native-memory database keys can key conventionally`() {
+        val key = DatabaseKey(externalSqlite, KEY_POINTER, DatabaseKey.AES_128_LENGTH_BYTES)
+        whenever(
+            externalSqlite.keyConventionallyAt(
+                DATABASE_HANDLE,
+                KEY_POINTER,
+                DatabaseKey.AES_128_LENGTH_BYTES
+            )
+        ) doReturn SQL_OK
+
+        assertEquals(SQL_OK, sqlite.keyConventionally(DATABASE_HANDLE, key))
         key.close()
     }
 
@@ -673,16 +688,18 @@ internal class SQLiteTest {
     }
 
     @Test
-    fun `newKey allocates and stores the secret`() {
-        val key = ByteArray(32) { 0x42 }
-        whenever(externalSqlite.allocateSecret(key.size)) doReturn KEY_POINTER
-        sqlite.newKey(key)
-        verify(externalSqlite).storeSecret(KEY_POINTER, key.size, key, key.size)
+    fun `newKey allocates and stores supported secret sizes`() {
+        listOf(DatabaseKey.AES_128_LENGTH_BYTES, DatabaseKey.AES_256_LENGTH_BYTES).forEach { size ->
+            val key = ByteArray(size) { 0x42 }
+            whenever(externalSqlite.allocateSecret(size)) doReturn KEY_POINTER
+            sqlite.newKey(key)
+            verify(externalSqlite).storeSecret(KEY_POINTER, size, key, size)
+        }
     }
 
     @Test
     fun `newKey rejects invalid key lengths before allocating native memory`() {
-        listOf(0, 1, 31, 33).forEach {
+        listOf(0, 1, 15, 17, 31, 33).forEach {
             assertFailsWith<IllegalArgumentException> { sqlite.newKey(ByteArray(it)) }
         }
         verify(externalSqlite, never()).allocateSecret(any())

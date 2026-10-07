@@ -43,11 +43,11 @@ internal class SQLConnectionFactoryTest {
     @Test
     fun closeReleasesKeyOnce() {
         val sqlite = mock<IExternalSQLite>()
-        val key = DatabaseKey(sqlite, 1L, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        val key = DatabaseKey(sqlite, 1L, DatabaseKey.AES_256_LENGTH_BYTES)
         val factory = SQLConnectionFactory("", mock(), mock(), mock(), key)
         factory.close()
         factory.close()
-        verify(sqlite, times(1)).freeSecret(1L, DatabaseKey.REQUIRED_LENGTH_BYTES)
+        verify(sqlite, times(1)).freeSecret(1L, DatabaseKey.AES_256_LENGTH_BYTES)
     }
 
     @Test
