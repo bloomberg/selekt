@@ -33,7 +33,7 @@ Selekt sits somewhere between the two: when Selekt uses SQLCipher, it does so in
 
 JVM applications commonly use [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc). Applications that want a pooled `DataSource` must add a separate JDBC pool, such as the general-purpose HikariCP. Xerial's standard distribution does not support encrypted database files, while a generic pool treats every JDBC connection alike and does not understand SQLite's asymmetric concurrency model.
 
-Selekt provides its own database-scoped SQLite-aware connection pool behind the JDBC API. It coordinates a primary writer and pooled readers around SQLite's locking and transaction model, so no third-party connection pool is required. By funnelling writes through the primary connection instead of allowing a generic pool such as HikariCP to hand out competing writer connections, it avoids the resulting `SQLITE_BUSY` errors. The pool enables WAL read/write concurrency by default and avoids repeatedly creating native connections. Selekt also supports encrypted database files through SQLCipher.
+Selekt provides its own database-scoped SQLite-aware connection pool behind the JDBC API. It coordinates a primary writer and pooled readers around SQLite's locking and transaction model, so no third-party connection pool is required. By funnelling writes through the primary connection, it avoids `SQLITE_BUSY` errors caused by competing writer connections. The pool enables WAL read/write concurrency by default and avoids repeatedly creating native connections. Selekt also supports encrypted database files through SQLCipher.
 
 ## Quick Start
 
