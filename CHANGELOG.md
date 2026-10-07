@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+## Version 1.7.0
+
+* Enable UPDATE and DELETE LIMIT support.
+* Enable SQLite percentile aggregate functions.
+* Enable SQLite dbstat virtual table.
+* Enable full SQLite column metadata support.
+* Accept more database key lengths at the JVM API layer.
+
 ## Version 1.6.10
 
 * Optimise FFM downcalls when callbacks are inactive.
