@@ -486,11 +486,14 @@ open class SQLite(
     fun key(db: Long, key: ByteArray) = checkConnectionSQLCode(db, sqlite.key(db, key, key.size))
 
     /**
+     * Creates a native-memory key containing 128-bit or 256-bit key material.
+     * The external SQLite implementation determines which size it accepts when the key is applied.
+     *
      * @since 0.36.0
      */
     fun newKey(key: ByteArray): DatabaseKey {
-        require(key.size == DatabaseKey.REQUIRED_LENGTH_BYTES) {
-            "Key must be ${DatabaseKey.REQUIRED_LENGTH_BYTES} bytes in size."
+        require(DatabaseKey.isSupportedLength(key.size)) {
+            "Key must be ${DatabaseKey.AES_128_LENGTH_BYTES} or ${DatabaseKey.AES_256_LENGTH_BYTES} bytes in size."
         }
         val pointer = sqlite.allocateSecret(key.size)
         try {

@@ -43,7 +43,7 @@ private inline fun ByteArray.zeroOnFailure(
  * @since 0.34.1
  */
 internal object KeyEncoding {
-    const val REQUIRED_KEY_LENGTH_BYTES = DatabaseKey.REQUIRED_LENGTH_BYTES
+    const val REQUIRED_KEY_LENGTH_BYTES = DatabaseKey.AES_256_LENGTH_BYTES
 
     private const val HEX_PREFIX_LENGTH = 2
     private const val HEX_CHUNK_SIZE = 2
