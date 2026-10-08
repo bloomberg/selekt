@@ -125,6 +125,27 @@ internal class JdbcStatementTest {
     }
 
     @Test
+    fun executeUpdateOfReadOnlyStatementDoesNotBeginManualTransaction() {
+        val readOnlySql = "SELECT 1"
+        val writeSql = "UPDATE users SET name = 'x'"
+        val readOnly = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        val write = mock<ISQLStatement> {
+            whenever(it.executeUpdateDelete()) doReturn 1
+        }
+        whenever(mockDatabase.compileStatement(readOnlySql, null)) doReturn readOnly
+        whenever(mockDatabase.compileStatement(writeSql, null)) doReturn write
+        mockConnection.autoCommit = false
+
+        assertEquals(0, statement.executeUpdate(readOnlySql))
+        verify(mockDatabase, never()).beginImmediateTransaction()
+
+        assertEquals(1, statement.executeUpdate(writeSql))
+        verify(mockDatabase).beginImmediateTransaction()
+    }
+
+    @Test
     fun executeUpdateOfReadOnlyStatementReportsNoChanges() {
         val sql = "PRAGMA user_version"
         val readOnly = mock<ISQLStatement> {

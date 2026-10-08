@@ -78,6 +78,7 @@ import com.bloomberg.selekt.SQL_ROW
 import com.bloomberg.selekt.SQL_TOO_BIG
 import com.bloomberg.selekt.SQL_WARNING_AUTOINDEX
 import com.bloomberg.selekt.SQLCode
+import com.bloomberg.selekt.exceptions.SelektSQLException
 import java.sql.SQLException
 import java.sql.SQLDataException
 import java.sql.SQLIntegrityConstraintViolationException
@@ -98,12 +99,20 @@ internal object SQLExceptionMapper {
     private const val SQLSTATE_08007 = "08007"
 
     @JvmStatic
-    fun mapException(selektException: SQLException): SQLException = mapException(
-        selektException.message ?: "Unknown error",
-        extractSQLCode(selektException),
-        extractExtendedSQLCode(selektException),
-        selektException
-    )
+    fun mapException(selektException: SQLException): SQLException {
+        if (selektException !is SelektSQLException &&
+            selektException.sqlState != null &&
+            !selektException.message.orEmpty().contains("Code:")
+        ) {
+            return selektException
+        }
+        return mapException(
+            selektException.message ?: "Unknown error",
+            extractSQLCode(selektException),
+            extractExtendedSQLCode(selektException),
+            selektException
+        )
+    }
 
     @JvmStatic
     fun mapCancellation(

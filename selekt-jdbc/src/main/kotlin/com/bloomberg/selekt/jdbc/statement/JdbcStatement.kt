@@ -304,18 +304,12 @@ open class JdbcStatement internal constructor(
     private fun executeUpdate(sql: String, statement: ISQLStatement): Int {
         checkClosed()
         return try {
-            connection.ensureTransaction()
-            statement.run {
-                if (isReadOnly) {
-                    lastGeneratedKey = -1L
-                    statementState.updateCount = 0
-                } else if (isInsertSql(sql)) {
-                    lastGeneratedKey = executeInsert()
-                    statementState.updateCount = 1
-                } else {
-                    lastGeneratedKey = -1L
-                    statementState.updateCount = executeUpdateDelete()
-                }
+            if (statement.isReadOnly) {
+                lastGeneratedKey = -1L
+                statementState.updateCount = 0
+            } else {
+                connection.ensureTransaction()
+                executeWrite(sql, statement)
             }
             currentResultSet = null
             statementState.updateCount
@@ -323,6 +317,16 @@ open class JdbcStatement internal constructor(
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(SQLException(e.message, e))
+        }
+    }
+
+    private fun executeWrite(sql: String, statement: ISQLStatement) {
+        if (isInsertSql(sql)) {
+            lastGeneratedKey = statement.executeInsert()
+            statementState.updateCount = 1
+        } else {
+            lastGeneratedKey = -1L
+            statementState.updateCount = statement.executeUpdateDelete()
         }
     }
 

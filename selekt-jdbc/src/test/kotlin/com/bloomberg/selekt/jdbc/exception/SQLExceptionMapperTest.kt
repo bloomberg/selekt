@@ -77,6 +77,7 @@ import com.bloomberg.selekt.SQL_ROW
 import com.bloomberg.selekt.SQL_TOO_BIG
 import com.bloomberg.selekt.SQL_WARNING_AUTOINDEX
 import java.sql.SQLDataException
+import java.sql.SQLFeatureNotSupportedException
 import java.sql.SQLException
 import java.sql.SQLIntegrityConstraintViolationException
 import java.sql.SQLNonTransientConnectionException
@@ -86,10 +87,18 @@ import java.sql.SQLTransactionRollbackException
 import java.sql.SQLTransientException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 internal class SQLExceptionMapperTest {
+    @Test
+    fun preservesNonSQLiteJdbcExceptions() {
+        val exception = SQLFeatureNotSupportedException("Unsupported", "0A000")
+
+        assertSame(exception, SQLExceptionMapper.mapException(exception))
+    }
+
     @Test
     fun constraintViolationMapping(): Unit = SQLExceptionMapper.mapException(
         "Constraint violation",
