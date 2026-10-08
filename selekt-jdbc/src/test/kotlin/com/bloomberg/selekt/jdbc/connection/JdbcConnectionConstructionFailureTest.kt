@@ -26,8 +26,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -38,8 +36,7 @@ internal class JdbcConnectionConstructionFailureTest {
     @Test
     fun constructorFailureLeavesSharedDatabaseRetainCountUntouched() {
         val database: SQLDatabase = mock {
-            whenever(it.exec(any<String>(), anyOrNull<Array<out Any?>>())) doThrow
-                SQLException("simulated PRAGMA failure")
+            whenever(it.configureForeignKeys(true)) doThrow SQLException("simulated PRAGMA failure")
         }
         val releaseCount = AtomicInteger(0)
         val shared = testSharedDatabase(database, onClose = { releaseCount.incrementAndGet() })
@@ -59,9 +56,7 @@ internal class JdbcConnectionConstructionFailureTest {
 
     @Test
     fun constructorSuccessDoesNotConsumeSharedDatabaseReference() {
-        val database: SQLDatabase = mock {
-            whenever(it.exec(any<String>(), anyOrNull<Array<out Any?>>())).then { }
-        }
+        val database: SQLDatabase = mock()
         val releaseCount = AtomicInteger(0)
         val shared = testSharedDatabase(database, onClose = { releaseCount.incrementAndGet() })
         shared.retain()

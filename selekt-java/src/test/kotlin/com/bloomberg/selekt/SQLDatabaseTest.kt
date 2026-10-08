@@ -375,6 +375,14 @@ internal class SQLDatabaseTest {
     }
 
     @Test
+    fun configureForeignKeysExecutesFixedPragma(): Unit = database.run {
+        configureForeignKeys(true)
+        configureForeignKeys(false)
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("PRAGMA foreign_keys = 1"), any<LongArray>())
+        verify(sqlite, times(1)).prepareV2(eq(DB), eq("PRAGMA foreign_keys = 0"), any<LongArray>())
+    }
+
+    @Test
     fun pragmaCanonicalisesMixedCaseKey(): Unit = database.run {
         whenever(sqlite.columnText(any<Long>(), any<Int>())) doReturn "wal"
         pragma("JoUrNaL_MoDe")
