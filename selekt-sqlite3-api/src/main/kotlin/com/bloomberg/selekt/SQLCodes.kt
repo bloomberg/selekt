@@ -35,6 +35,7 @@ const val SQL_CORRUPT: SQLCode = 11
 const val SQL_NOT_FOUND: SQLCode = 12
 const val SQL_FULL: SQLCode = 13
 const val SQL_CANT_OPEN: SQLCode = 14
+const val SQL_SCHEMA: SQLCode = 17
 const val SQL_TOO_BIG: SQLCode = 18
 const val SQL_CONSTRAINT: SQLCode = 19
 const val SQL_MISMATCH: SQLCode = 20
