@@ -343,6 +343,18 @@ internal class ExternalSQLite(
 
     external override fun commitHook(db: Long, enabled: Boolean, listener: SQLCommitListener?): SQLCode
 
+    external override fun sessionCreate(db: Long, databaseName: String, holder: LongArray): SQLCode
+
+    external override fun sessionEnableRowId(session: Long): SQLCode
+
+    external override fun sessionAttach(session: Long, table: String?): SQLCode
+
+    external override fun sessionChangeset(session: Long, holder: Array<ByteArray?>): SQLCode
+
+    external override fun sessionDelete(session: Long)
+
+    external override fun changesetValidate(changeset: ByteArray): SQLCode
+
     external override fun databaseConfig(db: Long, op: Int, value: Int): Int
 
     external override fun databaseHandle(statement: Long): Long

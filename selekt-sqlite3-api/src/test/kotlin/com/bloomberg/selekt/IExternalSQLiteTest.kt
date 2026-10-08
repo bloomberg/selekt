@@ -746,6 +746,37 @@ internal class IExternalSQLiteTest {
     }
 
     @Test
+    fun `session handle overloads delegate to pointer overloads`() {
+        val db = 123L
+        val session = 456L
+        val holder = LongArray(1)
+        val changesetHolder = arrayOfNulls<ByteArray>(1)
+        val sqlite = mock<IExternalSQLite> {
+            on { sessionCreate(any<Long>(), any(), any()) }.thenReturn(SQL_OK)
+            on { sessionCreate(any<DatabaseHandle>(), any(), any()) }.thenCallRealMethod()
+            on { sessionEnableRowId(any<Long>()) }.thenReturn(SQL_OK)
+            on { sessionEnableRowId(any<SessionHandle>()) }.thenCallRealMethod()
+            on { sessionAttach(any<Long>(), anyOrNull()) }.thenReturn(SQL_OK)
+            on { sessionAttach(any<SessionHandle>(), anyOrNull()) }.thenCallRealMethod()
+            on { sessionChangeset(any<Long>(), any()) }.thenReturn(SQL_OK)
+            on { sessionChangeset(any<SessionHandle>(), any()) }.thenCallRealMethod()
+            on { sessionDelete(any<SessionHandle>()) }.thenCallRealMethod()
+        }
+
+        assertEquals(SQL_OK, sqlite.sessionCreate(DatabaseHandle(db), "main", holder))
+        assertEquals(SQL_OK, sqlite.sessionEnableRowId(SessionHandle(session)))
+        assertEquals(SQL_OK, sqlite.sessionAttach(SessionHandle(session), null))
+        assertEquals(SQL_OK, sqlite.sessionChangeset(SessionHandle(session), changesetHolder))
+        sqlite.sessionDelete(SessionHandle(session))
+
+        verify(sqlite).sessionCreate(db, "main", holder)
+        verify(sqlite).sessionEnableRowId(session)
+        verify(sqlite).sessionAttach(session, null)
+        verify(sqlite).sessionChangeset(session, changesetHolder)
+        verify(sqlite).sessionDelete(session)
+    }
+
+    @Test
     fun `databaseHandle with StatementHandle delegates`() {
         val sqlite = mock<IExternalSQLite> {
             on { databaseHandle(any<Long>()) }.thenReturn(db)

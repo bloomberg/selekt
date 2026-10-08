@@ -1369,6 +1369,63 @@ internal class ExternalSQLite(
         return SQL_OK
     }
 
+    override fun sessionCreate(db: Long, databaseName: String, holder: LongArray): SQLCode =
+        withSlab { slab ->
+            val sessionHolder = slab.allocate(ADDRESS)
+            val result = sqlite3session_create.invoke(
+                MemorySegment.ofAddress(db),
+                slab.allocateFrom(databaseName),
+                sessionHolder
+            ) as Int
+            if (result == SQL_OK) {
+                holder[0] = sessionHolder.get(ADDRESS, 0L).address()
+            }
+            result
+        }
+
+    override fun sessionEnableRowId(session: Long): SQLCode =
+        selekt_session_enable_rowid.invoke(MemorySegment.ofAddress(session)) as Int
+
+    override fun sessionAttach(session: Long, table: String?): SQLCode = withSlab { slab ->
+        sqlite3session_attach.invoke(
+            MemorySegment.ofAddress(session),
+            table?.let(slab::allocateFrom) ?: MemorySegment.NULL
+        ) as Int
+    }
+
+    override fun sessionChangeset(session: Long, holder: Array<ByteArray?>): SQLCode = withSlab { slab ->
+        val sizeHolder = slab.allocate(JAVA_INT)
+        val changesetHolder = slab.allocate(ADDRESS)
+        val result = sqlite3session_changeset.invoke(
+            MemorySegment.ofAddress(session),
+            sizeHolder,
+            changesetHolder
+        ) as Int
+        if (result == SQL_OK) {
+            val size = sizeHolder.get(JAVA_INT, 0L)
+            val changeset = changesetHolder.get(ADDRESS, 0L)
+            holder[0] = if (size == 0) {
+                ByteArray(0)
+            } else {
+                changeset.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+            }
+            sqlite3_free.invoke(changeset)
+        }
+        result
+    }
+
+    override fun sessionDelete(session: Long) {
+        sqlite3session_delete.invoke(MemorySegment.ofAddress(session))
+    }
+
+    override fun changesetValidate(changeset: ByteArray): SQLCode = if (changeset.isEmpty()) {
+        SQL_OK
+    } else {
+        withSlab { slab ->
+            selekt_changeset_validate.invoke(changeset.size, slab.allocateFromBytes(changeset)) as Int
+        }
+    }
+
     override fun databaseConfig(
         db: Long,
         op: Int,
@@ -2121,6 +2178,30 @@ internal class ExternalSQLite(
             symbolLookup.find("sqlite3_commit_hook").orElseThrow(),
             FunctionDescriptor.of(ADDRESS, ADDRESS, ADDRESS, ADDRESS),
             criticalNoHeapOption
+        )
+        private val sqlite3session_create: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3session_create").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS)
+        )
+        private val sqlite3session_attach: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3session_attach").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS)
+        )
+        private val selekt_session_enable_rowid: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_session_enable_rowid").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
+        )
+        private val sqlite3session_changeset: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3session_changeset").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS)
+        )
+        private val sqlite3session_delete: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("sqlite3session_delete").orElseThrow(),
+            FunctionDescriptor.ofVoid(ADDRESS)
+        )
+        private val selekt_changeset_validate: MethodHandle = linker.downcallHandle(
+            symbolLookup.find("selekt_changeset_validate").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, JAVA_INT, ADDRESS)
         )
         private val selekt_database_config: MethodHandle = linker.downcallHandle(
             symbolLookup.find("selekt_database_config").orElseThrow(),
