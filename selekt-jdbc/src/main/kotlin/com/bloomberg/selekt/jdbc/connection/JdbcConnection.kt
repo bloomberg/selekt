@@ -589,7 +589,7 @@ internal class JdbcConnection(
     private fun applyConnectionProperties() {
         runCatching {
             val foreignKeys = properties.getStrictBooleanProperty("foreignKeys", true)
-            withSession { exec("PRAGMA foreign_keys = ${if (foreignKeys) { 1 } else { 0 } }") }
+            withSession { configureForeignKeys(foreignKeys) }
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }

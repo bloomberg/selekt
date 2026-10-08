@@ -316,6 +316,14 @@ class SQLDatabase(
         ).execute()
     }
 
+    /** Enables or disables foreign-key enforcement on this thread's session connection. */
+    @JvmSynthetic
+    fun configureForeignKeys(enabled: Boolean): Unit = pledge {
+        session().execute(true) { executor ->
+            executor.execute("PRAGMA foreign_keys = ${if (enabled) { 1 } else { 0 } }")
+        }
+    }
+
     fun <T> execute(readOnly: Boolean, block: SQLDatabase.() -> T) = pledge {
         session().execute(readOnly) { block() }
     }
