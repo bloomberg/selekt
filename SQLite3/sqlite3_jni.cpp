@@ -1516,6 +1516,251 @@ extern "C" JNIEXPORT int selekt_database_config(sqlite3* db, int op, int value) 
     return sqlite3_db_config(db, op, value, nullptr);
 }
 
+extern "C" JNIEXPORT int selekt_session_enable_rowid(sqlite3_session* session) {
+    if (session == nullptr) {
+        return SQLITE_MISUSE;
+    }
+    int enabled = 1;
+    return sqlite3session_object_config(session, SQLITE_SESSION_OBJCONFIG_ROWID, &enabled);
+}
+
+namespace {
+int validateChangesetValues(sqlite3_changeset_iter* iterator, int operation, int columns) {
+    for (int column = 0; column < columns; ++column) {
+        sqlite3_value* value = nullptr;
+        if (operation != SQLITE_INSERT) {
+            int const result = sqlite3changeset_old(iterator, column, &value);
+            if (result != SQLITE_OK) {
+                return result;
+            }
+        }
+        if (operation != SQLITE_DELETE) {
+            int const result = sqlite3changeset_new(iterator, column, &value);
+            if (result != SQLITE_OK) {
+                return result;
+            }
+        }
+    }
+    return SQLITE_OK;
+}
+
+/** Owns a copy of the table name and primary-key flags of the most recent changeset block. */
+struct ChangesetTableShape {
+    char* table = nullptr;
+    unsigned char* primaryKey = nullptr;
+    int columns = 0;
+
+    ChangesetTableShape() = default;
+    ChangesetTableShape(const ChangesetTableShape&) = delete;
+    ChangesetTableShape& operator=(const ChangesetTableShape&) = delete;
+
+    ~ChangesetTableShape() {
+        sqlite3_free(table);
+        sqlite3_free(primaryKey);
+    }
+
+    bool continues(const char* name) const {
+        return table != nullptr && sqlite3_stricmp(table, name) == 0;
+    }
+
+    bool agrees(const unsigned char* flags, int count) const {
+        return count == columns && std::memcmp(flags, primaryKey, count) == 0;
+    }
+
+    int remember(const char* name, const unsigned char* flags, int count) {
+        sqlite3_free(table);
+        sqlite3_free(primaryKey);
+        table = sqlite3_mprintf("%s", name);
+        primaryKey = static_cast<unsigned char*>(sqlite3_malloc(count));
+        if (table == nullptr || primaryKey == nullptr) {
+            return SQLITE_NOMEM;
+        }
+        std::memcpy(primaryKey, flags, count);
+        columns = count;
+        return SQLITE_OK;
+    }
+};
+
+int validateChangesetRecord(sqlite3_changeset_iter* iterator, ChangesetTableShape* previous) {
+    const char* table = nullptr;
+    int columns = 0;
+    int operation = 0;
+    int indirect = 0;
+    int result = sqlite3changeset_op(iterator, &table, &columns, &operation, &indirect);
+    if (result != SQLITE_OK) {
+        return result;
+    }
+    if (table == nullptr || columns <= 0) {
+        return SQLITE_CORRUPT;
+    }
+    unsigned char* primaryKey = nullptr;
+    int primaryKeyColumns = 0;
+    result = sqlite3changeset_pk(iterator, &primaryKey, &primaryKeyColumns);
+    if (result != SQLITE_OK) {
+        return result;
+    }
+    if (primaryKey == nullptr || primaryKeyColumns != columns) {
+        return SQLITE_CORRUPT;
+    }
+    if (previous->continues(table)) {
+        if (!previous->agrees(primaryKey, columns)) {
+            return SQLITE_CORRUPT;
+        }
+    } else {
+        result = previous->remember(table, primaryKey, columns);
+        if (result != SQLITE_OK) {
+            return result;
+        }
+    }
+    return validateChangesetValues(iterator, operation, columns);
+}
+}
+
+/**
+ * Checks that every record of a changeset or patchset parses, without consulting any database. Consecutive blocks
+ * naming the same table must also agree on column count and primary-key layout, so a consumer that resolves a table
+ * once per run of blocks sees one consistent shape. The changeset is only read; it is non-const because SQLite's
+ * iterator API is.
+ */
+extern "C" JNIEXPORT int selekt_changeset_validate(int size, void* changeset) {
+    if (size < 0 || (size > 0 && changeset == nullptr)) {
+        return SQLITE_MISUSE;
+    }
+    if (size == 0) {
+        return SQLITE_OK;
+    }
+    sqlite3_changeset_iter* iterator = nullptr;
+    int result = sqlite3changeset_start(&iterator, size, changeset);
+    if (result != SQLITE_OK) {
+        return result;
+    }
+    ChangesetTableShape previous;
+    int step = sqlite3changeset_next(iterator);
+    while (step == SQLITE_ROW && result == SQLITE_OK) {
+        result = validateChangesetRecord(iterator, &previous);
+        if (result == SQLITE_OK) {
+            step = sqlite3changeset_next(iterator);
+        }
+    }
+    if (result == SQLITE_OK && step != SQLITE_DONE) {
+        result = step;
+    }
+    int const finalizeResult = sqlite3changeset_finalize(iterator);
+    return result == SQLITE_OK ? finalizeResult : result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sessionCreate(
+    JNIEnv* env,
+    jobject,
+    jlong jdb,
+    jstring jdatabaseName,
+    jlongArray jholder
+) {
+    auto databaseName = env->GetStringUTFChars(jdatabaseName, nullptr);
+    if (databaseName == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
+    sqlite3_session* session = nullptr;
+    auto const result = sqlite3session_create(reinterpret_cast<sqlite3*>(jdb), databaseName, &session);
+    env->ReleaseStringUTFChars(jdatabaseName, databaseName);
+    if (result == SQLITE_OK) {
+        updateHolder(env, jholder, 0, reinterpret_cast<jlong>(session));
+    }
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sessionEnableRowId(
+    JNIEnv*,
+    jobject,
+    jlong jsession
+) {
+    return selekt_session_enable_rowid(reinterpret_cast<sqlite3_session*>(jsession));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sessionAttach(
+    JNIEnv* env,
+    jobject,
+    jlong jsession,
+    jstring jtable
+) {
+    if (jtable == nullptr) {
+        return sqlite3session_attach(reinterpret_cast<sqlite3_session*>(jsession), nullptr);
+    }
+    auto table = env->GetStringUTFChars(jtable, nullptr);
+    if (table == nullptr) {
+        throwOutOfMemoryError(env, "GetStringUTFChars");
+        return SQLITE_NOMEM;
+    }
+    auto const result = sqlite3session_attach(reinterpret_cast<sqlite3_session*>(jsession), table);
+    env->ReleaseStringUTFChars(jtable, table);
+    return result;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sessionChangeset(
+    JNIEnv* env,
+    jobject,
+    jlong jsession,
+    jobjectArray jholder
+) {
+    int size = 0;
+    void* changeset = nullptr;
+    auto const result = sqlite3session_changeset(reinterpret_cast<sqlite3_session*>(jsession), &size, &changeset);
+    if (result != SQLITE_OK) {
+        return result;
+    }
+    auto bytes = env->NewByteArray(size);
+    if (bytes == nullptr) {
+        sqlite3_free(changeset);
+        throwOutOfMemoryError(env, "NewByteArray");
+        return SQLITE_NOMEM;
+    }
+    if (size > 0) {
+        env->SetByteArrayRegion(bytes, 0, size, static_cast<const jbyte*>(changeset));
+    }
+    sqlite3_free(changeset);
+    if (env->ExceptionCheck()) {
+        env->DeleteLocalRef(bytes);
+        return SQLITE_ERROR;
+    }
+    env->SetObjectArrayElement(jholder, 0, bytes);
+    env->DeleteLocalRef(bytes);
+    return env->ExceptionCheck() ? SQLITE_ERROR : SQLITE_OK;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_sessionDelete(
+    JNIEnv*,
+    jobject,
+    jlong jsession
+) {
+    sqlite3session_delete(reinterpret_cast<sqlite3_session*>(jsession));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_bloomberg_selekt_ExternalSQLite_changesetValidate(
+    JNIEnv* env,
+    jobject,
+    jbyteArray jchangeset
+) {
+    auto const size = env->GetArrayLength(jchangeset);
+    if (size == 0) {
+        return SQLITE_OK;
+    }
+    auto bytes = env->GetByteArrayElements(jchangeset, nullptr);
+    if (bytes == nullptr) {
+        throwOutOfMemoryError(env, "GetByteArrayElements");
+        return SQLITE_NOMEM;
+    }
+    auto const result = selekt_changeset_validate(size, bytes);
+    env->ReleaseByteArrayElements(jchangeset, bytes, JNI_ABORT);
+    return result;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_bloomberg_selekt_ExternalSQLite_databaseConfig(
     JNIEnv* env,

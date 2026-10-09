@@ -136,6 +136,80 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `session captures inserts updates and deletes as a valid changeset`() {
+        val changeset = captureChangeset(
+            "session-capture.db",
+            "CREATE TABLE t(id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+            "INSERT INTO t VALUES(1, 'a'); INSERT INTO t VALUES(2, 'b'); UPDATE t SET value='c' WHERE id=1;" +
+                "DELETE FROM t WHERE id=2"
+        )
+
+        assertTrue(changeset.isNotEmpty())
+        assertEquals(SQL_OK, sqlite.changesetValidate(changeset))
+        assertContentEquals(ByteArray(0), captureChangeset("session-empty.db", "CREATE TABLE t(id INTEGER PRIMARY KEY)", "SELECT 1"))
+    }
+
+    @Test
+    fun `rowid capture records tables without declared primary keys`() {
+        val schema = "CREATE TABLE notes(value TEXT NOT NULL)"
+        val mutation = "INSERT INTO notes VALUES('one'); UPDATE notes SET value='two' WHERE rowid=1"
+
+        assertContentEquals(ByteArray(0), captureChangeset("rowid-off.db", schema, mutation))
+        val changeset = captureChangeset("rowid-on.db", schema, mutation, rowId = true)
+        assertTrue(changeset.isNotEmpty())
+        assertEquals(SQL_OK, sqlite.changesetValidate(changeset))
+    }
+
+    @Test
+    fun `changeset validation parses every record without a database`() {
+        val wide = captureChangeset(
+            "validate-wide.db",
+            "CREATE TABLE t(id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+            "INSERT INTO t VALUES(1, 'a'); UPDATE t SET value='b' WHERE id=1; INSERT INTO t VALUES(2, 'c');" +
+                "DELETE FROM t WHERE id=2"
+        )
+        val narrow = captureChangeset(
+            "validate-narrow.db",
+            "CREATE TABLE t(id INTEGER PRIMARY KEY)",
+            "INSERT INTO t VALUES(1)"
+        )
+
+        assertEquals(SQL_OK, sqlite.changesetValidate(wide))
+        assertEquals(SQL_OK, sqlite.changesetValidate(narrow))
+        assertEquals(SQL_OK, sqlite.changesetValidate(ByteArray(0)))
+        assertEquals(SQL_CORRUPT, sqlite.changesetValidate(byteArrayOf(0x54, 0x7f, 0x01, 0x02)))
+        assertEquals(SQL_CORRUPT, sqlite.changesetValidate(byteArrayOf(0x58)))
+        assertEquals(SQL_CORRUPT, sqlite.changesetValidate(wide.copyOf(wide.size - 1)))
+        assertEquals(SQL_CORRUPT, sqlite.changesetValidate(wide + narrow))
+    }
+
+    private fun captureChangeset(fileName: String, schema: String, mutation: String, rowId: Boolean = false): ByteArray {
+        val holder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.openV2(File(tempDir, fileName).absolutePath, SQL_OPEN_READWRITE_OR_CREATE, holder))
+        val db = holder[0]
+        var session = 0L
+        try {
+            assertEquals(SQL_OK, sqlite.exec(db, schema))
+            val sessionHolder = LongArray(1)
+            assertEquals(SQL_OK, sqlite.sessionCreate(db, "main", sessionHolder))
+            session = sessionHolder[0]
+            if (rowId) {
+                assertEquals(SQL_OK, sqlite.sessionEnableRowId(session))
+            }
+            assertEquals(SQL_OK, sqlite.sessionAttach(session, null))
+            assertEquals(SQL_OK, sqlite.exec(db, mutation))
+            val changesetHolder = arrayOfNulls<ByteArray>(1)
+            assertEquals(SQL_OK, sqlite.sessionChangeset(session, changesetHolder))
+            return assertNotNull(changesetHolder[0])
+        } finally {
+            if (session != 0L) {
+                sqlite.sessionDelete(session)
+            }
+            assertEquals(SQL_OK, sqlite.closeV2(db))
+        }
+    }
+
+    @Test
     fun `dbstat virtual table is available`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)

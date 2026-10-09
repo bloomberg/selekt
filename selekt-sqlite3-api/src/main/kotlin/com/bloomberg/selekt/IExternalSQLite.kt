@@ -48,6 +48,10 @@ data class BlobHandle(
     val attachment: Any? = null
 )
 
+data class SessionHandle(
+    val pointer: Long
+)
+
 fun interface ScopedIntAction {
     fun run(): Int
 }
@@ -594,6 +598,38 @@ interface IExternalSQLite {
         enabled: Boolean,
         listener: SQLCommitListener?
     ): SQLCode = commitHook(db.pointer, enabled, listener)
+
+    /** Creates a SQLite Session-extension capture object for [databaseName]. */
+    fun sessionCreate(db: Long, databaseName: String, holder: LongArray): SQLCode
+
+    fun sessionCreate(db: DatabaseHandle, databaseName: String, holder: LongArray): SQLCode =
+        sessionCreate(db.pointer, databaseName, holder)
+
+    /** Enables implicit rowid capture before tables are attached to [session]. */
+    fun sessionEnableRowId(session: Long): SQLCode
+
+    fun sessionEnableRowId(session: SessionHandle): SQLCode = sessionEnableRowId(session.pointer)
+
+    /** Attaches [table] to the capture object, or all eligible tables when it is `null`. */
+    fun sessionAttach(session: Long, table: String?): SQLCode
+
+    fun sessionAttach(session: SessionHandle, table: String?): SQLCode = sessionAttach(session.pointer, table)
+
+    /** Writes the captured transaction changeset to element zero of [holder]. */
+    fun sessionChangeset(session: Long, holder: Array<ByteArray?>): SQLCode
+
+    fun sessionChangeset(session: SessionHandle, holder: Array<ByteArray?>): SQLCode =
+        sessionChangeset(session.pointer, holder)
+
+    fun sessionDelete(session: Long)
+
+    fun sessionDelete(session: SessionHandle): Unit = sessionDelete(session.pointer)
+
+    /**
+     * Checks that every record of [changeset] parses, without consulting a database. Returns `SQLITE_OK` for a
+     * well-formed changeset or patchset, and an error code such as `SQLITE_CORRUPT` otherwise.
+     */
+    fun changesetValidate(changeset: ByteArray): SQLCode
 
     fun databaseConfig(db: Long, op: Int, value: Int): Int
 
