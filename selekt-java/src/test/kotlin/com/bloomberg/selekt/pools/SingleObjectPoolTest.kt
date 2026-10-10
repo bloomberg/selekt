@@ -36,6 +36,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.stubbing.Answer
 import java.io.IOException
+import java.sql.SQLTimeoutException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -337,6 +338,30 @@ internal class SingleObjectPoolTest {
     fun borrowOrNullIsNull(): Unit = pool.run {
         borrowObject()
         assertNull(borrowObjectOrNull())
+    }
+
+    @Test
+    fun primaryBorrowWaitIsBounded() {
+        val timedPool = SingleObjectPool<String, PooledObject>(
+            factory = object : IObjectFactory<PooledObject> {
+                override fun close() = Unit
+                override fun destroyObject(obj: PooledObject) = Unit
+                override fun makeObject() = PooledObject()
+                override fun makePrimaryObject() = makeObject()
+            },
+            executor = executor,
+            evictionDelayMillis = 1_000L,
+            evictionIntervalMillis = 20_000L,
+            borrowWaitTimeoutMillis = 10L
+        )
+        val held = timedPool.borrowObject()
+        try {
+            val failure = assertFailsWith<SQLTimeoutException> { timedPool.borrowObject() }
+            assertEquals("HYT00", failure.sqlState)
+        } finally {
+            timedPool.returnObject(held)
+            timedPool.close()
+        }
     }
 
     @Test
