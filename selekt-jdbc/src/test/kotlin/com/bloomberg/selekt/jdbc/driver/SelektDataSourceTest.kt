@@ -21,16 +21,19 @@ import java.io.File
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
+import java.sql.SQLTimeoutException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertIs
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -61,6 +64,7 @@ internal class SelektDataSourceTest {
     fun dataSourceConfiguration(): Unit = dataSource.run {
         databasePath = "/tmp/test.db"
         maxPoolSize = 20
+        borrowWaitTimeoutMillis = 3_000L
         busyTimeout = 5_000
         pageCacheSizeKiB = 2_048
         cursorWindowSize = 64
@@ -70,6 +74,7 @@ internal class SelektDataSourceTest {
         setEncryption(EncryptionKeySource.Literal(VALID_KEY.toCharArray()))
         assertEquals("/tmp/test.db", databasePath)
         assertEquals(20, maxPoolSize)
+        assertEquals(3_000L, borrowWaitTimeoutMillis)
         assertEquals(5_000, busyTimeout)
         assertEquals(2_048, pageCacheSizeKiB)
         assertEquals(64, cursorWindowSize)
@@ -93,6 +98,32 @@ internal class SelektDataSourceTest {
     fun invalidBusyTimeout() {
         assertFailsWith<IllegalArgumentException> {
             dataSource.busyTimeout = -1
+        }
+    }
+
+    @Test
+    fun invalidBorrowWaitTimeout() {
+        assertFailsWith<IllegalArgumentException> { dataSource.borrowWaitTimeoutMillis = -2L }
+    }
+
+    @Test
+    fun primaryConnectionBorrowTimesOut() {
+        dataSource.databasePath = File(tempDir, "primary-timeout.db").absolutePath
+        dataSource.borrowWaitTimeoutMillis = 25L
+        dataSource.connection.use { holder ->
+            holder.autoCommit = false
+            holder.createStatement().use { it.executeUpdate("CREATE TABLE held(value INTEGER)") }
+
+            val outcome = AtomicReference<Throwable>()
+            val borrower = Thread {
+                outcome.set(runCatching { dataSource.connection }.exceptionOrNull())
+            }
+            borrower.start()
+            borrower.join(5_000L)
+
+            assertFalse(borrower.isAlive)
+            val failure = assertIs<SQLTimeoutException>(outcome.get())
+            assertEquals("HYT00", failure.sqlState)
         }
     }
 

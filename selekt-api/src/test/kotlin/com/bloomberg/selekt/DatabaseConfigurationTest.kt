@@ -79,6 +79,13 @@ internal class DatabaseConfigurationTest {
     }
 
     @Test
+    fun borrowWaitTimeoutMustBeNonNegativeOrIndefinite() {
+        assertEquals(-1L, configuration(1).borrowWaitTimeoutMillis)
+        assertEquals(0L, configuration(1).copy(borrowWaitTimeoutMillis = 0L).borrowWaitTimeoutMillis)
+        assertFailsWith<IllegalArgumentException> { configuration(1).copy(borrowWaitTimeoutMillis = -2L) }
+    }
+
+    @Test
     fun legacyPositionalConstructorRemainsAvailable() {
         val configuration = DatabaseConfiguration(
             -1L,

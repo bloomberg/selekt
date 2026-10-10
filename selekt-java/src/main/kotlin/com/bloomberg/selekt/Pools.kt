@@ -61,7 +61,8 @@ internal fun openConnectionPool(
         factory,
         sharedExecutor,
         configuration.toPoolConfiguration(path),
-        retainPrimary = path.isInMemoryDatabase()
+        retainPrimary = path.isInMemoryDatabase(),
+        primaryBorrowWaitTimeoutMillis = configuration.borrowWaitTimeoutMillis
     )
     return pool to factory
 }

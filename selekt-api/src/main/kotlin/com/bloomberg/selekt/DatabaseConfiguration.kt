@@ -20,6 +20,9 @@ package com.bloomberg.selekt
  * @since 0.12.1
  */
 data class DatabaseConfiguration(
+    /**
+     * Maximum time to wait for the single primary connection, in milliseconds, or `-1` to wait indefinitely.
+     */
     val borrowWaitTimeoutMillis: Long = -1L,
     val busyTimeoutMillis: Int = 0,
     val evictionDelayMillis: Long,
@@ -81,6 +84,9 @@ data class DatabaseConfiguration(
     val pageCacheSizeKiB: Int? = null
 ) {
     init {
+        require(borrowWaitTimeoutMillis >= -1L) {
+            "Connection borrow timeout must be non-negative or -1, but was $borrowWaitTimeoutMillis."
+        }
         require(maxConnectionPoolSize > 0)
         require(cursorWindowSize == PLATFORM_DEFAULT_CURSOR_WINDOW_SIZE || cursorWindowSize > 0) {
             "Cursor window size must be positive or the platform default, but was $cursorWindowSize."

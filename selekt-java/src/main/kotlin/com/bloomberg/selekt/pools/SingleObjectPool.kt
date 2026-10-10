@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.pools
 
+import java.sql.SQLTimeoutException
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -26,12 +27,17 @@ import javax.annotation.concurrent.ThreadSafe
  * @since 0.12.1
  */
 @ThreadSafe
-class SingleObjectPool<K : Any, T : IPooledObject<K>>(
+class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
     private val factory: IObjectFactory<T>,
     private val executor: ScheduledExecutorService,
     private val evictionDelayMillis: Long,
-    private val evictionIntervalMillis: Long
+    private val evictionIntervalMillis: Long,
+    private val borrowWaitTimeoutMillis: Long = -1L
 ) : IObjectPool<K, T> {
+    init {
+        require(borrowWaitTimeoutMillis >= -1L) { "Borrow wait timeout must be non-negative or -1." }
+    }
+
     private val mutex = Mutex()
 
     private var retainObject = false
@@ -61,7 +67,11 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     override fun borrowObject(): T {
-        mutex.lock()
+        if (borrowWaitTimeoutMillis < 0L) {
+            mutex.lock()
+        } else if (!mutex.tryLock(TimeUnit.MILLISECONDS.toNanos(borrowWaitTimeoutMillis))) {
+            throw SQLTimeoutException("Timed out waiting for the primary database connection.", "HYT00")
+        }
         return acquireObject()
     }
 

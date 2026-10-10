@@ -98,6 +98,7 @@ class SelektDataSource internal constructor(
     constructor() : this(SharedDatabaseCache())
 
     companion object {
+        private const val PROPERTY_BORROW_WAIT_TIMEOUT = "borrowWaitTimeoutMillis"
         private const val PROPERTY_BUSY_TIMEOUT = "busyTimeout"
         private const val PROPERTY_PAGE_CACHE_SIZE_KIB = "pageCacheSizeKiB"
         private const val PROPERTY_CURSOR_WINDOW_SIZE = "cursorWindowSize"
@@ -124,6 +125,14 @@ class SelektDataSource internal constructor(
     var maxPoolSize: Int = DEFAULT_JDBC_POOL_SIZE
         set(value) {
             require(value > 0) { "Pool size must be positive" }
+            field = value
+        }
+
+    /** Maximum time to wait for the primary connection, in milliseconds, or `-1` to wait indefinitely. */
+    @Volatile
+    var borrowWaitTimeoutMillis: Long = -1L
+        set(value) {
+            require(value >= -1L) { "Connection borrow timeout must be non-negative or -1" }
             field = value
         }
 
@@ -219,12 +228,11 @@ class SelektDataSource internal constructor(
                     throw it
                 }
             }.getOrElse { e ->
-                throw SQLExceptionMapper.mapException(
-                    "Failed to create connection: ${e.message}",
-                    -1,
-                    -1,
-                    e
-                )
+                throw if (e is SQLException) {
+                    SQLExceptionMapper.mapException(e)
+                } else {
+                    SQLExceptionMapper.mapException("Failed to create connection: ${e.message}", -1, -1, e)
+                }
             }
         } finally {
             encryptionKeyBytes?.zero()
@@ -317,6 +325,7 @@ class SelektDataSource internal constructor(
 
     private fun buildConnectionProperties(): Properties = Properties().apply {
         setProperty(PROPERTY_POOL_SIZE, maxPoolSize.toString())
+        setProperty(PROPERTY_BORROW_WAIT_TIMEOUT, borrowWaitTimeoutMillis.toString())
         setProperty(PROPERTY_BUSY_TIMEOUT, busyTimeout.toString())
         pageCacheSizeKiB?.let { setProperty(PROPERTY_PAGE_CACHE_SIZE_KIB, it.toString()) }
         setProperty(PROPERTY_CURSOR_WINDOW_SIZE, cursorWindowSize.toString())
@@ -370,6 +379,7 @@ class SelektDataSource internal constructor(
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration {
         val poolSizeValue = properties.getProperty(PROPERTY_POOL_SIZE).toInt()
+        val borrowWaitTimeoutValue = properties.getProperty(PROPERTY_BORROW_WAIT_TIMEOUT).toLong()
         val busyTimeoutValue = properties.getProperty(PROPERTY_BUSY_TIMEOUT).toInt()
         val pageCacheSizeKiBValue = properties.getPositiveIntProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)
         val cursorWindowSizeValue = properties.getProperty(PROPERTY_CURSOR_WINDOW_SIZE).toInt()
@@ -380,6 +390,7 @@ class SelektDataSource internal constructor(
         val baseConfig = journalModeValue.databaseConfiguration
         return baseConfig.copy(
             maxConnectionPoolSize = poolSizeValue,
+            borrowWaitTimeoutMillis = borrowWaitTimeoutValue,
             busyTimeoutMillis = busyTimeoutValue,
             pageCacheSizeKiB = pageCacheSizeKiBValue,
             useNativeTransactionListeners = true,
@@ -394,7 +405,8 @@ class SelektDataSource internal constructor(
         keyHash: String?
     ): String = buildString {
         append(connectionURL.databasePath)
-        append("?busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
+        append("?borrowWaitTimeoutMillis=").append(properties.getProperty(PROPERTY_BORROW_WAIT_TIMEOUT))
+        append("&busyTimeout=").append(properties.getProperty(PROPERTY_BUSY_TIMEOUT))
         properties.getProperty(PROPERTY_PAGE_CACHE_SIZE_KIB)?.let {
             append("&pageCacheSizeKiB=").append(it)
         }

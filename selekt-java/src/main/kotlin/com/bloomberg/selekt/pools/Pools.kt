@@ -25,12 +25,14 @@ internal fun <K : Any, T : IPooledObject<K>> createObjectPool(
     factory: IObjectFactory<T>,
     executor: ScheduledExecutorService,
     configuration: PoolConfiguration,
-    retainPrimary: Boolean = false
+    retainPrimary: Boolean = false,
+    primaryBorrowWaitTimeoutMillis: Long = -1L
 ) = SingleObjectPool(
     factory,
     executor,
     configuration.evictionDelayMillis,
-    configuration.evictionIntervalMillis
+    configuration.evictionIntervalMillis,
+    primaryBorrowWaitTimeoutMillis
 ).apply {
     if (retainPrimary) {
         retainUntilClose()
