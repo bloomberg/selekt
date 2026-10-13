@@ -26,7 +26,7 @@ androidx-test-ext = { module = "androidx.test.ext:junit", version = "1.2.1" }
 androidx-test-rules = { module = "androidx.test:rules", version = "1.6.1" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }
 cyclonedx-core = { module = "org.cyclonedx:cyclonedx-core-java", version = "13.2.0" }
-exposed-bom = { module = "org.jetbrains.exposed:exposed-bom", version = "0.61.0" }
+exposed-bom = { module = "org.jetbrains.exposed:exposed-bom", version = "1.5.0" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc" }
 findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
