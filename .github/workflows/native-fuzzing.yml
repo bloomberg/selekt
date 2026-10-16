@@ -102,7 +102,7 @@ jobs:
 
       - name: 'Archive native crashers'
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: native-fuzz-${{ matrix.engine }}-${{ matrix.cache_arch }}-failures
           path: SQLite3/.cxx-fuzz-${{ matrix.engine }}/artifacts
