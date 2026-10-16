@@ -28,6 +28,9 @@
 #ifndef SELEKT_BENCHMARK_THINLTO
 #define SELEKT_BENCHMARK_THINLTO 0
 #endif
+#ifndef SELEKT_ANDROID_ACCESS_TRAINING
+#define SELEKT_ANDROID_ACCESS_TRAINING 0
+#endif
 
 #define DEFAULT_ROWS 20000
 #define DEFAULT_SAMPLES 7
@@ -45,6 +48,11 @@
 #define REPRESENTATIVE_PGO_WRITE_MULTIPLIER 32
 #define REPRESENTATIVE_PGO_UPSERT_MULTIPLIER 12
 #define KEY "selekt-android-benchmark-key"
+
+#if SELEKT_ANDROID_ACCESS_TRAINING
+#define ACCESS_TRAINING_ITERATIONS 1200
+#define ACCESS_TRAINING_BATCH_SIZE 8
+#endif
 
 extern int sqlite3_vec1_extra_init(const char *argument);
 
@@ -656,6 +664,229 @@ static void benchmark_representative_patterns(const char *path, const Options *o
   require_ok(database, sqlite3_close(database), "close representative database");
 }
 
+#if SELEKT_ANDROID_ACCESS_TRAINING
+/*
+ * Give profile generation the shape of a stateful application workload in
+ * addition to the isolated microbenchmarks. Keep the schema and values
+ * deliberately generic: only SQLite access characteristics belong here.
+ */
+static void train_access_patterns(const char *path) {
+  sqlite3 *database = open_database(path, 1);
+  execute(database, "PRAGMA journal_mode=WAL");
+  execute(database, "PRAGMA synchronous=NORMAL");
+  execute(database, "CREATE TABLE work_items("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT,priority INTEGER NOT NULL,"
+                    "created_at INTEGER NOT NULL,kind INTEGER NOT NULL,payload TEXT NOT NULL,"
+                    "flags INTEGER NOT NULL DEFAULT 0)");
+  execute(database, "CREATE INDEX work_items_priority_created "
+                    "ON work_items(priority,created_at)");
+  execute(database, "CREATE TABLE documents("
+                    "document_key TEXT PRIMARY KEY,content_kind TEXT NOT NULL,"
+                    "body TEXT NOT NULL,modified_at INTEGER NOT NULL)");
+  execute(database, "CREATE INDEX documents_modified_at ON documents(modified_at)");
+
+  uint64_t checksum = 0;
+  for (int iteration = 0; iteration < ACCESS_TRAINING_ITERATIONS; ++iteration) {
+    execute(database, "BEGIN IMMEDIATE");
+
+    sqlite3_stmt *insert_work = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "INSERT INTO work_items(priority,created_at,kind,payload,flags) VALUES(?1,?2,?3,?4,?5)",
+        -1,
+        &insert_work,
+        NULL
+      ),
+      "prepare access-pattern work insert"
+    );
+    for (int row = 0; row < ACCESS_TRAINING_BATCH_SIZE; ++row) {
+      char payload[96];
+      int sequence = iteration * ACCESS_TRAINING_BATCH_SIZE + row;
+      snprintf(payload, sizeof(payload), "payload-%08d", sequence);
+      require_ok(database, sqlite3_bind_int(insert_work, 1, sequence % 7), "bind work priority");
+      require_ok(
+        database,
+        sqlite3_bind_int64(insert_work, 2, INT64_C(1700000000000) + sequence),
+        "bind work creation time"
+      );
+      require_ok(database, sqlite3_bind_int(insert_work, 3, sequence % 5), "bind work kind");
+      bind_text(database, insert_work, 4, payload);
+      require_ok(database, sqlite3_bind_int(insert_work, 5, sequence & 3), "bind work flags");
+      finish_statement(database, insert_work, "insert access-pattern work item");
+    }
+    require_ok(database, sqlite3_finalize(insert_work), "finalize access-pattern work insert");
+
+    sqlite3_stmt *replace_document = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "INSERT OR REPLACE INTO documents(document_key,content_kind,body,modified_at) "
+        "VALUES(?1,?2,?3,?4)",
+        -1,
+        &replace_document,
+        NULL
+      ),
+      "prepare access-pattern document replacement"
+    );
+    for (int row = 0; row < ACCESS_TRAINING_BATCH_SIZE / 2; ++row) {
+      char document_key[64];
+      char body[160];
+      int document = (iteration * (ACCESS_TRAINING_BATCH_SIZE / 2) + row) % 512;
+      snprintf(document_key, sizeof(document_key), "document-%04d", document);
+      snprintf(
+        body,
+        sizeof(body),
+        "{\"title\":\"document-%04d\",\"tags\":[\"active\",\"cached\"],\"version\":%d}",
+        document,
+        iteration
+      );
+      bind_text(database, replace_document, 1, document_key);
+      bind_text(database, replace_document, 2, row & 1 ? "summary" : "detail");
+      bind_text(database, replace_document, 3, body);
+      require_ok(
+        database,
+        sqlite3_bind_int64(replace_document, 4, INT64_C(1700000000000) + iteration),
+        "bind document modification time"
+      );
+      finish_statement(database, replace_document, "replace access-pattern document");
+    }
+    require_ok(
+      database,
+      sqlite3_finalize(replace_document),
+      "finalize access-pattern document replacement"
+    );
+
+    sqlite3_stmt *update_document = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "UPDATE documents SET modified_at=?1 WHERE document_key=?2",
+        -1,
+        &update_document,
+        NULL
+      ),
+      "prepare access-pattern document update"
+    );
+    char current_document[64];
+    snprintf(current_document, sizeof(current_document), "document-%04d", iteration % 512);
+    require_ok(
+      database,
+      sqlite3_bind_int64(update_document, 1, INT64_C(1700001000000) + iteration),
+      "bind updated document time"
+    );
+    bind_text(database, update_document, 2, current_document);
+    finish_statement(database, update_document, "update access-pattern document");
+    require_ok(database, sqlite3_finalize(update_document), "finalize access-pattern document update");
+    execute(database, "COMMIT");
+
+    sqlite3_stmt *next_work = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "SELECT id,kind,payload,flags FROM work_items "
+        "ORDER BY priority,created_at LIMIT 1",
+        -1,
+        &next_work,
+        NULL
+      ),
+      "prepare access-pattern ordered read"
+    );
+    if (sqlite3_step(next_work) != SQLITE_ROW) {
+      fail("step access-pattern ordered read", database, sqlite3_errcode(database));
+    }
+    int64_t work_id = sqlite3_column_int64(next_work, 0);
+    checksum += (uint64_t)sqlite3_column_int(next_work, 1);
+    checksum += (uint64_t)sqlite3_column_bytes(next_work, 2);
+    checksum += (uint64_t)sqlite3_column_int(next_work, 3);
+    require_ok(database, sqlite3_finalize(next_work), "finalize access-pattern ordered read");
+
+    sqlite3_stmt *read_document = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "SELECT body,modified_at FROM documents WHERE document_key=?1",
+        -1,
+        &read_document,
+        NULL
+      ),
+      "prepare access-pattern point read"
+    );
+    bind_text(database, read_document, 1, current_document);
+    if (sqlite3_step(read_document) == SQLITE_ROW) {
+      checksum += (uint64_t)sqlite3_column_bytes(read_document, 0);
+      checksum += (uint64_t)sqlite3_column_int64(read_document, 1);
+    }
+    require_ok(database, sqlite3_finalize(read_document), "finalize access-pattern point read");
+
+    sqlite3_stmt *search_document = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(
+        database,
+        "SELECT 1 FROM documents,json_tree(documents.body) "
+        "WHERE documents.document_key=?1 AND atom LIKE ?2 LIMIT 1",
+        -1,
+        &search_document,
+        NULL
+      ),
+      "prepare access-pattern JSON search"
+    );
+    bind_text(database, search_document, 1, current_document);
+    bind_text(database, search_document, 2, "%active%");
+    if (sqlite3_step(search_document) == SQLITE_ROW) {
+      checksum += (uint64_t)sqlite3_column_int(search_document, 0);
+    }
+    require_ok(database, sqlite3_finalize(search_document), "finalize access-pattern JSON search");
+
+    sqlite3_stmt *delete_work = NULL;
+    require_ok(
+      database,
+      sqlite3_prepare_v2(database, "DELETE FROM work_items WHERE id=?1", -1, &delete_work, NULL),
+      "prepare access-pattern work deletion"
+    );
+    require_ok(database, sqlite3_bind_int64(delete_work, 1, work_id), "bind work deletion id");
+    finish_statement(database, delete_work, "delete access-pattern work item");
+    require_ok(database, sqlite3_finalize(delete_work), "finalize access-pattern work deletion");
+
+    if ((iteration & 31) == 31) {
+      sqlite3_stmt *delete_stale = NULL;
+      require_ok(
+        database,
+        sqlite3_prepare_v2(
+          database,
+          "DELETE FROM documents WHERE modified_at<?1 AND content_kind=?2",
+          -1,
+          &delete_stale,
+          NULL
+        ),
+        "prepare access-pattern stale deletion"
+      );
+      require_ok(
+        database,
+        sqlite3_bind_int64(delete_stale, 1, INT64_C(1700000000000) + iteration - 256),
+        "bind stale document time"
+      );
+      bind_text(database, delete_stale, 2, "summary");
+      finish_statement(database, delete_stale, "delete stale access-pattern documents");
+      require_ok(database, sqlite3_finalize(delete_stale), "finalize access-pattern stale deletion");
+    }
+  }
+
+  if (checksum == 0) {
+    fputs("access-pattern training correctness check failed\n", stderr);
+    exit(EXIT_FAILURE);
+  }
+  execute(database, "PRAGMA wal_checkpoint(TRUNCATE)");
+  require_ok(database, sqlite3_close(database), "close access-pattern training database");
+}
+#endif
+
 static uint64_t run_point_reads(sqlite3 *database, int rows) {
   sqlite3_stmt *statement = NULL;
   require_ok(
@@ -870,6 +1101,9 @@ int main(int argc, char **argv) {
   char plaintext_path[1024];
   char cipher_path[1024];
   char representative_path[1024];
+#if SELEKT_ANDROID_ACCESS_TRAINING
+  char access_training_path[1024];
+#endif
   join_path(working_directory, sizeof(working_directory), options.directory, "selekt-benchmark-XXXXXX");
   if (!mkdtemp(working_directory)) {
     perror("create private benchmark directory");
@@ -878,6 +1112,9 @@ int main(int argc, char **argv) {
   join_path(plaintext_path, sizeof(plaintext_path), working_directory, "plain.db");
   join_path(cipher_path, sizeof(cipher_path), working_directory, "cipher.db");
   join_path(representative_path, sizeof(representative_path), working_directory, "representative.db");
+#if SELEKT_ANDROID_ACCESS_TRAINING
+  join_path(access_training_path, sizeof(access_training_path), working_directory, "access-training.db");
+#endif
 
   require_ok(NULL, sqlite3_initialize(), "initialize SQLite");
   require_ok(NULL, sqlite3_vec1_extra_init(NULL), "register vec1");
@@ -909,10 +1146,18 @@ int main(int argc, char **argv) {
   benchmark_file_scan("sqlcipher", cipher_path, 1, &options);
   benchmark_cipher_open(cipher_path, &options);
   benchmark_representative_patterns(representative_path, &options);
+#if SELEKT_ANDROID_ACCESS_TRAINING
+  if (strcmp(SELEKT_BENCHMARK_PGO, "GENERATE") == 0) {
+    train_access_patterns(access_training_path);
+  }
+#endif
 
   remove_database(plaintext_path);
   remove_database(cipher_path);
   remove_database(representative_path);
+#if SELEKT_ANDROID_ACCESS_TRAINING
+  remove_database(access_training_path);
+#endif
   require_ok(NULL, sqlite3_shutdown(), "shutdown SQLite");
   if (rmdir(working_directory) != 0) {
     perror("remove private benchmark directory");
