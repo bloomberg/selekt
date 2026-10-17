@@ -179,6 +179,10 @@ class SQLDatabase(
     val isCurrentThreadSessionActive: Boolean
         get() = session().hasObject
 
+    /** Returns a point-in-time view of this database's physical SQLite connection pool. */
+    val connectionPoolMetrics: ConnectionPoolMetrics
+        get() = connectionPool.metrics()
+
     fun batch(@TrustedSql sql: String, bindArgs: Sequence<Array<out Any?>>): Int = transact {
         SQLStatement.execute(session, sql, bindArgs)
     }

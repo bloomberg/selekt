@@ -27,6 +27,8 @@ import com.bloomberg.selekt.jdbc.driver.SharedDatabase
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
 import com.bloomberg.selekt.jdbc.metadata.JdbcDatabaseMetaData
+import com.bloomberg.selekt.jdbc.metrics.StatementOperation
+import com.bloomberg.selekt.jdbc.metrics.TransactionOutcome
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import com.bloomberg.selekt.jdbc.statement.PreparedStatementCacheEntry
@@ -93,6 +95,7 @@ internal class JdbcConnection(
     private var autoCommit = true
     private var readOnly = false
     private var transactionIsolation = Connection.TRANSACTION_SERIALIZABLE
+    private var transactionStartedNanos: Long? = null
     private var networkTimeout = 0
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
     private val warnings = mutableListOf<SQLWarning>()
@@ -109,6 +112,7 @@ internal class JdbcConnection(
             databaseSession.close()
             throw e
         }
+        sharedDatabase.metrics.connectionOpened()
     }
 
     override fun createStatement(): Statement = createStatement(
@@ -167,6 +171,11 @@ internal class JdbcConnection(
                     resultSetHoldability
                 )
             }
+        }
+        if (cachedEntry == null) {
+            sharedDatabase.metrics.preparedStatementCacheMiss()
+        } else {
+            sharedDatabase.metrics.preparedStatementCacheHit()
         }
         return JdbcPreparedStatement(
             this,
@@ -263,8 +272,10 @@ internal class JdbcConnection(
         runCatching {
             withSession {
                 if (autoCommit && inTransaction) {
-                    setTransactionSuccessful()
-                    endTransaction()
+                    finishTransaction(TransactionOutcome.COMMIT) {
+                        setTransactionSuccessful()
+                        endTransaction()
+                    }
                 }
                 this@JdbcConnection.autoCommit = autoCommit
             }
@@ -283,8 +294,10 @@ internal class JdbcConnection(
         runCatching {
             withSession {
                 if (inTransaction) {
-                    setTransactionSuccessful()
-                    endTransaction()
+                    finishTransaction(TransactionOutcome.COMMIT) {
+                        setTransactionSuccessful()
+                        endTransaction()
+                    }
                 }
             }
         }.onFailure { e ->
@@ -300,7 +313,7 @@ internal class JdbcConnection(
         runCatching {
             withSession {
                 if (inTransaction) {
-                    endTransaction()
+                    finishTransaction(TransactionOutcome.ROLLBACK) { endTransaction() }
                 }
             }
         }.onFailure { e ->
@@ -372,19 +385,50 @@ internal class JdbcConnection(
     override fun close() {
         if (CLOSED.compareAndSet(this, false, true)) {
             try {
-                closePreparedStatementPool()
+                try {
+                    closePreparedStatementPool()
+                } finally {
+                    closeDatabaseSession()
+                    sharedDatabase.releaseTransaction(sessionOwner)
+                    sharedDatabase.runCatching {
+                        releaseConnection()
+                    }.onFailure { e ->
+                        logger.debug("Error releasing database on connection close: {}", e.message)
+                    }
+                }
             } finally {
-                runCatching(databaseSession::close).onFailure { e ->
-                    logger.debug("Error rolling back database session on connection close: {}", e.message)
-                }
-                sharedDatabase.releaseTransaction(sessionOwner)
-                sharedDatabase.runCatching {
-                    releaseConnection()
-                }.onFailure { e ->
-                    logger.debug("Error releasing database on connection close: {}", e.message)
-                }
+                sharedDatabase.metrics.connectionClosed()
             }
         }
+    }
+
+    private fun closeDatabaseSession() {
+        val startedNanos = transactionStartedNanos
+        var sessionClosed = false
+        runCatching {
+            databaseSession.close()
+            sessionClosed = true
+        }.onFailure { e ->
+            logger.debug("Error rolling back database session on connection close: {}", e.message)
+        }
+        if (startedNanos != null) {
+            sharedDatabase.metrics.recordTransaction(
+                if (sessionClosed) TransactionOutcome.ROLLBACK else TransactionOutcome.ERROR,
+                System.nanoTime() - startedNanos
+            )
+            transactionStartedNanos = null
+        }
+    }
+
+    internal fun <T> recordStatement(operation: StatementOperation, block: () -> T): T =
+        sharedDatabase.metrics.recordStatement(operation, block)
+
+    internal fun recordResultSet(durationNanos: Long, rows: Long, successful: Boolean) {
+        sharedDatabase.metrics.recordResultSet(durationNanos, rows, successful)
+    }
+
+    internal fun recordRowsAffected(operation: StatementOperation, count: Long) {
+        sharedDatabase.metrics.rowsAffected(operation, count)
     }
 
     private fun closePreparedStatementPool() {
@@ -400,7 +444,9 @@ internal class JdbcConnection(
                     val pool = preparedStatementPool ?: PreparedStatementPool(MAX_POOLED_STATEMENTS).also {
                         preparedStatementPool = it
                     }
-                    pool.put(entry)
+                    if (pool.put(entry) != null) {
+                        sharedDatabase.metrics.preparedStatementCacheEvicted()
+                    }
                 }
             }
         }
@@ -599,8 +645,36 @@ internal class JdbcConnection(
         if (!autoCommit && !readOnly) {
             withSession {
                 if (!inTransaction) {
-                    beginImmediateTransaction()
+                    val startedNanos = System.nanoTime()
+                    transactionStartedNanos = startedNanos
+                    try {
+                        beginImmediateTransaction()
+                    } catch (e: Exception) {
+                        sharedDatabase.metrics.recordTransaction(
+                            TransactionOutcome.ERROR,
+                            System.nanoTime() - startedNanos
+                        )
+                        transactionStartedNanos = null
+                        throw e
+                    }
                 }
+            }
+        }
+    }
+
+    private fun SQLDatabase.finishTransaction(outcome: TransactionOutcome, block: SQLDatabase.() -> Unit) {
+        val startedNanos = transactionStartedNanos ?: System.nanoTime()
+        var successful = false
+        try {
+            block()
+            successful = true
+        } finally {
+            sharedDatabase.metrics.recordTransaction(
+                if (successful) outcome else TransactionOutcome.ERROR,
+                System.nanoTime() - startedNanos
+            )
+            if (successful || !inTransaction) {
+                transactionStartedNanos = null
             }
         }
     }

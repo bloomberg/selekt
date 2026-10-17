@@ -20,6 +20,8 @@ import java.sql.SQLTimeoutException
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.LongAdder
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
 
@@ -39,6 +41,13 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
     }
 
     private val mutex = Mutex()
+    private val active = AtomicInteger()
+    private val objectCount = AtomicInteger()
+    private val pending = AtomicInteger()
+    private val borrowCount = LongAdder()
+    private val borrowWaitNanos = LongAdder()
+    private val borrowTimeoutCount = LongAdder()
+    private val evictionCount = LongAdder()
 
     private var retainObject = false
 
@@ -67,23 +76,38 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
     }
 
     override fun borrowObject(): T {
-        if (borrowWaitTimeoutMillis < 0L) {
-            mutex.lock()
-        } else if (!mutex.tryLock(TimeUnit.MILLISECONDS.toNanos(borrowWaitTimeoutMillis))) {
-            throw SQLTimeoutException("Timed out waiting for the primary database connection.", "HYT00")
+        val startNanos = System.nanoTime()
+        pending.incrementAndGet()
+        try {
+            if (borrowWaitTimeoutMillis < 0L) {
+                mutex.lock()
+            } else if (!mutex.tryLock(TimeUnit.MILLISECONDS.toNanos(borrowWaitTimeoutMillis))) {
+                borrowTimeoutCount.increment()
+                throw SQLTimeoutException("Timed out waiting for the primary database connection.", "HYT00")
+            }
+            return acquireObject().also {
+                active.set(1)
+                recordBorrow(startNanos)
+            }
+        } finally {
+            pending.decrementAndGet()
         }
-        return acquireObject()
     }
 
     override fun borrowObject(key: K) = borrowObject()
 
-    fun borrowObjectOrNull() = if (mutex.tryLock(0L, true)) {
-        acquireObject()
+    fun borrowObjectOrNull(): T? = if (mutex.tryLock(0L, true)) {
+        val startNanos = System.nanoTime()
+        acquireObject().also {
+            active.set(1)
+            recordBorrow(startNanos)
+        }
     } else {
         null
     }
 
     override fun returnObject(obj: T) {
+        active.set(0)
         canEvict = false
         if (isClosed) {
             processCloseThenUnlock()
@@ -118,7 +142,10 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
                 evictions(priority)
             }
         }
-    }?.let(factory::destroyObject)
+    }?.let {
+        evictionCount.increment()
+        factory.destroyObject(it)
+    }
 
     @GuardedBy("mutex")
     private fun acquireObject(): T {
@@ -130,6 +157,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
             throw it
         }.also {
             obj = it
+            objectCount.set(1)
             attemptScheduleEviction()
         }
     }
@@ -160,6 +188,7 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
         val mayRemove = !retainObject || isClosed
         return (if (mayRemove && obj?.let { it shouldBeRemovedAt priority } == true) obj else null)?.also {
             obj = null
+            objectCount.set(0)
             cancelScheduledEviction()
         }.also {
             canEvict = canEvict || priority == null
@@ -177,4 +206,19 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
 
     private infix fun T.shouldBeRemovedAt(priority: Priority?) =
         canEvict && (priority != null || !future!!.isCancelled) || isClosed || priority.isHigh()
+
+    internal fun metrics() = ObjectPoolMetrics(
+        active = active.get(),
+        idle = (objectCount.get() - active.get()).coerceAtLeast(0),
+        pending = pending.get(),
+        borrowCount = borrowCount.sum(),
+        borrowWaitNanos = borrowWaitNanos.sum(),
+        borrowTimeoutCount = borrowTimeoutCount.sum(),
+        evictionCount = evictionCount.sum()
+    )
+
+    private fun recordBorrow(startNanos: Long) {
+        borrowCount.increment()
+        borrowWaitNanos.add((System.nanoTime() - startNanos).coerceAtLeast(0L))
+    }
 }

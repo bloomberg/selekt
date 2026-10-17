@@ -15,6 +15,7 @@ repositories {
 dependencies {
     implementation(platform("com.bloomberg.selekt:selekt-bom:${selektVersion.get()}"))
     implementation("com.bloomberg.selekt:selekt-jdbc")
+    implementation("com.bloomberg.selekt:selekt-jdbc-micrometer")
 }
 
 java {
@@ -25,7 +26,10 @@ java {
 
 sourceSets {
     main {
-        java.srcDir("../consumer-smoke/src/main/java")
+        java.apply {
+            srcDir("../consumer-smoke/src/main/java")
+            include("**/BackendSelection.java", "**/JdbcSmokeTest.java")
+        }
     }
 }
 

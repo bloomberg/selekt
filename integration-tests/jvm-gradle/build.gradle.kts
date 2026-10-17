@@ -25,7 +25,10 @@ java {
 
 sourceSets {
     main {
-        java.srcDir("../consumer-smoke/src/main/java")
+        java.apply {
+            srcDir("../consumer-smoke/src/main/java")
+            include("**/BackendSelection.java", "**/JvmSmokeTest.java")
+        }
     }
 }
 

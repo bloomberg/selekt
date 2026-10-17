@@ -18,6 +18,7 @@ package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.SharedResource
+import com.bloomberg.selekt.jdbc.metrics.JdbcMetrics
 import java.sql.SQLException
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
@@ -37,7 +38,9 @@ import kotlin.concurrent.withLock
 internal class SharedDatabase(
     val database: SQLDatabase,
     private val onClose: () -> Unit = {},
-    private val onConnectionReleased: (SharedDatabase) -> Unit = {}
+    private val onConnectionReleased: (SharedDatabase) -> Unit = {},
+    internal val metrics: JdbcMetrics = JdbcMetrics(),
+    private val afterClose: () -> Unit = {}
 ) : SharedResource() {
     private data class TransactionOwner(
         val token: Any,
@@ -108,8 +111,12 @@ internal class SharedDatabase(
     }
 
     override fun onReleased() {
-        database.use { _ ->
-            onClose()
+        try {
+            database.use { _ ->
+                onClose()
+            }
+        } finally {
+            afterClose()
         }
     }
 }
