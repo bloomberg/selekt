@@ -28,7 +28,6 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.metrics.JdbcMetricsSnapshot
-import com.bloomberg.selekt.jdbc.metrics.JdbcMetricsView
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import java.io.PrintWriter
 import java.sql.Connection
@@ -207,11 +206,9 @@ class SelektDataSource internal constructor(
     internal val cachedDatabaseCount: Int
         get() = databaseCache.size
 
-    val metricValues = JdbcMetricsView(databaseCache)
-
-    /** Returns a framework-neutral point-in-time snapshot of this data source's operational metrics. */
+    /** Returns a framework-neutral point-in-time view of this data source's operational metrics. */
     val metrics: JdbcMetricsSnapshot
-        get() = metricValues.snapshot()
+        get() = databaseCache.metrics.snapshot(cachedDatabaseCount, databaseCache.connectionPoolMetrics)
 
     override fun getConnection(): Connection = getConnection(null, null)
 

@@ -17,7 +17,6 @@
 package com.bloomberg.selekt.jdbc.metrics
 
 import com.bloomberg.selekt.ConnectionPoolMetrics
-import com.bloomberg.selekt.jdbc.driver.SharedDatabaseCache
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.LongAdder
@@ -76,13 +75,8 @@ internal class MetricAccumulator {
     }
 
     fun snapshot() = TimedMetric(count.sum(), totalNanos.sum())
-
-    fun count(): Long = count.sum()
-
-    fun totalNanos(): Long = totalNanos.sum()
 }
 
-@Suppress("TooManyFunctions")
 internal class JdbcMetrics {
     private val activeConnections = AtomicInteger()
     private val connectionOpen = Array(MetricOutcome.entries.size) { MetricAccumulator() }
@@ -152,38 +146,6 @@ internal class JdbcMetrics {
     fun poolMetricsWith(liveMetrics: ConnectionPoolMetrics): ConnectionPoolMetrics =
         archivedPoolMetrics.get() + liveMetrics
 
-    fun activeConnectionCount(): Int = activeConnections.get()
-
-    fun connectionOpenCount(outcome: MetricOutcome): Long = connectionOpen[outcome.ordinal].count()
-
-    fun connectionOpenTotalNanos(outcome: MetricOutcome): Long = connectionOpen[outcome.ordinal].totalNanos()
-
-    fun statementCount(operation: StatementOperation, outcome: MetricOutcome): Long =
-        statements[operation.ordinal][outcome.ordinal].count()
-
-    fun statementTotalNanos(operation: StatementOperation, outcome: MetricOutcome): Long =
-        statements[operation.ordinal][outcome.ordinal].totalNanos()
-
-    fun transactionCount(outcome: TransactionOutcome): Long = transactions[outcome.ordinal].count()
-
-    fun transactionTotalNanos(outcome: TransactionOutcome): Long = transactions[outcome.ordinal].totalNanos()
-
-    fun resultSetCount(outcome: MetricOutcome): Long = resultSets[outcome.ordinal].count()
-
-    fun resultSetTotalNanos(outcome: MetricOutcome): Long = resultSets[outcome.ordinal].totalNanos()
-
-    fun resultSetRowCount(outcome: MetricOutcome): Long = resultSetRows[outcome.ordinal].sum()
-
-    fun affectedRowCount(operation: StatementOperation): Long = rowsAffected[operation.ordinal].sum()
-
-    fun preparedStatementCacheHitCount(): Long = preparedStatementCacheHits.sum()
-
-    fun preparedStatementCacheMissCount(): Long = preparedStatementCacheMisses.sum()
-
-    fun preparedStatementCacheEvictionCount(): Long = preparedStatementCacheEvictions.sum()
-
-    fun cacheEvictionCount(reason: CacheEvictionReason): Long = cacheEvictions[reason.ordinal].sum()
-
     fun snapshot(cachedDatabases: Int, connectionPool: ConnectionPoolMetrics) = JdbcMetricsSnapshot(
         activeConnections = activeConnections.get(),
         cachedDatabases = cachedDatabases,
@@ -207,54 +169,6 @@ internal class JdbcMetrics {
     )
 
     private fun Boolean.outcome() = if (this) { MetricOutcome.SUCCESS } else { MetricOutcome.ERROR }
-}
-
-/**
- * Allocation-conscious live access to a data source's operational metrics.
- *
- * Values are read independently and do not constitute an atomic snapshot. Use
- * [com.bloomberg.selekt.jdbc.driver.SelektDataSource.metrics] when a self-consistent value object is preferred.
- */
-class JdbcMetricsView internal constructor(private val databaseCache: SharedDatabaseCache) {
-    private val accumulator: JdbcMetrics get() = databaseCache.metrics
-
-    val activeConnections: Int get() = accumulator.activeConnectionCount()
-
-    val cachedDatabases: Int get() = databaseCache.size
-
-    fun connectionOpenCount(outcome: MetricOutcome): Long = accumulator.connectionOpenCount(outcome)
-
-    fun connectionOpenTotalNanos(outcome: MetricOutcome): Long = accumulator.connectionOpenTotalNanos(outcome)
-
-    fun statementCount(operation: StatementOperation, outcome: MetricOutcome): Long =
-        accumulator.statementCount(operation, outcome)
-
-    fun statementTotalNanos(operation: StatementOperation, outcome: MetricOutcome): Long =
-        accumulator.statementTotalNanos(operation, outcome)
-
-    fun transactionCount(outcome: TransactionOutcome): Long = accumulator.transactionCount(outcome)
-
-    fun transactionTotalNanos(outcome: TransactionOutcome): Long = accumulator.transactionTotalNanos(outcome)
-
-    fun resultSetCount(outcome: MetricOutcome): Long = accumulator.resultSetCount(outcome)
-
-    fun resultSetTotalNanos(outcome: MetricOutcome): Long = accumulator.resultSetTotalNanos(outcome)
-
-    fun resultSetRowCount(outcome: MetricOutcome): Long = accumulator.resultSetRowCount(outcome)
-
-    fun affectedRowCount(operation: StatementOperation): Long = accumulator.affectedRowCount(operation)
-
-    val preparedStatementCacheHitCount: Long get() = accumulator.preparedStatementCacheHitCount()
-
-    val preparedStatementCacheMissCount: Long get() = accumulator.preparedStatementCacheMissCount()
-
-    val preparedStatementCacheEvictionCount: Long get() = accumulator.preparedStatementCacheEvictionCount()
-
-    fun cacheEvictionCount(reason: CacheEvictionReason): Long = accumulator.cacheEvictionCount(reason)
-
-    val connectionPool: JdbcConnectionPoolMetrics get() = databaseCache.connectionPoolMetrics.toJdbcMetrics()
-
-    internal fun snapshot(): JdbcMetricsSnapshot = accumulator.snapshot(cachedDatabases, databaseCache.connectionPoolMetrics)
 }
 
 private fun ConnectionPoolMetrics.toJdbcMetrics() = JdbcConnectionPoolMetrics(

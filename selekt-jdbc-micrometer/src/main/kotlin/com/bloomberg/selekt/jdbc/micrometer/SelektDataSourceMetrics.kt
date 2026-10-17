@@ -18,7 +18,6 @@ package com.bloomberg.selekt.jdbc.micrometer
 
 import com.bloomberg.selekt.jdbc.driver.SelektDataSource
 import com.bloomberg.selekt.jdbc.metrics.CacheEvictionReason
-import com.bloomberg.selekt.jdbc.metrics.JdbcConnectionPoolMetrics
 import com.bloomberg.selekt.jdbc.metrics.MetricOutcome
 import com.bloomberg.selekt.jdbc.metrics.StatementOperation
 import com.bloomberg.selekt.jdbc.metrics.TransactionOutcome
@@ -38,8 +37,6 @@ private const val SECONDARY = "secondary"
 private const val ACTIVE = "active"
 private const val IDLE = "idle"
 private const val OUTCOME = "outcome"
-private const val POOL_METRICS_REFRESH_MILLIS = 100L
-private val POOL_METRICS_REFRESH_NANOS = TimeUnit.MILLISECONDS.toNanos(POOL_METRICS_REFRESH_MILLIS)
 
 /**
  * Publishes bounded-cardinality operational metrics for a [SelektDataSource].
@@ -51,14 +48,12 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
     private val dataSource: SelektDataSource,
     private val tags: Iterable<Tag> = emptyList()
 ) : MeterBinder {
-    private val poolMetrics = PoolMetricsSampler()
-
     override fun bindTo(registry: MeterRegistry) {
         gauge(registry, "$METRIC_PREFIX.connections.active", "Open logical JDBC connections") {
-            it.metricValues.activeConnections.toDouble()
+            it.metrics.activeConnections.toDouble()
         }
         gauge(registry, "$METRIC_PREFIX.databases.cached", "Database instances retained by the JDBC cache") {
-            it.metricValues.cachedDatabases.toDouble()
+            it.metrics.cachedDatabases.toDouble()
         }
         bindConnectionMetrics(registry)
         bindStatementMetrics(registry)
@@ -76,8 +71,8 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                 "$METRIC_PREFIX.connections.open",
                 "Time spent opening logical JDBC connections",
                 listOf(Tag.of(OUTCOME, outcome.tagValue)),
-                { it.metricValues.connectionOpenCount(outcome) },
-                { it.metricValues.connectionOpenTotalNanos(outcome).toDouble() }
+                { it.metrics.connectionOpens.getValue(outcome).count },
+                { it.metrics.connectionOpens.getValue(outcome).totalNanos.toDouble() }
             )
         }
     }
@@ -90,8 +85,8 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                     "$METRIC_PREFIX.statements",
                     "Time spent executing JDBC statements; streaming result consumption is excluded",
                     listOf(Tag.of("operation", operation.tagValue), Tag.of(OUTCOME, outcome.tagValue)),
-                    { it.metricValues.statementCount(operation, outcome) },
-                    { it.metricValues.statementTotalNanos(operation, outcome).toDouble() }
+                    { it.metrics.statements.getValue(operation).getValue(outcome).count },
+                    { it.metrics.statements.getValue(operation).getValue(outcome).totalNanos.toDouble() }
                 )
             }
         }
@@ -101,7 +96,7 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                 "$METRIC_PREFIX.rows.affected",
                 "Rows affected by successful JDBC write operations",
                 listOf(Tag.of("operation", operation.tagValue))
-            ) { it.metricValues.affectedRowCount(operation).toDouble() }
+            ) { it.metrics.rowsAffected.getValue(operation).toDouble() }
         }
     }
 
@@ -112,8 +107,8 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                 "$METRIC_PREFIX.transactions",
                 "Explicit transaction count and duration from begin through completion",
                 listOf(Tag.of(OUTCOME, outcome.tagValue)),
-                { it.metricValues.transactionCount(outcome) },
-                { it.metricValues.transactionTotalNanos(outcome).toDouble() }
+                { it.metrics.transactions.getValue(outcome).count },
+                { it.metrics.transactions.getValue(outcome).totalNanos.toDouble() }
             )
         }
     }
@@ -125,22 +120,22 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                 "$METRIC_PREFIX.resultsets",
                 "Result set lifetime from creation through exhaustion or close",
                 listOf(Tag.of(OUTCOME, outcome.tagValue)),
-                { it.metricValues.resultSetCount(outcome) },
-                { it.metricValues.resultSetTotalNanos(outcome).toDouble() }
+                { it.metrics.resultSets.getValue(outcome).count },
+                { it.metrics.resultSets.getValue(outcome).totalNanos.toDouble() }
             )
             functionCounter(
                 registry,
                 "$METRIC_PREFIX.resultsets.rows",
                 "Rows returned by ResultSet.next()",
                 listOf(Tag.of(OUTCOME, outcome.tagValue))
-            ) { it.metricValues.resultSetRowCount(outcome).toDouble() }
+            ) { it.metrics.resultSetRows.getValue(outcome).toDouble() }
         }
     }
 
     private fun bindPreparedStatementCacheMetrics(registry: MeterRegistry) {
         listOf(
-            "hit" to { source: SelektDataSource -> source.metricValues.preparedStatementCacheHitCount.toDouble() },
-            "miss" to { source: SelektDataSource -> source.metricValues.preparedStatementCacheMissCount.toDouble() }
+            "hit" to { source: SelektDataSource -> source.metrics.preparedStatementCache.hitCount.toDouble() },
+            "miss" to { source: SelektDataSource -> source.metrics.preparedStatementCache.missCount.toDouble() }
         ).forEach { (result, value) ->
             functionCounter(
                 registry,
@@ -155,7 +150,7 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
             "$METRIC_PREFIX.statement.cache.evictions",
             "Prepared statements evicted due to capacity or replacement",
             emptyList()
-        ) { it.metricValues.preparedStatementCacheEvictionCount.toDouble() }
+        ) { it.metrics.preparedStatementCache.evictionCount.toDouble() }
     }
 
     private fun bindCacheMetrics(registry: MeterRegistry) {
@@ -165,36 +160,35 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
                 "$METRIC_PREFIX.database.cache.evictions",
                 "Database instances removed from the JDBC cache",
                 listOf(Tag.of("reason", reason.tagValue))
-            ) { it.metricValues.cacheEvictionCount(reason).toDouble() }
+            ) { it.metrics.cacheEvictions.getValue(reason).toDouble() }
         }
     }
 
     private fun bindPoolMetrics(registry: MeterRegistry) {
-        val sampler = poolMetrics
         listOf(
-            PoolGauge(PRIMARY, ACTIVE) { it.activePrimaryConnections.toDouble() },
-            PoolGauge(PRIMARY, IDLE) { it.idlePrimaryConnections.toDouble() },
-            PoolGauge(SECONDARY, ACTIVE) { it.activeSecondaryConnections.toDouble() },
-            PoolGauge(SECONDARY, IDLE) { it.idleSecondaryConnections.toDouble() }
+            PoolGauge(PRIMARY, ACTIVE) { it.metrics.connectionPool.activePrimaryConnections.toDouble() },
+            PoolGauge(PRIMARY, IDLE) { it.metrics.connectionPool.idlePrimaryConnections.toDouble() },
+            PoolGauge(SECONDARY, ACTIVE) { it.metrics.connectionPool.activeSecondaryConnections.toDouble() },
+            PoolGauge(SECONDARY, IDLE) { it.metrics.connectionPool.idleSecondaryConnections.toDouble() }
         ).forEach { metric ->
             gauge(
                 registry,
                 "$METRIC_PREFIX.pool.connections",
                 "Physical SQLite connections by role and state",
                 listOf(Tag.of("role", metric.role), Tag.of("state", metric.state)),
-                { source -> metric.value(sampler.sample(source)) }
+                metric.value
             )
         }
         listOf(
-            PRIMARY to { metrics: JdbcConnectionPoolMetrics -> metrics.pendingPrimaryBorrows.toDouble() },
-            SECONDARY to { metrics: JdbcConnectionPoolMetrics -> metrics.pendingSecondaryBorrows.toDouble() }
+            PRIMARY to { source: SelektDataSource -> source.metrics.connectionPool.pendingPrimaryBorrows.toDouble() },
+            SECONDARY to { source: SelektDataSource -> source.metrics.connectionPool.pendingSecondaryBorrows.toDouble() }
         ).forEach { (role, value) ->
             gauge(
                 registry,
                 "$METRIC_PREFIX.pool.pending",
                 "Current connection borrows waiting for the physical SQLite pool",
                 listOf(Tag.of("role", role)),
-                { source -> value(sampler.sample(source)) }
+                value
             )
         }
         functionTimer(
@@ -202,21 +196,21 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
             "$METRIC_PREFIX.pool.borrows",
             "Physical SQLite connection borrow count and wait time",
             emptyList(),
-            { sampler.sample(it).borrowCount },
-            { sampler.sample(it).borrowWaitNanos.toDouble() }
+            { it.metrics.connectionPool.borrowCount },
+            { it.metrics.connectionPool.borrowWaitNanos.toDouble() }
         )
         functionCounter(
             registry,
             "$METRIC_PREFIX.pool.borrow.timeouts",
             "Physical SQLite connection borrow timeouts",
             emptyList()
-        ) { sampler.sample(it).borrowTimeoutCount.toDouble() }
+        ) { it.metrics.connectionPool.borrowTimeoutCount.toDouble() }
         functionCounter(
             registry,
             "$METRIC_PREFIX.pool.evictions",
             "Physical SQLite connections evicted from the pool",
             emptyList()
-        ) { sampler.sample(it).evictionCount.toDouble() }
+        ) { it.metrics.connectionPool.evictionCount.toDouble() }
     }
 
     private fun gauge(
@@ -272,36 +266,7 @@ class SelektDataSourceMetrics @JvmOverloads constructor(
     private data class PoolGauge(
         val role: String,
         val state: String,
-        val value: (JdbcConnectionPoolMetrics) -> Double
-    )
-}
-
-internal class PoolMetricsSampler(
-    private val refreshNanos: Long = POOL_METRICS_REFRESH_NANOS,
-    private val nanoTime: () -> Long = System::nanoTime
-) {
-    init {
-        require(refreshNanos >= 0L) { "Pool metrics refresh interval must be non-negative" }
-    }
-
-    @Volatile
-    private var cached: Sample? = null
-
-    fun sample(source: SelektDataSource): JdbcConnectionPoolMetrics = sample { source.metricValues.connectionPool }
-
-    internal fun sample(load: () -> JdbcConnectionPoolMetrics): JdbcConnectionPoolMetrics {
-        val now = nanoTime()
-        cached?.takeIf { now - it.sampledAtNanos <= refreshNanos }?.let { return it.metrics }
-        return synchronized(this) {
-            val lockedNow = nanoTime()
-            cached?.takeIf { lockedNow - it.sampledAtNanos <= refreshNanos }?.metrics
-                ?: load().also { cached = Sample(it, lockedNow) }
-        }
-    }
-
-    private data class Sample(
-        val metrics: JdbcConnectionPoolMetrics,
-        val sampledAtNanos: Long
+        val value: (SelektDataSource) -> Double
     )
 }
 
