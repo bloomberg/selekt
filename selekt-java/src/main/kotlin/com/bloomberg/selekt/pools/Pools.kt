@@ -92,13 +92,3 @@ interface IPooledObject<K> {
 
     fun onReturned() = Unit
 }
-
-internal data class ObjectPoolMetrics(
-    val active: Int,
-    val idle: Int,
-    val pending: Int,
-    val borrowCount: Long,
-    val borrowWaitNanos: Long,
-    val borrowTimeoutCount: Long,
-    val evictionCount: Long
-)

@@ -24,7 +24,6 @@ import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.SelektPreparedStatement
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
-import com.bloomberg.selekt.jdbc.metrics.StatementOperation
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.util.TypeMapping
 import java.io.ByteArrayOutputStream
@@ -57,8 +56,6 @@ private const val INITIAL_BATCH_CHUNK_SIZE = 1024
 private const val MAX_STREAM_LENGTH = 1_000_000_000
 
 private const val READER_BUFFER_SIZE = 8_192
-
-private val EMPTY_INT_ARRAY = IntArray(0)
 
 internal class PreparedStatementCacheEntry(
     val sql: String,
@@ -224,9 +221,9 @@ internal class JdbcPreparedStatement private constructor(
         }
     }
 
-    override fun executeQuery(): ResultSet = connection.recordStatement(StatementOperation.QUERY) {
+    override fun executeQuery(): ResultSet {
         checkClosed()
-        runCatching {
+        return runCatching {
             closeCurrentResultSet()
             val signal = activateCancellationSignal()
             runCatching {
@@ -243,10 +240,10 @@ internal class JdbcPreparedStatement private constructor(
         }
     }
 
-    override fun executeUpdate(): Int = connection.recordStatement(StatementOperation.UPDATE) {
+    override fun executeUpdate(): Int {
         checkClosed()
         connection.checkWritable()
-        try {
+        return try {
             closeCurrentResultSet()
             val signal = activateCancellationSignal()
             try {
@@ -261,20 +258,16 @@ internal class JdbcPreparedStatement private constructor(
         } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
-    }.also { connection.recordRowsAffected(StatementOperation.UPDATE, it.toLong().coerceAtLeast(0L)) }
+    }
 
-    override fun execute(): Boolean = connection.recordStatement(StatementOperation.EXECUTE) {
+    override fun execute(): Boolean {
         checkClosed()
-        try {
+        return try {
             executeInternal()
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(SQLException(e.message, e))
-        }
-    }.also { hasResultSet ->
-        if (!hasResultSet) {
-            connection.recordRowsAffected(StatementOperation.EXECUTE, updateCount.toLong().coerceAtLeast(0L))
         }
     }
 
@@ -368,23 +361,22 @@ internal class JdbcPreparedStatement private constructor(
         }
     }
 
-    override fun executeBatchShared(): IntArray = connection.recordStatement(StatementOperation.BATCH) {
+    override fun executeBatchShared(): IntArray {
         checkClosed()
         closeCurrentResultSet()
         if (totalBatchCount == 0) {
-            return@recordStatement EMPTY_INT_ARRAY
+            return IntArray(0)
         }
         val signal = activateCancellationSignal()
         try {
-            val affectedRows = withCancellation(signal, primary = true) {
+            withCancellation(signal, primary = true) {
                 if (database.compileStatement(sql).use { it.isReadOnly }) {
                     throw SQLException("Read-only statements are not allowed in batch execution")
                 }
                 connection.ensureTransaction()
                 batchRows(sql, batchRows)
             }
-            connection.recordRowsAffected(StatementOperation.BATCH, affectedRows.toLong().coerceAtLeast(0L))
-            return@recordStatement cacheEntry.successArray(totalBatchCount)
+            return cacheEntry.successArray(totalBatchCount)
         } catch (e: Exception) {
             val mapped = if (e is OperationCancelledException) {
                 SQLExceptionMapper.mapCancellation(e)

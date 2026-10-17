@@ -584,7 +584,7 @@ jobs:
             **/build/reports/detekt
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-jdbc-micrometer:test :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test :koverHtmlReport -x integrationTest ${{ env.SCAN }}
 
       - name: 'Archive test reports'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -597,7 +597,6 @@ jobs:
             selekt-java/build/reports/tests/test
             selekt-jdbc/build/reports/tests/test
             selekt-jdbc/build/reports/tests/testJava25
-            selekt-jdbc-micrometer/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/test
             selekt-sqlite3-classes/build/reports/tests/testJava25
 
@@ -609,7 +608,6 @@ jobs:
         run: |
           ./gradlew \
             :selekt-jdbc:jar \
-            :selekt-jdbc-micrometer:jar \
             :selekt-jvm:jar \
             :selekt-sqlite3-sqlcipher:jar \
             ${{ env.SCAN }}
@@ -624,7 +622,6 @@ jobs:
             :selekt-commons:publishMainPublicationToMavenLocal \
             :selekt-java:publishMainPublicationToMavenLocal \
             :selekt-jdbc:publishMainPublicationToMavenLocal \
-            :selekt-jdbc-micrometer:publishMainPublicationToMavenLocal \
             :selekt-jvm:publishMainPublicationToMavenLocal \
             :selekt-sqlite3-api:publishMainPublicationToMavenLocal \
             :selekt-sqlite3-classes:publishMainPublicationToMavenLocal \

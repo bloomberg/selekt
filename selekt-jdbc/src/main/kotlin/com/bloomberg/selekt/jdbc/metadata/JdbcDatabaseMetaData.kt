@@ -415,8 +415,7 @@ internal class JdbcDatabaseMetaData(
 
     private fun executeMetadataQuery(sql: String): ResultSet = JdbcResultSet(
         connection.withSession { database.query(sql, emptyArray()) },
-        null,
-        metricsConnection = connection
+        null
     )
 
     @Suppress("Detekt.StringLiteralDuplication")

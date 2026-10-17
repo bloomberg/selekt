@@ -1,15 +1,14 @@
 Change Log
 ==========
 
-## Version 1.8.0
-*
+## Version 1.7.1
+
 * OpenSSL 3.5.9.
 * Preserve JDBC SQLSTATEs and avoid needless write transactions.
 * Configure JDBC foreign keys through a typed database API.
 * Add the SQLITE_SCHEMA result code constant.
 * Add SQLite Session change-capture bindings.
 * Bound primary connection borrowing.
-* Add (optional) Micrometer metrics JDBC integration.
 
 ## Version 1.7.0
 
