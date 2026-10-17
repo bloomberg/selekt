@@ -16,6 +16,7 @@
 
 package com.bloomberg.selekt.pools
 
+import com.bloomberg.selekt.ConnectionPoolMetrics
 import java.io.Closeable
 
 /**
@@ -71,5 +72,22 @@ internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal construc
         primaryPool.returnObject(obj)
     } else {
         checkNotNull(secondaryPool).returnObject(obj)
+    }
+
+    fun metrics(): ConnectionPoolMetrics {
+        val primary = primaryPool.metrics()
+        val secondary = secondaryPool?.metrics()
+        return ConnectionPoolMetrics(
+            activePrimaryConnections = primary.active,
+            idlePrimaryConnections = primary.idle,
+            pendingPrimaryBorrows = primary.pending,
+            activeSecondaryConnections = secondary?.active ?: 0,
+            idleSecondaryConnections = secondary?.idle ?: 0,
+            pendingSecondaryBorrows = secondary?.pending ?: 0,
+            borrowCount = primary.borrowCount + (secondary?.borrowCount ?: 0L),
+            borrowWaitNanos = primary.borrowWaitNanos + (secondary?.borrowWaitNanos ?: 0L),
+            borrowTimeoutCount = primary.borrowTimeoutCount + (secondary?.borrowTimeoutCount ?: 0L),
+            evictionCount = primary.evictionCount + (secondary?.evictionCount ?: 0L)
+        )
     }
 }

@@ -17,7 +17,10 @@
 package com.bloomberg.selekt.jdbc.driver
 
 import com.bloomberg.selekt.SQLDatabase
+import com.bloomberg.selekt.ConnectionPoolMetrics
 import com.bloomberg.selekt.commons.forEachCatching
+import com.bloomberg.selekt.jdbc.metrics.CacheEvictionReason
+import com.bloomberg.selekt.jdbc.metrics.JdbcMetrics
 import java.io.Closeable
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -48,7 +51,8 @@ internal enum class DatabaseIdlePolicy {
 internal class SharedDatabaseCache(
     private val maxIdleEntries: Int = DEFAULT_MAX_IDLE_JDBC_DATABASES,
     private val idleTimeoutMillis: Long = JDBC_DATABASE_IDLE_TIMEOUT_MILLIS,
-    private val scheduler: ScheduledExecutorService = SHARED_SCHEDULER
+    private val scheduler: ScheduledExecutorService = SHARED_SCHEDULER,
+    internal val metrics: JdbcMetrics = JdbcMetrics()
 ) : Closeable {
     private data class Entry(
         val database: SharedDatabase,
@@ -82,6 +86,9 @@ internal class SharedDatabaseCache(
     private val entries = LinkedHashMap<String, Entry>(CACHE_INITIAL_CAPACITY, CACHE_LOAD_FACTOR, true)
 
     @GuardedBy("lock")
+    private val metricSources = mutableSetOf<SharedDatabase>()
+
+    @GuardedBy("lock")
     private var closed = false
 
     @GuardedBy("lock")
@@ -89,6 +96,14 @@ internal class SharedDatabaseCache(
 
     internal val size: Int
         get() = lock.withLock(entries::size)
+
+    internal val connectionPoolMetrics: ConnectionPoolMetrics
+        get() = metrics.poolMetricsWith(lock.withLock {
+            metricSources.fold(ConnectionPoolMetrics.EMPTY) { total, source ->
+                total + (runCatching { source.database.connectionPoolMetrics }.getOrNull()
+                    ?: ConnectionPoolMetrics.EMPTY)
+            }
+        })
 
     fun acquire(
         cacheKey: String,
@@ -114,11 +129,23 @@ internal class SharedDatabaseCache(
         lateinit var created: SharedDatabase
         created = SharedDatabase(
             database = createDatabase(),
-            onConnectionReleased = { releaseConnection(cacheKey, it) }
+            metrics = metrics,
+            onConnectionReleased = { releaseConnection(cacheKey, it) },
+            afterClose = { archiveMetrics(created) }
         )
         created.retain()
+        metricSources.add(created)
         entries[cacheKey] = Entry(created, idlePolicy, activeConnections = 1)
         created
+    }
+
+    private fun archiveMetrics(database: SharedDatabase) {
+        val finalMetrics = runCatching { database.database.connectionPoolMetrics }.getOrNull()
+        lock.withLock {
+            if (metricSources.remove(database)) {
+                finalMetrics?.let(metrics::archive)
+            }
+        }
     }
 
     private fun releaseConnection(cacheKey: String, database: SharedDatabase) {
@@ -137,6 +164,7 @@ internal class SharedDatabaseCache(
                 DatabaseIdlePolicy.RETAIN_UNTIL_CLEARED -> emptyList()
                 DatabaseIdlePolicy.RELEASE_IMMEDIATELY -> {
                     entries.remove(cacheKey)
+                    metrics.cacheEvicted(CacheEvictionReason.IMMEDIATE)
                     listOf(entry.database)
                 }
                 DatabaseIdlePolicy.EVICT_AFTER_TIMEOUT -> {
@@ -144,6 +172,7 @@ internal class SharedDatabaseCache(
                     if (idleTimeoutMillis == 0L) {
                         entries.remove(cacheKey)
                         --idleEntries
+                        metrics.cacheEvicted(CacheEvictionReason.IDLE)
                         listOf(entry.database)
                     } else {
                         entry.expiration = scheduler.schedule(
@@ -151,7 +180,9 @@ internal class SharedDatabaseCache(
                             idleTimeoutMillis,
                             TimeUnit.MILLISECONDS
                         )
-                        evictExcessIdleEntries()
+                        evictExcessIdleEntries().also {
+                            metrics.cacheEvicted(CacheEvictionReason.CAPACITY, it.size)
+                        }
                     }
                 }
             }
@@ -173,6 +204,9 @@ internal class SharedDatabaseCache(
                     entry.database
                 }
             }
+        }
+        if (expired != null) {
+            metrics.cacheEvicted(CacheEvictionReason.IDLE)
         }
         listOfNotNull(expired).releaseAll()
     }
@@ -201,7 +235,9 @@ internal class SharedDatabaseCache(
     }
 
     fun clear() {
-        removeAll(markClosed = false).releaseAll()
+        removeAll(markClosed = false).also {
+            metrics.cacheEvicted(CacheEvictionReason.INVALIDATED, it.size)
+        }.releaseAll()
     }
 
     override fun close() {

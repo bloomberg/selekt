@@ -358,8 +358,16 @@ internal class SingleObjectPoolTest {
         try {
             val failure = assertFailsWith<SQLTimeoutException> { timedPool.borrowObject() }
             assertEquals("HYT00", failure.sqlState)
+            timedPool.metrics().run {
+                assertEquals(1, active)
+                assertEquals(0, idle)
+                assertEquals(0, pending)
+                assertEquals(1L, borrowCount)
+                assertEquals(1L, borrowTimeoutCount)
+            }
         } finally {
             timedPool.returnObject(held)
+            assertEquals(1, timedPool.metrics().idle)
             timedPool.close()
         }
     }

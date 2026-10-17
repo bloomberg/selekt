@@ -19,6 +19,7 @@ package com.bloomberg.selekt.jdbc.result
 import com.bloomberg.selekt.ColumnType
 import com.bloomberg.selekt.ICursor
 import com.bloomberg.selekt.OperationCancelledException
+import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.lob.JdbcBlob
 import com.bloomberg.selekt.jdbc.lob.JdbcClob
@@ -275,27 +276,37 @@ internal class JdbcResultSet(
     private val statement: Statement?,
     private val resultSetType: Int = ResultSet.TYPE_FORWARD_ONLY,
     private val resultSetConcurrency: Int = ResultSet.CONCUR_READ_ONLY,
-    private val resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT
+    private val resultSetHoldability: Int = ResultSet.CLOSE_CURSORS_AT_COMMIT,
+    private val metricsConnection: JdbcConnection? = (statement as? JdbcStatement)?.connection
 ) : ResultSet {
     private var wasNull = false
     private var metadata: JdbcResultSetMetaData? = null
     private var fetchSize = 0
+    private val metricsStartedNanos = System.nanoTime()
+    private var rowsRead = 0L
+    private var metricsRecorded = false
 
     override fun next(): Boolean {
         checkClosed()
         return try {
-            cursor.moveToNext().also {
-                if (!it) {
+            cursor.moveToNext().also { hasRow ->
+                if (hasRow) {
+                    ++rowsRead
+                } else {
+                    recordConsumption(successful = true)
                     onExhausted()
                 }
             }
         } catch (e: OperationCancelledException) {
+            recordConsumption(successful = false)
             onExhausted()
             throw SQLExceptionMapper.mapCancellation(e)
         } catch (e: SQLException) {
+            recordConsumption(successful = false)
             onExhausted()
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
+            recordConsumption(successful = false)
             onExhausted()
             if (e.message?.contains("interrupt", ignoreCase = true) == true) {
                 throw SQLExceptionMapper.mapCancellation(e)
@@ -308,10 +319,28 @@ internal class JdbcResultSet(
 
     override fun close() {
         if (cursor.isClosed()) {
+            recordConsumption(successful = true)
             return
         }
-        cursor.close()
-        (statement as? JdbcStatement)?.onResultSetClosed(this)
+        var successful = false
+        try {
+            cursor.close()
+            successful = true
+        } finally {
+            recordConsumption(successful)
+            (statement as? JdbcStatement)?.onResultSetClosed(this)
+        }
+    }
+
+    private fun recordConsumption(successful: Boolean) {
+        if (!metricsRecorded) {
+            metricsRecorded = true
+            metricsConnection?.recordResultSet(
+                System.nanoTime() - metricsStartedNanos,
+                rowsRead,
+                successful
+            )
+        }
     }
 
     private fun onExhausted() {

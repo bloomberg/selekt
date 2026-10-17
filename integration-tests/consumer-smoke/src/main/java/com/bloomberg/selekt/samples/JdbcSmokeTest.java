@@ -16,8 +16,10 @@
 
 package com.bloomberg.selekt.samples;
 
+import com.bloomberg.selekt.jdbc.driver.SelektDataSource;
+import com.bloomberg.selekt.jdbc.micrometer.SelektDataSourceMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -29,16 +31,27 @@ public final class JdbcSmokeTest {
     public static void main(final String[] args) {
         BackendSelection.assertSelectedBackend(args);
 
+        final SelektDataSource dataSource = new SelektDataSource();
+        dataSource.setDatabasePath(":memory:");
+        final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        new SelektDataSourceMetrics(dataSource).bindTo(registry);
         try (
-            Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
+            Connection connection = dataSource.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT 42")
         ) {
             if (!resultSet.next() || resultSet.getInt(1) != 42 || resultSet.next()) {
                 throw new AssertionError("Unexpected JDBC query result");
             }
+            final double activeConnections = registry.get("selekt.jdbc.connections.active").gauge().value();
+            if (Math.abs(activeConnections - 1.0) > 1e-6) {
+                throw new AssertionError("Unexpected active connection metric");
+            }
         } catch (SQLException exception) {
             throw new AssertionError("JDBC smoke test failed", exception);
+        } finally {
+            dataSource.close();
+            registry.close();
         }
     }
 }

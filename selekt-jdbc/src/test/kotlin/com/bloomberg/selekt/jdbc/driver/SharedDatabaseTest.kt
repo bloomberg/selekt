@@ -99,6 +99,18 @@ internal class SharedDatabaseTest {
     }
 
     @Test
+    fun onCloseCalledBeforeDatabaseRelease() {
+        lateinit var shared: SharedDatabase
+        var databaseWasOpen = false
+        shared = createSharedDatabase { databaseWasOpen = shared.database.isOpen() }
+
+        shared.release()
+
+        assertTrue(databaseWasOpen)
+        assertFalse(shared.database.isOpen())
+    }
+
+    @Test
     fun onCloseNotCalledWhileRetained() {
         val called = AtomicBoolean(false)
         createSharedDatabase { called.set(true) }.run {

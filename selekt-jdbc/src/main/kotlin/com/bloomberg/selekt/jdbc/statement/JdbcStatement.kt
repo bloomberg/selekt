@@ -24,6 +24,7 @@ import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLDatabase
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
+import com.bloomberg.selekt.jdbc.metrics.StatementOperation
 import com.bloomberg.selekt.jdbc.result.GeneratedKeysResultSet
 import com.bloomberg.selekt.jdbc.result.JdbcResultSet
 import com.bloomberg.selekt.jdbc.result.RowLimitedCursor
@@ -141,7 +142,7 @@ open class JdbcStatement internal constructor(
 
     protected fun sharedStatementState(): Any = statementState
 
-    override fun executeQuery(sql: String): ResultSet {
+    override fun executeQuery(sql: String): ResultSet = connection.recordStatement(StatementOperation.QUERY) {
         checkClosed()
         try {
             closeCurrentResultSet()
@@ -152,7 +153,7 @@ open class JdbcStatement internal constructor(
                 deactivateCancellationSignal()
                 throw it.translateCancellation()
             }
-            return trackResultSet(
+            trackResultSet(
                 JdbcResultSet(
                     cursor,
                     this,
@@ -166,10 +167,10 @@ open class JdbcStatement internal constructor(
         }
     }
 
-    override fun executeUpdate(sql: String): Int {
+    override fun executeUpdate(sql: String): Int = connection.recordStatement(StatementOperation.UPDATE) {
         checkClosed()
         connection.checkWritable()
-        return try {
+        try {
             closeCurrentResultSet()
             val signal = activateCancellationSignal()
             try {
@@ -186,9 +187,9 @@ open class JdbcStatement internal constructor(
         } catch (e: RuntimeException) {
             throw SQLExceptionMapper.mapException(SQLException(e.message, e))
         }
-    }
+    }.also { connection.recordRowsAffected(StatementOperation.UPDATE, it.toLong().coerceAtLeast(0L)) }
 
-    override fun execute(sql: String): Boolean {
+    override fun execute(sql: String): Boolean = connection.recordStatement(StatementOperation.EXECUTE) {
         checkClosed()
         closeCurrentResultSet()
         val signal = activateCancellationSignal()
@@ -201,7 +202,7 @@ open class JdbcStatement internal constructor(
             }.getOrElse { e ->
                 throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
             }
-            return if (isReadOnly) {
+            if (isReadOnly) {
                 executeQueryInternal(sql, signal)
                 signalHandedOff = true
                 true
@@ -220,6 +221,13 @@ open class JdbcStatement internal constructor(
             if (!signalHandedOff) {
                 deactivateCancellationSignal()
             }
+        }
+    }.also { hasResultSet ->
+        if (!hasResultSet) {
+            connection.recordRowsAffected(
+                StatementOperation.EXECUTE,
+                statementState.updateCount.toLong().coerceAtLeast(0L)
+            )
         }
     }
 
@@ -487,10 +495,10 @@ open class JdbcStatement internal constructor(
         statementState.batchedSqlStatements?.clear()
     }
 
-    override fun executeBatch(): IntArray {
+    override fun executeBatch(): IntArray = connection.recordStatement(StatementOperation.BATCH) {
         checkClosed()
         closeCurrentResultSet()
-        return if (statementState.batchedSqlStatements.isNullOrEmpty()) {
+        if (statementState.batchedSqlStatements.isNullOrEmpty()) {
             emptyIntArray
         } else {
             val signal = activateCancellationSignal()
@@ -506,6 +514,11 @@ open class JdbcStatement internal constructor(
                 clearBatch()
             }
         }
+    }.also { updateCounts ->
+        connection.recordRowsAffected(
+            StatementOperation.BATCH,
+            updateCounts.sumOf { it.coerceAtLeast(0).toLong() }
+        )
     }
 
     private fun executeBatchStatements(): IntArray {
