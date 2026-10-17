@@ -18,10 +18,15 @@ package com.bloomberg.selekt.jdbc.micrometer
 
 import com.bloomberg.selekt.jdbc.driver.EncryptionKeySource
 import com.bloomberg.selekt.jdbc.driver.SelektDataSource
+import com.bloomberg.selekt.jdbc.metrics.JdbcConnectionPoolMetrics
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.io.File
 import java.sql.SQLException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
@@ -157,6 +162,65 @@ internal class SelektDataSourceMetricsTest {
         } finally {
             dataSource.close()
             registry.close()
+        }
+    }
+
+    @Test
+    fun poolMetricsAreSampledOncePerRefreshInterval() {
+        var now = 1_000L
+        var loads = 0
+        val metrics = JdbcConnectionPoolMetrics(1, 2, 3, 4, 5, 6, 7L, 8L, 9L, 10L)
+        val sampler = PoolMetricsSampler(refreshNanos = 100L) { now }
+
+        repeat(54) {
+            assertEquals(metrics, sampler.sample {
+                ++loads
+                metrics
+            })
+        }
+        assertEquals(1, loads)
+
+        now += 101L
+        assertEquals(metrics, sampler.sample {
+            ++loads
+            metrics
+        })
+        assertEquals(2, loads)
+    }
+
+    @Test
+    fun concurrentPoolMetricsReadsShareOneSample() {
+        val loads = AtomicInteger()
+        val loading = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val metrics = JdbcConnectionPoolMetrics(1, 2, 3, 4, 5, 6, 7L, 8L, 9L, 10L)
+        val sampler = PoolMetricsSampler(refreshNanos = 100L) { 1_000L }
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val first = executor.submit<JdbcConnectionPoolMetrics> {
+                sampler.sample {
+                    loads.incrementAndGet()
+                    loading.countDown()
+                    release.await()
+                    metrics
+                }
+            }
+            assertTrue(loading.await(5L, TimeUnit.SECONDS))
+            val second = executor.submit<JdbcConnectionPoolMetrics> {
+                sampler.sample {
+                    loads.incrementAndGet()
+                    metrics
+                }
+            }
+            release.countDown()
+
+            assertEquals(metrics, first.get(5L, TimeUnit.SECONDS))
+            assertEquals(metrics, second.get(5L, TimeUnit.SECONDS))
+            assertEquals(1, loads.get())
+        } finally {
+            release.countDown()
+            executor.shutdownNow()
         }
     }
 
