@@ -458,6 +458,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#micrometer-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Micrometer metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-drivermanager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -835,6 +846,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#micrometer-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Micrometer metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-drivermanager" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1003,7 +1025,7 @@
 <span class="p">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.7.0&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="n">platform</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-bom:1.8.0&quot;</span><span class="p">))</span>
 <span class="w">    </span><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-jdbc&quot;</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -1014,7 +1036,7 @@
 <span class="o">}</span>
 
 <span class="n">dependencies</span><span class="w"> </span><span class="o">{</span>
-<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.7.0&#39;</span><span class="o">)</span>
+<span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="n">platform</span><span class="o">(</span><span class="s1">&#39;com.bloomberg.selekt:selekt-bom:1.8.0&#39;</span><span class="o">)</span>
 <span class="w">    </span><span class="n">implementation</span><span class="w"> </span><span class="s1">&#39;com.bloomberg.selekt:selekt-jdbc&#39;</span>
 <span class="o">}</span>
 </code></pre></div>
@@ -1027,7 +1049,7 @@
 <span class="w">        </span><span class="nt">&lt;dependency&gt;</span>
 <span class="w">            </span><span class="nt">&lt;groupId&gt;</span>com.bloomberg.selekt<span class="nt">&lt;/groupId&gt;</span>
 <span class="w">            </span><span class="nt">&lt;artifactId&gt;</span>selekt-bom<span class="nt">&lt;/artifactId&gt;</span>
-<span class="w">            </span><span class="nt">&lt;version&gt;</span>1.7.0<span class="nt">&lt;/version&gt;</span>
+<span class="w">            </span><span class="nt">&lt;version&gt;</span>1.8.0<span class="nt">&lt;/version&gt;</span>
 <span class="w">            </span><span class="nt">&lt;type&gt;</span>pom<span class="nt">&lt;/type&gt;</span>
 <span class="w">            </span><span class="nt">&lt;scope&gt;</span>import<span class="nt">&lt;/scope&gt;</span>
 <span class="w">        </span><span class="nt">&lt;/dependency&gt;</span>
@@ -1082,8 +1104,164 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 </div>
+<h3 id="micrometer-metrics">Micrometer metrics</h3>
+<p>Micrometer support is an optional adapter. Add it alongside <code>selekt-jdbc</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Kotlin</label><label for="__tabbed_3_2">Groovy</label><label for="__tabbed_3_3">Maven</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;com.bloomberg.selekt:selekt-jdbc-micrometer&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">implementation</span><span class="w"> </span><span class="s1">&#39;com.bloomberg.selekt:selekt-jdbc-micrometer&#39;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;dependency&gt;</span>
+<span class="w">    </span><span class="nt">&lt;groupId&gt;</span>com.bloomberg.selekt<span class="nt">&lt;/groupId&gt;</span>
+<span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>selekt-jdbc-micrometer<span class="nt">&lt;/artifactId&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Then bind an explicitly owned <code>SelektDataSource</code> to any Micrometer registry. Add a distinguishing tag when an application
+has more than one data source.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Kotlin</label><label for="__tabbed_4_2">Java</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">SelektDataSourceMetrics</span><span class="p">(</span>
+<span class="w">    </span><span class="n">dataSource</span><span class="p">,</span>
+<span class="w">    </span><span class="n">Tags</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;database&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;orders&quot;</span><span class="p">)</span>
+<span class="p">).</span><span class="na">bindTo</span><span class="p">(</span><span class="n">meterRegistry</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="k">new</span><span class="w"> </span><span class="n">SelektDataSourceMetrics</span><span class="p">(</span>
+<span class="w">    </span><span class="n">dataSource</span><span class="p">,</span>
+<span class="w">    </span><span class="n">Tags</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;database&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;orders&quot;</span><span class="p">)</span>
+<span class="p">).</span><span class="na">bindTo</span><span class="p">(</span><span class="n">meterRegistry</span><span class="p">);</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The binder publishes the following Micrometer meter names. Common tags supplied to <code>SelektDataSourceMetrics</code>, such as
+<code>database=orders</code> above, are added to every meter.</p>
+<table>
+<thead>
+<tr>
+<th>Meter name</th>
+<th>Type</th>
+<th>Bound tags and values</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>selekt.jdbc.connections.active</code></td>
+<td>Gauge</td>
+<td>None</td>
+<td>Open logical JDBC connections</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.connections.open</code></td>
+<td>Function timer</td>
+<td><code>outcome=success\|error</code></td>
+<td>Logical connection-open count and duration</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.statements</code></td>
+<td>Function timer</td>
+<td><code>operation=query\|update\|execute\|batch</code>, <code>outcome=success\|error</code></td>
+<td>Statement execution count and duration</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.transactions</code></td>
+<td>Function timer</td>
+<td><code>outcome=commit\|rollback\|error</code></td>
+<td>Explicit transaction count and duration</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.resultsets</code></td>
+<td>Function timer</td>
+<td><code>outcome=success\|error</code></td>
+<td>Result-set consumption count and duration</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.resultsets.rows</code></td>
+<td>Function counter</td>
+<td><code>outcome=success\|error</code></td>
+<td>Rows returned by <code>ResultSet.next()</code></td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.rows.affected</code></td>
+<td>Function counter</td>
+<td><code>operation=update\|execute\|batch</code></td>
+<td>Rows affected by successful write operations</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.statement.cache.requests</code></td>
+<td>Function counter</td>
+<td><code>result=hit\|miss</code></td>
+<td>Prepared-statement cache lookups</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.statement.cache.evictions</code></td>
+<td>Function counter</td>
+<td>None</td>
+<td>Prepared-statement capacity/replacement evictions</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.databases.cached</code></td>
+<td>Gauge</td>
+<td>None</td>
+<td>Database instances retained by the JDBC cache</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.database.cache.evictions</code></td>
+<td>Function counter</td>
+<td><code>reason=capacity\|idle\|immediate\|invalidated</code></td>
+<td>Database cache removals</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.pool.connections</code></td>
+<td>Gauge</td>
+<td><code>role=primary\|secondary</code>, <code>state=active\|idle</code></td>
+<td>Physical SQLite connections by role and state</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.pool.pending</code></td>
+<td>Gauge</td>
+<td><code>role=primary\|secondary</code></td>
+<td>Connection borrows currently waiting for the physical pool</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.pool.borrows</code></td>
+<td>Function timer</td>
+<td>None</td>
+<td>Physical connection borrow count and wait duration</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.pool.borrow.timeouts</code></td>
+<td>Function counter</td>
+<td>None</td>
+<td>Primary connection borrow timeouts</td>
+</tr>
+<tr>
+<td><code>selekt.jdbc.pool.evictions</code></td>
+<td>Function counter</td>
+<td>None</td>
+<td>Physical connection evictions</td>
+</tr>
+</tbody>
+</table>
+<p>Statement timing ends when execution returns. For a streaming query, subsequent iteration is measured by
+<code>selekt.jdbc.resultsets</code>; its duration ends when the result set is exhausted or closed. Transaction duration starts
+when the first write begins an explicit transaction and ends on commit, rollback, or connection-close rollback.
+Applications using another monitoring library can read the same framework-neutral snapshot from <code>dataSource.metrics</code>
+without adding the Micrometer adapter.</p>
 <h3 id="using-drivermanager">Using DriverManager</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Kotlin</label><label for="__tabbed_3_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Kotlin</label><label for="__tabbed_5_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;jdbc:sqlite:/path/to/database.db&quot;</span>
@@ -1098,7 +1276,7 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 <p>Connection properties can be passed via a <code>Properties</code> object:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Kotlin</label><label for="__tabbed_4_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">properties</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Properties</span><span class="p">().</span><span class="na">apply</span><span class="w"> </span><span class="p">{</span>
@@ -1136,7 +1314,7 @@ runtime-inspection and generation details.</p>
 </div>
 </div>
 <p>Properties can also be inlined in the URL query string:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Kotlin</label><label for="__tabbed_5_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DriverManager</span><span class="p">.</span><span class="na">getConnection</span><span class="p">(</span>
@@ -1159,7 +1337,7 @@ runtime-inspection and generation details.</p>
 <p>Represent arbitrary key bytes as a <code>CharArray</code> containing <code>0x</code> followed by exactly 64 hexadecimal digits. Selekt also accepts a non-prefixed <code>CharArray</code>, but encodes it as UTF-8; its encoded length, rather than its character count, must be exactly 32 bytes.</p>
 <p><code>SelektDriver</code> does not accept encryption keys. Encrypted connections must use <code>SelektDataSource.setEncryption</code> with an <code>EncryptionKeySource.Literal</code> backed by a caller-owned <code>CharArray</code>. <code>SelektDataSource</code> stores and later zeroes an internal copy; zero the caller-owned array after <code>setEncryption</code> returns.</p>
 <h3 id="with-a-datasource">With a DataSource</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Kotlin</label><label for="__tabbed_6_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">deriveHexEncodedKey</span><span class="p">():</span><span class="w"> </span><span class="n">CharArray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TODO</span><span class="p">(</span>
@@ -1197,7 +1375,7 @@ runtime-inspection and generation details.</p>
 </div>
 <h2 id="interaction">Interaction</h2>
 <h3 id="querying-with-a-preparedstatement">Querying with a PreparedStatement</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Kotlin</label><label for="__tabbed_7_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Kotlin</label><label for="__tabbed_9_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1242,7 +1420,7 @@ exceeds 2 MiB is rejected rather than copied into the cursor window.</p>
 materialise a forward-only query inside a manual read-only transaction to avoid pinning its SQLite snapshot after the
 query call.</p>
 <h3 id="inserting-data">Inserting data</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Kotlin</label><label for="__tabbed_8_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Kotlin</label><label for="__tabbed_10_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1269,7 +1447,7 @@ query call.</p>
 </div>
 </div>
 <h3 id="batch-inserts">Batch inserts</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Kotlin</label><label for="__tabbed_9_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Kotlin</label><label for="__tabbed_11_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1320,7 +1498,7 @@ query call.</p>
 </code></pre></div>
 <p>The shared array is driver-owned and must be treated as read-only. A later batch execution or closing and pooling the statement may reuse it.</p>
 <h3 id="transactions">Transactions</h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Kotlin</label><label for="__tabbed_10_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="12:2"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1">Kotlin</label><label for="__tabbed_12_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">connection</span><span class="p">.</span><span class="na">use</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">-&gt;</span>
@@ -1422,7 +1600,7 @@ query call.</p>
 <p><code>pageCacheSizeKiB</code> must be positive. Selekt applies a value of <code>N</code> as <code>PRAGMA cache_size=-N</code>; SQLite interprets the
 negative form as an approximate size in KiB, not as a number of pages.</p>
 <h2 id="closing-the-datasource">Closing the DataSource</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">Kotlin</label><label for="__tabbed_11_2">Java</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="13:2"><input checked="checked" id="__tabbed_13_1" name="__tabbed_13" type="radio" /><input id="__tabbed_13_2" name="__tabbed_13" type="radio" /><div class="tabbed-labels"><label for="__tabbed_13_1">Kotlin</label><label for="__tabbed_13_2">Java</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">dataSource</span><span class="p">.</span><span class="na">close</span><span class="p">()</span>
