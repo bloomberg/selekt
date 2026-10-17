@@ -47,8 +47,6 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private val emptyIntArray = IntArray(0)
 
-private fun IntArray.affectedRowCount(): Long = sumOf { it.coerceAtLeast(0).toLong() }
-
 internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
@@ -509,9 +507,6 @@ open class JdbcStatement internal constructor(
                     connection.ensureTransaction()
                     executeBatchStatements()
                 }
-            } catch (e: BatchUpdateException) {
-                connection.recordRowsAffected(StatementOperation.BATCH, e.updateCounts.affectedRowCount())
-                throw e
             } catch (e: OperationCancelledException) {
                 throw SQLExceptionMapper.mapCancellation(e)
             } finally {
@@ -522,7 +517,7 @@ open class JdbcStatement internal constructor(
     }.also { updateCounts ->
         connection.recordRowsAffected(
             StatementOperation.BATCH,
-            updateCounts.affectedRowCount()
+            updateCounts.sumOf { it.coerceAtLeast(0).toLong() }
         )
     }
 

@@ -22,7 +22,6 @@ import com.bloomberg.selekt.jdbc.metrics.JdbcConnectionPoolMetrics
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.io.File
-import java.sql.BatchUpdateException
 import java.sql.SQLException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -160,38 +159,6 @@ internal class SelektDataSourceMetricsTest {
                 assertTrue(databaseFile.name !in tag.value)
                 assertTrue(tag.key in setOf("operation", "outcome", "reason", "result", "role", "state"))
             }
-        } finally {
-            dataSource.close()
-            registry.close()
-        }
-    }
-
-    @Test
-    @Suppress("NestedBlockDepth")
-    fun failedBatchRecordsAffectedRowsFromSuccessfulPrefix() {
-        val registry = SimpleMeterRegistry()
-        val dataSource = SelektDataSource().apply {
-            databasePath = File(tempDir, "partial-batch.db").absolutePath
-        }
-        SelektDataSourceMetrics(dataSource, listOf(Tag.of("pool", "test"))).bindTo(registry)
-
-        try {
-            dataSource.connection.use { connection ->
-                connection.createStatement().use { statement ->
-                    statement.executeUpdate("CREATE TABLE items(value INTEGER)")
-                    statement.addBatch("INSERT INTO items VALUES (1)")
-                    statement.addBatch("THIS IS NOT SQL")
-                    assertFailsWith<BatchUpdateException> { statement.executeBatch() }
-                    statement.executeQuery("SELECT COUNT(*) FROM items").use { resultSet ->
-                        assertTrue(resultSet.next())
-                        assertEquals(1, resultSet.getInt(1))
-                    }
-                }
-            }
-
-            assertEquals(1.0, rowsAffected(registry, "batch"))
-            assertEquals(1.0, statementTimer(registry, "batch", "error").count())
-            assertEquals(0.0, statementTimer(registry, "batch", "success").count())
         } finally {
             dataSource.close()
             registry.close()
