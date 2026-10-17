@@ -38,7 +38,6 @@ dependencies {
                 selektCommons,
                 selektJava,
                 selektJdbc,
-                selektJdbcMicrometer,
                 selektJvm,
                 selektSqlite3Api,
                 selektSqlite3Classes,

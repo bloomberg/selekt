@@ -571,7 +571,7 @@ jobs:
           echo 'selekt.sqlite.pgo=OFF' >> gradle.properties
 
       - name: 'Unit tests'
-        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-jdbc-micrometer:test :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test -x integrationTest ${{ env.SCAN }}
+        run: ./gradlew :selekt-android:testDebugUnitTest :selekt-java:test :selekt-jdbc:test :selekt-jdbc:testJava25 :selekt-sqlite3-classes:test :selekt-sqlite3-classes:testJava25 :selekt-common:test -x integrationTest ${{ env.SCAN }}
 
       - name: 'Build Selekt Android'
         run: |
@@ -585,7 +585,7 @@ jobs:
 
       - name: 'Build Selekt JVM'
         run: |
-          ./gradlew :selekt-jdbc:jar :selekt-jdbc-micrometer:jar :selekt-jvm:jar ${{ env.SCAN }}
+          ./gradlew :selekt-jdbc:jar :selekt-jvm:jar ${{ env.SCAN }}
 
       - name: 'Generate repository CycloneDX SBOM'
         run: ./gradlew :repositoryCyclonedxBom --no-configuration-cache

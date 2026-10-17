@@ -27,7 +27,6 @@ import com.bloomberg.selekt.SQLiteJournalMode
 import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
-import com.bloomberg.selekt.jdbc.metrics.JdbcMetricsSnapshot
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import java.io.PrintWriter
 import java.sql.Connection
@@ -206,10 +205,6 @@ class SelektDataSource internal constructor(
     internal val cachedDatabaseCount: Int
         get() = databaseCache.size
 
-    /** Returns a framework-neutral point-in-time view of this data source's operational metrics. */
-    val metrics: JdbcMetricsSnapshot
-        get() = databaseCache.metrics.snapshot(cachedDatabaseCount, databaseCache.connectionPoolMetrics)
-
     override fun getConnection(): Connection = getConnection(null, null)
 
     override fun getConnection(username: String?, password: String?): Connection = lifecycle.withOpenDataSource {
@@ -222,29 +217,22 @@ class SelektDataSource internal constructor(
         }
         val (encryptionKeyBytes, keyHash) = snapshotEncryptionKey()
         try {
-            val startNanos = System.nanoTime()
-            var successful = false
-            try {
+            runCatching {
+                val connectionURL = buildConnectionURL()
+                val mergedProperties = buildConnectionProperties()
+                val database = getOrCreateDatabase(connectionURL, mergedProperties, encryptionKeyBytes, keyHash)
                 runCatching {
-                    val connectionURL = buildConnectionURL()
-                    val mergedProperties = buildConnectionProperties()
-                    val database = getOrCreateDatabase(connectionURL, mergedProperties, encryptionKeyBytes, keyHash)
-                    runCatching {
-                        JdbcConnection(database, connectionURL, mergedProperties)
-                    }.getOrElse {
-                        runCatching(database::releaseConnection)
-                        throw it
-                    }
-                }.getOrElse { e ->
-                    throw if (e is SQLException) {
-                        SQLExceptionMapper.mapException(e)
-                    } else {
-                        SQLExceptionMapper.mapException("Failed to create connection: ${e.message}", -1, -1, e)
-                    }
+                    JdbcConnection(database, connectionURL, mergedProperties)
+                }.getOrElse {
+                    runCatching(database::releaseConnection)
+                    throw it
                 }
-                    .also { successful = true }
-            } finally {
-                databaseCache.metrics.recordConnectionOpen(System.nanoTime() - startNanos, successful)
+            }.getOrElse { e ->
+                throw if (e is SQLException) {
+                    SQLExceptionMapper.mapException(e)
+                } else {
+                    SQLExceptionMapper.mapException("Failed to create connection: ${e.message}", -1, -1, e)
+                }
             }
         } finally {
             encryptionKeyBytes?.zero()

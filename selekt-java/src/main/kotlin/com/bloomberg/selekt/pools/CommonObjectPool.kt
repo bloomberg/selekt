@@ -24,7 +24,6 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.LongAdder
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.ThreadSafe
@@ -55,16 +54,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
 
     @GuardedBy("lock")
     private var count = 0
-
-    @GuardedBy("lock")
-    private var idleCount = 0
-
-    @GuardedBy("lock")
-    private var pending = 0
-
-    private val borrowCount = LongAdder()
-    private val borrowWaitNanos = LongAdder()
-    private val evictionCount = LongAdder()
 
     @GuardedBy("lock")
     private var future: Future<*>? = null
@@ -104,16 +93,13 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         allowPrimaryFallback: Boolean,
         preferred: () -> T?
     ): T {
-        val startNanos = System.nanoTime()
         lock.withLockInterruptibly {
             while (!isClosed.get()) {
                 preferred()?.let {
-                    --idleCount
-                    return it.recordBorrow(startNanos)
+                    return it
                 }
                 idleObjects.pollLast()?.let {
-                    --idleCount
-                    return it.recordBorrow(startNanos)
+                    return it
                 }
                 if (count < configuration.maxTotal) {
                     ++count
@@ -123,14 +109,9 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                 if (allowPrimaryFallback) {
                     otherPool.borrowObjectOrNull()?.let { return it }
                 }
-                ++pending
-                try {
-                    do {
-                        available.await()
-                    } while (idleObjects.isEmpty && count == configuration.maxTotal)
-                } finally {
-                    --pending
-                }
+                do {
+                    available.await()
+                } while (idleObjects.isEmpty && count == configuration.maxTotal)
             }
             null
         }?.let {
@@ -140,7 +121,7 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                     available.signal()
                 }
                 throw it
-            }.recordBorrow(startNanos)
+            }
         }
         error("Pool is closed.")
     }
@@ -149,7 +130,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         lock.withLock {
             obj.tag = tag
             idleObjects.putFirst(obj)
-            ++idleCount
             available.signal()
         }
         if (isClosed.get()) {
@@ -193,7 +173,6 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
                 if (it shouldBeRemovedAt priority) {
                     iterator.remove()
                     --count
-                    --idleCount
                     available.signal()
                     yield(it)
                 } else {
@@ -239,27 +218,8 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
     }
 
     private fun Iterable<T>.destroyEach() {
-        val objects = toList()
-        evictionCount.add(objects.size.toLong())
-        objects.forEachCatching(factory::destroyObject).firstOrNull()?.let {
+        forEachCatching(factory::destroyObject).firstOrNull()?.let {
             throw it
         }
-    }
-
-    internal fun metrics(): ObjectPoolMetrics = lock.withLock {
-        ObjectPoolMetrics(
-            active = count - idleCount,
-            idle = idleCount,
-            pending = pending,
-            borrowCount = borrowCount.sum(),
-            borrowWaitNanos = borrowWaitNanos.sum(),
-            borrowTimeoutCount = 0L,
-            evictionCount = evictionCount.sum()
-        )
-    }
-
-    private fun T.recordBorrow(startNanos: Long): T = also {
-        borrowCount.increment()
-        borrowWaitNanos.add((System.nanoTime() - startNanos).coerceAtLeast(0L))
     }
 }

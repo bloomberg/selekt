@@ -152,7 +152,6 @@ internal class CommonObjectPoolTest {
             assertFailsWith<TimeoutException> {
                 waiting.get(100L, TimeUnit.MILLISECONDS)
             }
-            assertEquals(1, metrics().pending)
             verifyNoInteractions(other)
 
             val returned = borrowed.removeLast()

@@ -56,7 +56,6 @@ val embeddedSbomProjects = listOf(
     ":selekt-commons",
     ":selekt-java",
     ":selekt-jdbc",
-    ":selekt-jdbc-micrometer",
     ":selekt-jvm",
     ":selekt-sqlite3-api",
     ":selekt-sqlite3-classes",
@@ -80,7 +79,6 @@ dependencies {
     dokka(projects.selektCommons)
     dokka(projects.selektJava)
     dokka(projects.selektJdbc)
-    dokka(projects.selektJdbcMicrometer)
     dokka(projects.selektJvm)
     dokka(projects.selektSqlite3Api)
     dokka(projects.selektSqlite3Ext)
@@ -89,7 +87,6 @@ dependencies {
     kover(projects.selektCommons)
     kover(projects.selektJava)
     kover(projects.selektJdbc)
-    kover(projects.selektJdbcMicrometer)
     kover(projects.selektJvm)
     kover(projects.selektSqlite3Api)
     kover(projects.selektSqlite3Classes)
@@ -104,7 +101,6 @@ dependencies {
         projects.selektCommons,
         projects.selektJava,
         projects.selektJdbc,
-        projects.selektJdbcMicrometer,
         projects.selektJvm,
         projects.selektSqlite3Api,
         projects.selektSqlite3Classes,
