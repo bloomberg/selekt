@@ -53,6 +53,8 @@ import javax.annotation.concurrent.NotThreadSafe
 
 private const val INITIAL_BATCH_CHUNK_SIZE = 1024
 
+internal const val MAX_RETAINED_BATCH_RESULT_SIZE = 16_384
+
 private const val MAX_STREAM_LENGTH = 1_000_000_000
 
 private const val READER_BUFFER_SIZE = 8_192
@@ -76,6 +78,8 @@ internal class PreparedStatementCacheEntry(
         parameterRow.clear()
         batchRows.clear()
         totalBatchCount = 0
+        successArray = successArray?.takeIf { it.size <= MAX_RETAINED_BATCH_RESULT_SIZE }
+        previousSuccessArray = previousSuccessArray?.takeIf { it.size <= MAX_RETAINED_BATCH_RESULT_SIZE }
     }
 
     fun successArray(batchSize: Int): IntArray {
