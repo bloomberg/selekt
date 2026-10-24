@@ -132,15 +132,18 @@ internal class JdbcClob(initialContent: String = "") : Clob {
         checkNotFreed()
         val startIndex = validatedWriteIndex(pos)
         return object : Writer() {
+            private var currentPos = startIndex
+
             override fun write(cbuf: CharArray, off: Int, len: Int) {
                 checkNotFreed()
                 val str = String(cbuf, off, len)
-                if (content.length == startIndex) {
+                if (content.length == currentPos) {
                     content.append(str)
                 } else {
-                    val endIndex = minOf(startIndex + len, content.length)
-                    content.replace(startIndex, endIndex, str)
+                    val endIndex = minOf(currentPos + len, content.length)
+                    content.replace(currentPos, endIndex, str)
                 }
+                currentPos += len
             }
 
             override fun flush() = Unit

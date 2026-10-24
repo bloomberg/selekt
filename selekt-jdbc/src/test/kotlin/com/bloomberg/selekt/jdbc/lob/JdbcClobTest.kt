@@ -258,6 +258,17 @@ internal class JdbcClobTest {
     }
 
     @Test
+    fun setCharacterStreamAdvancesPositionAcrossWrites() {
+        val clob = JdbcClob("abcdef")
+        clob.setCharacterStream(2).run {
+            write("XY")
+            write("Z")
+        }
+
+        assertEquals("aXYZef", clob.getSubString(1, 6))
+    }
+
+    @Test
     fun setCharacterStreamInvalidPosition() {
         val clob = JdbcClob()
         assertFailsWith<SQLException> {
