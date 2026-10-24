@@ -28,21 +28,21 @@ jobs:
           - display: 'linux-amd64 (vec1+avx2)'
             os: ubuntu-latest
             platform: linux-amd64
-            container: registry.access.redhat.com/ubi8/ubi:latest
+            container: registry.access.redhat.com/ubi8/ubi@sha256:bd097b288df365aec7bad694c87036534ce94d1a4974c943f417f757f8eb2ac4
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
           - display: 'linux-aarch64 (vec1)'
             os: ubuntu-24.04-arm
             platform: linux-aarch64
-            container: registry.access.redhat.com/ubi8/ubi:latest
+            container: registry.access.redhat.com/ubi8/ubi@sha256:bd097b288df365aec7bad694c87036534ce94d1a4974c943f417f757f8eb2ac4
             shell: bash
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'OFF'
           - display: 'linux-amd64-musl (vec1+avx2)'
             os: ubuntu-latest
             platform: linux-amd64-musl
-            container: alpine:3.20
+            container: alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
             shell: sh
             vec1_enabled: 'ON'
             vec1_x86_avx2: 'ON'
@@ -77,13 +77,87 @@ jobs:
       - name: 'Install system packages'
         shell: sh
         run: |
+          # Release toolchains fail closed when repository metadata changes. Review the image digest,
+          # metadata checksums, and exact package versions together when intentionally updating them.
           if [ "${{ runner.os }}" = "Linux" ]; then
             if command -v apk > /dev/null 2>&1; then
+              case "$(uname -m)" in
+                x86_64)
+                  MAIN_INDEX_SHA256='0efcc0b0838bcce24a677896864b6535a4a5586d64358027048ddc387ffe2b4e'
+                  COMMUNITY_INDEX_SHA256='815ef15704e3ec3a47688bb339d0b2c1dc674827f3025db2dd41e16de19468a9'
+                  ;;
+                aarch64)
+                  MAIN_INDEX_SHA256='917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273'
+                  COMMUNITY_INDEX_SHA256='56b890b2394c5c19a4ceb54958fa144d6fdc6c108549224c0a268ea98b46ec87'
+                  ;;
+                *) echo "Unsupported Alpine architecture: $(uname -m)" >&2; exit 1 ;;
+              esac
               apk update
-              apk add --no-cache bash git gcc g++ musl-dev make curl tar sed gnupg file perl linux-headers cmake diffutils tcl unzip openjdk17
+              sha256sum /var/cache/apk/APKINDEX.*.tar.gz > /tmp/alpine-indexes.sha256
+              grep -q "^$MAIN_INDEX_SHA256  " /tmp/alpine-indexes.sha256
+              grep -q "^$COMMUNITY_INDEX_SHA256  " /tmp/alpine-indexes.sha256
+              apk add \
+                bash=5.2.26-r0 \
+                git=2.45.4-r0 \
+                gcc=13.2.1_git20240309-r1 \
+                g++=13.2.1_git20240309-r1 \
+                musl-dev=1.2.5-r4 \
+                make=4.4.1-r2 \
+                curl=8.14.1-r2 \
+                tar=1.35-r2 \
+                sed=4.9-r2 \
+                gnupg=2.4.9-r0 \
+                file=5.45-r1 \
+                perl=5.38.5-r0 \
+                linux-headers=6.6-r0 \
+                cmake=3.29.3-r0 \
+                diffutils=3.10-r0 \
+                tcl=8.6.14-r1 \
+                unzip=6.0-r14 \
+                openjdk17=17.0.16_p8-r0
             else
-              dnf update -y
-              dnf install -y git gcc gcc-c++ clang llvm compiler-rt libstdc++-static glibc-devel make curl tar sed bash gnupg file perl kernel-headers cmake diffutils tcl unzip
+              case "$(uname -m)" in
+                x86_64)
+                  BASEOS_REPOMD_SHA256='2abeb6c4b0989fd9a655ef108de1e544b2cd8d020c0558148f56d9eafbb4227d'
+                  APPSTREAM_REPOMD_SHA256='b301f37a27185aad0c5e30a60a8fc1dfc75dc2c385528426f425fac0aaab7976'
+                  CODEREADY_REPOMD_SHA256='06672266bd0a91158ceae4afe470e58799a1482d39264b9325d948da8643aa91'
+                  PERL_NEVRA='perl-5.32.1-475.module+el8.10.0+24767+f69b15b5'
+                  ;;
+                aarch64)
+                  BASEOS_REPOMD_SHA256='d8a99e11cd30a1b444209f35115c2effa730bfd037527156c86f1df9b3c2493d'
+                  APPSTREAM_REPOMD_SHA256='c776a7b424db0bd132fe8252311ffea909f413e412e61bb15883adb51359edf0'
+                  CODEREADY_REPOMD_SHA256='9901974e1b6bc8b9ae7c81eefdd09d42688f602c3db675d4bf194752dabc6edf'
+                  PERL_NEVRA='perl-5.26.3-423.el8_10.1'
+                  ;;
+                *) echo "Unsupported UBI architecture: $(uname -m)" >&2; exit 1 ;;
+              esac
+              dnf makecache --refresh
+              find /var/cache/dnf -path '*/repodata/repomd.xml' -exec sha256sum {} + > /tmp/ubi-repomd.sha256
+              grep -q "^$BASEOS_REPOMD_SHA256  " /tmp/ubi-repomd.sha256
+              grep -q "^$APPSTREAM_REPOMD_SHA256  " /tmp/ubi-repomd.sha256
+              grep -q "^$CODEREADY_REPOMD_SHA256  " /tmp/ubi-repomd.sha256
+              dnf install -y --setopt=install_weak_deps=False --setopt=metadata_expire=never \
+                git-2.43.7-1.el8_10 \
+                gcc-8.5.0-29.el8_10 \
+                gcc-c++-8.5.0-29.el8_10 \
+                clang-21.1.8-1.module+el8.10.0+23969+c061985f \
+                llvm-21.1.8-1.module+el8.10.0+23969+c061985f \
+                compiler-rt-21.1.8-1.module+el8.10.0+23969+c061985f \
+                libstdc++-static-8.5.0-29.el8_10 \
+                glibc-devel-2.28-251.el8_10.48 \
+                make-4.2.1-11.el8 \
+                curl-7.61.1-34.el8_10.13 \
+                tar-1.30-13.el8_10 \
+                sed-4.5-5.el8_10 \
+                bash-4.4.20-6.el8_10 \
+                gnupg2-2.2.20-4.el8_10 \
+                file-5.33-27.el8_10 \
+                "$PERL_NEVRA" \
+                kernel-headers-4.18.0-553.177.1.el8_10 \
+                cmake-3.26.5-2.el8 \
+                diffutils-3.6-6.el8 \
+                tcl-8.6.8-2.el8 \
+                unzip-6.0-48.el8_10
             fi
           elif [ "${{ runner.os }}" = "macOS" ]; then
             brew install make tcl-tk
@@ -321,6 +395,7 @@ jobs:
 
       - name: 'Build in Alpine container'
         run: |
+          # Keep this digest and the checked package-index snapshots in sync with build-native-jars.
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
@@ -330,10 +405,31 @@ jobs:
             -e CC=gcc \
             -e CXX=g++ \
             -e LDFLAGS='-s' \
-            alpine:3.20 sh -c '
+            alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc sh -c '
               set -e
               apk update
-              apk add --no-cache bash git gcc g++ musl-dev make curl tar sed gnupg file perl linux-headers cmake diffutils tcl unzip openjdk17
+              sha256sum /var/cache/apk/APKINDEX.*.tar.gz > /tmp/alpine-indexes.sha256
+              grep -q "^917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273  " /tmp/alpine-indexes.sha256
+              grep -q "^56b890b2394c5c19a4ceb54958fa144d6fdc6c108549224c0a268ea98b46ec87  " /tmp/alpine-indexes.sha256
+              apk add \
+                bash=5.2.26-r0 \
+                git=2.45.4-r0 \
+                gcc=13.2.1_git20240309-r1 \
+                g++=13.2.1_git20240309-r1 \
+                musl-dev=1.2.5-r4 \
+                make=4.4.1-r2 \
+                curl=8.14.1-r2 \
+                tar=1.35-r2 \
+                sed=4.9-r2 \
+                gnupg=2.4.9-r0 \
+                file=5.45-r1 \
+                perl=5.38.5-r0 \
+                linux-headers=6.6-r0 \
+                cmake=3.29.3-r0 \
+                diffutils=3.10-r0 \
+                tcl=8.6.14-r1 \
+                unzip=6.0-r14 \
+                openjdk17=17.0.16_p8-r0
 
               # Build mimalloc
               cd /tmp
