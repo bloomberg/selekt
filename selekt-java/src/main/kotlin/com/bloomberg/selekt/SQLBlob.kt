@@ -99,6 +99,8 @@ internal class BlobInputStream(
         length: Int
     ) = if (offset < 0 || length < 0) {
         throw ArrayIndexOutOfBoundsException("Offset: $offset; length: $length")
+    } else if (length == 0) {
+        0
     } else {
         available().let {
             if (it > 0) {

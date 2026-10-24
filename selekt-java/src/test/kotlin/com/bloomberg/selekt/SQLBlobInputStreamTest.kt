@@ -127,6 +127,19 @@ internal class SQLBlobInputStreamTest {
     }
 
     @Test
+    fun readEmptyBufferAtEof() {
+        val blob = mock<SQLBlob>().apply {
+            whenever(size) doReturn 0
+        }
+        BlobInputStream(blob).use {
+            val buffer = ByteArray(1)
+            assertEquals(0, it.read(buffer, 0, 0))
+            assertEquals(-1, it.read(buffer, 0, 1))
+        }
+        verify(blob, never()).read(any(), any(), any(), any())
+    }
+
+    @Test
     fun readToEmptyBuffer() {
         val expectedBytes = ByteArray(1) { 0x42 }
         val blob = mock<SQLBlob>().apply {
