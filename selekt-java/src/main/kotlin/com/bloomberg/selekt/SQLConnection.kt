@@ -561,6 +561,10 @@ internal class SQLConnection(
     }
 
     override fun onReturned() = progressHandlerLock.withLock {
+        if (!isAutoCommit) {
+            sqlite.exec(databaseHandle, "ROLLBACK")
+            check(isAutoCommit) { "Failed to restore SQLite autocommit before returning a pooled connection." }
+        }
         checkedOut = false
         val desired = progressHandlerSetting()
         val desiredInstructionCount = desired?.instructionCount ?: 0

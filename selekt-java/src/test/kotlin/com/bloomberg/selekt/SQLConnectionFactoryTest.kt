@@ -206,6 +206,7 @@ internal class SQLConnectionFactoryTest {
         whenever(isInterrupted(any<DatabaseHandle>())) doAnswer {
             isInterrupted((it.arguments[0] as DatabaseHandle).pointer)
         }
+        whenever(getAutocommit(any<DatabaseHandle>())) doReturn 1
         whenever(progressHandler(any<DatabaseHandle>(), any<Int>(), any<SQLProgressHandler>())) doAnswer {
             progressHandler(
                 (it.arguments[0] as DatabaseHandle).pointer, it.arguments[1] as Int, it.arguments[2] as SQLProgressHandler?

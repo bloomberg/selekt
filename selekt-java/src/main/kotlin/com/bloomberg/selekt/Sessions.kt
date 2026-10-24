@@ -358,20 +358,30 @@ internal class SQLSession(
         statementType: SQLStatementType,
         signal: R,
         block: (SQLExecutor) -> R
-    ): R = execute(primary, sql) {
-        if (!statementType.isTransactional) {
-            return block(it)
-        }
-        when {
-            statementType.begins -> beginRawTransaction(sql)
-            statementType.commits -> {
-                setTransactionSuccessful()
-                endTransaction()
+    ): R {
+        return if (statementType === SQLStatementType.SAVEPOINT) {
+            require(inTransaction) {
+                "Raw SAVEPOINT, RELEASE, and ROLLBACK TO statements require an active transaction; " +
+                    "use the savepoint API."
             }
-            statementType.aborts -> endTransaction()
-            else -> error("Unrecognised statement type: $statementType")
+            execute(primary, sql, block)
+        } else {
+            execute(primary, sql) {
+                if (!statementType.isTransactional) {
+                    return block(it)
+                }
+                when {
+                    statementType.begins -> beginRawTransaction(sql)
+                    statementType.commits -> {
+                        setTransactionSuccessful()
+                        endTransaction()
+                    }
+                    statementType.aborts -> endTransaction()
+                    else -> error("Unrecognised statement type: $statementType")
+                }
+                signal
+            }
         }
-        signal
     }
 
     private fun begin(
@@ -569,7 +579,11 @@ internal open class Session<K : Any, T : IPooledObject<K>>(
     private fun T.release(permits: Int) {
         retainCount -= permits
         if (retainCount == 0) {
-            onReturned()
+            runCatching(::onReturned).exceptionOrNull()?.let { failure ->
+                obj = null
+                runCatching { pool.discardObject(this) }.exceptionOrNull()?.let(failure::addSuppressed)
+                throw failure
+            }
             pool.returnObject(this).also { obj = null }
         }
     }

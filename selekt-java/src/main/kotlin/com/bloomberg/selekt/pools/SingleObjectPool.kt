@@ -92,6 +92,21 @@ class SingleObjectPool<K : Any, T : IPooledObject<K>> @JvmOverloads constructor(
         }
     }
 
+    @JvmSynthetic
+    internal fun discardObject(discardedObject: T) {
+        check(obj === discardedObject) { "Cannot discard an object that is not owned by this pool." }
+        obj = null
+        cancelScheduledEviction()
+        try {
+            if (isClosed) {
+                factory.close()
+            }
+        } finally {
+            mutex.unlock()
+        }
+        factory.destroyObject(discardedObject)
+    }
+
     override fun clear(priority: Priority) {
         executor.execute { evict(priority) }
     }

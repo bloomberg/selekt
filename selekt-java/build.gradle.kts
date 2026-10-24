@@ -65,6 +65,10 @@ sourceSets {
     }
 }
 
+kotlin.target.compilations.named("integrationTest") {
+    associateWith(kotlin.target.compilations.getByName("main"))
+}
+
 val integrationTestImplementation: Configuration by configurations.getting {
     extendsFrom(configurations.testImplementation.get())
 }

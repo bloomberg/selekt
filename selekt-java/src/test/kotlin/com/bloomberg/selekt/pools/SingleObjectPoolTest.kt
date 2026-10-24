@@ -117,6 +117,22 @@ internal class SingleObjectPoolTest {
     }
 
     @Test
+    fun discardedObjectIsDestroyedAndReplaced() {
+        val factory = mock<IObjectFactory<PooledObject>>()
+        val discarded = PooledObject()
+        val replacement = PooledObject()
+        whenever(factory.makePrimaryObject()).thenReturn(discarded, replacement)
+
+        SingleObjectPool<String, PooledObject>(factory, executor, 1_000L, 20_000L).use {
+            assertSame(discarded, it.borrowObject())
+            it.discardObject(discarded)
+            verify(factory).destroyObject(same(discarded))
+
+            assertSame(replacement, it.borrowObject().also(it::returnObject))
+        }
+    }
+
+    @Test
     fun sameObjectAfterEvictWithNoneIdle() = pool.run {
         val obj = borrowObject()
         evict()

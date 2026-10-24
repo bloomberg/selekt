@@ -139,7 +139,10 @@ internal class SQLRawStatement private constructor(
     override fun isNull(index: Int) = SQL_NULL == statement().columnType(index)
 
     override fun step(): Boolean = if (statementType.isTransactional) {
-        session().execute(statementType.isPredictedWrite, sql, statementType, false) { false }
+        session().execute(statementType.isPredictedWrite, sql, statementType, false) {
+            it.execute(sql)
+            false
+        }
     } else {
         SQL_ROW == statement().step()
     }
