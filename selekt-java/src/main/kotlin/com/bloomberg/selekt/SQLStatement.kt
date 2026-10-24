@@ -17,7 +17,6 @@
 package com.bloomberg.selekt
 
 import com.bloomberg.selekt.commons.isNotEnglishLetter
-import com.bloomberg.selekt.commons.trimStartByIndex
 import java.util.stream.Stream
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.streams.asSequence
@@ -51,75 +50,126 @@ internal enum class SQLStatementType(
 
 private const val SUFFICIENT_SQL_PREFIX_LENGTH = 3
 private const val ONLY_BATCH_UPDATES = "Only batched updates are permitted."
-private const val ROLLBACK_KEYWORD_LENGTH = 8
-private const val TRANSACTION_KEYWORD_LENGTH = 11
 
-@JvmSynthetic
-internal fun String.isRollbackToSavepointClause(): Boolean {
-    var index = ROLLBACK_KEYWORD_LENGTH
-    while (index < length && this[index].isNotEnglishLetter()) {
-        ++index
+private class SQLTokenCursor(private val sql: String) {
+    private var index = 0
+
+    fun firstTokenIndex(): Int {
+        skipSeparators()
+        return index
     }
-    if (index + TRANSACTION_KEYWORD_LENGTH <= length &&
-        regionMatches(index, "TRANSACTION", 0, TRANSACTION_KEYWORD_LENGTH, ignoreCase = true)) {
-        index += TRANSACTION_KEYWORD_LENGTH
+
+    fun next(): String? {
+        skipSeparators()
+        if (index >= sql.length || sql[index].isNotEnglishLetter()) {
+            return null
+        }
+        val start = index
+        while (index < sql.length && !sql[index].isNotEnglishLetter()) {
+            ++index
+        }
+        return sql.substring(start, index)
     }
-    while (index < length && this[index].isNotEnglishLetter()) {
-        ++index
+
+    private fun skipSeparators() {
+        while (index < sql.length) {
+            when {
+                sql.startsWith("--", index) -> skipLineComment()
+                sql.startsWith("/*", index) -> skipBlockComment()
+                sql[index].isNotEnglishLetter() -> ++index
+                else -> return
+            }
+        }
     }
-    val toIndex = indexOf("TO", index, ignoreCase = true)
-    if (toIndex < 0) {
-        return false
+
+    private fun skipLineComment() {
+        index = sql.indexOfAny(charArrayOf('\n', '\r'), index + 2).let { end ->
+            if (end < 0) { sql.length } else { end + 1 }
+        }
     }
-    return this[toIndex - 1].isNotEnglishLetter() && (toIndex + 2 >= length || this[toIndex + 2].isNotEnglishLetter())
+
+    private fun skipBlockComment() {
+        index = sql.indexOf("*/", index + 2).let { end ->
+            if (end < 0) { sql.length } else { end + 2 }
+        }
+    }
 }
 
 @JvmSynthetic
-@Suppress("Detekt.CognitiveComplexMethod", "Detekt.ComplexCondition", "Detekt.MagicNumber", "Detekt.NestedBlockDepth")
-internal fun String.resolvedSqlStatementType(): SQLStatementType = trimStartByIndex(Char::isNotEnglishLetter).run {
-    if (length < SUFFICIENT_SQL_PREFIX_LENGTH) {
-        return SQLStatementType.OTHER
+internal fun String.isRollbackToSavepointClause(): Boolean {
+    val cursor = SQLTokenCursor(this)
+    if (!cursor.next().equals("ROLLBACK", ignoreCase = true)) {
+        return false
     }
-    when (this[0].uppercaseChar()) {
-        'S' -> when (this[1].uppercaseChar()) {
-            'E' -> SQLStatementType.SELECT
-            else -> SQLStatementType.OTHER // SAVEPOINT, ...
-        }
-        'I', 'U' -> SQLStatementType.UPDATE
-        'D' -> when (this[2].uppercaseChar()) {
-            'L' -> SQLStatementType.UPDATE // DELETE
-            'O' -> SQLStatementType.DDL
-            'T' -> SQLStatementType.UNPREPARED // DETACH
-            else -> SQLStatementType.OTHER
-        }
-        'R' -> when (this[2].uppercaseChar()) {
-            'L' -> if ('E' == this[1].uppercaseChar() || isRollbackToSavepointClause()) {
-                SQLStatementType.OTHER // RELEASE, or ROLLBACK [TRANSACTION] TO savepoint
-            } else {
-                SQLStatementType.ABORT // ROLLBACK, ROLLBACK TRANSACTION
-            }
-            'P' -> SQLStatementType.UPDATE // REPLACE
-            else -> SQLStatementType.OTHER
-        }
-        'B' -> SQLStatementType.BEGIN
-        'C' -> when (this[1].uppercaseChar()) {
-            'O' -> SQLStatementType.COMMIT
-            'R' -> SQLStatementType.DDL // CREATE
-            else -> SQLStatementType.OTHER
-        }
-        'E' -> when (this[1].uppercaseChar()) {
-            'N' -> SQLStatementType.COMMIT
-            else -> SQLStatementType.OTHER
-        }
-        'P' -> SQLStatementType.PRAGMA
-        'A' -> when (this[1].uppercaseChar()) {
-            'L' -> SQLStatementType.DDL // ALTER
-            'T' -> SQLStatementType.ATTACH
-            'N' -> SQLStatementType.UNPREPARED
-            else -> SQLStatementType.OTHER
-        }
-        else -> SQLStatementType.OTHER
+    val secondToken = cursor.next()
+    val clause = if (secondToken.equals("TRANSACTION", ignoreCase = true)) { cursor.next() } else { secondToken }
+    return clause.equals("TO", ignoreCase = true)
+}
+
+@JvmSynthetic
+internal fun String.resolvedSqlStatementType(): SQLStatementType {
+    val sql = substring(SQLTokenCursor(this).firstTokenIndex())
+    return if (sql.length < SUFFICIENT_SQL_PREFIX_LENGTH) {
+        SQLStatementType.OTHER
+    } else {
+        sql.statementTypeFromPrefix()
     }
+}
+
+private fun String.statementTypeFromPrefix(): SQLStatementType = when (this[0].uppercaseChar()) {
+    'S' -> statementTypeStartingWithS()
+    'I', 'U' -> SQLStatementType.UPDATE
+    'D' -> statementTypeStartingWithD()
+    'R' -> statementTypeStartingWithR()
+    'B' -> SQLStatementType.BEGIN
+    'C' -> statementTypeStartingWithC()
+    'E' -> statementTypeStartingWithE()
+    'P' -> SQLStatementType.PRAGMA
+    'A' -> statementTypeStartingWithA()
+    else -> SQLStatementType.OTHER
+}
+
+private fun String.statementTypeStartingWithS(): SQLStatementType = when (this[1].uppercaseChar()) {
+    'E' -> SQLStatementType.SELECT
+    else -> SQLStatementType.OTHER // SAVEPOINT, ...
+}
+
+private fun String.statementTypeStartingWithD(): SQLStatementType = when (this[2].uppercaseChar()) {
+    'L' -> SQLStatementType.UPDATE // DELETE
+    'O' -> SQLStatementType.DDL
+    'T' -> SQLStatementType.UNPREPARED // DETACH
+    else -> SQLStatementType.OTHER
+}
+
+private fun String.statementTypeStartingWithR(): SQLStatementType = when (this[2].uppercaseChar()) {
+    'L' -> rollbackStatementType()
+    'P' -> SQLStatementType.UPDATE // REPLACE
+    else -> SQLStatementType.OTHER
+}
+
+private fun String.rollbackStatementType(): SQLStatementType =
+    if ('E' == this[1].uppercaseChar() || isRollbackToSavepointClause()) {
+        SQLStatementType.OTHER // RELEASE, or ROLLBACK [TRANSACTION] TO savepoint
+    } else {
+        SQLStatementType.ABORT // ROLLBACK, ROLLBACK TRANSACTION
+    }
+
+private fun String.statementTypeStartingWithC(): SQLStatementType = when (this[1].uppercaseChar()) {
+    'O' -> SQLStatementType.COMMIT
+    'R' -> SQLStatementType.DDL // CREATE
+    else -> SQLStatementType.OTHER
+}
+
+private fun String.statementTypeStartingWithE(): SQLStatementType = when (this[1].uppercaseChar()) {
+    'N' -> SQLStatementType.COMMIT
+    else -> SQLStatementType.OTHER
+}
+
+private fun String.statementTypeStartingWithA(): SQLStatementType = when (this[1].uppercaseChar()) {
+    'L' -> SQLStatementType.DDL // ALTER
+    'T' -> SQLStatementType.ATTACH
+    'N' -> SQLStatementType.UNPREPARED
+    else -> SQLStatementType.OTHER
 }
 
 @Suppress("Detekt.MethodOverloading")

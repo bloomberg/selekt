@@ -289,4 +289,44 @@ internal class SQLStatementKtTest {
     fun updateOtherSqlStatement() {
         assertEquals(SQLStatementType.OTHER, "OPDATE Foo SET bar=42".resolvedSqlStatementType())
     }
+
+    @Test
+    fun leadingCommentsAreSkippedBeforeClassification() {
+        mapOf(
+            "-- audit\r\nSELECT 1" to SQLStatementType.SELECT,
+            "/* SELECT */ UPDATE Foo SET bar=42" to SQLStatementType.UPDATE,
+            " ; /* audit */ -- more\nBEGIN TRANSACTION" to SQLStatementType.BEGIN,
+            "/* audit */ COMMIT" to SQLStatementType.COMMIT,
+            "-- audit\nCREATE TABLE Foo(bar)" to SQLStatementType.DDL,
+            "/* audit */ PRAGMA user_version" to SQLStatementType.PRAGMA
+        ).forEach { (sql, expected) -> assertEquals(expected, sql.resolvedSqlStatementType(), sql) }
+    }
+
+    @Test
+    fun keywordsInsideLeadingCommentsAreIgnored() {
+        assertEquals(SQLStatementType.SELECT, "-- BEGIN\nSELECT 1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.UPDATE, "/* SELECT */ UPDATE Foo SET bar=42".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.OTHER, "-- ROLLBACK".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.OTHER, "/* SELECT".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun commentCursorHandlesEndOfInputAndAdjacentTokens() {
+        mapOf(
+            "-- comment" to SQLStatementType.OTHER,
+            "/* comment" to SQLStatementType.OTHER,
+            "SELECT/*c*/1" to SQLStatementType.SELECT,
+            "--c\nSELECT 1" to SQLStatementType.SELECT
+        ).forEach { (sql, expected) -> assertEquals(expected, sql.resolvedSqlStatementType(), sql) }
+    }
+
+    @Test
+    fun rollbackClauseSkipsCommentsBetweenTokens() {
+        assertEquals(SQLStatementType.ABORT, "ROLLBACK /* TO */".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.OTHER, "ROLLBACK /* audit */ TO savepoint1".resolvedSqlStatementType())
+        assertEquals(
+            SQLStatementType.OTHER,
+            "ROLLBACK -- audit\r\n TRANSACTION /* target */ TO SAVEPOINT savepoint1".resolvedSqlStatementType()
+        )
+    }
 }

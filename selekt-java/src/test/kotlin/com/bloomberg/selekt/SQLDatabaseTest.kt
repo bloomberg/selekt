@@ -242,6 +242,15 @@ internal class SQLDatabaseTest {
     }
 
     @Test
+    fun commentedRawTransactionControlsUpdateSessionState() {
+        database.prepare("/* audit */ BEGIN DEFERRED TRANSACTION").use(ISQLRawStatement::step)
+        assertTrue(database.inTransaction)
+        database.prepare("-- audit\r\nROLLBACK TRANSACTION").use(ISQLRawStatement::step)
+        assertFalse(database.inTransaction)
+        verifyRollback()
+    }
+
+    @Test
     fun rawStatementNestedBeginCommitsViaSavepoint() {
         database.prepare("BEGIN EXCLUSIVE TRANSACTION").use(ISQLRawStatement::step)
         database.prepare("BEGIN IMMEDIATE TRANSACTION").use(ISQLRawStatement::step)
