@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+## Version 1.7.2
+
+* Advance CLOB character stream writes.
+* Release pooled batch result arrays.
+* Honour SQLite parameter slot numbering.
+* Block schema attachment on read-only JDBC connections.
+* Handle SQL comments during statement classification.
+* Bound streaming BLOB transfer buffers.
+* Wipe transferred database keys on failure.
+* Clear stale objects on primitive rebinding.
+* Honour zero-length BLOB stream reads.
+* Bound retained JDBC connection warnings.
+* Prevent raw transaction state desynchronization.
+
 ## Version 1.7.1
 
 * OpenSSL 3.5.9.
@@ -1095,7 +1109,7 @@ Warning: This release migrates from OpenSSL 1.1.1v to OpenSSL 3.1.2.
 
 ### Features
 
-* Reduced OpenSSL binary size. 
+* Reduced OpenSSL binary size.
 * Publish Android benchmarks.
 * Publish JMH benchmarks.
 * Publish JVM integration tests.
