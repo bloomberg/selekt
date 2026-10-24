@@ -1596,7 +1596,7 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
-    fun returningToPoolScrubsParametersAndReusesBatchScratchStorage() {
+    fun returningToPoolScrubsParametersAndRetainsBoundedBatchResultArrays() {
         val statement = updateStatement()
         whenever(database.compileStatement(any<String>(), isNull())) doReturn mock<ISQLStatement>()
         whenever(database.batchRows(any<String>(), any<Iterable<ParameterRow>>())) doReturn 1
@@ -1609,6 +1609,9 @@ internal class JdbcPreparedStatementTest {
         val entry = statement.cacheEntry
         val batchRowsBeforeClose = entry.batchRows
         val batchChunkBeforeClose = assertNotNull(readField<Any>(batchRowsBeforeClose, "firstChunk"))
+        val alternateUpdateCounts = entry.successArray(2)
+        assertSame(alternateUpdateCounts, readField<IntArray>(entry, "successArray"))
+        assertSame(updateCounts, readField<IntArray>(entry, "previousSuccessArray"))
         statement.apply {
             setString(1, "pending-sensitive-value")
             close()
@@ -1621,7 +1624,28 @@ internal class JdbcPreparedStatementTest {
         assertEquals(0, batchRows.size)
         assertSame(batchRowsBeforeClose, batchRows)
         assertSame(batchChunkBeforeClose, readField<Any>(batchRows, "firstChunk"))
-        assertSame(updateCounts, readField<IntArray>(entry, "successArray"))
+        assertSame(alternateUpdateCounts, readField<IntArray>(entry, "successArray"))
+        assertSame(updateCounts, readField<IntArray>(entry, "previousSuccessArray"))
         assertContentEquals(intArrayOf(-2), updateCounts)
+
+        val reused = connection.prepareStatement(statement.sql) as JdbcPreparedStatement
+        assertSame(entry, reused.cacheEntry)
+        assertSame(updateCounts, reused.cacheEntry.successArray(1))
+        reused.close()
+    }
+
+    @Test
+    fun returningToPoolReleasesOnlyOversizedBatchResultArrays() {
+        val statement = updateStatement()
+        val entry = statement.cacheEntry
+        val retained = entry.successArray(1)
+        val oversized = entry.successArray(MAX_RETAINED_BATCH_RESULT_SIZE + 1)
+        assertSame(oversized, readField<IntArray>(entry, "successArray"))
+        assertSame(retained, readField<IntArray>(entry, "previousSuccessArray"))
+
+        statement.close()
+
+        assertNull(readField<IntArray>(entry, "successArray"))
+        assertSame(retained, readField<IntArray>(entry, "previousSuccessArray"))
     }
 }
