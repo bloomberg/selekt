@@ -58,6 +58,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 private const val MAX_POOLED_STATEMENTS = 32
+private const val MAX_RETAINED_WARNINGS = 16
 
 /**
  * @since 0.28.0
@@ -95,7 +96,8 @@ internal class JdbcConnection(
     private var transactionIsolation = Connection.TRANSACTION_SERIALIZABLE
     private var networkTimeout = 0
     private val holdability = ResultSet.CLOSE_CURSORS_AT_COMMIT
-    private val warnings = mutableListOf<SQLWarning>()
+    private var warning: SQLWarning? = null
+    private var retainedWarningCount = 0
     @GuardedBy("poolLock")
     private var preparedStatementPool: PreparedStatementPool? = null
     private val poolLock = ReentrantLock()
@@ -435,10 +437,11 @@ internal class JdbcConnection(
 
     override fun getTransactionIsolation(): Int = transactionIsolation
 
-    override fun getWarnings(): SQLWarning? = warnings.firstOrNull()
+    override fun getWarnings(): SQLWarning? = warning
 
     override fun clearWarnings() {
-        warnings.clear()
+        warning = null
+        retainedWarningCount = 0
     }
 
     override fun getTypeMap(): MutableMap<String, Class<*>> = mutableMapOf()
@@ -618,8 +621,17 @@ internal class JdbcConnection(
         sharedDatabase.checkPrimaryConnectionAccess(sessionOwner)
     }
 
-    internal fun addWarning(warning: SQLWarning) {
-        warnings.add(warning)
+    internal fun addWarning(newWarning: SQLWarning) {
+        when {
+            warning == null -> {
+                warning = newWarning
+                retainedWarningCount = 1
+            }
+            retainedWarningCount < MAX_RETAINED_WARNINGS -> {
+                warning?.setNextWarning(newWarning)
+                ++retainedWarningCount
+            }
+        }
     }
 
     private fun checkResultSetType(resultSetType: Int) {

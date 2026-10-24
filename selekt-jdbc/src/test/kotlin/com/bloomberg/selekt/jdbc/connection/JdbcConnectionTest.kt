@@ -42,6 +42,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -710,22 +711,28 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun warningsAccumulation(): Unit = connection.run {
+    fun warningsRetainCappedChainUntilCleared(): Unit = connection.run {
         setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
-        assertNotNull(warnings)
-        holdability = ResultSet.HOLD_CURSORS_OVER_COMMIT
-        assertNotNull(warnings)
-        setClientInfo("test", "value")
-        assertNotNull(warnings)
-        val executor = Executors.newSingleThreadExecutor()
-        try {
-            setNetworkTimeout(executor, 5000)
-            assertNotNull(warnings)
-        } finally {
-            executor.shutdown()
+        val first = assertNotNull(warnings)
+        repeat(128) {
+            setClientInfo("name-$it", "value-$it")
         }
+
+        assertSame(first, warnings)
+        val retainedWarnings = generateSequence(first) { it.nextWarning }.toList()
+        assertEquals(16, retainedWarnings.size)
+        assertTrue(requireNotNull(retainedWarnings.first().message).contains("TRANSACTION_SERIALIZABLE"))
+        assertEquals(
+            (0 until 15).map { "SQLite does not support client info properties, ignoring: name-$it=value-$it" },
+            retainedWarnings.drop(1).map { it.message }
+        )
+
         clearWarnings()
         assertNull(warnings)
+        setClientInfo("test", "value")
+        val warningAfterClear = assertNotNull(warnings)
+        assertTrue(requireNotNull(warningAfterClear.message).contains("test=value"))
+        assertNull(warningAfterClear.nextWarning)
     }
 
     @Test
