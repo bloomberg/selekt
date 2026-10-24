@@ -29,6 +29,20 @@ internal class StreamingBlobBatchTest {
     }
 
     @Test
+    fun validatesTransferBufferSizeBoundaries() {
+        val maximum = 1024 * 1024
+        listOf(1, 64 * 1024, maximum).forEach { size ->
+            val batch = StreamingBlobBatch("files", "data", "INSERT INTO files VALUES (?)", 1, "main", size)
+            assertEquals(size, batch.transferBufferSize)
+        }
+        listOf(-1, 0, maximum + 1, Int.MAX_VALUE).forEach { size ->
+            assertFailsWith<IllegalArgumentException> {
+                StreamingBlobBatch("files", "data", "INSERT INTO files VALUES (?)", 1, "main", size)
+            }
+        }
+    }
+
+    @Test
     fun rejectsInvalidConfiguration() {
         assertFailsWith<IllegalArgumentException> {
             StreamingBlobBatch("", "data", "INSERT INTO files VALUES (?)", 1)

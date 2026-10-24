@@ -20,6 +20,7 @@ import com.bloomberg.selekt.annotations.TrustedSql
 import java.io.InputStream
 
 private const val DEFAULT_BLOB_TRANSFER_BUFFER_SIZE = 64 * 1024
+private const val MAXIMUM_BLOB_TRANSFER_BUFFER_SIZE = 1024 * 1024
 
 /**
  * Describes a schema-aware batch of incremental BLOB inserts.
@@ -30,7 +31,7 @@ private const val DEFAULT_BLOB_TRANSFER_BUFFER_SIZE = 64 * 1024
  * upserts, and statements that can update or ignore an existing row are not supported.
  *
  * Execution retains one prepared statement, one incremental BLOB handle, and one
- * [transferBufferSize]-byte transfer buffer for the complete batch.
+ * [transferBufferSize]-byte transfer buffer for the complete batch. The transfer buffer may not exceed 1 MiB.
  *
  * @since 1.4.0
  */
@@ -48,7 +49,9 @@ data class StreamingBlobBatch @JvmOverloads constructor(
         require(insertSql.isNotBlank()) { "Insert SQL must not be blank." }
         require(blobParameterIndex > 0) { "BLOB parameter index must be positive." }
         require(databaseName.isNotEmpty()) { "Database name must not be empty." }
-        require(transferBufferSize > 0) { "Transfer buffer size must be positive." }
+        require(transferBufferSize in 1..MAXIMUM_BLOB_TRANSFER_BUFFER_SIZE) {
+            "Transfer buffer size must be between 1 and $MAXIMUM_BLOB_TRANSFER_BUFFER_SIZE bytes."
+        }
     }
 }
 
