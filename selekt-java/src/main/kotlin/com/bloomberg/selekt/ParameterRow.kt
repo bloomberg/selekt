@@ -42,16 +42,19 @@ class ParameterRow(
     fun setInt(index: Int, value: Int) {
         tags[index] = TAG_INT
         ints[index] = value
+        objects[index] = null
     }
 
     fun setLong(index: Int, value: Long) {
         tags[index] = TAG_LONG
         longs[index] = value
+        objects[index] = null
     }
 
     fun setDouble(index: Int, value: Double) {
         tags[index] = TAG_DOUBLE
         doubles[index] = value
+        objects[index] = null
     }
 
     fun setObject(index: Int, value: Any?) {

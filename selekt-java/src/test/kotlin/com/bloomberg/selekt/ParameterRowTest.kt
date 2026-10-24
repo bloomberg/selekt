@@ -21,6 +21,24 @@ import org.junit.jupiter.api.Test
 
 internal class ParameterRowTest {
     @Test
+    fun primitiveSettersClearReplacedObjectReferences() {
+        val row = ParameterRow(3).apply {
+            setObject(0, "first-sensitive-value")
+            setObject(1, byteArrayOf(1, 2, 3))
+            setObject(2, "third-sensitive-value")
+        }
+
+        row.setInt(0, 7)
+        row.setLong(1, 8L)
+        row.setDouble(2, 9.0)
+
+        assertContentEquals(arrayOfNulls<Any>(3), row.objects)
+        val values = arrayOfNulls<Any>(3)
+        row.materializeTo(values)
+        assertContentEquals(arrayOf<Any?>(7, 8L, 9.0), values)
+    }
+
+    @Test
     fun clearZerosEveryBackingStore() {
         val row = ParameterRow(4).apply {
             setInt(0, Int.MAX_VALUE)
