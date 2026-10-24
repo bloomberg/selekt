@@ -103,6 +103,21 @@ internal class JdbcStatementTest {
     }
 
     @Test
+    fun schemaAttachmentControlDetection() {
+        listOf(
+            "ATTACH DATABASE 'other.db' AS other",
+            "detach database other",
+            " ;\uFEFF/* audit */ -- comment\r\nAtTaCh 'other.db' AS other"
+        ).forEach { sql -> assertTrue(sql.isSchemaAttachmentControl(), sql) }
+        listOf(
+            "-- ATTACH 'other.db' AS other\nSELECT 1",
+            "/* DETACH other */ SELECT 1",
+            "ATTACHMENT",
+            "SELECT 'ATTACH'"
+        ).forEach { sql -> assertFalse(sql.isSchemaAttachmentControl(), sql) }
+    }
+
+    @Test
     fun executeUpdate() {
         val sql = "INSERT INTO users (name) VALUES ('test')"
         val mockStatement = mock<ISQLStatement> {

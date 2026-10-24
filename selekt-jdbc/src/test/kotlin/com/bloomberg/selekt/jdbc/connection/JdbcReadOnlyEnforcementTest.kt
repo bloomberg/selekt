@@ -111,6 +111,36 @@ internal class JdbcReadOnlyEnforcementTest {
         }
     }
 
+    @Test
+    fun readOnlyConnectionCannotAttachAnotherDatabase() {
+        val attached = File(tempDir, "attached.db")
+        DriverManager.getConnection("jdbc:sqlite:${attached.absolutePath}").use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeUpdate("CREATE TABLE confidential(value TEXT NOT NULL)")
+                statement.executeUpdate("INSERT INTO confidential(value) VALUES ('secret')")
+            }
+        }
+        val escapedPath = attached.absolutePath.replace("'", "''")
+        withReadOnlyDatabase("attach-target") { connection ->
+            connection.createStatement().use { statement ->
+                assertReadOnlyFailure { statement.execute("ATTACH DATABASE '$escapedPath' AS secret") }
+                assertReadOnlyFailure {
+                    statement.executeQuery("/* audit */ ATTACH DATABASE '$escapedPath' AS secret").use { }
+                }
+            }
+            connection.prepareStatement("-- audit\r\nATTACH DATABASE '$escapedPath' AS secret").use { statement ->
+                assertReadOnlyFailure { statement.execute() }
+            }
+            connection.createStatement().use { statement ->
+                statement.executeQuery("PRAGMA database_list").use { resultSet ->
+                    while (resultSet.next()) {
+                        assertFalse(resultSet.getString("name").equals("secret", ignoreCase = true))
+                    }
+                }
+            }
+        }
+    }
+
     private fun withReadOnlyDatabase(name: String, block: (Connection) -> Unit) {
         val url = "jdbc:sqlite:${File(tempDir, "$name.db").absolutePath}"
         DriverManager.getConnection(url).use { connection ->

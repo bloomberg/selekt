@@ -50,6 +50,43 @@ internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
 
+private fun String.leadingTokenIndex(): Int {
+    var index = 0
+    while (index < length) {
+        index = when {
+            this[index].isWhitespace() || this[index] == ';' || this[index] == '\uFEFF' -> index + 1
+            startsWith("--", index) -> indexAfterLineComment(index + 2)
+            startsWith("/*", index) -> indexAfterBlockComment(index + 2)
+            else -> return index
+        }
+    }
+    return index
+}
+
+private fun String.indexAfterLineComment(startIndex: Int): Int {
+    var index = startIndex
+    while (index < length && this[index] != '\n' && this[index] != '\r') {
+        ++index
+    }
+    return if (index < length) { index + 1 } else { index }
+}
+
+private fun String.indexAfterBlockComment(startIndex: Int): Int {
+    val end = indexOf("*/", startIndex)
+    return if (end < 0) { length } else { end + 2 }
+}
+
+private fun String.tokenEqualsAt(index: Int, token: String): Boolean {
+    val end = index + token.length
+    return end <= length && regionMatches(index, token, 0, token.length, ignoreCase = true) &&
+        (end == length || !this[end].isLetter())
+}
+
+internal fun String.isSchemaAttachmentControl(): Boolean {
+    val index = leadingTokenIndex()
+    return tokenEqualsAt(index, "ATTACH") || tokenEqualsAt(index, "DETACH")
+}
+
 internal open class JdbcStatementState(
     internal val resultSetType: Int,
     internal val resultSetConcurrency: Int,
@@ -269,6 +306,7 @@ open class JdbcStatement internal constructor(
         signal: CancellationSignal,
         isReadOnly: Boolean
     ): ICursor = connection.withSession {
+        checkReadOnlySchemaControl(sql)
         if (connection.isReadOnly && !isReadOnly) {
             connection.checkWritable()
         }
@@ -285,11 +323,18 @@ open class JdbcStatement internal constructor(
 
     private fun checkReadOnlyQuery(sql: String, args: Array<Any?>) {
         if (connection.isReadOnly) {
+            checkReadOnlySchemaControl(sql)
             database.compileStatement(sql, args).use { statement ->
                 if (!statement.isReadOnly) {
                     connection.checkWritable()
                 }
             }
+        }
+    }
+
+    private fun checkReadOnlySchemaControl(sql: String) {
+        if (connection.isReadOnly && sql.isSchemaAttachmentControl()) {
+            connection.checkWritable()
         }
     }
 
