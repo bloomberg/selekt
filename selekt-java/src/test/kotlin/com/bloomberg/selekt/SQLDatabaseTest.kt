@@ -223,12 +223,12 @@ internal class SQLDatabaseTest {
 
     @Test
     fun rawStatementBeginAndCommitTransaction() {
-        database.prepare("BEGIN IMMEDIATE TRANSACTION").use {
+        database.prepare("/* audit */ BEGIN IMMEDIATE TRANSACTION").use {
             assertFalse(database.inTransaction)
             it.step()
             assertTrue(database.inTransaction)
         }
-        database.prepare("END TRANSACTION").use(ISQLRawStatement::step)
+        database.prepare("-- audit\nEND TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
         verifyCommit()
     }
@@ -236,7 +236,7 @@ internal class SQLDatabaseTest {
     @Test
     fun rawStatementBeginAndRollbackTransaction() {
         database.prepare("BEGIN DEFERRED TRANSACTION").use(ISQLRawStatement::step)
-        database.prepare("ROLLBACK TRANSACTION").use(ISQLRawStatement::step)
+        database.prepare("/* audit */ ROLLBACK TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
         verifyRollback()
     }
@@ -247,6 +247,36 @@ internal class SQLDatabaseTest {
         assertTrue(database.inTransaction)
         database.prepare("-- audit\r\nROLLBACK TRANSACTION").use(ISQLRawStatement::step)
         assertFalse(database.inTransaction)
+        verifyRollback()
+    }
+
+    @Test
+    fun rawStatementSavepointControlsOutsideTransactionAreRejected() {
+        listOf(
+            "SAVEPOINT sp",
+            "/* audit */ RELEASE SAVEPOINT sp",
+            "-- audit\nROLLBACK TRANSACTION TO SAVEPOINT sp"
+        ).forEach { sql ->
+            database.prepare(sql).use {
+                assertFailsWith<IllegalArgumentException> { it.step() }
+            }
+        }
+    }
+
+    @Test
+    fun rawStatementSavepointControlsExecuteWithinTransaction() {
+        database.beginDeferredTransaction()
+        listOf(
+            "/* audit */ SAVEPOINT sp",
+            "-- audit\nROLLBACK TRANSACTION TO SAVEPOINT sp",
+            "RELEASE SAVEPOINT sp"
+        ).forEach { sql ->
+            database.prepare(sql).use {
+                assertFalse(it.step())
+            }
+        }
+        assertTrue(database.inTransaction)
+        database.endTransaction()
         verifyRollback()
     }
 

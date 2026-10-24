@@ -103,6 +103,22 @@ internal class CommonObjectPoolTest {
     }
 
     @Test
+    fun discardedObjectIsDestroyedAndReplaced() {
+        val factory = mock<IObjectFactory<PooledObject>>()
+        val discarded = PooledObject()
+        val replacement = PooledObject()
+        whenever(factory.makeObject()).thenReturn(discarded, replacement)
+
+        CommonObjectPool(factory, executor, configuration.copy(maxTotal = 1), other).use {
+            assertSame(discarded, it.borrowObject())
+            it.discardObject(discarded)
+            verify(factory).destroyObject(same(discarded))
+
+            assertSame(replacement, it.borrowObject().also(it::returnObject))
+        }
+    }
+
+    @Test
     fun firstInFirstOutUnmatched() = pool.run {
         val first = borrowObject()
         thread {

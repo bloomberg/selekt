@@ -72,4 +72,10 @@ internal class TieredObjectPool<K : Any, T : IPooledObject<K>> internal construc
     } else {
         checkNotNull(secondaryPool).returnObject(obj)
     }
+
+    fun discardObject(obj: T) = if (obj.isPrimary) {
+        primaryPool.discardObject(obj)
+    } else {
+        checkNotNull(secondaryPool).discardObject(obj)
+    }
 }

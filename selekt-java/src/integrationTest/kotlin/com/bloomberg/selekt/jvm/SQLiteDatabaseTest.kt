@@ -22,6 +22,8 @@ import com.bloomberg.selekt.SimpleSQLQuery
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 internal class SQLiteDatabaseTest {
     @Test
@@ -41,6 +43,23 @@ internal class SQLiteDatabaseTest {
             database.setSavepoint()
         }.also {
             assertEquals("This thread is not in a transaction.", it.message)
+        }
+    }
+
+    @Test
+    fun rawTransactionControlsLeavePooledConnectionClean(): Unit = createInMemoryDatabase().use { database ->
+        database.prepare("/* audit */ BEGIN IMMEDIATE TRANSACTION").use { it.step() }
+        assertTrue(database.inTransaction)
+        database.prepare("-- audit\nROLLBACK TRANSACTION").use { it.step() }
+        assertFalse(database.inTransaction)
+
+        database.prepare("SAVEPOINT leaked").use { statement ->
+            assertFailsWith<IllegalArgumentException> { statement.step() }
+        }
+
+        database.exec("CREATE TABLE after_cleanup(value INTEGER)")
+        database.query(SimpleSQLQuery("SELECT * FROM after_cleanup")).use { cursor ->
+            assertEquals(0, cursor.count)
         }
     }
 }

@@ -19,6 +19,7 @@ package com.bloomberg.selekt
 import com.bloomberg.selekt.exceptions.SelektSQLException
 import com.bloomberg.selekt.pools.TieredObjectPool
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
@@ -28,7 +29,9 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.same
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -72,11 +75,99 @@ internal class SQLSessionCoverageTest {
         val session = SQLSession(pool)
         session.beginDeferredTransaction()
         val signal = Any()
+        val sql = "-- audit\nROLLBACK TRANSACTION"
 
-        assertSame(signal, session.execute(false, "ROLLBACK", SQLStatementType.ABORT, signal) {
+        assertSame(signal, session.execute(false, sql, sql.resolvedSqlStatementType(), signal) {
             error("Transactional control must not run the statement block")
         })
         assertFalse(session.inTransaction)
+    }
+
+    @Test
+    fun `raw transaction retains and then returns the pooled executor`() {
+        val session = SQLSession(pool)
+        val begin = "/* audit */ BEGIN IMMEDIATE TRANSACTION"
+        val end = "-- audit\nEND TRANSACTION"
+
+        session.execute(true, begin, begin.resolvedSqlStatementType(), Unit) {
+            error("Transactional control must not run the statement block")
+        }
+        assertTrue(session.inTransaction)
+        verify(pool, never()).returnObject(executor)
+
+        session.execute(true, end, end.resolvedSqlStatementType(), Unit) {
+            error("Transactional control must not run the statement block")
+        }
+        assertFalse(session.inTransaction)
+        verify(pool).returnObject(executor)
+
+        session.execute(false, "SELECT 1") { assertSame(executor, it) }
+        verify(executor, times(2)).onBorrowed()
+        verify(pool, times(2)).returnObject(executor)
+    }
+
+    @Test
+    fun `failed return discards executor and borrows a replacement`() {
+        val failure = IllegalStateException("cleanup failed")
+        val replacement = mock<CloseableSQLExecutor>()
+        whenever(pool.borrowPrimaryObject()).thenReturn(executor, replacement)
+        whenever(executor.onReturned()) doAnswer { throw failure }
+        val session = SQLSession(pool)
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            session.execute(true) { }
+        }
+        assertSame(failure, thrown)
+        verify(pool).discardObject(executor)
+        verify(pool, never()).returnObject(executor)
+
+        assertSame(replacement, session.execute(true) { it })
+        verify(pool, times(2)).borrowPrimaryObject()
+        verify(pool).returnObject(replacement)
+    }
+
+    @Test
+    fun `raw savepoint controls outside a transaction are rejected before borrowing an executor`() {
+        val session = SQLSession(pool)
+        listOf(
+            "SAVEPOINT sp",
+            "/* audit */ RELEASE SAVEPOINT sp",
+            "-- audit\nROLLBACK TRANSACTION TO SAVEPOINT sp"
+        ).forEach { sql ->
+            assertEquals(SQLStatementType.SAVEPOINT, sql.resolvedSqlStatementType())
+            assertFailsWith<IllegalArgumentException> {
+                session.execute(true, sql, SQLStatementType.SAVEPOINT, Unit) {
+                    error("Savepoint control must not run the statement block")
+                }
+            }
+        }
+        verify(pool, never()).borrowPrimaryObject()
+    }
+
+    @Test
+    fun `raw savepoint controls execute on the active transaction executor`() {
+        val session = SQLSession(pool)
+        session.beginDeferredTransaction()
+        val signal = Any()
+        val controls = listOf(
+            "/* audit */ SAVEPOINT sp",
+            "-- audit\nROLLBACK TRANSACTION TO SAVEPOINT sp",
+            "RELEASE SAVEPOINT sp"
+        )
+
+        controls.forEach { sql ->
+            assertSame(signal, session.execute(true, sql, sql.resolvedSqlStatementType(), signal) {
+                assertSame(executor, it)
+                it.execute(sql)
+                signal
+            })
+        }
+
+        assertTrue(session.inTransaction)
+        controls.forEach { verify(executor).execute(it) }
+        verify(pool, never()).returnObject(executor)
+        session.endTransaction()
+        verify(pool).returnObject(executor)
     }
 
     @Test

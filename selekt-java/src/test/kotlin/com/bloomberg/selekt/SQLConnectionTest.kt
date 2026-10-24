@@ -173,6 +173,7 @@ internal class SQLConnectionTest {
             requireNotNull(it.arguments[2] as? LongArray)[0] = DB
             0
         }
+        whenever(sqlite.getAutocommit(any<Long>())) doReturn 1
     }
 
     @Test
@@ -343,6 +344,47 @@ internal class SQLConnectionTest {
             it.onReturned()
             verify(this@run, never()).progressHandler(eq(DB), any<Int>(), any<SQLProgressHandler>())
         }
+    }
+
+    @Test
+    fun onReturnedRestoresAutocommitBeforePooling(): Unit = sqlite.run {
+        whenever(getAutocommit(DB)).thenReturn(0, 1)
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.onBorrowed()
+            it.onReturned()
+        }
+        verify(this@run).exec(DB, "ROLLBACK")
+        verify(this@run, times(2)).getAutocommit(DB)
+    }
+
+    @Test
+    fun onReturnedPropagatesRollbackFailure(): Unit = sqlite.run {
+        val failure = IllegalStateException("rollback failed")
+        val handler = SQLProgressHandler { 0 }
+        whenever(getAutocommit(DB)) doReturn 0
+        whenever(exec(DB, "ROLLBACK")) doThrow failure
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.onBorrowed()
+            assertSame(failure, assertFailsWith<IllegalStateException> { it.onReturned() })
+            it.setProgressHandlerIfIdle(100, handler)
+        }
+        verify(this@run).exec(DB, "ROLLBACK")
+        verify(this@run, never()).progressHandler(eq(DB), eq(100), same(handler))
+    }
+
+    @Test
+    fun onReturnedFailsWhenRollbackDoesNotRestoreAutocommit(): Unit = sqlite.run {
+        val handler = SQLProgressHandler { 0 }
+        whenever(getAutocommit(DB)) doReturn 0
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.onBorrowed()
+            val failure = assertFailsWith<IllegalStateException> { it.onReturned() }
+            assertEquals("Failed to restore SQLite autocommit before returning a pooled connection.", failure.message)
+            it.setProgressHandlerIfIdle(100, handler)
+        }
+        verify(this@run).exec(DB, "ROLLBACK")
+        verify(this@run, times(2)).getAutocommit(DB)
+        verify(this@run, never()).progressHandler(eq(DB), eq(100), same(handler))
     }
 
     @Test

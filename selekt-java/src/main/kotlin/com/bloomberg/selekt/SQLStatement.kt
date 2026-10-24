@@ -43,6 +43,7 @@ internal enum class SQLStatementType(
     DDL,
     OTHER,
     PRAGMA,
+    SAVEPOINT(isTransactional = true),
     SELECT(false),
     UNPREPARED,
     UPDATE
@@ -53,23 +54,30 @@ private const val ONLY_BATCH_UPDATES = "Only batched updates are permitted."
 
 private class SQLTokenCursor(private val sql: String) {
     private var index = 0
+    private var tokenStart = 0
+    private var tokenLength = 0
 
     fun firstTokenIndex(): Int {
         skipSeparators()
         return index
     }
 
-    fun next(): String? {
+    fun next(): Boolean {
         skipSeparators()
+        tokenLength = 0
         if (index >= sql.length || sql[index].isNotEnglishLetter()) {
-            return null
+            return false
         }
-        val start = index
+        tokenStart = index
         while (index < sql.length && !sql[index].isNotEnglishLetter()) {
             ++index
         }
-        return sql.substring(start, index)
+        tokenLength = index - tokenStart
+        return true
     }
+
+    fun tokenEquals(expected: String): Boolean =
+        tokenLength == expected.length && sql.regionMatches(tokenStart, expected, 0, tokenLength, ignoreCase = true)
 
     private fun skipSeparators() {
         while (index < sql.length) {
@@ -95,20 +103,37 @@ private class SQLTokenCursor(private val sql: String) {
     }
 }
 
+private fun SQLTokenCursor.resolveTransactionStatementType(): SQLStatementType? = if (!next()) {
+    null
+} else {
+    when {
+        tokenEquals("BEGIN") -> SQLStatementType.BEGIN
+        tokenEquals("COMMIT") || tokenEquals("END") -> SQLStatementType.COMMIT
+        tokenEquals("ROLLBACK") -> if (isToClauseAfterOptionalTransaction()) {
+            SQLStatementType.SAVEPOINT
+        } else {
+            SQLStatementType.ABORT
+        }
+        tokenEquals("SAVEPOINT") || tokenEquals("RELEASE") -> SQLStatementType.SAVEPOINT
+        else -> null
+    }
+}
+
+private fun SQLTokenCursor.isToClauseAfterOptionalTransaction(): Boolean =
+    next() && if (tokenEquals("TRANSACTION")) { next() && tokenEquals("TO") } else { tokenEquals("TO") }
+
 @JvmSynthetic
 internal fun String.isRollbackToSavepointClause(): Boolean {
     val cursor = SQLTokenCursor(this)
-    if (!cursor.next().equals("ROLLBACK", ignoreCase = true)) {
-        return false
-    }
-    val secondToken = cursor.next()
-    val clause = if (secondToken.equals("TRANSACTION", ignoreCase = true)) { cursor.next() } else { secondToken }
-    return clause.equals("TO", ignoreCase = true)
+    return cursor.next() && cursor.tokenEquals("ROLLBACK") && cursor.isToClauseAfterOptionalTransaction()
 }
 
 @JvmSynthetic
 internal fun String.resolvedSqlStatementType(): SQLStatementType {
-    val sql = substring(SQLTokenCursor(this).firstTokenIndex())
+    val tokenCursor = SQLTokenCursor(this)
+    val firstTokenIndex = tokenCursor.firstTokenIndex()
+    tokenCursor.resolveTransactionStatementType()?.let { return it }
+    val sql = substring(firstTokenIndex)
     return if (sql.length < SUFFICIENT_SQL_PREFIX_LENGTH) {
         SQLStatementType.OTHER
     } else {

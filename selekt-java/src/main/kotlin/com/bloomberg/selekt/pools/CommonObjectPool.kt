@@ -137,6 +137,18 @@ class CommonObjectPool<K : Any, T : IPooledObject<K>>(
         }
     }
 
+    @JvmSynthetic
+    internal fun discardObject(obj: T) {
+        lock.withLock {
+            --count
+            available.signal()
+            if (count == 0) {
+                cancelScheduledEviction()
+            }
+        }
+        factory.destroyObject(obj)
+    }
+
     override fun clear(priority: Priority) {
         executor.execute { evict(priority) }
     }

@@ -197,37 +197,37 @@ internal class SQLStatementKtTest {
 
     @Test
     fun rollbackToSavepointSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO savepoint1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK TO savepoint1".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackTransactionToSavepointSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TRANSACTION TO savepoint1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK TRANSACTION TO savepoint1".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackToSavepointLowercaseSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "rollback to savepoint1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "rollback to savepoint1".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackToSavepointMixedCaseSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "RoLLbAcK tO savepoint1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "RoLLbAcK tO savepoint1".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackToSavepointMinimalSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO sp".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK TO sp".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackToSavepointLongNameSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO very_long_savepoint_name_123".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK TO very_long_savepoint_name_123".resolvedSqlStatementType())
     }
 
     @Test
     fun rollbackToSavepointKeywordSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK TO SAVEPOINT sp1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK TO SAVEPOINT sp1".resolvedSqlStatementType())
     }
 
     @Test
@@ -247,27 +247,27 @@ internal class SQLStatementKtTest {
 
     @Test
     fun rollbackToSavepointMultipleWhitespaceSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK   TO savepoint".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK   TO savepoint".resolvedSqlStatementType())
     }
 
     @Test
     fun releaseSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "RELEASE".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "RELEASE".resolvedSqlStatementType())
     }
 
     @Test
     fun releaseSavepointSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "RELEASE sp1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "RELEASE sp1".resolvedSqlStatementType())
     }
 
     @Test
     fun releaseSavepointKeywordSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "RELEASE SAVEPOINT sp1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "RELEASE SAVEPOINT sp1".resolvedSqlStatementType())
     }
 
     @Test
     fun savePointSqlStatement() {
-        assertEquals(SQLStatementType.OTHER, "SAVEPOINT".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "SAVEPOINT".resolvedSqlStatementType())
     }
 
     @Test
@@ -323,10 +323,80 @@ internal class SQLStatementKtTest {
     @Test
     fun rollbackClauseSkipsCommentsBetweenTokens() {
         assertEquals(SQLStatementType.ABORT, "ROLLBACK /* TO */".resolvedSqlStatementType())
-        assertEquals(SQLStatementType.OTHER, "ROLLBACK /* audit */ TO savepoint1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK /* audit */ TO savepoint1".resolvedSqlStatementType())
         assertEquals(
-            SQLStatementType.OTHER,
+            SQLStatementType.SAVEPOINT,
             "ROLLBACK -- audit\r\n TRANSACTION /* target */ TO SAVEPOINT savepoint1".resolvedSqlStatementType()
         )
+    }
+
+    @Test
+    fun transactionControlsAfterLeadingComments() {
+        assertEquals(SQLStatementType.BEGIN, "  /* audit */ -- begin\n BEGIN IMMEDIATE TRANSACTION".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.COMMIT, "-- audit\nEND TRANSACTION".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.ABORT, "/* audit */ ROLLBACK TRANSACTION".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun savepointControlsAfterLeadingComments() {
+        assertEquals(SQLStatementType.SAVEPOINT, "/* audit */ SAVEPOINT sp".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "-- audit\nRELEASE SAVEPOINT sp".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SAVEPOINT, "ROLLBACK /* audit */ TRANSACTION TO SAVEPOINT sp".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun transactionKeywordsInsideLeadingCommentsAreNotControls() {
+        assertEquals(SQLStatementType.SELECT, "-- BEGIN\nSELECT 1".resolvedSqlStatementType())
+        assertEquals(SQLStatementType.SELECT, "/* ROLLBACK */ SELECT 1".resolvedSqlStatementType())
+    }
+
+    @Test
+    fun transactionControlVariants() {
+        val controls = listOf(
+            "BEGIN TRANSACTION" to SQLStatementType.BEGIN,
+            "COMMIT" to SQLStatementType.COMMIT,
+            "END" to SQLStatementType.COMMIT,
+            "ROLLBACK" to SQLStatementType.ABORT,
+            "SAVEPOINT sp" to SQLStatementType.SAVEPOINT,
+            "RELEASE SAVEPOINT sp" to SQLStatementType.SAVEPOINT,
+            "ROLLBACK TO SAVEPOINT sp" to SQLStatementType.SAVEPOINT,
+            "ROLLBACK TRANSACTION TO SAVEPOINT sp" to SQLStatementType.SAVEPOINT
+        )
+
+        controls.forEach { (sql, expected) -> assertControlVariants(sql, expected) }
+    }
+
+    @Test
+    fun transactionKeywordsOnlyInsideCommentsAreNotControls() {
+        listOf("BEGIN", "COMMIT", "END", "ROLLBACK", "SAVEPOINT", "RELEASE").forEach { keyword ->
+            assertEquals(SQLStatementType.SELECT, "-- $keyword\r\nSELECT 1".resolvedSqlStatementType())
+            assertEquals(SQLStatementType.SELECT, "/* $keyword */ ;\r\nSELECT 1".resolvedSqlStatementType())
+        }
+    }
+
+    private fun String.caseVariants() = listOf(
+        this,
+        lowercase(),
+        mapIndexed { index, character ->
+            if (index % 2 == 0) { character.uppercaseChar() } else { character.lowercaseChar() }
+        }.joinToString("")
+    )
+
+    private fun assertControlVariants(sql: String, expected: SQLStatementType) = sql.controlVariants().forEach { variant ->
+        assertEquals(expected, variant.resolvedSqlStatementType(), variant)
+    }
+
+    private fun String.controlVariants(): List<String> {
+        val interTokenVariants = caseVariants().flatMap { caseVariant ->
+            TOKEN_SEPARATORS.map { separator -> caseVariant.replace(" ", separator) }
+        }
+        return interTokenVariants.flatMap { variant ->
+            LEADING_SEPARATORS.map { prefix -> prefix + variant + ";\r\n" }
+        }
+    }
+
+    private companion object {
+        val LEADING_SEPARATORS = listOf("", " \t;\r\n", "-- leading\r\n", "/* leading */ ; ")
+        val TOKEN_SEPARATORS = listOf(" ", "\t", "\r\n", " /* between */ ", "-- between\r\n")
     }
 }
