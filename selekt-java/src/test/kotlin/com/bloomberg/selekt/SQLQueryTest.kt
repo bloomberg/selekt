@@ -49,6 +49,22 @@ internal class SQLQueryTest {
     }
 
     @Test
+    fun namedBindingUsesSQLiteSlotAfterExplicitParameterNumber() {
+        val args = arrayOfNulls<Any>(6)
+        SQLQuery(mock(), "SELECT ?5, :name", SQLStatementType.SELECT, args).bindString(":name", "value")
+
+        assertEquals(listOf(null, null, null, null, null, "value"), args.asList())
+    }
+
+    @Test
+    fun namedBindingUsesReusedNamedParameterSlot() {
+        val args = arrayOfNulls<Any>(2)
+        SQLQuery(mock(), "SELECT :x, :x, :y", SQLStatementType.SELECT, args).bindString(":y", "value")
+
+        assertEquals(listOf(null, "value"), args.asList())
+    }
+
+    @Test
     fun unknownNamedBindingFailsWithAvailableNames() {
         val query = SQLQuery(mock(), "SELECT :known", SQLStatementType.SELECT, arrayOfNulls(1))
 
