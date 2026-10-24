@@ -18,6 +18,7 @@ package com.bloomberg.selekt
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 internal class SQLParameterParserTest {
@@ -116,6 +117,14 @@ internal class SQLParameterParserTest {
     }
 
     @Test
+    fun repeatedNamedParameterReusesItsSlot() {
+        assertEquals(
+            mapOf(":x" to 1, ":y" to 2),
+            parseNamedParameters("SELECT :x, :x, :y")
+        )
+    }
+
+    @Test
     fun parseParameterWithUnderscores() {
         assertEquals(
             mapOf(":first_name" to 1),
@@ -137,6 +146,73 @@ internal class SQLParameterParserTest {
             mapOf(":name" to 2),
             parseNamedParameters("SELECT * FROM users WHERE id = ?1 AND name = :name AND code = ?2")
         )
+    }
+
+    @Test
+    fun explicitParameterNumberAdvancesHighestSlot() {
+        assertEquals(mapOf(":name" to 6), parseNamedParameters("SELECT ?5, :name"))
+    }
+
+    @Test
+    fun explicitParameterNumberSupportsIntBoundary() {
+        assertEquals(
+            mapOf(":name" to Int.MAX_VALUE),
+            parseNamedParameters("SELECT ?2147483646, :name")
+        )
+    }
+
+    @Test
+    fun overflowingExplicitParameterNumberDoesNotAdvanceHighestSlot() {
+        assertEquals(mapOf(":name" to 1), parseNamedParameters("SELECT ?2147483648, :name"))
+    }
+
+    @Test
+    fun namedParameterAfterMaximumSlotIsRejected() {
+        assertFailsWith<IllegalArgumentException> {
+            parseNamedParameters("SELECT ?2147483647, :name")
+        }
+    }
+
+    @Test
+    fun anonymousParameterAfterMaximumSlotIsRejected() {
+        assertFailsWith<IllegalArgumentException> {
+            parseNamedParameters("SELECT ?2147483647, ?")
+        }
+    }
+
+    @Test
+    fun explicitZeroDoesNotAdvanceHighestSlot() {
+        assertEquals(mapOf(":name" to 1), parseNamedParameters("SELECT ?0, :name"))
+    }
+
+    @Test
+    fun mixedParametersCannotAdvanceBeyondMaximumSlot() {
+        assertFailsWith<IllegalArgumentException> {
+            parseNamedParameters("SELECT ?2147483646, ?, :name")
+        }
+    }
+
+    @Test
+    fun repeatedNamedParameterCanReuseItsSlotAtMaximumSlot() {
+        assertEquals(
+            mapOf(":name" to 1),
+            parseNamedParameters("SELECT :name, ?2147483647, :name")
+        )
+    }
+
+    @Test
+    fun explicitParameterBelowHighestSlotDoesNotMoveItBackwards() {
+        assertEquals(mapOf(":name" to 6), parseNamedParameters("SELECT ?, ?, ?, ?, ?, ?2, :name"))
+    }
+
+    @Test
+    fun anonymousParameterUsesSlotAfterHighestExplicitSlot() {
+        assertEquals(mapOf(":name" to 7), parseNamedParameters("SELECT ?5, ?, :name"))
+    }
+
+    @Test
+    fun bareNamedParameterPrefixesDoNotConsumeSlots() {
+        assertEquals(mapOf(":name" to 1), parseNamedParameters("SELECT :, @, \$, :name"))
     }
 
     @Test

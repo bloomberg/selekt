@@ -16,6 +16,9 @@
 
 package com.bloomberg.selekt
 
+private const val DECIMAL_RADIX = 10
+private const val INVALID_PARAMETER_INDEX = -1
+
 /**
  * @since 0.28.0
  */
@@ -27,8 +30,9 @@ package com.bloomberg.selekt
  * - @name (at sign prefix)
  * - $name (dollar sign prefix)
  *
- * Anonymous parameters (?) are assigned positions in order of appearance. Named parameters are also assigned
- * positions in order of appearance.
+ * Parameter positions follow SQLite's slot-numbering rules. Explicitly numbered parameters (`?NNN`) use slot NNN,
+ * anonymous parameters (`?`) and new named parameters use the next slot after the highest slot seen so far, and a
+ * repeated named parameter reuses its original slot.
  *
  * This parser handles:
  * - String literals (single quotes), parameters inside are ignored
@@ -48,28 +52,58 @@ internal fun parseNamedParameters(sql: String): Map<String, Int> {
             '[' -> i = skipBracketIdentifier(sql, i)
             '-' if i + 1 < sql.length && sql[i + 1] == '-' -> i = skipLineComment(sql, i)
             '/' if i + 1 < sql.length && sql[i + 1] == '*' -> i = skipBlockComment(sql, i)
-            '?' -> {
-                ++parameterIndex
-                if (i + 1 < sql.length && sql[i + 1].isDigit()) {
-                    i = skipDigits(sql, i + 1)
-                } else {
-                    i++
-                }
+            '?' -> if (i + 1 < sql.length && sql[i + 1].isDigit()) {
+                val endIndex = skipDigits(sql, i + 1)
+                val explicitIndex = parseParameterIndex(sql, i + 1, endIndex)
+                parameterIndex = maxOf(parameterIndex, explicitIndex)
+                i = endIndex
+            } else {
+                parameterIndex = nextParameterIndex(parameterIndex)
+                i++
             }
             ':', '@', '$' -> {
-                ++parameterIndex
                 val startIndex = i++
                 while (i < sql.length && sql[i].isParameterNameChar()) {
                     i++
                 }
                 if (i - startIndex > 1) {
-                    result.putIfAbsent(sql.substring(startIndex, i), parameterIndex)
+                    val name = sql.substring(startIndex, i)
+                    parameterIndex = result.putNamedParameter(name, parameterIndex)
                 }
             }
             else -> i++
         }
     }
     return result
+}
+
+private fun MutableMap<String, Int>.putNamedParameter(name: String, highestIndex: Int): Int {
+    return if (name in this) {
+        highestIndex
+    } else {
+        val nextIndex = nextParameterIndex(highestIndex)
+        put(name, nextIndex)
+        nextIndex
+    }
+}
+
+private fun nextParameterIndex(highestIndex: Int): Int {
+    require(highestIndex < Int.MAX_VALUE) { "Parameter slot index exceeds Int.MAX_VALUE." }
+    return highestIndex + 1
+}
+
+private fun parseParameterIndex(sql: String, startIndex: Int, endIndex: Int): Int {
+    var value = 0
+    var index = startIndex
+    while (index < endIndex) {
+        val digit = Character.digit(sql[index], DECIMAL_RADIX)
+        if (digit < 0 || value > (Int.MAX_VALUE - digit) / DECIMAL_RADIX) {
+            return INVALID_PARAMETER_INDEX
+        }
+        value = value * DECIMAL_RADIX + digit
+        ++index
+    }
+    return value
 }
 
 private fun Char.isParameterNameChar(): Boolean = isLetterOrDigit() || this == '_'
