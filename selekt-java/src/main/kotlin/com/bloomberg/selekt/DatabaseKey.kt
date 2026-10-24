@@ -67,6 +67,10 @@ class DatabaseKey internal constructor(
         fun of(sqlite: SQLite, key: ByteArray): DatabaseKey = sqlite.newKey(key)
 
         @JvmStatic
-        fun take(sqlite: SQLite, key: ByteArray): DatabaseKey = of(sqlite, key).also { key.zero() }
+        fun take(sqlite: SQLite, key: ByteArray): DatabaseKey = try {
+            of(sqlite, key)
+        } finally {
+            key.zero()
+        }
     }
 }

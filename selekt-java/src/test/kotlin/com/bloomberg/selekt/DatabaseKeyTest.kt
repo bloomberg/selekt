@@ -22,16 +22,43 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
-import kotlin.test.assertFailsWith
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 private const val KEY_POINTER = 0x5EC4E7L
 private const val KEY_SIZE = 32
 
 internal class DatabaseKeyTest {
+    @Test
+    fun takeZerosTransferredKeyAfterSuccess() {
+        val externalSqlite = mock<IExternalSQLite>()
+        val keyBytes = ByteArray(KEY_SIZE) { 0x42 }
+        whenever(externalSqlite.allocateSecret(KEY_SIZE)).thenReturn(KEY_POINTER)
+
+        DatabaseKey.take(SQLite(externalSqlite), keyBytes).close()
+
+        assertContentEquals(ByteArray(KEY_SIZE), keyBytes)
+        verify(externalSqlite).freeSecret(KEY_POINTER, KEY_SIZE)
+    }
+
+    @Test
+    fun takeZerosTransferredKeyWhenAllocationFails() {
+        val externalSqlite = mock<IExternalSQLite>()
+        val keyBytes = ByteArray(KEY_SIZE) { 0x42 }
+        whenever(externalSqlite.allocateSecret(KEY_SIZE)).thenThrow(IllegalStateException("Boom"))
+
+        assertFailsWith<IllegalStateException> {
+            DatabaseKey.take(SQLite(externalSqlite), keyBytes)
+        }
+
+        assertContentEquals(ByteArray(KEY_SIZE), keyBytes)
+    }
+
     @Test
     fun closeFreesTheSecretExactlyOnce() {
         val sqlite = mock<IExternalSQLite>()
