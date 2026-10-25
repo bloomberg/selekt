@@ -35,7 +35,9 @@ internal class JdbcBlob(
     initialData: ByteArray = byteArrayOf(),
     private val maximumLength: Int = Int.MAX_VALUE
 ) : Blob {
-    private val data = ByteArrayOutputStream()
+    private var retainedData: ByteArrayOutputStream? = ByteArrayOutputStream()
+    private val data: ByteArrayOutputStream
+        get() = checkNotNull(retainedData)
     @Volatile
     private var freed = 0
 
@@ -212,7 +214,7 @@ internal class JdbcBlob(
 
     override fun free() {
         if (FREED_UPDATER.compareAndSet(this, 0, 1)) {
-            data.reset()
+            retainedData = null
         }
     }
 
