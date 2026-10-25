@@ -420,6 +420,13 @@ internal class SQLSession(
             }
         }.exceptionOrNull()?.let {
             rollbackQuietly()
+            if (useNativeListeners && state.transactionListener != null) {
+                runCatching {
+                    execute(false) { executor ->
+                        executor.setTransactionListener(null)
+                    }
+                }.exceptionOrNull()?.let(it::addSuppressed)
+            }
             state.clear()
             runCatching { onTransactionStateChanged(false) }.exceptionOrNull()?.let(it::addSuppressed)
             runCatching { release(permits) }.exceptionOrNull()?.let(it::addSuppressed)

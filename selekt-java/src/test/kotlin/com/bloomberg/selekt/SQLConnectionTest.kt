@@ -884,6 +884,33 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun nativeCommitListenerIsClearedWhenUnregistrationFails(): Unit = sqlite.run {
+        val commitListenerCaptor = argumentCaptor<SQLCommitListener>()
+        val listener = mock<SQLTransactionListener>()
+        val cleanupFailure = IllegalStateException("cleanup failed")
+        var failUnregistration = false
+        whenever(commitHook(any<DatabaseHandle>(), eq(false), isNull())) doAnswer {
+            if (failUnregistration) {
+                failUnregistration = false
+                throw cleanupFailure
+            }
+            commitHook((it.arguments[0] as DatabaseHandle).pointer, false, null)
+        }
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            it.setTransactionListener(listener)
+            verify(this@run).commitHook(eq(DB), eq(true), commitListenerCaptor.capture())
+            failUnregistration = true
+
+            assertSame(cleanupFailure, assertFailsWith { it.setTransactionListener(null) })
+            commitListenerCaptor.firstValue.onCommit()
+            commitListenerCaptor.firstValue.onRollback()
+
+            verify(listener, never()).onCommit()
+            verify(listener, never()).onRollback()
+        }
+    }
+
+    @Test
     fun databaseConfig(): Unit = sqlite.run {
         SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
             it.databaseConfig(1010, 1)

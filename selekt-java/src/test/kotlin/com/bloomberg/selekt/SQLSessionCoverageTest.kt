@@ -28,6 +28,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.same
@@ -196,6 +197,67 @@ internal class SQLSessionCoverageTest {
     }
 
     @Test
+    fun `failed begin listener is not notified by a later native commit`() {
+        emulateNativeTransactionCallbacks()
+        val failure = IllegalStateException("begin failed")
+        val listener = mock<SQLTransactionListener> {
+            on { onBegin() } doAnswer { throw failure }
+        }
+        val session = SQLSession(pool, useNativeListeners = true)
+
+        assertSame(failure, assertFailsWith { session.beginDeferredTransactionWithListener(listener) })
+        verify(listener).onRollback()
+
+        session.beginDeferredTransaction()
+        session.setTransactionSuccessful()
+        session.endTransaction()
+
+        verify(listener, never()).onCommit()
+        verify(listener).onRollback()
+        verify(executor).setTransactionListener(null)
+    }
+
+    @Test
+    fun `failed begin listener is not notified by a later native rollback`() {
+        emulateNativeTransactionCallbacks()
+        val failure = IllegalStateException("begin failed")
+        val listener = mock<SQLTransactionListener> {
+            on { onBegin() } doAnswer { throw failure }
+        }
+        val session = SQLSession(pool, useNativeListeners = true)
+
+        assertSame(failure, assertFailsWith { session.beginDeferredTransactionWithListener(listener) })
+        verify(listener).onRollback()
+
+        session.beginDeferredTransaction()
+        session.endTransaction()
+
+        verify(listener, never()).onCommit()
+        verify(listener).onRollback()
+        verify(executor).setTransactionListener(null)
+    }
+
+    @Test
+    fun `failed native listener cleanup is suppressed by the begin failure`() {
+        val beginFailure = IllegalStateException("begin failed")
+        val cleanupFailure = IllegalArgumentException("cleanup failed")
+        val listener = mock<SQLTransactionListener> {
+            on { onBegin() } doAnswer { throw beginFailure }
+        }
+        whenever(executor.setTransactionListener(isNull())) doAnswer { throw cleanupFailure }
+        val session = SQLSession(pool, useNativeListeners = true)
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            session.beginDeferredTransactionWithListener(listener)
+        }
+
+        assertSame(beginFailure, thrown)
+        assertEquals(listOf(cleanupFailure), thrown.suppressed.toList())
+        assertFalse(session.inTransaction)
+        verify(pool).returnObject(executor)
+    }
+
+    @Test
     fun `cancelled forward cursor failure clears progress and translates interrupt`() {
         val signal = CancellationSignal(1).apply { cancel() }
         val failure = object : RuntimeException(), SelektSQLException {
@@ -212,5 +274,29 @@ internal class SQLSessionCoverageTest {
         }
         verify(executor).setProgressHandler(0, null)
         verify(pool).returnObject(executor)
+    }
+
+    private fun emulateNativeTransactionCallbacks() {
+        var listener: SQLTransactionListener? = null
+        whenever(executor.setTransactionListener(any())) doAnswer {
+            listener = it.getArgument(0)
+            Unit
+        }
+        whenever(executor.setTransactionListener(isNull())) doAnswer {
+            listener = null
+            Unit
+        }
+        whenever(executor.executeWithRetry(any())) doAnswer {
+            if (it.getArgument<String>(0) == "END") {
+                listener?.onCommit()
+            }
+            0
+        }
+        whenever(executor.execute(any(), any<Array<out Any?>>())) doAnswer {
+            if (it.getArgument<String>(0) == "ROLLBACK") {
+                listener?.onRollback()
+            }
+            0
+        }
     }
 }
