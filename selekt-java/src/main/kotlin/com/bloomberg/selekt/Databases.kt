@@ -285,7 +285,7 @@ class SQLDatabase(
     }
 
     fun prepare(@TrustedSql sql: String): ISQLRawStatement = pledge {
-        SQLRawStatement.prepare(session, sql)
+        SQLRawStatement.prepare(session(), sql)
     }
 
     override fun delete(

@@ -298,6 +298,44 @@ internal class SQLDatabaseTest {
     }
 
     @Test
+    fun rawStatementPreparedInExplicitSessionClosesThroughOwnerOutsideScope() {
+        val explicitSession = database.openSession({}, {})
+        try {
+            val statement = explicitSession.execute { prepare("SELECT 1") }
+
+            statement.use {
+                assertFalse(it.step())
+            }
+            assertFalse(explicitSession.session.hasObject)
+        } finally {
+            explicitSession.close()
+        }
+
+        database.prepare("SELECT 1").close()
+    }
+
+    @Test
+    fun rawTransactionPreparedInExplicitSessionUsesOwnerOutsideScope() {
+        val transactionStates = mutableListOf<Boolean>()
+        val explicitSession = database.openSession({}, transactionStates::add)
+        val statement = explicitSession.execute { prepare("BEGIN IMMEDIATE TRANSACTION") }
+
+        statement.use {
+            assertFalse(it.step())
+        }
+        assertEquals(listOf(true), transactionStates)
+        assertTrue(explicitSession.execute { inTransaction })
+        assertFalse(database.inTransaction)
+
+        explicitSession.close()
+
+        assertEquals(listOf(true, false), transactionStates)
+        assertFalse(explicitSession.session.hasObject)
+        database.prepare("SELECT 1").close()
+        verifyRollback()
+    }
+
+    @Test
     fun rawStatementIntegerAccessorsAndClosedColumnNames() {
         whenever(sqlite.columnInt(any<StatementHandle>(), any())) doReturn 42
         val statement = database.prepare("SELECT ?")
