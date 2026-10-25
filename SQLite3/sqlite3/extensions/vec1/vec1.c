@@ -93,6 +93,8 @@
 # include <stdio.h>
 # include <stdlib.h>
 
+# include "vec1_kmeans_scratch.h"
+
 /* Standard sized types. */
 typedef sqlite3_int64  i64;
 typedef sqlite3_uint64 u64;
@@ -2189,6 +2191,8 @@ struct KMeansJob {
   double fTotal;
   float *aSum;
   int *aCount;
+  size_t nSumByte;
+  size_t nCountByte;
 
   float *aAllSum;
   int *aAllCount;
@@ -2329,8 +2333,8 @@ static void vec1KMeansWork(void *pCtx){
   int jj;
 
   p->fTotal = 0.0f;
-  memset(p->aSum, 0, sizeof_f32 * p->nK * nSampleElem);
-  memset(p->aCount, 0, sizeof(int) * p->nK);
+  memset(p->aSum, 0, p->nSumByte);
+  memset(p->aCount, 0, p->nCountByte);
 
 #if 1
   for(ii=p->iFirst; ii<=(p->iEof-KMEANS_NBLOCK); ii+=KMEANS_NBLOCK){
@@ -2399,11 +2403,13 @@ static int vec1Ann1KMeans(
   int nK,                         /* Value of K in K-means */
   float *aCode                    /* OUT: Populate this array */
 ){
-  i64 nByte = 0;
+  Vec1KMeansScratchLayout layout;
   int ii;
   int iIter;
   int nSampleElem = pVec->nElem;
-  int *pCsr = 0;
+  u8 *aScratch = 0;
+  u8 *pSumCsr = 0;
+  u8 *pCountCsr = 0;
   double fPrevTotal = 0.0;
 
   int *aCount = 0;
@@ -2418,6 +2424,12 @@ static int vec1Ann1KMeans(
 
   if( nThread<1 || nThread>VEC1_MAX_NTHREAD ) return SQLITE_ERROR;
 
+  if( nSampleElem<0 || nK<0 || pVec->nVec<0 ) return SQLITE_ERROR;
+
+  /* vec1AddInPlace() consumes nSampleElem*nK as a signed int. Keep this
+  ** guard explicit at the call site as well as in the layout helper. */
+  if( nSampleElem!=0 && nK>INT_MAX/nSampleElem ) return SQLITE_TOOBIG;
+
   /* Allocate array of jobs. We use this even if there are no worker 
   ** threads - in that case allocate an array of 1. Each job object
   ** is used for both K-Means++ intialization and for each iteration
@@ -2428,22 +2440,23 @@ static int vec1Ann1KMeans(
   **   + aCount      -> (sizeof(int) * K) bytes
   **   + aSum        -> (sizeof_f32 * nSampleElem * K) bytes
   */
-  nByte = nThread * (
-      sizeof(KMeansJob) +
-      nSampleElem * nK * sizeof_f32 +       /* aSum[] */
-      nK * sizeof(int)                      /* aCount[] */
-  );
-  nByte += (i64)sizeof_f32 * pVec->nVec;    /* aMin[] used by KMeans++ */
-  nByte += nSampleElem * nK * sizeof_f32;   /* Main thread aSum[] */
-  nByte += nK * sizeof(int);                /* Main thread aCount[] */
-  aKJob = (KMeansJob*)sqlite3_malloc64(nByte);
+  if( vec1KMeansScratchSize(
+          (u64)(size_t)-1, sizeof(KMeansJob), sizeof_f32, sizeof(int),
+          (u64)nThread, (u64)pVec->nVec, (u64)nSampleElem, (u64)nK,
+          &layout
+      )
+  ){
+    return SQLITE_TOOBIG;
+  }
+  aKJob = (KMeansJob*)sqlite3_malloc64(layout.nByte);
   if( aKJob==0 ) return SQLITE_NOMEM;
-  memset(aKJob, 0, sizeof(KMeansJob) * nThread);
+  memset(aKJob, 0, (size_t)layout.iMin);
 
   /* Initialize each job object in the array */
-  pCsr = (int*)&aKJob[nThread];
-  aMin = (float*)pCsr;
-  pCsr += pVec->nVec;
+  aScratch = (u8*)aKJob;
+  aMin = (float*)&aScratch[layout.iMin];
+  pSumCsr = &aScratch[layout.iJobSum];
+  pCountCsr = &aScratch[layout.iJobCount];
 
   for(ii=0; ii<nThread; ii++){
     KMeansJob *pK = &aKJob[ii];
@@ -2462,17 +2475,20 @@ static int vec1Ann1KMeans(
     pK->nK = nK;
     pK->aCentroid = aCode;
 
-    pK->aSum = (float*)pCsr;
-    pCsr += (nK * nSampleElem);
-    pK->aCount = pCsr;
-    pCsr += nK;
+    pK->aSum = (float*)pSumCsr;
+    pK->aCount = (int*)pCountCsr;
+    pK->nSumByte = (size_t)layout.nSumByte;
+    pK->nCountByte = (size_t)layout.nCountByte;
+    pSumCsr += pK->nSumByte;
+    pCountCsr += pK->nCountByte;
   }
-  aSum = (float*)pCsr;
-  pCsr += (nK * nSampleElem);
-  aCount = pCsr;
-  pCsr += nK;
+  aSum = (float*)&aScratch[layout.iSum];
+  aCount = (int*)&aScratch[layout.iCount];
 
-  assert( (u8*)pCsr==((u8*)aKJob)+nByte );
+  assert( pSumCsr==&aScratch[layout.iJobCount] );
+  assert( pCountCsr==&aScratch[layout.iSum] );
+  assert( &aScratch[layout.iCount+layout.nCountByte]
+       == &aScratch[layout.nByte] );
 
   /* If pQueue is not NULL, then this is training the coarse quantizer
   ** and so we have exclusive access to the Vec1TrainCtx object. So
@@ -2511,13 +2527,13 @@ static int vec1Ann1KMeans(
     }
     vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
 
-    memset(aSum, 0, sizeof_f32 * nK * nSampleElem);
-    memset(aCount, 0, sizeof(int) * nK);
+    memset(aSum, 0, (size_t)layout.nSumByte);
+    memset(aCount, 0, (size_t)layout.nCountByte);
     for(ii=0; ii<nThread; ii++){
       for(jj=0; jj<nK; jj++){
         aCount[jj] += aKJob[ii].aCount[jj];
       }
-      vec1AddInPlace(aSum, aKJob[ii].aSum, nSampleElem*nK);
+      vec1AddInPlace(aSum, aKJob[ii].aSum, layout.nSumElem);
       fTotal += aKJob[ii].fTotal;
     }
 
