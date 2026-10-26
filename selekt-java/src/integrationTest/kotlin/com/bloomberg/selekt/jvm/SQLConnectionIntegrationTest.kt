@@ -33,6 +33,16 @@ import kotlin.test.assertTrue
 
 internal class SQLConnectionIntegrationTest {
     @Test
+    fun overlappingSameSqlForwardCursorsCanCloseFirstThenSecond() {
+        assertOverlappingSameSqlForwardCursors(closeFirstCursorFirst = true)
+    }
+
+    @Test
+    fun overlappingSameSqlForwardCursorsCanCloseSecondThenFirst() {
+        assertOverlappingSameSqlForwardCursors(closeFirstCursorFirst = false)
+    }
+
+    @Test
     fun returningConnectionRollsBackLeakedSavepoint() {
         SQLConnection(
             "file::memory:",
@@ -90,5 +100,40 @@ internal class SQLConnectionIntegrationTest {
     ) {
         connection.onReturned()
         pool.returnObject(connection)
+    }
+
+    private fun assertOverlappingSameSqlForwardCursors(closeFirstCursorFirst: Boolean) {
+        SQLConnection(
+            "file::memory:",
+            SQLite,
+            SQLiteJournalMode.MEMORY.databaseConfiguration,
+            SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            val sql = "SELECT ? UNION ALL SELECT ? + 1"
+            val first = connection.executeForForwardCursor(sql, arrayOf(1, 1))
+            val second = connection.executeForForwardCursor(sql, arrayOf(10, 10))
+            try {
+                assertTrue(first.moveToNext())
+                assertEquals(1, first.getInt(0))
+                assertTrue(second.moveToNext())
+                assertEquals(10, second.getInt(0))
+
+                val remaining = if (closeFirstCursorFirst) {
+                    first.close()
+                    second
+                } else {
+                    second.close()
+                    first
+                }
+                assertTrue(remaining.moveToNext())
+                assertEquals(if (closeFirstCursorFirst) { 11 } else { 2 }, remaining.getInt(0))
+                remaining.close()
+            } finally {
+                first.close()
+                second.close()
+            }
+        }
     }
 }
