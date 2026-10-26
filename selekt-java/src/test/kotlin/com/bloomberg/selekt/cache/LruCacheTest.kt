@@ -81,6 +81,22 @@ internal class LruCacheTest {
     }
 
     @Test
+    fun evictOnlyExpectedValue() {
+        val cached = Any()
+        val other = Any()
+        val disposal: (Any) -> Unit = mock { on { invoke(it) } doReturn Unit }
+        val cache = LruCache(1, disposal)
+        cache["1", { cached }]
+
+        cache.evict("1", other)
+
+        assertSame(cached, cache["1", { fail() }])
+        verify(disposal, never()).invoke(anyOrNull())
+        cache.evict("1", cached)
+        verify(disposal).invoke(same(cached))
+    }
+
+    @Test
     fun evictAll() {
         val first = Any()
         val second = Any()

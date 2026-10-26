@@ -937,6 +937,36 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun overlappingSameSqlForwardCursorsReleaseExclusiveStatementAndReuseCachedStatement(): Unit = sqlite.run {
+        var nextStatement = 43L
+        whenever(prepareV2(any<Long>(), any<String>(), any<LongArray>())) doAnswer {
+            (it.arguments[2] as LongArray)[0] = nextStatement++
+            SQL_OK
+        }
+        whenever(bindParameterCount(any<Long>())) doReturn 1
+        whenever(columnCount(any<Long>())) doReturn 1
+        whenever(columnName(any<Long>(), any<Int>())) doReturn "value"
+        val sql = "SELECT ?"
+
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use { connection ->
+            val first = connection.executeForForwardCursor(sql, arrayOf(1))
+            val second = connection.executeForForwardCursor(sql, arrayOf(2))
+            first.close()
+            second.close()
+
+            connection.executeForForwardCursor(sql, arrayOf(3)).close()
+
+            verify(this, times(2)).prepareV2(any<Long>(), eq(sql), any<LongArray>())
+            verify(this).bindInt(eq(StatementHandle(43L)), eq(1), eq(1))
+            verify(this).bindInt(eq(StatementHandle(44L)), eq(1), eq(2))
+            verify(this).bindInt(eq(StatementHandle(43L)), eq(1), eq(3))
+            verify(this).finalize(eq(44L))
+            verify(this, never()).finalize(eq(43L))
+        }
+        verify(this).finalize(eq(43L))
+    }
+
+    @Test
     fun executeForForwardCursorInvokesAdditionalOnClose(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L

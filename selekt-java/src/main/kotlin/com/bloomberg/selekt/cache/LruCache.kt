@@ -42,6 +42,12 @@ class LruCache<T : Any>(private val maxSize: Int, private val disposal: (T) -> U
         store.remove(key)
     }
 
+    fun evict(key: String, expectedValue: T) {
+        if (store[key] === expectedValue) {
+            store.remove(key)
+        }
+    }
+
     fun evictAll() {
         store.values.toList()
             .also { store.clear() }

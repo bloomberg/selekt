@@ -22,6 +22,8 @@ import com.bloomberg.selekt.commons.forEachByPositionUntil
 import com.bloomberg.selekt.commons.forUntil
 import java.io.EOFException
 import java.io.IOException
+import java.util.Collections
+import java.util.IdentityHashMap
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import javax.annotation.concurrent.NotThreadSafe
@@ -48,6 +50,9 @@ internal class SQLConnection(
 ) : CloseableSQLExecutor {
     private val databaseHandle = sqlite.open(path, flags)
     private val preparedStatements = LruCache(configuration.maxSqlCacheSize, SQLPreparedStatement::close)
+    private val leasedCachedPreparedStatements = Collections.newSetFromMap(
+        IdentityHashMap<SQLPreparedStatement, Boolean>()
+    )
     private var commitListener: SQLTransactionListener? = null
 
     @Volatile
@@ -630,19 +635,27 @@ internal class SQLConnection(
         }
     }
 
-    private fun acquirePreparedStatement(sql: String) = preparedStatements[
-        sql, {
-            val statement = sqlite.prepare(databaseHandle, sql)
-            SQLPreparedStatement(statement, sql, sqlite, random)
+    private fun acquirePreparedStatement(sql: String): SQLPreparedStatement {
+        val cached = preparedStatements[sql, { prepareStatement(sql) }]
+        return if (leasedCachedPreparedStatements.add(cached)) {
+            cached.apply { retain() }
+        } else {
+            prepareStatement(sql)
         }
-    ].apply { retain() }
+    }
+
+    private fun prepareStatement(sql: String): SQLPreparedStatement {
+        val statement = sqlite.prepare(databaseHandle, sql)
+        return SQLPreparedStatement(statement, sql, sqlite, random)
+    }
 
     private fun releasePreparedStatement(preparedStatement: SQLPreparedStatement) {
         try {
             preparedStatement.resetAndClearBindings()
         } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
-            preparedStatements.evict(preparedStatement.sql)
+            preparedStatements.evict(preparedStatement.sql, preparedStatement)
         } finally {
+            leasedCachedPreparedStatements.remove(preparedStatement)
             preparedStatement.release()
         }
     }
