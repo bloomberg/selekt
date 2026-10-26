@@ -78,6 +78,21 @@ internal class ExternalSQLiteFfmCoverageTest {
     }
 
     @Test
+    fun `failed opens close returned database handles`() {
+        val inaccessiblePath = File(tempDir, "missing/database.db").absolutePath
+        assertTrue(sqlite.openV2(inaccessiblePath, SQL_OPEN_READWRITE_OR_CREATE, LongArray(1)) != SQL_OK)
+        val memoryBefore = sqlite.memoryUsed()
+
+        repeat(100) {
+            val holder = LongArray(1)
+            assertTrue(sqlite.openV2(inaccessiblePath, SQL_OPEN_READWRITE_OR_CREATE, holder) != SQL_OK)
+            assertEquals(0L, holder.single())
+        }
+
+        assertEquals(memoryBefore, sqlite.memoryUsed())
+    }
+
+    @Test
     fun `empty cursor window native result codes are translated`() {
         assertFailsWith<OutOfMemoryError> { emptyCursorWindow(-2) }
         assertFailsWith<OutOfMemoryError> { emptyCursorWindow(-3) }
