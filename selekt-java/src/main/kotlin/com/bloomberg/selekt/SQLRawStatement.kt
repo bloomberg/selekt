@@ -77,7 +77,7 @@ interface ISQLRawStatement : Closeable {
  */
 @NotThreadSafe
 internal class SQLRawStatement private constructor(
-    private val session: ThreadLocalSession,
+    private val session: SQLSession,
     private val sql: String,
     private val statementType: SQLStatementType,
     private val executor: CloseableSQLExecutor?,
@@ -86,12 +86,12 @@ internal class SQLRawStatement private constructor(
     private var closed = false
 
     companion object {
-        fun prepare(session: ThreadLocalSession, sql: String): SQLRawStatement {
+        fun prepare(session: SQLSession, sql: String): SQLRawStatement {
             val statementType = sql.resolvedSqlStatementType()
             return if (statementType.isTransactional) {
                 SQLRawStatement(session, sql, statementType, null, null)
             } else {
-                val (executor, preparedStatement) = session().prepareRawStatement(sql, statementType.isPredictedWrite)
+                val (executor, preparedStatement) = session.prepareRawStatement(sql, statementType.isPredictedWrite)
                 SQLRawStatement(session, sql, statementType, executor, preparedStatement)
             }
         }
@@ -139,7 +139,7 @@ internal class SQLRawStatement private constructor(
     override fun isNull(index: Int) = SQL_NULL == statement().columnType(index)
 
     override fun step(): Boolean = if (statementType.isTransactional) {
-        session().execute(statementType.isPredictedWrite, sql, statementType, false) {
+        session.execute(statementType.isPredictedWrite, sql, statementType, false) {
             it.execute(sql)
             false
         }
@@ -161,7 +161,7 @@ internal class SQLRawStatement private constructor(
         }
         closed = true
         if (executor != null && preparedStatement != null) {
-            session().releaseRawStatement(executor, preparedStatement)
+            session.releaseRawStatement(executor, preparedStatement)
         }
     }
 
