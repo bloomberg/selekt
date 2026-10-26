@@ -95,6 +95,17 @@ internal class MutexTest {
     }
 
     @Test
+    fun cancellationBetweenInitialCheckAndWaiterEnqueue() {
+        lateinit var lock: Mutex
+        lock = Mutex.forTesting { lock.cancel() }
+        lock.lock()
+
+        assertFailsWith<IllegalStateException> {
+            lock.lock()
+        }
+    }
+
+    @Test
     fun mutexCancels() {
         Mutex().let {
             assertFalse(it.isCancelled())
