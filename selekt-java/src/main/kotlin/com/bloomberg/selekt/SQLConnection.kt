@@ -596,10 +596,13 @@ internal class SQLConnection(
     }
 
     override fun setTransactionListener(listener: SQLTransactionListener?) {
-        (listener != null).let { enabled ->
-            sqlite.commitHook(databaseHandle, enabled, if (enabled) { nativeCommitListener } else { null })
+        if (listener == null) {
+            commitListener = null
+            sqlite.commitHook(databaseHandle, false, null)
+        } else {
+            sqlite.commitHook(databaseHandle, true, nativeCommitListener)
+            commitListener = listener
         }
-        commitListener = listener
     }
 
     private inline fun <R> withPreparedStatement(
