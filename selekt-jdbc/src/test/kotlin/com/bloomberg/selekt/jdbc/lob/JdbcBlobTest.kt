@@ -21,6 +21,7 @@ import java.sql.SQLException
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import org.junit.jupiter.api.Test
 
 internal class JdbcBlobTest {
@@ -304,6 +305,18 @@ internal class JdbcBlobTest {
         assertFailsWith<SQLException> {
             blob.setBytes(1, "B".toByteArray())
         }
+    }
+
+    @Test
+    fun freeReleasesBackingStorage() {
+        val blob = JdbcBlob(ByteArray(1024 * 1024))
+        val retainedData = JdbcBlob::class.java.getDeclaredField("retainedData").run {
+            isAccessible = true
+            blob.free()
+            get(blob)
+        }
+
+        assertNull(retainedData)
     }
 
     @Test
