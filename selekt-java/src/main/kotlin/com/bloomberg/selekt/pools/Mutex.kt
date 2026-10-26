@@ -25,7 +25,11 @@ import java.util.concurrent.locks.LockSupport
  *
  * @since 0.12.1
  */
-internal class Mutex {
+internal class Mutex private constructor(
+    private val beforeWaiterEnqueued: (() -> Unit)?
+) {
+    internal constructor() : this(null)
+
     @Suppress("unused")
     @Volatile
     private var isLocked = 0
@@ -106,13 +110,23 @@ internal class Mutex {
      * @param isCancellable true if the wait can be cancelled, else false.
      * @return true if the thread succeeded in acquiring the lock, else false.
      */
-    @Suppress("Detekt.CommentOverPrivateFunction", "Detekt.ComplexMethod", "Detekt.ReturnCount")
+    @Suppress(
+        "Detekt.CognitiveComplexMethod",
+        "Detekt.CommentOverPrivateFunction",
+        "Detekt.ComplexMethod",
+        "Detekt.ReturnCount"
+    )
     private fun awaitLock(
         intervalNanos: Long,
         isCancellable: Boolean
     ): Boolean {
         val thread = Thread.currentThread()
+        beforeWaiterEnqueued?.invoke()
         waiters.add(thread)
+        if (isCancellable && isCancelled()) {
+            removeThisWaiterNotifyingNext()
+            cancellationError()
+        }
         var remainingNanos = intervalNanos
         val deadlineNanos = System.nanoTime() + intervalNanos
         while (!(isThisHead() && internalTryLock())) {
@@ -155,6 +169,8 @@ internal class Mutex {
     private fun isThisHead() = waiters.peek() === Thread.currentThread()
 
     internal companion object {
+        fun forTesting(beforeWaiterEnqueued: () -> Unit) = Mutex(beforeWaiterEnqueued)
+
         // Reduce the risk of "lost unpark" due to class loading.
         @Suppress("unused")
         private val ensureLoaded: Class<*> = LockSupport::class.java
