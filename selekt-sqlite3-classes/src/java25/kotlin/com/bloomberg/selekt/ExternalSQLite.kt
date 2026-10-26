@@ -404,6 +404,25 @@ internal class ExternalSQLite(
         }
     }
 
+    private fun requireOutputHolder(operation: String, holderSize: Int) {
+        if (holderSize < 1) {
+            throw IndexOutOfBoundsException("$operation: holder must contain at least one element.")
+        }
+    }
+
+    private inline fun publishAddress(
+        holder: LongArray,
+        pointer: MemorySegment,
+        release: (MemorySegment) -> Unit
+    ) {
+        try {
+            holder[0] = pointer.address()
+        } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
+            release(pointer)
+            throw throwable
+        }
+    }
+
     private fun databaseSegment(db: DatabaseHandle): MemorySegment =
         (db.attachment as? MemorySegment) ?: MemorySegment.ofAddress(db.pointer)
 
@@ -737,24 +756,27 @@ internal class ExternalSQLite(
         row: Long,
         flags: Int,
         holder: LongArray
-    ): SQLCode = withSlab { slab ->
-        val nameSegment = slab.allocateFrom(name)
-        val tableSegment = slab.allocateFrom(table)
-        val columnSegment = slab.allocateFrom(column)
-        val blobPointer = slab.allocate(ADDRESS)
-        val result = sqlite3_blob_open.invoke(
-            databaseSegment(db),
-            nameSegment,
-            tableSegment,
-            columnSegment,
-            row,
-            flags,
-            blobPointer
-        ) as Int
-        if (result == 0) {
-            holder[0] = blobPointer.get(ADDRESS, 0).address()
+    ): SQLCode {
+        requireOutputHolder("blobOpen", holder.size)
+        return withSlab { slab ->
+            val nameSegment = slab.allocateFrom(name)
+            val tableSegment = slab.allocateFrom(table)
+            val columnSegment = slab.allocateFrom(column)
+            val blobPointer = slab.allocate(ADDRESS)
+            val result = sqlite3_blob_open.invoke(
+                databaseSegment(db),
+                nameSegment,
+                tableSegment,
+                columnSegment,
+                row,
+                flags,
+                blobPointer
+            ) as Int
+            if (result == 0) {
+                publishAddress(holder, blobPointer.get(ADDRESS, 0), sqlite3_blob_close::invoke)
+            }
+            result
         }
-        result
     }
 
     override fun bindBlob(
@@ -1163,24 +1185,27 @@ internal class ExternalSQLite(
         row: Long,
         flags: Int,
         holder: LongArray
-    ): SQLCode = withSlab { slab ->
-        val nameSegment = slab.allocateFrom(name)
-        val tableSegment = slab.allocateFrom(table)
-        val columnSegment = slab.allocateFrom(column)
-        val blobPointer = slab.allocate(ADDRESS)
-        val result = sqlite3_blob_open.invoke(
-            MemorySegment.ofAddress(db),
-            nameSegment,
-            tableSegment,
-            columnSegment,
-            row,
-            flags,
-            blobPointer
-        ) as Int
-        if (result == 0) {
-            holder[0] = blobPointer.get(ADDRESS, 0).address()
+    ): SQLCode {
+        requireOutputHolder("blobOpen", holder.size)
+        return withSlab { slab ->
+            val nameSegment = slab.allocateFrom(name)
+            val tableSegment = slab.allocateFrom(table)
+            val columnSegment = slab.allocateFrom(column)
+            val blobPointer = slab.allocate(ADDRESS)
+            val result = sqlite3_blob_open.invoke(
+                MemorySegment.ofAddress(db),
+                nameSegment,
+                tableSegment,
+                columnSegment,
+                row,
+                flags,
+                blobPointer
+            ) as Int
+            if (result == 0) {
+                publishAddress(holder, blobPointer.get(ADDRESS, 0), sqlite3_blob_close::invoke)
+            }
+            result
         }
-        result
     }
 
     override fun blobRead(
@@ -1369,8 +1394,9 @@ internal class ExternalSQLite(
         return SQL_OK
     }
 
-    override fun sessionCreate(db: Long, databaseName: String, holder: LongArray): SQLCode =
-        withSlab { slab ->
+    override fun sessionCreate(db: Long, databaseName: String, holder: LongArray): SQLCode {
+        requireOutputHolder("sessionCreate", holder.size)
+        return withSlab { slab ->
             val sessionHolder = slab.allocate(ADDRESS)
             val result = sqlite3session_create.invoke(
                 MemorySegment.ofAddress(db),
@@ -1378,10 +1404,11 @@ internal class ExternalSQLite(
                 sessionHolder
             ) as Int
             if (result == SQL_OK) {
-                holder[0] = sessionHolder.get(ADDRESS, 0L).address()
+                publishAddress(holder, sessionHolder.get(ADDRESS, 0L), sqlite3session_delete::invoke)
             }
             result
         }
+    }
 
     override fun sessionEnableRowId(session: Long): SQLCode =
         selekt_session_enable_rowid.invoke(MemorySegment.ofAddress(session)) as Int
@@ -1393,25 +1420,28 @@ internal class ExternalSQLite(
         ) as Int
     }
 
-    override fun sessionChangeset(session: Long, holder: Array<ByteArray?>): SQLCode = withSlab { slab ->
-        val sizeHolder = slab.allocate(JAVA_INT)
-        val changesetHolder = slab.allocate(ADDRESS)
-        val result = sqlite3session_changeset.invoke(
-            MemorySegment.ofAddress(session),
-            sizeHolder,
-            changesetHolder
-        ) as Int
-        if (result == SQL_OK) {
-            val size = sizeHolder.get(JAVA_INT, 0L)
-            val changeset = changesetHolder.get(ADDRESS, 0L)
-            holder[0] = if (size == 0) {
-                ByteArray(0)
-            } else {
-                changeset.reinterpret(size.toLong()).toArray(JAVA_BYTE)
+    override fun sessionChangeset(session: Long, holder: Array<ByteArray?>): SQLCode {
+        requireOutputHolder("sessionChangeset", holder.size)
+        return withSlab { slab ->
+            val sizeHolder = slab.allocate(JAVA_INT)
+            val changesetHolder = slab.allocate(ADDRESS)
+            val result = sqlite3session_changeset.invoke(
+                MemorySegment.ofAddress(session),
+                sizeHolder,
+                changesetHolder
+            ) as Int
+            if (result == SQL_OK) {
+                val size = sizeHolder.get(JAVA_INT, 0L)
+                changesetHolder.get(ADDRESS, 0L).useSQLiteAllocation(free = sqlite3_free::invoke) {
+                    holder[0] = if (size == 0) {
+                        ByteArray(0)
+                    } else {
+                        reinterpret(size.toLong()).toArray(JAVA_BYTE)
+                    }
+                }
             }
-            sqlite3_free.invoke(changeset)
+            result
         }
-        result
     }
 
     override fun sessionDelete(session: Long) {
@@ -1669,22 +1699,25 @@ internal class ExternalSQLite(
         path: String,
         flags: Int,
         dbHolder: LongArray
-    ): SQLCode = withSlab { slab ->
-        val pathSegment = slab.allocateFrom(path)
-        val dbPointer = slab.allocate(ADDRESS)
-        val result = sqlite3_open_v2.invoke(
-            pathSegment,
-            dbPointer,
-            flags,
-            MemorySegment.NULL
-        ) as Int
-        val database = dbPointer.get(ADDRESS, 0)
-        if (result == SQL_OK) {
-            dbHolder[0] = database.address()
-        } else if (database.address() != 0L) {
-            sqlite3_close_v2.invoke(database)
+    ): SQLCode {
+        requireOutputHolder("openV2", dbHolder.size)
+        return withSlab { slab ->
+            val pathSegment = slab.allocateFrom(path)
+            val dbPointer = slab.allocate(ADDRESS)
+            val result = sqlite3_open_v2.invoke(
+                pathSegment,
+                dbPointer,
+                flags,
+                MemorySegment.NULL
+            ) as Int
+            val database = dbPointer.get(ADDRESS, 0)
+            if (result == SQL_OK) {
+                publishAddress(dbHolder, database, sqlite3_close_v2::invoke)
+            } else if (database.address() != 0L) {
+                sqlite3_close_v2.invoke(database)
+            }
+            result
         }
-        result
     }
 
     override fun prepareV2(
@@ -1693,6 +1726,7 @@ internal class ExternalSQLite(
         length: Int,
         statementHolder: LongArray
     ): SQLCode = withCallbackFailurePropagation {
+        requireOutputHolder("prepareV2", statementHolder.size)
         withSlab { slab ->
             val statement = slab.allocate(ADDRESS)
             val sqlSegment = slab.allocateFrom(sql)
@@ -1704,7 +1738,7 @@ internal class ExternalSQLite(
                 MemorySegment.NULL
             ) as Int
             if (result == 0) {
-                statementHolder[0] = statement.get(ADDRESS, 0).address()
+                publishAddress(statementHolder, statement.get(ADDRESS, 0), sqlite3_finalize::invoke)
             }
             result
         }
@@ -1716,6 +1750,7 @@ internal class ExternalSQLite(
         length: Int,
         statementHolder: LongArray
     ): SQLCode = withCallbackFailurePropagation {
+        requireOutputHolder("prepareV2", statementHolder.size)
         withSlab { slab ->
             val statement = slab.allocate(ADDRESS)
             val sqlSegment = slab.allocateFrom(sql)
@@ -1727,7 +1762,7 @@ internal class ExternalSQLite(
                 MemorySegment.NULL
             ) as Int
             if (result == 0) {
-                statementHolder[0] = statement.get(ADDRESS, 0).address()
+                publishAddress(statementHolder, statement.get(ADDRESS, 0), sqlite3_finalize::invoke)
             }
             result
         }
