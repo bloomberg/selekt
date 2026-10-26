@@ -23,6 +23,7 @@ import java.lang.foreign.ValueLayout.JAVA_BYTE
 import javax.annotation.concurrent.NotThreadSafe
 
 private const val FIRST_NON_ASCII_CODE_POINT = 0x80
+private const val NATIVE_C_STRING_NUL_MESSAGE = "Native C strings must not contain NUL."
 
 @NotThreadSafe
 internal class SlabArena(
@@ -72,16 +73,18 @@ internal class SlabArena(
         }
     }
 
-    fun allocateFrom(value: String): MemorySegment = allocateFromAscii(value) ?: allocateFromNonAscii(value)
+    fun allocateFrom(value: String): MemorySegment {
+        return allocateFromAscii(value, rejectNul = true) ?: allocateFromNonAscii(value)
+    }
 
-    fun allocateFromAscii(value: String): MemorySegment? {
+    fun allocateFromAscii(value: String, rejectNul: Boolean = false): MemorySegment? {
         val length = value.length
         val needed = length + 1L
         if (offset + needed > slab.byteSize()) {
             grow(needed)
         }
         val segment = slab.asSlice(offset, needed)
-        if (!segment.copyFromAscii(value)) {
+        if (!segment.copyFromAscii(value, rejectNul)) {
             return null
         }
         offset += needed
@@ -90,6 +93,7 @@ internal class SlabArena(
 
     private fun allocateFromNonAscii(value: String): MemorySegment {
         val bytes = value.toByteArray(Charsets.UTF_8)
+        require(bytes.indexOf(0) < 0) { NATIVE_C_STRING_NUL_MESSAGE }
         val needed = bytes.size + 1L
         if (offset + needed > slab.byteSize()) {
             grow(needed)
@@ -136,12 +140,13 @@ internal class SlabArena(
  * Copies [value] until its first non-ASCII-compatible code unit. Contents are unspecified when this returns false and
  * must not be passed to SQLite.
  */
-internal fun MemorySegment.copyFromAscii(value: String): Boolean {
+internal fun MemorySegment.copyFromAscii(value: String, rejectNul: Boolean = false): Boolean {
     var asciiCompatible = true
     var i = 0
     while (i < value.length && asciiCompatible) {
         val character = value[i]
         when {
+            character.code == 0 && rejectNul -> throw IllegalArgumentException(NATIVE_C_STRING_NUL_MESSAGE)
             character.code < FIRST_NON_ASCII_CODE_POINT -> set(JAVA_BYTE, i.toLong(), character.code.toByte())
             character.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
                 asciiCompatible = false

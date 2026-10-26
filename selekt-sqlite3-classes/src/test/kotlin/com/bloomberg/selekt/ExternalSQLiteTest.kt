@@ -99,6 +99,74 @@ internal class ExternalSQLiteTest {
     }
 
     @Test
+    fun `native path rejects embedded NUL without opening its prefix`() {
+        val truncatedFile = File(tempDir, "truncated.db")
+        val dbHolder = LongArray(1)
+
+        assertNativeCStringRejected {
+            sqlite.openV2("${truncatedFile.absolutePath}\u0000ignored.db", SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
+        }
+        assertEquals(0L, dbHolder.single())
+        assertFalse(truncatedFile.exists())
+    }
+
+    @Test
+    fun `native SQL and parameter names reject embedded NUL`() {
+        val dbHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, dbHolder))
+        try {
+            // Keep this above the JNI SIMD scan threshold so the bounded path is covered.
+            val rejectedSql = "SELECT ${"1".repeat(64)}\u0000; SELECT 2"
+            assertNativeCStringRejected { sqlite.exec(dbHolder.single(), rejectedSql) }
+
+            val rejectedStatementHolder = LongArray(1)
+            assertNativeCStringRejected {
+                sqlite.prepareV2(
+                    dbHolder.single(),
+                    rejectedSql,
+                    rejectedSql.length,
+                    rejectedStatementHolder
+                )
+            }
+            assertEquals(0L, rejectedStatementHolder.single())
+
+            val statementHolder = LongArray(1)
+            val sql = "SELECT :value"
+            assertEquals(SQL_OK, sqlite.prepareV2(dbHolder.single(), sql, sql.length, statementHolder))
+            try {
+                assertNativeCStringRejected {
+                    sqlite.bindParameterIndex(statementHolder.single(), ":value\u0000ignored")
+                }
+            } finally {
+                sqlite.finalize(statementHolder.single())
+            }
+        } finally {
+            sqlite.closeV2(dbHolder.single())
+        }
+    }
+
+    @Test
+    fun `native schema table and column names reject embedded NUL`() {
+        val dbHolder = LongArray(1)
+        assertEquals(SQL_OK, sqlite.openV2(":memory:", SQL_OPEN_READWRITE_OR_CREATE, dbHolder))
+        try {
+            listOf(
+                Triple("main\u0000ignored", "items", "value"),
+                Triple("main", "items\u0000ignored", "value"),
+                Triple("main", "items", "value\u0000ignored")
+            ).forEach { (schema, table, column) ->
+                val blobHolder = LongArray(1)
+                assertNativeCStringRejected {
+                    sqlite.blobOpen(dbHolder.single(), schema, table, column, 1L, 0, blobHolder)
+                }
+                assertEquals(0L, blobHolder.single())
+            }
+        } finally {
+            sqlite.closeV2(dbHolder.single())
+        }
+    }
+
+    @Test
     fun `can prepare and finalize statement`() {
         val dbHolder = LongArray(1)
         sqlite.openV2(File(tempDir, "test.db").absolutePath, SQL_OPEN_READWRITE_OR_CREATE, dbHolder)
@@ -112,6 +180,11 @@ internal class ExternalSQLiteTest {
         } finally {
             sqlite.closeV2(db)
         }
+    }
+
+    private fun assertNativeCStringRejected(block: () -> Unit) {
+        val failure = assertFailsWith<IllegalArgumentException>(block = block)
+        assertEquals("Native C strings must not contain NUL.", failure.message)
     }
 
     @Test

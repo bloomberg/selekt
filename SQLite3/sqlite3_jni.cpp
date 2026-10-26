@@ -47,6 +47,9 @@ namespace {
     // while HotSpot's UTF-8 decoder is faster above it. Keep x86-64 equally
     // bounded until its platform-specific crossover is measured. See benchmarks_jdbc.md.
     constexpr jsize DIRECT_ASCII_COLUMN_MAX_LENGTH = 64;
+    // Avoid the UTF-8 length query for the common short-string case. Longer
+    // buffers are searched in bounded SIMD chunks below.
+    constexpr jsize VECTORIZED_NUL_SCAN_MIN_LENGTH = 64;
     // The packed JNI buffer starts with one length/status byte per column, followed by ASCII payloads.
     // Limiting each call to 16 columns keeps pointer metadata on the stack and bounds the critical section.
     constexpr jsize MAX_PACKED_TEXT_COLUMNS = 16;
@@ -157,6 +160,51 @@ namespace {
         return true;
     }
 
+    bool containsModifiedUtf8Nul(const unsigned char* bytes, std::size_t length) noexcept {
+        std::size_t index = 0;
+#if defined(__aarch64__)
+        const auto first = vdupq_n_u8(0xc0);
+        const auto second = vdupq_n_u8(0x80);
+        for (; length - index > 16; index += 16) {
+            const auto current = vld1q_u8(bytes + index);
+            const auto next = vld1q_u8(bytes + index + 1);
+            const auto match = vandq_u8(vceqq_u8(current, first), vceqq_u8(next, second));
+            if (vmaxvq_u8(match) != 0) {
+                return true;
+            }
+        }
+#elif defined(__x86_64__) || defined(_M_X64)
+        const auto first = _mm_set1_epi8(static_cast<char>(0xc0));
+        const auto second = _mm_set1_epi8(static_cast<char>(0x80));
+        for (; length - index > 16; index += 16) {
+            __m128i current;
+            __m128i next;
+            std::memcpy(&current, bytes + index, sizeof(current));
+            std::memcpy(&next, bytes + index + 1, sizeof(next));
+            const auto match = _mm_and_si128(_mm_cmpeq_epi8(current, first), _mm_cmpeq_epi8(next, second));
+            if (_mm_movemask_epi8(match) != 0) {
+                return true;
+            }
+        }
+#endif
+        for (; index + 1 < length; ++index) {
+            if (bytes[index] == 0xc0 && bytes[index + 1] == 0x80) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool containsModifiedUtf8Nul(const char* value) noexcept {
+        auto const* bytes = reinterpret_cast<const unsigned char*>(value);
+        for (auto const* current = bytes; *current != 0; ++current) {
+            if (*current == 0xc0 && current[1] == 0x80) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void* pointerFromJLong(jlong value) noexcept {
         auto const address = static_cast<std::uintptr_t>(value);
         static_assert(sizeof(address) == sizeof(void*));
@@ -243,6 +291,32 @@ void throwOutOfMemoryError(JNIEnv* env, const char* message) {
     if (cls != nullptr) {
         env->ThrowNew(cls, message);
     }
+}
+
+const char* getNativeCString(JNIEnv* env, jstring value) {
+    auto const* characters = env->GetStringUTFChars(value, nullptr);
+    if (characters == nullptr) {
+        if (!env->ExceptionCheck()) {
+            throwOutOfMemoryError(env, "GetStringUTFChars");
+        }
+        return nullptr;
+    }
+
+    // JNI modified UTF-8 encodes Java U+0000 as C0 80. Short buffers are
+    // scanned directly; long buffers use JNI's modified UTF-8 length to make bounded
+    // SIMD loads safe without reading beyond the JNI allocation.
+    if (const auto hasNul = env->GetStringLength(value) < VECTORIZED_NUL_SCAN_MIN_LENGTH
+            ? containsModifiedUtf8Nul(characters)
+            : containsModifiedUtf8Nul(
+                reinterpret_cast<const unsigned char*>(characters),
+                static_cast<std::size_t>(env->GetStringUTFLength(value))
+            );
+        hasNul) {
+        env->ReleaseStringUTFChars(value, characters);
+        throwIllegalArgumentException(env, "Native C strings must not contain NUL.");
+        return nullptr;
+    }
+    return characters;
 }
 
 static inline bool updateHolder(JNIEnv* env, jlongArray array, int offset, jlong value) {
@@ -647,9 +721,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_bindParameterIndex(
     jstring jname
 ) {
     auto statement = reinterpret_cast<sqlite3_stmt*>(jstatement);
-    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto name = getNativeCString(env, jname);
     if (name == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return 0;
     }
     auto result = sqlite3_bind_parameter_index(statement, name);
@@ -796,22 +869,19 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
         return SQLITE_MISUSE;
     }
     sqlite3_blob* blob = nullptr;
-    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto name = getNativeCString(env, jname);
     if (name == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
-    auto table = env->GetStringUTFChars(jtable, nullptr);
+    auto table = getNativeCString(env, jtable);
     if (table == nullptr) {
         env->ReleaseStringUTFChars(jname, name);
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
-    auto column = env->GetStringUTFChars(jcolumn, nullptr);
+    auto column = getNativeCString(env, jcolumn);
     if (column == nullptr) {
         env->ReleaseStringUTFChars(jname, name);
         env->ReleaseStringUTFChars(jtable, table);
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto result = sqlite3_blob_open(
@@ -1674,9 +1744,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_sessionCreate(
     if (!validateOutputHolder(env, jholder, "sessionCreate: holder must contain at least one element.")) {
         return SQLITE_MISUSE;
     }
-    auto databaseName = env->GetStringUTFChars(jdatabaseName, nullptr);
+    auto databaseName = getNativeCString(env, jdatabaseName);
     if (databaseName == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     sqlite3_session* session = nullptr;
@@ -1709,9 +1778,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_sessionAttach(
     if (jtable == nullptr) {
         return sqlite3session_attach(reinterpret_cast<sqlite3_session*>(jsession), nullptr);
     }
-    auto table = env->GetStringUTFChars(jtable, nullptr);
+    auto table = getNativeCString(env, jtable);
     if (table == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto const result = sqlite3session_attach(reinterpret_cast<sqlite3_session*>(jsession), table);
@@ -1811,9 +1879,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_databaseReadOnly(
     jlong jdb,
     jstring jname
 ) {
-    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto name = getNativeCString(env, jname);
     if (name == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return -1;
     }
     auto result = sqlite3_db_readonly(reinterpret_cast<sqlite3*>(jdb), name);
@@ -1900,9 +1967,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_exec(
     jlong jdb,
     jstring jquery
 ) {
-    auto query = env->GetStringUTFChars(jquery, nullptr);
+    auto query = getNativeCString(env, jquery);
     if (query == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto result = sqlite3_exec(reinterpret_cast<sqlite3*>(jdb), query, nullptr, nullptr, nullptr);
@@ -2067,9 +2133,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
         return SQLITE_MISUSE;
     }
     sqlite3* db = nullptr;
-    auto filename = env->GetStringUTFChars(jfilename, nullptr);
+    auto filename = getNativeCString(env, jfilename);
     if (filename == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
@@ -2097,9 +2162,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
         return SQLITE_MISUSE;
     }
     sqlite3_stmt* statement = nullptr;
-    auto sql = env->GetStringUTFChars(jsql, nullptr);
+    auto sql = getNativeCString(env, jsql);
     if (sql == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, env->GetStringUTFLength(jsql), &statement, nullptr);
@@ -2911,9 +2975,8 @@ Java_com_bloomberg_selekt_ExternalSQLite_walCheckpointV2(
     if (env->IsSameObject(jname, nullptr)) {
         return sqlite3_wal_checkpoint_v2(reinterpret_cast<sqlite3*>(jdb), nullptr, mode, nullptr, nullptr);
     }
-    auto name = env->GetStringUTFChars(jname, nullptr);
+    auto name = getNativeCString(env, jname);
     if (name == nullptr) {
-        throwOutOfMemoryError(env, "GetStringUTFChars");
         return SQLITE_NOMEM;
     }
     auto result = sqlite3_wal_checkpoint_v2(

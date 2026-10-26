@@ -23,6 +23,28 @@ import org.junit.jupiter.api.Test
 
 internal class SlabArenaTest {
     @Test
+    fun `C string allocations reject embedded NUL`() {
+        SlabArena().use { slab ->
+            listOf("ascii\u0000suffix", "café\u0000suffix").forEach { value ->
+                val failure = assertFailsWith<IllegalArgumentException> { slab.allocateFrom(value) }
+
+                assertEquals("Native C strings must not contain NUL.", failure.message)
+            }
+        }
+    }
+
+    @Test
+    fun `C string allocations preserve Unicode and malformed surrogates`() {
+        SlabArena().use { slab ->
+            listOf("café \uD83C\uDF0D", "unpaired \uD800 surrogate").forEach { value ->
+                val expected = value.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8)
+
+                assertEquals(expected, slab.allocateFrom(value).getString(0))
+            }
+        }
+    }
+
+    @Test
     fun growthRetainsEarlierAllocationsUntilReset() {
         SlabArena(capacity = 1).use { slab ->
             val earlierAllocation = slab.allocate(1).also { it.set(JAVA_BYTE, 0, 42) }
