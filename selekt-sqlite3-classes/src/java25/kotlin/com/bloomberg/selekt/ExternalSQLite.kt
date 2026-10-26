@@ -1678,8 +1678,11 @@ internal class ExternalSQLite(
             flags,
             MemorySegment.NULL
         ) as Int
-        if (result == 0) {
-            dbHolder[0] = dbPointer.get(ADDRESS, 0).address()
+        val database = dbPointer.get(ADDRESS, 0)
+        if (result == SQL_OK) {
+            dbHolder[0] = database.address()
+        } else if (database.address() != 0L) {
+            sqlite3_close_v2.invoke(database)
         }
         result
     }
