@@ -245,8 +245,17 @@ void throwOutOfMemoryError(JNIEnv* env, const char* message) {
     }
 }
 
-static inline void updateHolder(JNIEnv* env, jlongArray array, int offset, jlong value) {
+static inline bool updateHolder(JNIEnv* env, jlongArray array, int offset, jlong value) {
     env->SetLongArrayRegion(array, offset, 1, &value);
+    return !env->ExceptionCheck();
+}
+
+static bool validateOutputHolder(JNIEnv* env, jarray holder, const char* message) {
+    if (env->GetArrayLength(holder) < 1) {
+        throwIndexOutOfBoundsException(env, message);
+        return false;
+    }
+    return true;
 }
 
 static jbyteArray newByteArray(JNIEnv* env, const void* p, jsize size) {
@@ -783,6 +792,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
     jint jflags,
     jlongArray jholder
 ) {
+    if (!validateOutputHolder(env, jholder, "blobOpen: holder must contain at least one element.")) {
+        return SQLITE_MISUSE;
+    }
     sqlite3_blob* blob = nullptr;
     auto name = env->GetStringUTFChars(jname, nullptr);
     if (name == nullptr) {
@@ -815,7 +827,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_blobOpen(
     env->ReleaseStringUTFChars(jtable, table);
     env->ReleaseStringUTFChars(jcolumn, column);
     if (result == SQLITE_OK) {
-        updateHolder(env, jholder, 0, reinterpret_cast<jlong>(blob));
+        if (!updateHolder(env, jholder, 0, reinterpret_cast<jlong>(blob))) {
+            sqlite3_blob_close(blob);
+        }
     }
     return result;
 }
@@ -1657,6 +1671,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_sessionCreate(
     jstring jdatabaseName,
     jlongArray jholder
 ) {
+    if (!validateOutputHolder(env, jholder, "sessionCreate: holder must contain at least one element.")) {
+        return SQLITE_MISUSE;
+    }
     auto databaseName = env->GetStringUTFChars(jdatabaseName, nullptr);
     if (databaseName == nullptr) {
         throwOutOfMemoryError(env, "GetStringUTFChars");
@@ -1666,7 +1683,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_sessionCreate(
     auto const result = sqlite3session_create(reinterpret_cast<sqlite3*>(jdb), databaseName, &session);
     env->ReleaseStringUTFChars(jdatabaseName, databaseName);
     if (result == SQLITE_OK) {
-        updateHolder(env, jholder, 0, reinterpret_cast<jlong>(session));
+        if (!updateHolder(env, jholder, 0, reinterpret_cast<jlong>(session))) {
+            sqlite3session_delete(session);
+        }
     }
     return result;
 }
@@ -1707,6 +1726,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_sessionChangeset(
     jlong jsession,
     jobjectArray jholder
 ) {
+    if (!validateOutputHolder(env, jholder, "sessionChangeset: holder must contain at least one element.")) {
+        return SQLITE_MISUSE;
+    }
     int size = 0;
     void* changeset = nullptr;
     auto const result = sqlite3session_changeset(reinterpret_cast<sqlite3_session*>(jsession), &size, &changeset);
@@ -2041,6 +2063,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
     jint jflags,
     jlongArray dbHolder
 ) {
+    if (!validateOutputHolder(env, dbHolder, "openV2: holder must contain at least one element.")) {
+        return SQLITE_MISUSE;
+    }
     sqlite3* db = nullptr;
     auto filename = env->GetStringUTFChars(jfilename, nullptr);
     if (filename == nullptr) {
@@ -2050,7 +2075,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_openV2(
     auto result = sqlite3_open_v2(filename, &db, jflags, nullptr);
     env->ReleaseStringUTFChars(jfilename, filename);
     if (result == SQLITE_OK) {
-        updateHolder(env, dbHolder, 0, reinterpret_cast<jlong>(db));
+        if (!updateHolder(env, dbHolder, 0, reinterpret_cast<jlong>(db))) {
+            sqlite3_close_v2(db);
+        }
     } else if (db != nullptr) {
         sqlite3_close_v2(db);
     }
@@ -2066,6 +2093,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     jint jlength,
     jlongArray statementHolder
 ) {
+    if (!validateOutputHolder(env, statementHolder, "prepareV2: holder must contain at least one element.")) {
+        return SQLITE_MISUSE;
+    }
     sqlite3_stmt* statement = nullptr;
     auto sql = env->GetStringUTFChars(jsql, nullptr);
     if (sql == nullptr) {
@@ -2075,7 +2105,9 @@ Java_com_bloomberg_selekt_ExternalSQLite_prepareV2(
     auto result = sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(jdb), sql, env->GetStringUTFLength(jsql), &statement, nullptr);
     env->ReleaseStringUTFChars(jsql, sql);
     if (result == SQLITE_OK) {
-        updateHolder(env, statementHolder, 0, reinterpret_cast<jlong>(statement));
+        if (!updateHolder(env, statementHolder, 0, reinterpret_cast<jlong>(statement))) {
+            sqlite3_finalize(statement);
+        }
     }
     return result;
 }
