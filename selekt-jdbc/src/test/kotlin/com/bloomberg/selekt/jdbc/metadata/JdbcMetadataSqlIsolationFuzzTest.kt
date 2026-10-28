@@ -64,6 +64,11 @@ internal class JdbcMetadataSqlIsolationFuzzTest {
             if (!input.containsNul) {
                 throw exception
             }
+        } catch (exception: IllegalArgumentException) {
+            // Native C-string bindings reject SQL text containing NUL before SQLite sees it.
+            if (!input.containsNul || exception.message != "Native C strings must not contain NUL.") {
+                throw exception
+            }
         }
         assertEquals(expectedState, connection.securityState())
     }
