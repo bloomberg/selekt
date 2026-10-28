@@ -17,7 +17,9 @@
 package com.bloomberg.selekt.jvm
 
 import com.bloomberg.selekt.CloseableSQLExecutor
+import com.bloomberg.selekt.ChunkedParameterRows
 import com.bloomberg.selekt.CommonThreadLocalRandom
+import com.bloomberg.selekt.ParameterRow
 import com.bloomberg.selekt.SQLConnection
 import com.bloomberg.selekt.SQLConnectionFactory
 import com.bloomberg.selekt.SQL_OPEN_CREATE
@@ -27,6 +29,7 @@ import com.bloomberg.selekt.pools.SingleObjectPool
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -91,6 +94,76 @@ internal class SQLConnectionIntegrationTest {
         } finally {
             pool.close()
             executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun batchRowsRequireExactArityAndPreparedStatementCanBeReusedAfterFailure() {
+        SQLConnection(
+            "file::memory:",
+            SQLite,
+            SQLiteJournalMode.MEMORY.databaseConfiguration,
+            SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            connection.execute("CREATE TABLE batch_rows (id INTEGER, value TEXT)", emptyArray())
+            val sql = "INSERT INTO batch_rows VALUES (?, ?)"
+
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(
+                    sql,
+                    listOf(arrayOf<Any?>(1, "secret"), arrayOf(2))
+                )
+            }
+            assertEquals(1L, connection.executeForLong("SELECT count(*) FROM batch_rows", emptyArray()))
+
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, sequenceOf(emptyArray()))
+            }
+            val overlongRows: Iterable<Array<out Any?>> = setOf(arrayOf<Any?>(2, "value", "extra"))
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, overlongRows)
+            }
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, arrayOf(arrayOf(2)), 0, 1)
+            }
+
+            assertEquals(
+                1,
+                connection.executeBatchForChangedRowCount(sql, listOf(arrayOf(2, null)))
+            )
+            assertEquals(
+                1L,
+                connection.executeForLong(
+                    "SELECT count(*) FROM batch_rows WHERE id = 2 AND value IS NULL",
+                    emptyArray()
+                )
+            )
+        }
+    }
+
+    @Test
+    fun typedBatchRowsRequireExactArity() {
+        SQLConnection(
+            "file::memory:",
+            SQLite,
+            SQLiteJournalMode.MEMORY.databaseConfiguration,
+            SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+            CommonThreadLocalRandom,
+            null
+        ).use { connection ->
+            connection.execute("CREATE TABLE typed_batch_rows (id INTEGER, value TEXT)", emptyArray())
+            val sql = "INSERT INTO typed_batch_rows VALUES (?, ?)"
+
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCountRows(sql, listOf(ParameterRow(1)))
+            }
+            val packedRows = ChunkedParameterRows(1).apply { add(ParameterRow(1)) }
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCountRows(sql, packedRows)
+            }
+            assertEquals(0L, connection.executeForLong("SELECT count(*) FROM typed_batch_rows", emptyArray()))
         }
     }
 

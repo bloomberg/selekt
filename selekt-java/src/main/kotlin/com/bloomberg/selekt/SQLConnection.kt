@@ -196,6 +196,7 @@ internal class SQLConnection(
     private fun SQLPreparedStatement.executeBatchRows(
         bindArgs: Iterable<ParameterRow>
     ): Boolean = if (bindArgs is ChunkedParameterRows) {
+        requireParameterCount(bindArgs.parameterCount)
         bindArgs.forEachPackedRow { tags, values, objects, offset ->
             reset()
             bindPackedRow(tags, values, objects, offset)
