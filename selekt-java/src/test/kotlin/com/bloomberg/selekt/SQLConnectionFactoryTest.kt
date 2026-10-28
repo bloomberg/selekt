@@ -16,6 +16,10 @@
 
 package com.bloomberg.selekt
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -176,6 +180,49 @@ internal class SQLConnectionFactoryTest {
         factory.setProgressHandler(100, handler)
         factory.makePrimaryObject().use {
             verify(sqlite, times(1)).progressHandler(eq(DB), eq(100), eq(handler))
+        }
+    }
+
+    @Test
+    fun progressHandlerUpdateDuringConnectionCreationIsReconciled() {
+        val sqlite = mockSqliteForFactory()
+        val nextDatabaseHandle = AtomicLong(DB)
+        whenever(sqlite.openV2(any<String>(), any<Int>(), any<LongArray>())).doAnswer {
+            (it.arguments[2] as LongArray)[0] = nextDatabaseHandle.getAndIncrement()
+            0
+        }
+        val initialHandler = SQLProgressHandler { 0 }
+        val latestHandler = SQLProgressHandler { 0 }
+        val constructorReadInitialSetting = CountDownLatch(1)
+        val releaseConstructor = CountDownLatch(1)
+        val updateReachedExistingConnection = CountDownLatch(1)
+        whenever(sqlite.progressHandler(eq(2L), eq(50), eq(initialHandler))).doAnswer {
+            constructorReadInitialSetting.countDown()
+            check(releaseConstructor.await(5, TimeUnit.SECONDS))
+        }
+        whenever(sqlite.progressHandler(eq(DB), eq(100), eq(latestHandler))).doAnswer {
+            updateReachedExistingConnection.countDown()
+        }
+
+        val factory = SQLConnectionFactory("file::memory:", sqlite, databaseConfiguration, CommonThreadLocalRandom, null)
+        factory.setProgressHandler(50, initialHandler)
+        val existingConnection = factory.makePrimaryObject()
+        val executor = Executors.newFixedThreadPool(2)
+        val createdConnection = executor.submit<CloseableSQLExecutor> { factory.makeObject() }
+        try {
+            assertTrue(constructorReadInitialSetting.await(5, TimeUnit.SECONDS))
+            val update = executor.submit { factory.setProgressHandler(100, latestHandler) }
+            assertTrue(updateReachedExistingConnection.await(5, TimeUnit.SECONDS))
+            update.get(5, TimeUnit.SECONDS)
+            releaseConstructor.countDown()
+
+            createdConnection.get(5, TimeUnit.SECONDS).use {
+                verify(sqlite, times(1)).progressHandler(eq(2L), eq(100), eq(latestHandler))
+            }
+        } finally {
+            releaseConstructor.countDown()
+            existingConnection.close()
+            executor.shutdownNow()
         }
     }
 

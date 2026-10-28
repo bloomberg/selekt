@@ -149,28 +149,27 @@ internal class SQLConnectionFactory(
         connections.forEach { it.setProgressHandlerIfIdle(instructionCount, handler) }
     }
 
-    override fun makeObject() = busyLock.withLock {
-        SQLConnection(
-            path,
-            sqlite,
-            configuration,
-            SQL_OPEN_READONLY,
-            random,
-            key,
-            ::progressHandlerSetting
-        ).also(connections::add)
-    }
+    override fun makeObject() = makeObject(SQL_OPEN_READONLY)
 
-    override fun makePrimaryObject() = busyLock.withLock {
+    override fun makePrimaryObject() = makeObject(SQL_OPEN_READWRITE or SQL_OPEN_CREATE)
+
+    private fun makeObject(flags: Int) = busyLock.withLock {
         SQLConnection(
             path,
             sqlite,
             configuration,
-            SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+            flags,
             random,
             key,
             ::progressHandlerSetting
-        ).also(connections::add)
+        ).also { connection ->
+            connections.add(connection)
+            val latestProgressHandlerSetting = progressHandlerSetting
+            connection.synchroniseProgressHandlerIfIdle(
+                latestProgressHandlerSetting?.instructionCount ?: 0,
+                latestProgressHandlerSetting?.handler
+            )
+        }
     }
 
     private companion object {

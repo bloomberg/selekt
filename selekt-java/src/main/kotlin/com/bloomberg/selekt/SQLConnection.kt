@@ -567,6 +567,17 @@ internal class SQLConnection(
         }
     }
 
+    internal fun synchroniseProgressHandlerIfIdle(
+        instructionCount: Int,
+        handler: SQLProgressHandler?
+    ) = progressHandlerLock.withLock {
+        if (!checkedOut &&
+            (installedProgressHandlerInstructionCount != instructionCount || installedProgressHandler != handler)
+        ) {
+            setProgressHandler(instructionCount, handler)
+        }
+    }
+
     override fun onBorrowed() = progressHandlerLock.withLock {
         checkedOut = true
     }
