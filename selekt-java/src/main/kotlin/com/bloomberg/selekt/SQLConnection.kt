@@ -238,17 +238,22 @@ internal class SQLConnection(
         bindArgs: Array<out Array<out Any?>>,
         fromIndex: Int,
         toIndex: Int
-    ) = withPreparedStatement(sql) {
-        sqlite.withScopedIntArena {
-            val changes = sqlite.totalChanges(databaseHandle)
-            bindArgs.forEachByIndexUntil { _, args ->
-                reset()
-                bindRow(args)
-                if (SQL_DONE != step()) {
-                    return@withScopedIntArena -1
+    ): Int {
+        require(fromIndex >= 0 && fromIndex <= toIndex && toIndex <= bindArgs.size) {
+            "Invalid batch range [$fromIndex, $toIndex) for ${bindArgs.size} rows."
+        }
+        return withPreparedStatement(sql) {
+            sqlite.withScopedIntArena {
+                val changes = sqlite.totalChanges(databaseHandle)
+                bindArgs.forEachByIndexUntil(fromIndex, toIndex) { _, args ->
+                    reset()
+                    bindRow(args)
+                    if (SQL_DONE != step()) {
+                        return@withScopedIntArena -1
+                    }
                 }
+                sqlite.totalChanges(databaseHandle) - changes
             }
-            sqlite.totalChanges(databaseHandle) - changes
         }
     }
 
