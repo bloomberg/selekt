@@ -28,7 +28,7 @@ internal fun interface PackedRowAction {
 
 @NotThreadSafe
 class ChunkedParameterRows(
-    private val parameterCount: Int,
+    internal val parameterCount: Int,
     private val initialChunkCapacity: Int = DEFAULT_INITIAL_CHUNK_CAPACITY
 ) : Iterable<ParameterRow> {
     @Suppress("Detekt.UseDataClass")

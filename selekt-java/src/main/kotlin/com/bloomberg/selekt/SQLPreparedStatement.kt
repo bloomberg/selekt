@@ -118,11 +118,19 @@ internal class SQLPreparedStatement(
     }
 
     fun bindRow(args: Array<out Any?>) {
+        requireParameterCount(args.size)
         sqlite.bindRow(statement, args, utf8TextParameters)
     }
 
     fun bindRow(row: ParameterRow) {
+        requireParameterCount(row.size)
         sqlite.bindRow(statement, row, utf8TextParameters)
+    }
+
+    fun requireParameterCount(actual: Int) {
+        require(parameterCount == actual) {
+            "Expected $parameterCount bind arguments but $actual were provided."
+        }
     }
 
     fun bindPackedRow(
