@@ -1,6 +1,36 @@
 Change Log
 ==========
 
+## Version 1.7.3
+
+* Harden release build inputs.
+* Close mutex cancellation enqueue window.
+* Exclusively lease cached prepared statements.
+* Freeze raw statement session ownership.
+* Close failed SQLite open handles.
+* Clean up native listener after failed transaction begin.
+* Release freed Blob backing storage.
+* Validate native output holders.
+* Check vec1 K-means scratch sizing.
+* Validate batch row arity.
+* Reject embedded NUL in native C strings.
+* Honour array batch ranges.
+* Limit in-memory database pools.
+* Reject SQL arguments on prepared statements.
+* Reconcile progress handlers on connection creation.
+* SQLCipher 4.20.0.
+* Finalise pending vec1 writers before rebuild.
+* Check PQ training chunk sizes.
+* Bound no-index metadata IN groups.
+* Return no-index nearest-neighbour distances.
+* Honour interruption during vec1 training.
+* Pad residual vectors during integrity checks.
+* Invalidate rolled-back vec1 caches.
+* Distinguish rowids from pending tombstones.
+* Stabilise finite vector distance arithmetic.
+* Harden vec1 fuzz harness inputs and storage.
+* Honour interruption during vec1 training.
+
 ## Version 1.7.2
 
 * Advance CLOB character stream writes.
