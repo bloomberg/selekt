@@ -144,6 +144,28 @@ internal class SQLConnectionIntegrationTest {
     }
 
     @Test
+    fun arrayBatchExecutesOnlyTheRequestedRange() {
+        newConnection().use { connection ->
+            connection.execute("CREATE TABLE batch_ranges (value INTEGER)", emptyArray())
+            val sql = "INSERT INTO batch_ranges VALUES (?)"
+            val rows = (1..4).map { arrayOf<Any?>(it) }.toTypedArray()
+
+            assertEquals(2, connection.executeBatchForChangedRowCount(sql, rows, 1, 3))
+            assertEquals(
+                0L,
+                connection.executeForLong(
+                    "SELECT count(*) FROM batch_ranges WHERE value IN (1, 4)",
+                    emptyArray()
+                )
+            )
+            assertEquals(0, connection.executeBatchForChangedRowCount(sql, rows, rows.size, rows.size))
+            assertEquals(1, connection.executeBatchForChangedRowCount(sql, rows, 3, 4))
+            assertEquals(4, connection.executeBatchForChangedRowCount(sql, rows, 0, rows.size))
+            assertEquals(7L, connection.executeForLong("SELECT count(*) FROM batch_ranges", emptyArray()))
+        }
+    }
+
+    @Test
     fun typedBatchRowsRequireExactArity() {
         SQLConnection(
             "file::memory:",
@@ -167,6 +189,29 @@ internal class SQLConnectionIntegrationTest {
         }
     }
 
+    @Test
+    fun arrayBatchRejectsInvalidRangesWithoutExecutingRows() {
+        newConnection().use { connection ->
+            connection.execute("CREATE TABLE invalid_batch_ranges (value INTEGER)", emptyArray())
+            val sql = "INSERT INTO invalid_batch_ranges VALUES (?)"
+            val rows = arrayOf(arrayOf<Any?>(1), arrayOf<Any?>(2))
+
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, rows, -1, 1)
+            }
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, rows, 1, 0)
+            }
+            assertFailsWith<IllegalArgumentException> {
+                connection.executeBatchForChangedRowCount(sql, rows, 0, rows.size + 1)
+            }
+            assertEquals(
+                0L,
+                connection.executeForLong("SELECT count(*) FROM invalid_batch_ranges", emptyArray())
+            )
+        }
+    }
+
     private fun returnConnection(
         pool: SingleObjectPool<String, CloseableSQLExecutor>,
         connection: SQLConnection
@@ -174,6 +219,15 @@ internal class SQLConnectionIntegrationTest {
         connection.onReturned()
         pool.returnObject(connection)
     }
+
+    private fun newConnection() = SQLConnection(
+        "file::memory:",
+        SQLite,
+        SQLiteJournalMode.MEMORY.databaseConfiguration,
+        SQL_OPEN_READWRITE or SQL_OPEN_CREATE,
+        CommonThreadLocalRandom,
+        null
+    )
 
     private fun assertOverlappingSameSqlForwardCursors(closeFirstCursorFirst: Boolean) {
         SQLConnection(
