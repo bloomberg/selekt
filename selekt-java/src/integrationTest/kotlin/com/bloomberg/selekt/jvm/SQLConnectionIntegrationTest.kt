@@ -25,6 +25,7 @@ import com.bloomberg.selekt.SQLConnectionFactory
 import com.bloomberg.selekt.SQL_OPEN_CREATE
 import com.bloomberg.selekt.SQL_OPEN_READWRITE
 import com.bloomberg.selekt.SQLiteJournalMode
+import com.bloomberg.selekt.openConnectionPool
 import com.bloomberg.selekt.pools.SingleObjectPool
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -209,6 +210,41 @@ internal class SQLConnectionIntegrationTest {
                 0L,
                 connection.executeForLong("SELECT count(*) FROM invalid_batch_ranges", emptyArray())
             )
+        }
+    }
+
+    @Test
+    fun sharedCacheMemoryPoolReusesOnePhysicalConnection() {
+        val configuration = SQLiteJournalMode.MEMORY.databaseConfiguration.copy(maxConnectionPoolSize = 2)
+        val (pool, factory) = openConnectionPool(
+            "file:pooled-memory?mode=memory&cache=shared",
+            SQLite,
+            configuration,
+            CommonThreadLocalRandom,
+            null
+        )
+        try {
+            val writer = pool.borrowPrimaryObject() as SQLConnection
+            writer.onBorrowed()
+            try {
+                writer.execute("CREATE TABLE shared_data (value INTEGER)", emptyArray())
+            } finally {
+                writer.onReturned()
+                pool.returnObject(writer)
+            }
+
+            val reader = pool.borrowSecondaryObject() as SQLConnection
+            reader.onBorrowed()
+            try {
+                assertSame(writer, reader)
+                assertEquals(0L, reader.executeForLong("SELECT count(*) FROM shared_data", emptyArray()))
+            } finally {
+                reader.onReturned()
+                pool.returnObject(reader)
+            }
+        } finally {
+            pool.close()
+            factory.close()
         }
     }
 
