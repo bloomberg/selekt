@@ -23,10 +23,15 @@ internal class MemoryDatabasePoolConfigurationTest {
     private val configuration = SQLiteJournalMode.WAL.databaseConfiguration.copy(maxConnectionPoolSize = 10)
 
     @Test
-    fun `private memory database uses one connection`() {
+    fun `memory database uses one connection`() {
         assertEquals(1, configuration.toPoolConfiguration(":memory:").maxTotal)
         assertEquals(1, configuration.toPoolConfiguration("file::memory:").maxTotal)
         assertEquals(1, configuration.toPoolConfiguration("file:private?mode=memory").maxTotal)
+        assertEquals(1, configuration.toPoolConfiguration("file::memory:?cache=shared").maxTotal)
+        assertEquals(1, configuration.toPoolConfiguration("file::memory:?CACHE=SHARED").maxTotal)
+        assertEquals(1, configuration.toPoolConfiguration("file:shared?mode=memory&cache=shared").maxTotal)
+        assertEquals(1, configuration.toPoolConfiguration("file:shared?cache=shared&mode=memory").maxTotal)
+        assertEquals(1, configuration.toPoolConfiguration("file:shared?mode=memory&CACHE=SHARED").maxTotal)
     }
 
     @Test
@@ -37,15 +42,10 @@ internal class MemoryDatabasePoolConfigurationTest {
     }
 
     @Test
-    fun `shared memory database retains configured pool size`() {
-        assertEquals(10, configuration.toPoolConfiguration("file::memory:?cache=shared").maxTotal)
-        assertEquals(10, configuration.toPoolConfiguration("file:shared?mode=memory&cache=shared").maxTotal)
-    }
-
-    @Test
     fun `file database retains configured pool size`() {
         assertEquals(10, configuration.toPoolConfiguration("database.sqlite").maxTotal)
         assertEquals(10, configuration.toPoolConfiguration("file:database.sqlite").maxTotal)
+        assertEquals(10, configuration.toPoolConfiguration("file:database.sqlite?cache=shared").maxTotal)
         assertEquals(false, "database.sqlite".isInMemoryDatabase())
     }
 }
