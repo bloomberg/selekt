@@ -4730,6 +4730,7 @@ struct Vec1Tab {
   Vec1Config cfg;                 /* Values read from %_config table */
   Vec1Model mod;                  /* Model read from %_model table */
   Vec1Writer *pWriter;            /* Writer within active transaction */
+  int bWriterFlushing;            /* True while flushing to shadow tables */
 
   float *aTmpVec;                 /* Temp buffer for transformed vector */
   int nTmpVec;                    /* Size of aTmpVector in elements */
@@ -8830,7 +8831,11 @@ static void vec1ListBuilderZeroPadding(Vec1ListBuilder *p, int nEntry){
 }
 
 static int vec1ListBuilderFlush(Vec1ListBuilder *p){
+  Vec1Tab *pTab = p->pTab;
   int rc = SQLITE_OK;
+  if( pTab==0 ) return SQLITE_OK;
+  assert( pTab->bWriterFlushing==0 );
+  pTab->bWriterFlushing = 1;
   if( p->bufRowid.n>0 ){
     int nEntry = p->bufRowid.n / p->szRowid;
     i64 iId = 0;
@@ -8854,7 +8859,7 @@ static int vec1ListBuilderFlush(Vec1ListBuilder *p){
       memcpy(&aBlob[VEC1_LIST_SZHDR], p->bufRowid.a, p->bufRowid.n);
       memcpy(&aBlob[VEC1_LIST_SZHDR+p->bufRowid.n], p->bufData.a, p->bufData.n);
 
-      rc = vec1GetSql(p->pTab, VEC1_SQL_REPLACE_IDX, &pStmt);
+      rc = vec1GetSql(pTab, VEC1_SQL_REPLACE_IDX, &pStmt);
       if( rc==SQLITE_OK ){
         if( p->iId==0 ){
           sqlite3_bind_null(pStmt, 1);
@@ -8869,7 +8874,7 @@ static int vec1ListBuilderFlush(Vec1ListBuilder *p){
         sqlite3_step(pStmt);
         rc = sqlite3_reset(pStmt);
         if( rc==SQLITE_OK ){
-          iId = sqlite3_last_insert_rowid(p->pTab->db);
+          iId = sqlite3_last_insert_rowid(pTab->db);
         }
       }
 
@@ -8881,21 +8886,22 @@ static int vec1ListBuilderFlush(Vec1ListBuilder *p){
       sqlite3_free(aBlob);
     }
 
-    for(ii=0; rc==SQLITE_OK && ii<p->pTab->nMeta; ii++){
-      rc = vec1WriteMeta(p->pTab, &p->aMeta[ii], nEntry, iId, ii);
+    for(ii=0; rc==SQLITE_OK && ii<pTab->nMeta; ii++){
+      rc = vec1WriteMeta(pTab, &p->aMeta[ii], nEntry, iId, ii);
       if( rc==SQLITE_OK ) p->aMeta[ii].buf.n = VEC1_META_SZHDR;
     }
     
     p->bSorted = 1;
   }else if( p->iId>0 ){
     sqlite3_stmt *pDelete = 0;
-    rc = vec1GetSql(p->pTab, VEC1_SQL_DELETE_FROM_IDX, &pDelete);
+    rc = vec1GetSql(pTab, VEC1_SQL_DELETE_FROM_IDX, &pDelete);
     if( rc==SQLITE_OK ){
       sqlite3_bind_int64(pDelete, 1, p->iId);
       sqlite3_step(pDelete);
       vec1StmtReset(&rc, pDelete);
     }
   }
+  pTab->bWriterFlushing = 0;
   return rc;
 }
 
@@ -10516,13 +10522,20 @@ static int vec1UpdateMethod(
 }
 
 static int vec1FinishWriter(Vec1Tab *pTab, int bDiscard){
+  Vec1Writer *pWriter = pTab->pWriter;
   int rc = SQLITE_OK;
-  if( bDiscard ){
-    vec1WriterFinish(pTab->pWriter, SQLITE_ERROR);
-  }else{
-    rc = vec1WriterFinish(pTab->pWriter, SQLITE_OK);
-  }
+  /* A shadow-table write may create a statement savepoint and invoke this
+  ** callback recursively. The active flush already establishes that
+  ** savepoint boundary, so leave its writer alone. */
+  if( pTab->bWriterFlushing ) return SQLITE_OK;
+  /* Clear this before flushing. Stepping a shadow-table statement may open a
+  ** statement savepoint and re-enter this function through xSavepoint. */
   pTab->pWriter = 0;
+  if( bDiscard ){
+    vec1WriterFinish(pWriter, SQLITE_ERROR);
+  }else{
+    rc = vec1WriterFinish(pWriter, SQLITE_OK);
+  }
   return rc;
 }
 
