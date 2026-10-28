@@ -8,6 +8,16 @@ on:
 permissions: read-all
 
 jobs:
+  release-ancestry-test:
+    name: 'Release ancestry gate test'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: 'Test release ancestry gate'
+        run: .github/scripts/verify-release-commit-test.sh
+
   native-fuzzing:
     name: 'Native fuzzing / Linux'
     uses: ./.github/workflows/native-fuzzing.yml
