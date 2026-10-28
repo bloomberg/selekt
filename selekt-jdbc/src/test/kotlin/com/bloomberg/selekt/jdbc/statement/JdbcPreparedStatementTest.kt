@@ -705,6 +705,28 @@ internal class JdbcPreparedStatementTest {
     }
 
     @Test
+    fun sqlBearingStatementMethodsAreRejected(): Unit = preparedStatement.run {
+        val replacementSql = "SELECT 1"
+        val columnIndexes = intArrayOf(1)
+        val columnNames = arrayOf("id")
+
+        assertFailsWith<SQLException> { executeQuery(replacementSql) }
+        assertFailsWith<SQLException> { executeUpdate(replacementSql) }
+        assertFailsWith<SQLException> { executeUpdate(replacementSql, Statement.RETURN_GENERATED_KEYS) }
+        assertFailsWith<SQLException> { executeUpdate(replacementSql, columnIndexes) }
+        assertFailsWith<SQLException> { executeUpdate(replacementSql, columnNames) }
+        assertFailsWith<SQLException> { execute(replacementSql) }
+        assertFailsWith<SQLException> { execute(replacementSql, Statement.RETURN_GENERATED_KEYS) }
+        assertFailsWith<SQLException> { execute(replacementSql, columnIndexes) }
+        assertFailsWith<SQLException> { execute(replacementSql, columnNames) }
+        assertFailsWith<SQLException> { addBatch(replacementSql) }
+        assertFailsWith<SQLException> { executeLargeUpdate(replacementSql) }
+        assertFailsWith<SQLException> { executeLargeUpdate(replacementSql, Statement.RETURN_GENERATED_KEYS) }
+        assertFailsWith<SQLException> { executeLargeUpdate(replacementSql, columnIndexes) }
+        assertFailsWith<SQLException> { executeLargeUpdate(replacementSql, columnNames) }
+    }
+
+    @Test
     fun closure(): Unit = preparedStatement.run {
         assertFalse(isClosed)
         close()
