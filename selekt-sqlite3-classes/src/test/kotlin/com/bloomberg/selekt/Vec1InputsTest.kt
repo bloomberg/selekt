@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 
 private const val SQL_OPEN_READWRITE = 2
 private const val SQL_OPEN_CREATE = 4
+private const val SQL_FLOAT = 2
 private const val VEC1_MODEL_INDEX = 1
 private const val VEC1_MODEL_RESIDUAL = 4
 private const val VEC1_DISTANCE_L2 = 1
@@ -181,6 +182,9 @@ internal class Vec1InputsTest {
         runProbe("metadata-block-insert")
 
     @Test
+    fun `vec1 returns no-index query distances`() = runProbe("no-index-distance")
+
+    @Test
     fun `vec1 includes metadata in direct rebuild list block accounting`() =
         runProbe("metadata-block-direct-rebuild")
 
@@ -271,6 +275,7 @@ internal object Vec1SecurityProbeMain {
                 "pq-block-padding" -> probePqBlockPadding(sqlite, db)
                 "progress-callback-name" -> probeProgressCallbackName(sqlite, db)
                 "metadata-block-insert" -> probeMetadataBlockInsert(sqlite, db)
+                "no-index-distance" -> probeNoIndexDistance(sqlite, db)
                 "metadata-block-direct-rebuild" -> probeMetadataBlockDirectRebuild(sqlite, db)
                 "rebuild-pending-writer" -> probeRebuildPendingWriter(sqlite, db)
                 "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
@@ -346,6 +351,46 @@ internal object Vec1SecurityProbeMain {
                 prefix + "first IN (1,2) AND second IN (2,3)"
             ) == 2L
         )
+    }
+
+    private fun probeNoIndexDistance(sqlite: IExternalSQLite, db: Long) {
+        listOf(
+            Triple("l2", "[2,0]", 1.0),
+            Triple("cos", "[1,1]", 1.0 - 1.0 / kotlin.math.sqrt(2.0))
+        ).forEach { (distance, queryVector, expectedDistance) ->
+            val table = "distance_$distance"
+            check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+            check(
+                sqlite.exec(
+                    db,
+                    "INSERT INTO $table(cmd, arg) " +
+                        "VALUES('rebuild', '{\"index\":\"none\",\"distance\":\"$distance\"}')"
+                ) == SQL_OK
+            )
+            check(
+                sqlite.exec(
+                    db,
+                    "INSERT INTO $table(rowid, vector) " +
+                        "VALUES(1, vec1_from_json('[1,0]'))"
+                ) == SQL_OK
+            )
+            val statement = prepare(
+                sqlite,
+                db,
+                "SELECT distance FROM $table " +
+                    "WHERE cmd=vec1_from_json('$queryVector') AND arg=1"
+            )
+            try {
+                check(sqlite.step(statement) == SQL_ROW) { sqlite.errorMessage(db) }
+                check(sqlite.columnType(statement, 0) == SQL_FLOAT)
+                check(
+                    kotlin.math.abs(sqlite.columnDouble(statement, 0) - expectedDistance) < 1e-9
+                )
+                check(sqlite.step(statement) == SQL_DONE)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        }
     }
 
     private fun probeMetadataBlockInsert(sqlite: IExternalSQLite, db: Long) {
