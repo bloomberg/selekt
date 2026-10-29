@@ -7909,16 +7909,19 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
     int bRhs = 1;
     const char *zOp = "";
     if( p->op==VEC1_OP_IN ){
-      const char *zComma = "";
       int jj;
-      sqlite3_str_appendf(pWhere, "%sc%d IN(", zAnd, p->iMeta);
-      vec1AppendFilterValue(pWhere, &p[1]);
-      for(jj=2; jj<=(ii+p->iVal); jj++){
-        sqlite3_str_appendf(pWhere, ", ");
-        vec1AppendFilterValue(pWhere, &p[jj]);
+      if( p->iVal==0 ){
+        sqlite3_str_appendf(pWhere, "%s0", zAnd);
+      }else{
+        sqlite3_str_appendf(pWhere, "%sc%d IN(", zAnd, p->iMeta);
+        vec1AppendFilterValue(pWhere, &p[1]);
+        for(jj=2; jj<=p->iVal; jj++){
+          sqlite3_str_appendf(pWhere, ", ");
+          vec1AppendFilterValue(pWhere, &p[jj]);
+        }
+        sqlite3_str_appendf(pWhere, ")");
       }
       ii += p->iVal;
-      sqlite3_str_appendf(pWhere, ")");
     }else{
       switch( p->op ){
         case VEC1_OP_EQ: zOp = "="; break;

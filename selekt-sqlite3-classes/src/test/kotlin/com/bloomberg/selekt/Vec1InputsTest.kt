@@ -162,6 +162,10 @@ internal class Vec1InputsTest {
         runProbe("metadata-in-filters")
 
     @Test
+    fun `vec1 bounds no-index metadata IN filter groups`() =
+        runProbe("no-index-metadata-in-filters")
+
+    @Test
     fun `vec1 compares non-finite filters without integer conversion`() =
         runProbe("non-finite-meta-filters")
 
@@ -262,6 +266,7 @@ internal object Vec1SecurityProbeMain {
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
                 "metadata-in-filters" -> probeMetadataInFilters(sqlite, db)
+                "no-index-metadata-in-filters" -> probeNoIndexMetadataInFilters(sqlite, db)
                 "non-finite-meta-filters" -> probeNonFiniteMetadataFilters(sqlite, db)
                 "pq-block-padding" -> probePqBlockPadding(sqlite, db)
                 "progress-callback-name" -> probeProgressCallbackName(sqlite, db)
@@ -318,6 +323,29 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.finalize(integrity)
         }
+    }
+
+    private fun probeNoIndexMetadataInFilters(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector, first, second)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector, first, second) VALUES" +
+                    "(1, vec1_from_json('[0,0]'), 1, 2)," +
+                    "(2, vec1_from_json('[1,1]'), 2, 3)"
+            ) == SQL_OK
+        )
+        val prefix =
+            "SELECT count(*) FROM t WHERE cmd=vec1_from_json('[0,0]') AND arg=2 AND "
+        check(queryLong(sqlite, db, prefix + "first=1 AND second IN (2,3)") == 1L)
+        check(queryLong(sqlite, db, prefix + "first=1 AND second IN (SELECT 1 WHERE 0)") == 0L)
+        check(
+            queryLong(
+                sqlite,
+                db,
+                prefix + "first IN (1,2) AND second IN (2,3)"
+            ) == 2L
+        )
     }
 
     private fun probeMetadataBlockInsert(sqlite: IExternalSQLite, db: Long) {
