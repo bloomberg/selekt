@@ -4829,6 +4829,7 @@ struct Vec1Csr {
   /* Cache of "distance" column for non-NN queries */
   char *zDistance;
 
+  int bSqlNNQuery;
   Vec1Query *pQuery;
 };
 
@@ -5287,6 +5288,7 @@ static void vec1ResetCsr(Vec1Csr *pCsr){
   sqlite3_finalize(pCsr->pStmt);
   pCsr->pStmt = 0;
   pCsr->bSeek = 0;
+  pCsr->bSqlNNQuery = 0;
   sqlite3_free(pCsr->zDistance);
   pCsr->zDistance = 0;
 }
@@ -7957,10 +7959,12 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
     }
 
     rc = vec1PrepareSql(pTab, &pCsr->pStmt,
-        "SELECT * FROM %Q.'%q_base'%s%s ORDER BY %s (?, vector) LIMIT %lld",
+        "SELECT *, %s(?, vector) AS distance "
+        "FROM %Q.'%q_base'%s%s ORDER BY distance LIMIT %lld",
+        zDistance,
         pTab->zDb, pTab->zName, 
         zWhere ? " WHERE " : "", zWhere,
-        zDistance, pQuery->K
+        pQuery->K
     );
   }
   if( rc==SQLITE_OK ){
@@ -7970,6 +7974,7 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
 
   vec1QueryFree(pQuery);
   pCsr->pQuery = 0;
+  pCsr->bSqlNNQuery = 1;
   sqlite3_free(zWhere);
   return rc;
 }
@@ -8359,6 +8364,9 @@ static int vec1ColumnMethod(
     if( pCsr->pQuery ){
       double fDist = pCsr->pQuery->heap.aRes[pCsr->iCurrentRes].fDist;
       sqlite3_result_double(ctx, fDist);
+    }else if( pCsr->bSqlNNQuery ){
+      int ii = sqlite3_column_count(pCsr->pStmt)-1;
+      sqlite3_result_value(ctx, sqlite3_column_value(pCsr->pStmt, ii));
     }else{
       vec1DistanceStats(ctx, pCsr);
     }
