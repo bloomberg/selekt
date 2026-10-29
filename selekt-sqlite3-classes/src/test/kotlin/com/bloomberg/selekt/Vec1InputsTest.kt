@@ -66,6 +66,10 @@ internal class Vec1InputsTest {
         runProbe("rowid-list-validation")
 
     @Test
+    fun `vec1 does not confuse pending tombstones with rowid zero`() =
+        runProbe("rowid-tombstone")
+
+    @Test
     fun `vec1 validates list IDs before deriving metadata rowids`() =
         runProbe("metadata-list-id")
 
@@ -251,6 +255,7 @@ internal object Vec1SecurityProbeMain {
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "configured-vector-size" -> probeConfiguredVectorSize(sqlite, db)
                 "rowid-list-validation" -> probeRowidListValidation(sqlite, db)
+                "rowid-tombstone" -> probeRowidTombstone(sqlite, db)
                 "metadata-list-id" -> probeMetadataListId(sqlite, db)
                 "defensive-shadow-tables" -> probeDefensiveShadowTables(sqlite, db)
                 "streaming-buckets" -> probeStreamingBuckets(sqlite, db)
@@ -552,6 +557,49 @@ internal object Vec1SecurityProbeMain {
             check(sqlite.step(statement) == SQL_DONE)
         } finally {
             sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeRowidTombstone(sqlite: IExternalSQLite, db: Long) {
+        assertRowidTombstone(sqlite, db, "pending_tombstone", false)
+        assertRowidTombstone(sqlite, db, "persisted_tombstone", true)
+    }
+
+    private fun assertRowidTombstone(
+        sqlite: IExternalSQLite,
+        db: Long,
+        table: String,
+        persistBeforeDelete: Boolean
+    ) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
+            indexedModelHeader()
+        )
+        check(sqlite.exec(db, "BEGIN") == SQL_OK)
+        val zero = "(0, vec1_from_json('[0,0,0,0]'))"
+        val wideRows = listOf(-2, -1, 1, 2, 3).joinToString { rowid ->
+            "($rowid, vec1_from_json('[1,1,1,1]'))"
+        }
+        val values = if (persistBeforeDelete) "$wideRows,$zero" else "$zero,$wideRows"
+        check(sqlite.exec(db, "INSERT INTO $table(rowid, vector) VALUES$values") == SQL_OK)
+        if (persistBeforeDelete) {
+            check(sqlite.exec(db, "COMMIT") == SQL_OK)
+            check(sqlite.exec(db, "BEGIN") == SQL_OK)
+        }
+        check(sqlite.exec(db, "DELETE FROM $table WHERE rowid=-2") == SQL_OK)
+        check(sqlite.exec(db, "DELETE FROM $table WHERE rowid=0") == SQL_OK)
+        check(sqlite.exec(db, "COMMIT") == SQL_OK)
+        check(queryLong(sqlite, db, "SELECT count(*) FROM $table") == 4L)
+        val integrity = prepare(sqlite, db, "PRAGMA integrity_check")
+        try {
+            check(sqlite.step(integrity) == SQL_ROW)
+            check(sqlite.columnText(integrity, 0) == "ok")
+            check(sqlite.step(integrity) == SQL_DONE)
+        } finally {
+            sqlite.finalize(integrity)
         }
     }
 

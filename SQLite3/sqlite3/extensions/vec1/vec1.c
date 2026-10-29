@@ -8224,8 +8224,10 @@ static int vec1FindByRowid(
       i64 iRead;
       if( pBld->szRowid==4 ){
         iRead = vec1GetU32(&pBld->bufRowid.a[ii]);
+        if( iRead==VEC1_TOMBSTONE_32 ) continue;
       }else{
         iRead = vec1GetU64(&pBld->bufRowid.a[ii]);
+        if( iRead==VEC1_TOMBSTONE_64 ) continue;
       }
       if( iRead==iRowid ){
         pOut->iEntry = (ii / pBld->szRowid);
@@ -8278,8 +8280,10 @@ static int vec1FindByRowid(
         i64 iRead = 0;
         if( layout.szRowid==4 ){
           iRead = vec1GetU32(&buf.a[ii*layout.szRowid]);
+          if( iRead==VEC1_TOMBSTONE_32 ) continue;
         }else{
           iRead = vec1GetU64(&buf.a[ii*layout.szRowid]);
+          if( iRead==VEC1_TOMBSTONE_64 ) continue;
         }
         if( iRead==iRowid ){
           pOut->iEntry = ii;
