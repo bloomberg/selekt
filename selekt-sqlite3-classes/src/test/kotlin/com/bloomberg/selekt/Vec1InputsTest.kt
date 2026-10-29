@@ -197,6 +197,10 @@ internal class Vec1InputsTest {
         runProbe("rebuild-pending-writer")
 
     @Test
+    fun `vec1 invalidates model and dimension caches after rollback`() =
+        runProbe("rollback-model-cache")
+
+    @Test
     fun `vec1 bounds packed metadata and includes it in rebuild list block accounting`() =
         runProbe("metadata-block-packed-rebuild")
 
@@ -283,6 +287,7 @@ internal object Vec1SecurityProbeMain {
                 "no-index-distance" -> probeNoIndexDistance(sqlite, db)
                 "metadata-block-direct-rebuild" -> probeMetadataBlockDirectRebuild(sqlite, db)
                 "rebuild-pending-writer" -> probeRebuildPendingWriter(sqlite, db)
+                "rollback-model-cache" -> probeRollbackModelCache(sqlite, db)
                 "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
                 else -> error("Unknown probe")
             }
@@ -333,6 +338,88 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.finalize(integrity)
         }
+    }
+
+    private fun probeRollbackModelCache(sqlite: IExternalSQLite, db: Long) {
+        probeRolledBackDimensionCache(sqlite, db)
+        probeRolledBackQueryModelCache(sqlite, db)
+    }
+
+    private fun probeRolledBackDimensionCache(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE dimensions USING vec1(vector)") == SQL_OK)
+        check(sqlite.exec(db, "BEGIN") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO dimensions(rowid, vector) VALUES(1, vec1_from_json('[1,2]'))"
+            ) == SQL_OK
+        )
+        check(sqlite.exec(db, "ROLLBACK") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO dimensions(rowid, vector) VALUES(1, vec1_from_json('[1,2,3]'))"
+            ) == SQL_OK
+        )
+    }
+
+    private fun probeRolledBackQueryModelCache(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE models USING vec1(vector)") == SQL_OK)
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO models(rowid, vector) VALUES" +
+                    "(1, vec1_from_json('[100,0]'))," +
+                    "(2, vec1_from_json('[1,1]'))"
+            ) == SQL_OK
+        )
+        listOf(null, "changed").forEach { savepoint ->
+            assertModelCacheInvalidatedAfterRollback(sqlite, db, savepoint)
+        }
+    }
+
+    private fun assertModelCacheInvalidatedAfterRollback(
+        sqlite: IExternalSQLite,
+        db: Long,
+        savepoint: String?
+    ) {
+        check(sqlite.exec(db, "BEGIN") == SQL_OK)
+        savepoint?.let {
+            check(sqlite.exec(db, "SAVEPOINT $it") == SQL_OK)
+        }
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO models(cmd, arg) " +
+                    "VALUES('rebuild', '{\"index\":\"none\",\"distance\":\"cos\"}')"
+            ) == SQL_OK
+        )
+        check(sqlite.exec(db, savepoint?.let { "ROLLBACK TO $it" } ?: "ROLLBACK") == SQL_OK)
+        if (savepoint != null) {
+            check(
+                sqlite.exec(
+                    db,
+                    "INSERT INTO models(rowid, vector) VALUES" +
+                        "(3, vec1_from_json('[1,2,3]'))"
+                ) != SQL_OK
+            )
+            check(
+                sqlite.exec(
+                    db,
+                    "INSERT INTO models(rowid, vector) VALUES" +
+                        "(3, vec1_from_json('[2,2]'))"
+                ) == SQL_OK
+            )
+            check(sqlite.exec(db, "COMMIT") == SQL_OK)
+        }
+        check(
+            queryLong(
+                sqlite,
+                db,
+                "SELECT rowid FROM models " +
+                    "WHERE cmd=vec1_from_json('[1,0]') AND arg=1"
+            ) == 2L
+        )
     }
 
     private fun probeNoIndexMetadataInFilters(sqlite: IExternalSQLite, db: Long) {
