@@ -20,6 +20,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
@@ -148,6 +149,9 @@ internal class Vec1InputsTest {
     fun `vec1 enforces thread count types and bounds`() = runProbe("training-thread-count")
 
     @Test
+    fun `vec1 training honours connection interruption`() = runProbe("training-interruption")
+
+    @Test
     fun `vec1 rejects non-finite model sections`() = runProbe("non-finite-model")
 
     @Test
@@ -266,6 +270,7 @@ internal object Vec1SecurityProbeMain {
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
                 "non-finite-training" -> probeNonFiniteTraining(sqlite, db)
                 "training-thread-count" -> probeTrainingThreadCount(sqlite, db)
+                "training-interruption" -> probeTrainingInterruption(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
@@ -390,6 +395,48 @@ internal object Vec1SecurityProbeMain {
             } finally {
                 sqlite.finalize(statement)
             }
+        }
+    }
+
+    private fun probeTrainingInterruption(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE TABLE training(vector BLOB NOT NULL)") == SQL_OK)
+        val elements = (0 until 64).joinToString("||','||") { offset ->
+            "((value*${offset + 1})%${997 - offset})"
+        }
+        check(
+            sqlite.exec(
+                db,
+                "WITH RECURSIVE rows(value) AS (" +
+                    "VALUES(1) UNION ALL SELECT value+1 FROM rows WHERE value<5000" +
+                    ") INSERT INTO training SELECT vec1_from_json('['||$elements||']') FROM rows"
+            ) == SQL_OK
+        )
+        val statement = prepare(
+            sqlite,
+            db,
+            "SELECT vec1_train(vector, '{\"codesize\":8,\"nthread\":4}') FROM training"
+        )
+        val result = AtomicInteger(SQL_OK)
+        val worker = Thread { result.set(sqlite.step(statement)) }
+        try {
+            worker.start()
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+            while (worker.isAlive && System.nanoTime() < deadline) {
+                sqlite.interrupt(db)
+                Thread.sleep(1)
+            }
+            worker.join(100)
+            check(!worker.isAlive) { "Interrupted training did not stop promptly" }
+            check(result.get() != SQL_ROW && result.get() != SQL_DONE) {
+                "Interrupted training completed successfully"
+            }
+            check(sqlite.errorCode(db) == SQL_INTERRUPT) {
+                "Expected SQLITE_INTERRUPT, got ${result.get()}: ${sqlite.errorMessage(db)}"
+            }
+        } finally {
+            sqlite.interrupt(db)
+            worker.join()
+            sqlite.finalize(statement)
         }
     }
 

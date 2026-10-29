@@ -1563,6 +1563,7 @@ struct Vec1Job {
 ** Always by the main thread.
 */
 struct Vec1JobQueue {
+  sqlite3 *db;                    /* Connection used to detect interruption */
   Vec1Mutex *pMutex;
   Vec1Cond *pCond1;
   Vec1Cond *pCond2;
@@ -1575,6 +1576,10 @@ struct Vec1JobQueue {
   Vec1Job *pFinished;             /* List of jobs waiting for xFinish() */
   Vec1Job *pFree;                 /* List of spare Vec1Job structures */
 };
+
+static int vec1JobQueueInterrupted(const Vec1JobQueue *p){
+  return p->db && sqlite3_is_interrupted(p->db);
+}
 
 static void *vec1JobWorkerMain(void *pCtx){
   Vec1JobQueue *p = (Vec1JobQueue*)pCtx;
@@ -1595,7 +1600,7 @@ static void *vec1JobWorkerMain(void *pCtx){
     if( pJob==0 ) break;
 
     /* Do the work for this job. */
-    pJob->xWork(pJob->pCtx);
+    if( !vec1JobQueueInterrupted(p) ) pJob->xWork(pJob->pCtx);
 
     /* Put the job on the finished list. If it is currently empty, the
     ** main thread may be waiting. Signal it in that case.  */
@@ -1618,6 +1623,10 @@ static int vec1JobQueueFinishJobs(Vec1JobQueue *pQueue, int rcin){
     Vec1Job *pFin = 0;
     Vec1Job *pWork = 0;
 
+    if( rc==SQLITE_OK && vec1JobQueueInterrupted(pQueue) ){
+      rc = SQLITE_INTERRUPT;
+    }
+
     /* Try to find a job to help with. If there is nothing, wait on pCond2. */
     vec1MutexEnter(pQueue->pMutex);
     while( pQueue->pFinished==0 && pQueue->pWaiting==0 && pQueue->nJob>0 ){
@@ -1635,10 +1644,10 @@ static int vec1JobQueueFinishJobs(Vec1JobQueue *pQueue, int rcin){
     vec1MutexLeave(pQueue->pMutex);
 
     if( pFin==0 && pWork==0 ) break;
-    if( pWork ){
+    if( pWork && rc==SQLITE_OK ){
       pWork->xWork(pWork->pCtx);
-      pFin = pWork;
     }
+    if( pWork ) pFin = pWork;
 
     {
       int rc2 = pFin->xFinish(pFin->pCtx, rc);
@@ -1686,7 +1695,7 @@ static void vec1JobQueueFree(Vec1JobQueue *pQueue){
 /*
 ** Allocate a new job-queue.
 */
-static Vec1JobQueue *vec1JobQueueNew(int nWorker){
+static Vec1JobQueue *vec1JobQueueNew(int nWorker, sqlite3 *db){
   int rc = SQLITE_OK;
   Vec1JobQueue *pNew = 0;
   int nJob = nWorker + 8;
@@ -1704,6 +1713,7 @@ static Vec1JobQueue *vec1JobQueueNew(int nWorker){
     int ii;
     Vec1Job *pJob;
 
+    pNew->db = db;
     pNew->apWorker = (Vec1Thread**)&pNew[1];
     pJob = (Vec1Job*)&pNew->apWorker[nWorker];
     for(ii=0; ii<nJob; ii++){
@@ -1777,14 +1787,31 @@ static int vec1JobQueueAddJob(
   assert( (pFree!=0)+(pFinish!=0)+(pWork!=0)<=1 );
 
   if( pWork ){
-    pWork->xWork(pWork->pCtx);
+    if( !vec1JobQueueInterrupted(pQueue) ){
+      pWork->xWork(pWork->pCtx);
+    }else{
+      rc = SQLITE_INTERRUPT;
+    }
     pFinish = pWork;
   }
   if( pFinish ){
-    rc = pFinish->xFinish(pFinish->pCtx, SQLITE_OK);
+    int rc2 = pFinish->xFinish(pFinish->pCtx, rc);
+    if( rc==SQLITE_OK ) rc = rc2;
     pFree = pFinish;
   }
   assert( pFree );
+
+  if( rc==SQLITE_OK && vec1JobQueueInterrupted(pQueue) ){
+    rc = SQLITE_INTERRUPT;
+  }
+  if( rc!=SQLITE_OK ){
+    xFinish(pCtx, rc);
+    vec1MutexEnter(pQueue->pMutex);
+    pFree->pJobNext = pQueue->pFree;
+    pQueue->pFree = pFree;
+    vec1MutexLeave(pQueue->pMutex);
+    return rc;
+  }
 
   pFree->pCtx = pCtx;
   pFree->xWork = xWork;
@@ -1808,7 +1835,7 @@ static int vec1JobQueueFinishJobs(Vec1JobQueue *pQueue, int rcin){
   return rcin;
 }
 static void vec1JobQueueFree(Vec1JobQueue *pQueue){}
-static Vec1JobQueue *vec1JobQueueNew(int a){ return 0; }
+static Vec1JobQueue *vec1JobQueueNew(int a, sqlite3 *db){ return 0; }
 static int vec1JobQueueAddJob(
   Vec1JobQueue *pQueue,
   void (*xWork)(void *pCtx),
@@ -1892,12 +1919,17 @@ static int vec1JobQueueAddJob(
 */
 typedef struct Vec1TrainVectors Vec1TrainVectors;
 struct Vec1TrainVectors {
+  sqlite3 *db;                    /* Connection used to detect interruption */
   int nElem;                      /* Number of elements in each vector */
   int nVec;                       /* Number of vectors in chunk array */
   int nChunk;                     /* Number of chunks allocated so far */
   int nVecPerChunk;               /* Number of vectors in each chunk */
   float *aChunk[VEC1_TRAINING_MAXCHUNK];
 };
+
+static int vec1TrainingInterrupted(const Vec1TrainVectors *pVec){
+  return pVec->db && sqlite3_is_interrupted(pVec->db);
+}
 
 /*
 ** Context object for the vec1_train() aggregate function.
@@ -1936,6 +1968,14 @@ struct Vec1TrainCtx {
 
   u64 aTime[VEC1_TRAINING_NTIMER];
 };
+
+static int vec1TrainingCancelled(Vec1TrainCtx *p){
+  if( p->rc==SQLITE_OK && vec1TrainingInterrupted(&p->tv) ){
+    p->rc = SQLITE_INTERRUPT;
+    sqlite3_result_error_code(p->pCtx, SQLITE_INTERRUPT);
+  }
+  return p->rc==SQLITE_INTERRUPT;
+}
 
 /*
 ** Add a float-array section to the model size being calculated. The section
@@ -2210,6 +2250,7 @@ static void vec1KMeansInitWork(void *pCtx){
   p->fTotalMin = 0.0;
 
   for(ii=p->iFirst; ii<p->iEof; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(p->pVec) ) return;
     const float *aSub = vec1TrainingVector(p->pVec, ii);
     float dist = (float)vec1L2Dist(aSub, aCentroid, nElem);
     if( iLoop==1 || dist<p->aMin[ii] ){
@@ -2263,6 +2304,7 @@ static void vec1Ann1KMeansInitial(
       vec1JobQueueAddJob(pQueue, vec1KMeansInitWork, 0, (void*)&aKJob[i2]);
     }
     vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
+    if( vec1TrainingInterrupted(pVec) ) return;
     for(i2=0; i2<nJob; i2++){
       fTotalMin += aKJob[i2].fTotalMin;
     }
@@ -2339,6 +2381,7 @@ static void vec1KMeansWork(void *pCtx){
 
 #if 1
   for(ii=p->iFirst; ii<=(p->iEof-KMEANS_NBLOCK); ii+=KMEANS_NBLOCK){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(pVec) ) return;
     for(jj=0; jj<KMEANS_NBLOCK; jj++){
       aaSub[jj] = vec1TrainingVector(pVec, ii+jj);
     }
@@ -2356,6 +2399,7 @@ static void vec1KMeansWork(void *pCtx){
 #endif
 
   for(; ii<p->iEof; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(pVec) ) return;
     const float *aSub = vec1TrainingVector(pVec, ii);
     int iBest = vec1PqBestMatch(
         p->aCentroid, p->nK, aSub, nSampleElem, &p->fTotal
@@ -2504,6 +2548,10 @@ static int vec1Ann1KMeans(
   vec1Ann1KMeansInitial(
       pVec, pQueue, aKJob, nThread, aMin, nK, aCode
   );
+  if( vec1TrainingInterrupted(pVec) ){
+    rc = SQLITE_INTERRUPT;
+    goto vec1_kmeans_out;
+  }
   if( p ){
     END_TRAINING_TIMER(p, VEC1_TRAINING_COARSE_INIT);
     p->nCompletedWork += VEC1_TRAINING_WORK_COARSE1;
@@ -2526,7 +2574,11 @@ static int vec1Ann1KMeans(
     for(ii=0; ii<nThread; ii++){
       vec1JobQueueAddJob(pQueue, vec1KMeansWork, 0, &aKJob[ii]);
     }
-    vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
+    rc = vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
+    if( rc!=SQLITE_OK || vec1TrainingInterrupted(pVec) ){
+      if( rc==SQLITE_OK ) rc = SQLITE_INTERRUPT;
+      goto vec1_kmeans_out;
+    }
 
     memset(aSum, 0, (size_t)layout.nSumByte);
     memset(aCount, 0, (size_t)layout.nCountByte);
@@ -2580,8 +2632,9 @@ static int vec1Ann1KMeans(
     p->nCompletedWork += VEC1_TRAINING_WORK_COARSE2;
   }
 
+ vec1_kmeans_out:
   sqlite3_free(aKJob);
-  return SQLITE_OK;
+  return rc;
 }
 
 static void vec1TrainCoarseQuant(
@@ -2592,10 +2645,9 @@ static void vec1TrainCoarseQuant(
   if( p->rc==SQLITE_OK ){
 #if 1
     int rc = vec1Ann1KMeans(p, &p->tv, pQueue, p->nBucket, aCentroid);
-    assert( rc==SQLITE_OK || rc==SQLITE_NOMEM );
     if( p->rc==SQLITE_OK && rc!=SQLITE_OK ){
       p->rc = rc;
-      sqlite3_result_error_nomem(p->pCtx);
+      sqlite3_result_error_code(p->pCtx, rc);
     }
 #else
     int ii;
@@ -2974,6 +3026,10 @@ static void vec1TrainStep(
 static void vec1TrainNormalizeAll(Vec1TrainCtx *p){
   int ii;
   for(ii=0; ii<p->tv.nVec; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(&p->tv) ){
+      p->rc = SQLITE_INTERRUPT;
+      return;
+    }
     vec1NormalizeVector(vec1TrainingVector(&p->tv, ii), p->tv.nElem);
   }
 }
@@ -3015,6 +3071,7 @@ static void vec1CodebookWork(void *pCtx){
     int nShort = 0;
     int nBytePerVec = p->nCodeElem * sizeof_f32;
     pVec->nElem = p->nCodeElem;
+    pVec->db = pJob->pTrain->db;
     pVec->nVec = pJob->pTrain->nVec;
     pVec->nVecPerChunk = (VEC1_TRAINING_SZCHUNK / nBytePerVec);
     pVec->nChunk = pVec->nVec / pVec->nVecPerChunk;
@@ -3030,6 +3087,10 @@ static void vec1CodebookWork(void *pCtx){
     /* Allocate chunks for the new Vec1TrainVectors structure. If nShort
     ** is set, also zero them out.  */
     for(ii=0; ii<pVec->nChunk; ii++){
+      if( vec1TrainingInterrupted(pVec) ){
+        pJob->rc = SQLITE_INTERRUPT;
+        break;
+      }
       /* Allocate space for this chunk. Either VEC1_TRAINING_SZCHUNK or
       ** enough space for all remaining sub-vectors, whichever is smaller. */
       int nByte = vec1TrainingChunkSize(
@@ -3053,11 +3114,19 @@ static void vec1CodebookWork(void *pCtx){
     if( pJob->rc==SQLITE_OK ){
       int nCopy = (nShort ? nShort : pVec->nElem) * sizeof_f32;
       for(ii=0; ii<pVec->nVec; ii++){
+        if( (ii & 0xFF)==0 && vec1TrainingInterrupted(pVec) ){
+          pJob->rc = SQLITE_INTERRUPT;
+          break;
+        }
         float *aVec = vec1TrainingVector(pJob->pTrain, ii);
         memcpy(vec1TrainingVector(pVec, ii), &aVec[pJob->iOff], nCopy);
       }
 
-      pJob->rc = vec1Ann1KMeans(0, pVec, 0, VEC1_PQ_CODEBOOK_SZ, pJob->aCode);
+      if( pJob->rc==SQLITE_OK ){
+        pJob->rc = vec1Ann1KMeans(
+            0, pVec, 0, VEC1_PQ_CODEBOOK_SZ, pJob->aCode
+        );
+      }
     }
 
     vec1FreeVectors(pVec);
@@ -3320,6 +3389,7 @@ static int vec1TestRoundRobin(sqlite3_context *pCtx){
 
 typedef struct Vec1JacobiJob Vec1JacobiJob;
 struct Vec1JacobiJob {
+  Vec1TrainVectors *pVec;         /* Training vectors used for cancellation */
   double *A;                      /* Input matrix (column-major) */
   int nElem;                      /* Matrices are nElem*nElem */
   double *Vt;                     /* Vt matrix (row-major) */
@@ -3356,6 +3426,7 @@ static Vec1JacobiJob *vec1JacobiAlloc(
     int nColPerBlk = (nElem + nBlk-1)/ nBlk;
     for(ii=0; ii<nJob; ii++){
       Vec1JacobiJob *pJob = &aJob[ii];
+      pJob->pVec = &p->tv;
       pJob->A = A;
       pJob->nElem = nElem;
       pJob->Vt = Vt;
@@ -3391,6 +3462,7 @@ static void vec1JacobiWork(void *pArg){
   /* Do cross-block pairs */
   for(p=p0; p<p1; p++){
     int q;
+    if( vec1TrainingInterrupted(pJob->pVec) ) return;
     for(q=q0; q<q1; q++){
       pJob->nApply += vec1JacobiDoOnePair(
           p, q, pJob->A, pJob->nElem, pJob->Vt, pJob->fTol
@@ -3402,6 +3474,7 @@ static void vec1JacobiWork(void *pArg){
   if( pJob->r==0 ){
     for(p=p0; p<p1; p++){
       int q;
+      if( vec1TrainingInterrupted(pJob->pVec) ) return;
       for(q=p+1; q<p1; q++){
         pJob->nApply += vec1JacobiDoOnePair(
             p, q, pJob->A, pJob->nElem, pJob->Vt, pJob->fTol
@@ -3410,6 +3483,7 @@ static void vec1JacobiWork(void *pArg){
     }
     for(p=q0; p<q1; p++){
       int q;
+      if( vec1TrainingInterrupted(pJob->pVec) ) return;
       for(q=p+1; q<q1; q++){
         pJob->nApply += vec1JacobiDoOnePair(
             p, q, pJob->A, pJob->nElem, pJob->Vt, pJob->fTol
@@ -3477,6 +3551,7 @@ static void vec1JacobiSVD(
         vec1JobQueueAddJob(pQueue, vec1JacobiWork, 0, &aJob[j]);
       }
       vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
+      if( vec1TrainingCancelled(pTrain) ) goto jacobi_out;
     }
 
     for(j=0; j<nJob; j++){
@@ -3513,6 +3588,7 @@ static void vec1JacobiSVD(
     }
   }
 
+ jacobi_out:
   sqlite3_free(aJob);
 }
 
@@ -3719,6 +3795,7 @@ static void vec1CovarianceWork(void *pArg){
 
   /* Loop through all training vectors. */
   for(ii=0; ii<nVec; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(pJob->pVec) ) return;
     float *aVec = vec1TrainingVector(pJob->pVec, ii);
     const float *aSub = &aVec[iSubOff];
     int iBest = vec1PqBestMatch(
@@ -3795,18 +3872,22 @@ static void vec1PqFindRotation(
       }
       vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
       sqlite3_free(aJob);
+      vec1TrainingCancelled(p);
     }
     END_TRAINING_TIMER(p, VEC1_TRAINING_ROT_COVARIANCE);
+    if( p->rc!=SQLITE_OK ) goto rotation_out;
   
     START_TRAINING_TIMER(p, VEC1_TRAINING_ROT_JACOBI);
     memcpy(aW, aM, sizeof(double)*nElem2);
     vec1JacobiSVD(p, pQueue, aW, p->tv.nElem, aU, aS, aVT, 50, 1e-14);
     END_TRAINING_TIMER(p, VEC1_TRAINING_ROT_JACOBI);
+    if( vec1TrainingCancelled(p) ) goto rotation_out;
     vec1PqMatrixMultiply(aRotation, aU, aVT, p->tv.nElem);
   
     if( p->rc==SQLITE_OK && p->bSvdVerify ){
       p->rc = vec1SVDSelfTest(p->pCtx, aM, aU, aS, aVT, p->tv.nElem);
     }
+ rotation_out:
     sqlite3_free(aM);
   }
 }
@@ -3853,6 +3934,7 @@ static void vec1RotationWork(void *pArg){
 
   int ii;
   for(ii=pJob->iFirst; ii<pJob->iEof; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(pJob->pIn) ) return;
     const float *pIn = vec1TrainingVector(pJob->pIn, ii);
     float *pOut = vec1TrainingVector(pJob->pOut, ii);
     vec1RotateVector(nElem, pJob->aRotation, pIn, pOut);
@@ -3866,6 +3948,7 @@ static Vec1TrainVectors *vec1CopyVectors(Vec1TrainVectors *pIn){
   pRet = (Vec1TrainVectors*)vec1MallocZero(sizeof(Vec1TrainVectors));
   if( pRet==0 ) return pRet;
   pRet->nElem = pIn->nElem;
+  pRet->db = pIn->db;
   pRet->nVec = pIn->nVec;
   pRet->nChunk = pIn->nChunk;
   pRet->nVecPerChunk = pIn->nVecPerChunk;
@@ -3909,7 +3992,11 @@ static void vec1TrainRotation(
     p->rc = SQLITE_NOMEM;
   }
 
-  for(iRound=0; iRound<p->nOpqRound; iRound++){
+  for(iRound=0; iRound<p->nOpqRound && p->rc==SQLITE_OK; iRound++){
+    if( vec1TrainingInterrupted(&p->tv) ){
+      p->rc = SQLITE_INTERRUPT;
+      break;
+    }
     vec1TrainLog(p, 0, "OPQ round %d/%d", iRound+1, p->nOpqRound);
     START_TRAINING_TIMER(p, VEC1_TRAINING_ROT_CODEBOOKS);
     vec1TrainPQCodebooks(p, pTrain, pQueue, aBook);
@@ -3931,6 +4018,7 @@ static void vec1TrainRotation(
       }
       vec1JobQueueFinishJobs(pQueue, SQLITE_OK);
       END_TRAINING_TIMER(p, VEC1_TRAINING_ROT_VECTORS);
+      vec1TrainingCancelled(p);
     }
     p->nCompletedWork += VEC1_TRAINING_WORK_OPQ;
   }
@@ -3980,6 +4068,7 @@ static void vec1TrainResidualWorker(void *pCtx){
   int nElem = p->pVec->nElem;
 
   for(ii=p->iFirst; ii<p->iEof; ii++){
+    if( (ii & 0xFF)==0 && vec1TrainingInterrupted(p->pVec) ) return;
     float *a = vec1TrainingVector(p->pVec, ii);
     int iBest = vec1PqBestMatch(p->aCentroid, p->nCentroid, a, nElem, 0);
     vec1SubInPlace(a, &p->aCentroid[iBest * nElem], nElem);
@@ -4023,6 +4112,7 @@ static void vec1TrainFindResiduals(
     assert( iNext==p->tv.nVec );
 
     vec1JobQueueFinishJobs(pQueue, rc);
+    vec1TrainingCancelled(p);
     sqlite3_free(aJob);
   }
 }
@@ -4115,6 +4205,7 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
     }
   }
   p->pCtx = pCtx;
+  p->tv.db = sqlite3_context_db_handle(pCtx);
 
   vec1TrainWorkInit(p);
   vec1TrainPrepareLog(p);
@@ -4128,6 +4219,7 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   if( p->eDistance==VEC1_DISTANCE_COS ){
     vec1TrainNormalizeAll(p);
   }
+  if( vec1TrainingCancelled(p) ) goto train_final_out;
 
   /* Allocate space for the model. */
   nByte = p->nModelByte;
@@ -4154,7 +4246,7 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   ** thread in that case.  */
 #if VEC1_THREADS
   if( p->nThread>1 ){
-    pQueue = vec1JobQueueNew(p->nThread-1);
+    pQueue = vec1JobQueueNew(p->nThread-1, p->tv.db);
     if( pQueue==0 ){
       sqlite3_result_error_nomem(pCtx);
       goto train_final_out;
@@ -4176,7 +4268,9 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
     vec1TrainRotation(p, pQueue, aBook, aRotation);
   }
 
-  if( p->nBucket>0 ){
+  vec1TrainingCancelled(p);
+
+  if( p->rc==SQLITE_OK && p->nBucket>0 ){
     vec1TrainCoarseQuant(p, pQueue, aCentroid);
 
     /* For each training vector, find the closest centroid. Then subtract
@@ -4192,7 +4286,7 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
 
   /* Now train the PQ codebooks, if required. Each codebook is trained in
   ** parallel, using a separate thread if threads were configured. */
-  if( p->nCodebook>0 ){
+  if( p->rc==SQLITE_OK && p->nCodebook>0 ){
     vec1TrainLog(p, 0, "PQ codebook training");
     START_TRAINING_TIMER(p, VEC1_TRAINING_CODEBOOKS);
     vec1TrainPQCodebooks(p, &p->tv, pQueue, aBook);
@@ -4204,6 +4298,8 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
   if( p->rc==SQLITE_OK ){
     sqlite3_result_blob(pCtx, (void*)aByte, nByte, vec1SqliteFree);
     aByte = 0;
+  }else if( p->rc==SQLITE_INTERRUPT ){
+    sqlite3_result_error_code(pCtx, SQLITE_INTERRUPT);
   }
 
  train_final_out: 
@@ -9896,7 +9992,7 @@ static int vec1RebuildIndex(Vec1Tab *pTab, int nThread){
   }
 #if VEC1_THREADS
   if( rc==SQLITE_OK && nThread>1 && bZeroBase==0 ){
-    pQueue = vec1JobQueueNew(nThread-1);
+    pQueue = vec1JobQueueNew(nThread-1, pTab->db);
     if( pQueue==0 ){
       rc = SQLITE_NOMEM;
     }
