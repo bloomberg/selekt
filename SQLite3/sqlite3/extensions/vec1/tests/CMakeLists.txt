@@ -28,3 +28,15 @@ else()
 endif()
 
 add_test(NAME vec1_kmeans_scratch_test COMMAND vec1_kmeans_scratch_test)
+
+add_executable(vec1_training_chunk_test vec1_training_chunk_test.c)
+set_property(TARGET vec1_training_chunk_test PROPERTY C_STANDARD 99)
+set_property(TARGET vec1_training_chunk_test PROPERTY C_STANDARD_REQUIRED ON)
+target_include_directories(vec1_training_chunk_test PRIVATE ..)
+if(MSVC)
+  target_compile_options(vec1_training_chunk_test PRIVATE /W4 /WX)
+else()
+  target_compile_options(vec1_training_chunk_test PRIVATE -Wall -Wextra -Werror)
+endif()
+
+add_test(NAME vec1_training_chunk_test COMMAND vec1_training_chunk_test)
