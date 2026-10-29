@@ -159,6 +159,10 @@ internal class Vec1InputsTest {
         runProbe("padded-pq-query")
 
     @Test
+    fun `vec1 pads residual PQ vectors during integrity checking`() =
+        runProbe("padded-pq-integrity")
+
+    @Test
     fun `vec1 validates numeric query options before conversion`() =
         runProbe("numeric-query-options")
 
@@ -273,6 +277,7 @@ internal object Vec1SecurityProbeMain {
                 "training-interruption" -> probeTrainingInterruption(sqlite, db)
                 "non-finite-model" -> probeNonFiniteModel(sqlite, db)
                 "padded-pq-query" -> probePaddedPqQuery(sqlite, db)
+                "padded-pq-integrity" -> probePaddedPqIntegrity(sqlite, db)
                 "numeric-query-options" -> probeNumericQueryOptions(sqlite, db)
                 "metadata-in-filters" -> probeMetadataInFilters(sqlite, db)
                 "no-index-metadata-in-filters" -> probeNoIndexMetadataInFilters(sqlite, db)
@@ -436,6 +441,29 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.interrupt(db)
             worker.join()
+        }
+    }
+
+    private fun probePaddedPqIntegrity(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            paddedResidualModel()
+        )
+        check(
+            sqlite.exec(
+                db,
+                "INSERT INTO t(rowid, vector) VALUES(1, vec1_from_json('[1,2,3,4]'))"
+            ) == SQL_OK
+        )
+        val statement = prepare(sqlite, db, "PRAGMA integrity_check")
+        try {
+            check(sqlite.step(statement) == SQL_ROW) { sqlite.errorMessage(db) }
+            check(sqlite.columnText(statement, 0) == "ok")
+            check(sqlite.step(statement) == SQL_DONE)
+        } finally {
             sqlite.finalize(statement)
         }
     }
@@ -1854,6 +1882,29 @@ internal object Vec1SecurityProbeMain {
             repeat(nBucket) { bucket ->
                 putFloat(bucket * 100f)
                 putFloat(0f)
+            }
+        }.array()
+    }
+
+    private fun paddedResidualModel(): ByteArray {
+        val nElem = 4
+        val nCodebook = 3
+        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
+        val nBucket = 2
+        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
+            nBucket * nElem * SIZEOF_F32
+        return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(nBucket)
+            putInt(VEC1_DISTANCE_L2)
+            order(ByteOrder.nativeOrder())
+            repeat(nCodebook) {
+                repeat(VEC1_PQ_CODEBOOK_SIZE) { code ->
+                    repeat(nCodeElem) { putFloat(code.toFloat()) }
+                }
             }
         }.array()
     }

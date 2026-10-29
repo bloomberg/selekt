@@ -10830,7 +10830,7 @@ static int vec1IntegrityMethod(
     i64 nTotalEntry = 0;
 
     if( nCodebook>0 && pMod->hdr.nBucket>0 ){
-      aResidual = vec1MallocZero(nElem * sizeof_f32);
+      aResidual = vec1MallocZero(pTab->nTmpVec * sizeof_f32);
       if( aResidual==0 ){
         rc = SQLITE_NOMEM;
         goto integrity_failed;
