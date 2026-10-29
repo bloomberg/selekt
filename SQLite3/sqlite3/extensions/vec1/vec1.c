@@ -5130,6 +5130,11 @@ static void vec1UnloadModel(Vec1Tab *pTab){
   memset(&pTab->mod, 0, sizeof(pTab->mod));
 }
 
+static void vec1UnloadConfig(Vec1Tab *pTab){
+  vec1UnloadModel(pTab);
+  pTab->cfg.nElem = 0;
+}
+
 /*
 ** xDisconnect method. Free the virtual table object passed as the only
 ** argument.
@@ -10666,7 +10671,9 @@ static int vec1BeginMethod(sqlite3_vtab *pVtab){
 
 static int vec1RollbackMethod(sqlite3_vtab *pVtab){
   Vec1Tab *pTab = (Vec1Tab*)pVtab;
-  return vec1FinishWriter(pTab, 1);
+  int rc = vec1FinishWriter(pTab, 1);
+  vec1UnloadConfig(pTab);
+  return rc;
 }
 static int vec1SavepointMethod(sqlite3_vtab *pVtab, int iSavepoint){
   Vec1Tab *pTab = (Vec1Tab*)pVtab;
@@ -10680,8 +10687,12 @@ static int vec1ReleaseMethod(sqlite3_vtab *pVtab, int iSavepoint){
 }
 static int vec1RollbackToMethod(sqlite3_vtab *pVtab, int iSavepoint){
   Vec1Tab *pTab = (Vec1Tab*)pVtab;
+  int rc;
   UNUSED_PARAMETER(iSavepoint);
-  return vec1FinishWriter(pTab, 1);
+  rc = vec1FinishWriter(pTab, 1);
+  vec1UnloadConfig(pTab);
+  if( rc==SQLITE_OK ) rc = vec1LoadConfig(pTab);
+  return rc;
 }
 
 /*
