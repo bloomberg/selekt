@@ -147,6 +147,10 @@ internal class Vec1InputsTest {
         runProbe("non-finite-vector")
 
     @Test
+    fun `vec1 keeps distances finite for extreme finite vectors`() =
+        runProbe("finite-distance-arithmetic")
+
+    @Test
     fun `vec1 training rejects non-finite aggregate input`() = runProbe("non-finite-training")
 
     @Test
@@ -250,7 +254,14 @@ internal object Vec1SecurityProbeMain {
         check(sqlite.openV2(":memory:", SQL_OPEN_READWRITE or SQL_OPEN_CREATE, dbHolder) == SQL_OK)
         val db = dbHolder[0]
         try {
-            when (args.single()) {
+            runProbe(args.single(), sqlite, db)
+        } finally {
+            sqlite.closeV2(db)
+        }
+    }
+
+    private fun runProbe(mode: String, sqlite: IExternalSQLite, db: Long) {
+        when (mode) {
                 "null-json" -> probeNullJson(sqlite, db)
                 "index-overflow" -> probeIndexOverflow(sqlite, db)
                 "configured-vector-size" -> probeConfiguredVectorSize(sqlite, db)
@@ -281,6 +292,7 @@ internal object Vec1SecurityProbeMain {
                 "residual-without-buckets" -> probeResidualModelWithoutBuckets(sqlite, db)
                 "non-finite-json" -> probeNonFiniteJson(sqlite, db)
                 "non-finite-vector" -> probeNonFiniteVector(sqlite, db)
+                "finite-distance-arithmetic" -> probeFiniteDistanceArithmetic(sqlite, db)
                 "non-finite-training" -> probeNonFiniteTraining(sqlite, db)
                 "training-thread-count" -> probeTrainingThreadCount(sqlite, db)
                 "training-interruption" -> probeTrainingInterruption(sqlite, db)
@@ -300,9 +312,6 @@ internal object Vec1SecurityProbeMain {
                 "rollback-model-cache" -> probeRollbackModelCache(sqlite, db)
                 "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
                 else -> error("Unknown probe")
-            }
-        } finally {
-            sqlite.closeV2(db)
         }
     }
 
@@ -527,8 +536,11 @@ internal object Vec1SecurityProbeMain {
             check(result.get() != SQL_ROW && result.get() != SQL_DONE) {
                 "Interrupted training completed successfully"
             }
-            check(sqlite.errorCode(db) == SQL_INTERRUPT) {
-                "Expected SQLITE_INTERRUPT, got ${result.get()}: ${sqlite.errorMessage(db)}"
+            // SQLite may normalise an aggregate finaliser error to SQLITE_ERROR.
+            val errorCode = sqlite.errorCode(db)
+            check(errorCode == SQL_INTERRUPT || errorCode == SQL_ERROR) {
+                "Expected SQLITE_INTERRUPT or aggregate SQLITE_ERROR, " +
+                    "got ${result.get()}: ${sqlite.errorMessage(db)}"
             }
         } finally {
             sqlite.interrupt(db)
@@ -600,6 +612,40 @@ internal object Vec1SecurityProbeMain {
             check(sqlite.step(integrity) == SQL_DONE)
         } finally {
             sqlite.finalize(integrity)
+        }
+    }
+
+    private fun probeFiniteDistanceArithmetic(sqlite: IExternalSQLite, db: Long) {
+        listOf("1e-45", "1e-30", "1e20", "3e38").forEach { value ->
+            val vector = "[$value,-$value,$value,-$value,$value]"
+            val statement = prepare(
+                sqlite,
+                db,
+                "SELECT vec1_cos_distance(" +
+                    "vec1_from_json('$vector'), vec1_from_json('$vector'))"
+            )
+            try {
+                check(sqlite.step(statement) == SQL_ROW) { sqlite.errorMessage(db) }
+                val distance = sqlite.columnDouble(statement, 0)
+                check(distance.isFinite())
+                check(kotlin.math.abs(distance) < 1e-12)
+            } finally {
+                sqlite.finalize(statement)
+            }
+        }
+
+        val l2 = prepare(
+            sqlite,
+            db,
+            "SELECT vec1_l2_distance(" +
+                "vec1_from_json('[3e38,-3e38,3e38,-3e38,3e38]')," +
+                "vec1_from_json('[-3e38,3e38,-3e38,3e38,-3e38]'))"
+        )
+        try {
+            check(sqlite.step(l2) == SQL_ROW) { sqlite.errorMessage(db) }
+            check(sqlite.columnDouble(l2, 0).isFinite())
+        } finally {
+            sqlite.finalize(l2)
         }
     }
 
