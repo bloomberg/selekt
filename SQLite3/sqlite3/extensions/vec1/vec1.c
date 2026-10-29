@@ -374,35 +374,41 @@ struct Vec1Buffer {
 /*
 ** Return the dot-product of vectors A and B, each d elements in size.
 */
-static float vec1DotProduct(
+static double vec1DotProduct(
   int d,
   const float *A,
   const float *B
 ){
-  float sum = 0.0f;
+  double sum = 0.0;
   int j = 0;
 
 #ifdef VEC1_HAVE_AVX2
-  __m256 acc = _mm256_setzero_ps();
-  for(j=0; j<d-7; j+=8){
-    __m256 a = _mm256_loadu_ps(&A[j]);
-    __m256 v = _mm256_loadu_ps(&B[j]);
-    acc = FMADD(a, v, acc);
+  __m256d acc = _mm256_setzero_pd();
+  for(j=0; j<=d-4; j+=4){
+    __m256d a = _mm256_cvtps_pd(_mm_loadu_ps(&A[j]));
+    __m256d v = _mm256_cvtps_pd(_mm_loadu_ps(&B[j]));
+    acc = FMADD64(a, v, acc);
   }
-  HORIZONTAL_SUM(sum, acc);
+  HORIZONTAL_SUM64(sum, acc);
 #endif
 #ifdef VEC1_HAVE_NEON
-  float32x4_t acc = vdupq_n_f32(0.0f);
-  for(; j<d-3; j+=4){
+  float64x2_t acc0 = vdupq_n_f64(0.0);
+  float64x2_t acc1 = vdupq_n_f64(0.0);
+  for(; j<=d-4; j+=4){
     float32x4_t a = vld1q_f32(&A[j]);
     float32x4_t v = vld1q_f32(&B[j]);
-    acc = vfmaq_f32(acc, a, v);
+    float64x2_t a0 = vcvt_f64_f32(vget_low_f32(a));
+    float64x2_t a1 = vcvt_f64_f32(vget_high_f32(a));
+    float64x2_t v0 = vcvt_f64_f32(vget_low_f32(v));
+    float64x2_t v1 = vcvt_f64_f32(vget_high_f32(v));
+    acc0 = vfmaq_f64(acc0, a0, v0);
+    acc1 = vfmaq_f64(acc1, a1, v1);
   }
-  sum = vaddvq_f32(acc);
+  sum = vaddvq_f64(acc0) + vaddvq_f64(acc1);
 #endif
 
   for(; j<d; j++){
-    sum += A[j] * B[j];
+    sum += (double)A[j] * (double)B[j];
   }
 
   return sum;
@@ -1077,30 +1083,37 @@ static double vec1L2Dist(
   int i = 0;
 
 #ifdef VEC1_HAVE_AVX2
-  __m256 vc = _mm256_setzero_ps();
-  for(; i<=(n-8); i+=8){
-    __m256 va1 = _mm256_loadu_ps(&a1[i]);
-    __m256 va2 = _mm256_loadu_ps(&a2[i]);
-    __m256 diff = _mm256_sub_ps(va1, va2);
-    vc = FMADD(diff, diff, vc);
+  __m256d vc = _mm256_setzero_pd();
+  for(; i<=n-4; i+=4){
+    __m256d va1 = _mm256_cvtps_pd(_mm_loadu_ps(&a1[i]));
+    __m256d va2 = _mm256_cvtps_pd(_mm_loadu_ps(&a2[i]));
+    __m256d diff = _mm256_sub_pd(va1, va2);
+    vc = FMADD64(diff, diff, vc);
   }
 
-  HORIZONTAL_SUM(ret, vc);
+  HORIZONTAL_SUM64(ret, vc);
 #endif /* VEC1_HAVE_AVX2 */
 
 #ifdef VEC1_HAVE_NEON
-  float32x4_t acc = vdupq_n_f32(0.0f);
+  float64x2_t acc0 = vdupq_n_f64(0.0);
+  float64x2_t acc1 = vdupq_n_f64(0.0);
   for(; i<=(n-4); i+=4){
     float32x4_t va = vld1q_f32(&a1[i]);
     float32x4_t vb = vld1q_f32(&a2[i]);
-    float32x4_t diff = vsubq_f32(va, vb);
-    acc = vmlaq_f32(acc, diff, diff);
+    float64x2_t diff0 = vsubq_f64(
+        vcvt_f64_f32(vget_low_f32(va)), vcvt_f64_f32(vget_low_f32(vb))
+    );
+    float64x2_t diff1 = vsubq_f64(
+        vcvt_f64_f32(vget_high_f32(va)), vcvt_f64_f32(vget_high_f32(vb))
+    );
+    acc0 = vfmaq_f64(acc0, diff0, diff0);
+    acc1 = vfmaq_f64(acc1, diff1, diff1);
   }
-  ret = vaddvq_f32(acc);
+  ret = vaddvq_f64(acc0) + vaddvq_f64(acc1);
 #endif /* VEC1_HAVE_NEON */
 
   for(; i<n; i++){
-    double diff = a1[i] - a2[i];
+    double diff = (double)a1[i] - (double)a2[i];
     ret += (diff * diff);
   }
 
@@ -1123,59 +1136,18 @@ static double vec1CosDist(
   const float *a2,
   int n
 ){
-  int i = 0;
-  float dot = 0.0f;
-  float a1s = 0.0f;
-  float a2s = 0.0f;
-
-#ifdef VEC1_HAVE_AVX2
-  __m256 va1s = _mm256_setzero_ps();
-  __m256 va2s = _mm256_setzero_ps();
-  __m256 vdot = _mm256_setzero_ps();
-
-  for(; i<=(n-8); i+=8){
-    __m256 va1 = _mm256_loadu_ps(&a1[i]);
-    __m256 va2 = _mm256_loadu_ps(&a2[i]);
-
-    va1s = FMADD(va1, va1, va1s);
-    va2s = FMADD(va2, va2, va2s);
-    vdot = FMADD(va1, va2, vdot);
-  }
-
-  HORIZONTAL_SUM(a1s, va1s);
-  HORIZONTAL_SUM(a2s, va2s);
-  HORIZONTAL_SUM(dot, vdot);
-#endif /* VEC1_HAVE_AVX2 */
-
-#ifdef VEC1_HAVE_NEON
-  float32x4_t va1s = vdupq_n_f32(0.0f);
-  float32x4_t va2s = vdupq_n_f32(0.0f);
-  float32x4_t vdot = vdupq_n_f32(0.0f);
-
-  for(; i<=(n-4); i+=4){
-    float32x4_t va1 = vld1q_f32(&a1[i]);
-    float32x4_t va2 = vld1q_f32(&a2[i]);
-
-    va1s = vmlaq_f32(va1s, va1, va1);
-    va2s = vmlaq_f32(va2s, va2, va2);
-    vdot = vmlaq_f32(vdot, va1, va2);
-  }
-  a1s = vaddvq_f32(va1s);
-  a2s = vaddvq_f32(va2s);
-  dot = vaddvq_f32(vdot);
-#endif /* VEC1_HAVE_NEON */
-
-  for(; i<n; i++){
-    dot += a1[i] * a2[i];
-    a1s += a1[i] * a1[i];
-    a2s += a2[i] * a2[i];
-  }
+  double dot = vec1DotProduct(n, a1, a2);
+  double a1s = vec1DotProduct(n, a1, a1);
+  double a2s = vec1DotProduct(n, a2, a2);
+  double similarity;
 
   /* If either vector was a zero vector, assume the two inputs are 
   ** perfectly orthogonal. */
   if( a1s==0.0 || a2s==0.0 ) return 1.0;
 
-  return 1.0 - (dot / sqrt(a1s * a2s));
+  similarity = dot / sqrt(a1s) / sqrt(a2s);
+  similarity = MAX(-1.0, MIN(1.0, similarity));
+  return 1.0 - similarity;
 }
 
 /*
