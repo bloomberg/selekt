@@ -10123,6 +10123,7 @@ static int vec1FixVectorSize(Vec1Tab *pTab, int nVec){
   return rc;
 }
 
+static int vec1FinishWriter(Vec1Tab*, int);
 
 /*
 ** Handle a "special" INSERT command on a vec1 table. A special INSERT takes
@@ -10175,9 +10176,9 @@ static int vec1SpecialInsert(
       default: assert( iCmd==VEC1_CMD_REBUILD ); {
 
         /* TODO: Should this be disallowed if there are active readers? */
+        rc = vec1FinishWriter(pTab, 0);
 
-
-        if( sqlite3_value_type(pArg)!=SQLITE_NULL ){
+        if( rc==SQLITE_OK && sqlite3_value_type(pArg)!=SQLITE_NULL ){
           u8 aFlat[VEC1_HEADER_SIZE];
           Vec1Model mod;
           int nByte = 0;

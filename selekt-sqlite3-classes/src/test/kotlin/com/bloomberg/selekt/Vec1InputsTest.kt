@@ -181,6 +181,10 @@ internal class Vec1InputsTest {
         runProbe("metadata-block-direct-rebuild")
 
     @Test
+    fun `vec1 finalises a pending writer before rebuilding its model`() =
+        runProbe("rebuild-pending-writer")
+
+    @Test
     fun `vec1 bounds packed metadata and includes it in rebuild list block accounting`() =
         runProbe("metadata-block-packed-rebuild")
 
@@ -263,6 +267,7 @@ internal object Vec1SecurityProbeMain {
                 "progress-callback-name" -> probeProgressCallbackName(sqlite, db)
                 "metadata-block-insert" -> probeMetadataBlockInsert(sqlite, db)
                 "metadata-block-direct-rebuild" -> probeMetadataBlockDirectRebuild(sqlite, db)
+                "rebuild-pending-writer" -> probeRebuildPendingWriter(sqlite, db)
                 "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
                 else -> error("Unknown probe")
             }
@@ -278,6 +283,40 @@ internal object Vec1SecurityProbeMain {
             check(sqlite.columnType(statement, 0) == 5)
         } finally {
             sqlite.finalize(statement)
+        }
+    }
+
+    private fun probeRebuildPendingWriter(sqlite: IExternalSQLite, db: Long) {
+        check(sqlite.exec(db, "CREATE VIRTUAL TABLE t USING vec1(vector)") == SQL_OK)
+        executeBlob(
+            sqlite,
+            db,
+            "INSERT INTO t(cmd, arg) VALUES('rebuild', ?)",
+            quantizedModel()
+        )
+        val replacement = paddedCodebookModel()
+        val statement = prepare(
+            sqlite,
+            db,
+            "INSERT INTO t(rowid, cmd, arg, vector) VALUES" +
+                "(1, NULL, NULL, vec1_from_json('[1,2,3,4]'))," +
+                "(NULL, 'rebuild', ?, NULL)," +
+                "(2, NULL, NULL, vec1_from_json('[4,3,2,1]'))"
+        )
+        try {
+            check(sqlite.bindBlob(statement, 1, replacement, replacement.size) == SQL_OK)
+            check(sqlite.step(statement) == SQL_DONE) { sqlite.errorMessage(db) }
+        } finally {
+            sqlite.finalize(statement)
+        }
+        check(queryLong(sqlite, db, "SELECT count(*) FROM t") == 2L)
+        val integrity = prepare(sqlite, db, "PRAGMA integrity_check")
+        try {
+            check(sqlite.step(integrity) == SQL_ROW)
+            check(sqlite.columnText(integrity, 0) == "ok")
+            check(sqlite.step(integrity) == SQL_DONE)
+        } finally {
+            sqlite.finalize(integrity)
         }
     }
 
@@ -1717,6 +1756,21 @@ internal object Vec1SecurityProbeMain {
 
     private fun codebookModel(nCodebook: Int): ByteArray {
         val nElem = 2
+        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
+        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
+            putInt(4)
+            putInt(VEC1_MODEL_INDEX)
+            putInt(nElem)
+            putInt(nCodebook)
+            putInt(0)
+            putInt(VEC1_DISTANCE_L2)
+        }.array()
+    }
+
+    private fun paddedCodebookModel(): ByteArray {
+        val nElem = 4
+        val nCodebook = 3
         val nCodeElem = (nElem + nCodebook - 1) / nCodebook
         val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
