@@ -94,6 +94,7 @@
 # include <stdlib.h>
 
 # include "vec1_kmeans_scratch.h"
+# include "vec1_training_chunk.h"
 
 /* Standard sized types. */
 typedef sqlite3_int64  i64;
@@ -3031,9 +3032,13 @@ static void vec1CodebookWork(void *pCtx){
     for(ii=0; ii<pVec->nChunk; ii++){
       /* Allocate space for this chunk. Either VEC1_TRAINING_SZCHUNK or
       ** enough space for all remaining sub-vectors, whichever is smaller. */
-      int nByte = MIN(VEC1_TRAINING_SZCHUNK, 
-          (pVec->nVec - (ii * pVec->nVecPerChunk)) * nBytePerVec
+      int nByte = vec1TrainingChunkSize(
+          pVec->nVec, pVec->nVecPerChunk, nBytePerVec, ii
       );
+      if( nByte<0 ){
+        pJob->rc = SQLITE_TOOBIG;
+        break;
+      }
       pVec->aChunk[ii] = (float*)sqlite3_malloc(nByte);
 
       if( pVec->aChunk[ii]==0 ){
