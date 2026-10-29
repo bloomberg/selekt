@@ -10,7 +10,7 @@ import sys
 
 
 def shadow_packet(model: bytes, index: bytes, metadata: bytes) -> bytes:
-    return struct.pack(">HH", len(model), len(index)) + model + index + metadata
+    return len(model).to_bytes(3, "big") + struct.pack(">H", len(index)) + model + index + metadata
 
 
 def prepare_shadow(output: pathlib.Path) -> None:
@@ -65,10 +65,86 @@ def prepare_database(output: pathlib.Path) -> None:
         database.execute("VACUUM")
 
 
-def prepare_lifecycle(output: pathlib.Path) -> None:
-    output.mkdir(parents=True, exist_ok=True)
-    (output / "transaction-rebuild-reconnect").write_bytes(
+def prepare_vec1_campaigns(output: pathlib.Path) -> None:
+    lifecycle = output / "lifecycle"
+    metadata = output / "metadata"
+    training = output / "training"
+    distance = output / "distance"
+    for directory in (lifecycle, metadata, training, distance):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    (lifecycle / "transaction-rebuild-reconnect").write_bytes(
         bytes([0, 0, 0, 6, 2, 0, 0, 1, 0, 9, 0, 6, 0, 1, 0, 3, 0, 4, 1, 13, 1, 10])
+    )
+    (lifecycle / "savepoint-rowid-boundaries").write_bytes(
+        bytes([0, 1, 0, 6, 0, 0, 0, 1, 0, 6, 12, 0, 0, 3, 0, 2, 0, 12])
+    )
+
+    (metadata / "null-nul-and-numeric-boundaries").write_bytes(
+        bytes([4, 0, 3, 3, 0, 65, 1])
+        + struct.pack("<Bq", 1, 2**53 + 1)
+        + struct.pack("<Bd", 2, float(2**53))
+        + bytes([0, 3, 3, 0, 65, 4, 0])
+    )
+    (metadata / "signed-zero-subnormal-in").write_bytes(
+        bytes([3])
+        + struct.pack("<Bd", 2, -0.0)
+        + struct.pack("<BQ", 2, 1)
+        + bytes([4, 2, 2])
+        + struct.pack("<d", 0.0)
+        + bytes([2])
+        + struct.pack("<Q", 0x8000000000000000)
+    )
+    (metadata / "no-index-repeated-real-in").write_bytes(bytes([2]))
+    (metadata / "empty-value-filter").write_bytes(
+        bytes([
+            0x3E, 0x04, 0x00, 0x03, 0x03, 0x00, 0x41, 0x01,
+            0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20,
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x40, 0x43, 0x00, 0x03, 0x03, 0x00, 0x41, 0x04,
+            0x00,
+        ])
+    )
+    (metadata / "nul-text-in-no-index-filter").write_bytes(
+        bytes([
+            0x04, 0x00, 0x03, 0x03, 0x00, 0x41, 0x01, 0x01,
+            0x01, 0x00, 0x00, 0x21, 0x00, 0x00, 0x00, 0x20,
+            0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x40, 0x43, 0x00, 0x03, 0x03, 0x00, 0x41, 0x00,
+        ])
+    )
+    (metadata / "mixed-type-integer-text-ordering").write_bytes(
+        bytes([
+            0x3E, 0x10, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0x03, 0x03, 0x09, 0x00, 0x00, 0x41, 0x00, 0x05,
+            0x01, 0x41, 0x01, 0x01, 0x41, 0x00, 0x02, 0x00,
+            0x00, 0x02, 0x58, 0x00,
+        ])
+    )
+
+    (training / "identical-zero-vectors").write_bytes(bytes(256))
+    (training / "rank-one-padded-codebooks").write_bytes(
+        bytes([15, 16, 1, 1, 1, 3]) + struct.pack("<32f", *[float(index % 4) for index in range(32)])
+    )
+
+    def distance_packet(values: list[int]) -> bytes:
+        dimensions = len(values) // 2
+        return bytes([dimensions - 1]) + b"".join(struct.pack("<I", value) for value in values)
+
+    (distance / "lane-boundary-extrema").write_bytes(
+        distance_packet([
+            0x7F7FFFFF, 0xFF7FFFFF, 0x00000001, 0x80000001,
+            0x00000000, 0x80000000, 0x3F800000, 0xBF800000,
+            0xFF7FFFFF, 0x7F7FFFFF, 0x80000001, 0x00000001,
+            0x80000000, 0x00000000, 0xBF800000, 0x3F800000,
+        ])
+    )
+    (distance / "scalar-tail-near-tie").write_bytes(
+        distance_packet([
+            0x3F800000, 0x3F800001, 0x3F7FFFFF, 0x00800000, 0x00000001,
+            0x3F800001, 0x3F800000, 0x3F800000, 0x00800001, 0x00000002,
+        ])
     )
 
 
@@ -82,7 +158,7 @@ def main() -> None:
     shutil.copytree(source / "corpora" / "scalar", output / "scalar")
     prepare_shadow(output / "shadow")
     prepare_database(output / "database")
-    prepare_lifecycle(output / "lifecycle")
+    prepare_vec1_campaigns(output)
 
 
 if __name__ == "__main__":

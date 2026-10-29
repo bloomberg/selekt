@@ -70,6 +70,14 @@ endif()
 set(SELEKT_VEC1_SOURCE extensions/vec1/vec1.c)
 set(SELEKT_SQLITE_SOURCE generated/cpp/sqlite3.c)
 set(SELEKT_SOURCES ${SELEKT_SQLITE_SOURCE})
+if(SELEKT_BUILD_FUZZERS)
+  add_compile_definitions(
+    VEC1_PQ_CODEBOOK_SZ=8
+    VEC1_TRAINING_MAXCHUNK=4
+    VEC1_TRAINING_MAXVECTOR=128
+    VEC1_TRAINING_SZCHUNK=4096
+  )
+endif()
 if(SELEKT_ENABLE_VEC1)
   if(SELEKT_VEC1_ENABLE_X86_AVX2
      AND NOT MSVC
@@ -93,6 +101,15 @@ if(SELEKT_ENABLE_VEC1)
         generated/include/sqlite3
       )
       target_compile_options(${SELEKT_VEC1_TARGET} PRIVATE -include stdint.h)
+      if(SELEKT_BUILD_FUZZERS)
+        target_compile_options(${SELEKT_VEC1_TARGET} PRIVATE
+          -fsanitize=address,undefined
+          -fno-omit-frame-pointer
+        )
+        if(SELEKT_FUZZ_ENGINE STREQUAL "libfuzzer")
+          target_compile_options(${SELEKT_VEC1_TARGET} PRIVATE -fsanitize=fuzzer-no-link)
+        endif()
+      endif()
     endforeach()
     target_compile_definitions(selekt_vec1_scalar PRIVATE VEC1SIMD=SCALAR)
     target_compile_definitions(selekt_vec1_avx2 PRIVATE VEC1SIMD=AVX2)

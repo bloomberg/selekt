@@ -42,6 +42,6 @@ cmake -S SQLite3 -B "$build_dir" -G Ninja \
   -DSLKT_TARGET_ABI="$target_abi" \
   -DSELEKT_BUILD_FUZZERS=ON \
   -DSELEKT_ENABLE_VEC1=ON \
-  -DSELEKT_VEC1_ENABLE_X86_AVX2=OFF \
+  -DSELEKT_VEC1_ENABLE_X86_AVX2=ON \
   -DSELEKT_FUZZ_ENGINE="$engine"
 cmake --build "$build_dir" --target selekt_fuzzers --parallel "$(nproc)"
