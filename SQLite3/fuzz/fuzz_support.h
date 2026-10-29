@@ -25,7 +25,7 @@ namespace selekt::fuzz {
 
 constexpr std::size_t MAX_INPUT_SIZE = 1U << 20;
 
-sqlite3* openDatabase();
+sqlite3* openDatabase(const char* filename = ":memory:");
 void resetExecutionBudget(sqlite3* database);
 void executeSql(sqlite3* database, const char* sql, std::size_t size);
 

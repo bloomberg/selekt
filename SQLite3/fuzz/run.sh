@@ -26,6 +26,7 @@ targets=(
   "selekt_fuzz_sql:sql"
   "selekt_fuzz_vec1_scalar:scalar"
   "selekt_fuzz_vec1_shadow:shadow"
+  "selekt_fuzz_vec1_lifecycle:lifecycle"
   "selekt_fuzz_database:database"
 )
 

@@ -50,11 +50,13 @@ endfunction()
 selekt_add_fuzzer(selekt_fuzz_sql fuzz_sql.cpp)
 selekt_add_fuzzer(selekt_fuzz_vec1_scalar fuzz_vec1_scalar.cpp)
 selekt_add_fuzzer(selekt_fuzz_vec1_shadow fuzz_vec1_shadow.cpp)
+selekt_add_fuzzer(selekt_fuzz_vec1_lifecycle fuzz_vec1_lifecycle.cpp)
 selekt_add_fuzzer(selekt_fuzz_database fuzz_database.cpp)
 
 add_custom_target(selekt_fuzzers DEPENDS
   selekt_fuzz_sql
   selekt_fuzz_vec1_scalar
   selekt_fuzz_vec1_shadow
+  selekt_fuzz_vec1_lifecycle
   selekt_fuzz_database
 )

@@ -65,6 +65,13 @@ def prepare_database(output: pathlib.Path) -> None:
         database.execute("VACUUM")
 
 
+def prepare_lifecycle(output: pathlib.Path) -> None:
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "transaction-rebuild-reconnect").write_bytes(
+        bytes([0, 0, 0, 6, 2, 0, 0, 1, 0, 9, 0, 6, 0, 1, 0, 3, 0, 4, 1, 13, 1, 10])
+    )
+
+
 def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("usage: prepare_corpora.py SOURCE_DIR OUTPUT_DIR")
@@ -75,6 +82,7 @@ def main() -> None:
     shutil.copytree(source / "corpora" / "scalar", output / "scalar")
     prepare_shadow(output / "shadow")
     prepare_database(output / "database")
+    prepare_lifecycle(output / "lifecycle")
 
 
 if __name__ == "__main__":
