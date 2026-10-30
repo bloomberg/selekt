@@ -52,13 +52,13 @@ int initializeExtensions() {
 
 }
 
-sqlite3* openDatabase() {
+sqlite3* openDatabase(const char* filename) {
     if (initializeExtensions() != SQLITE_OK) return nullptr;
     sqlite3* database = nullptr;
     if (sqlite3_open_v2(
-            ":memory:",
+            filename,
             &database,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_URI,
             nullptr
         ) != SQLITE_OK) {
         sqlite3_close_v2(database);
