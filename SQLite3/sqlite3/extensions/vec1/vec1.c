@@ -1942,7 +1942,7 @@ struct Vec1TrainCtx {
 };
 
 static int vec1TrainingCancelled(Vec1TrainCtx *p){
-  if( p->rc==SQLITE_OK && vec1TrainingInterrupted(&p->tv) ){
+  if( vec1TrainingInterrupted(&p->tv) ){
     p->rc = SQLITE_INTERRUPT;
     sqlite3_result_error_code(p->pCtx, SQLITE_INTERRUPT);
   }
@@ -4262,9 +4262,12 @@ static void vec1TrainFinal(sqlite3_context *pCtx){
     vec1TrainLog(p, 0, "PQ codebook training");
     START_TRAINING_TIMER(p, VEC1_TRAINING_CODEBOOKS);
     vec1TrainPQCodebooks(p, &p->tv, pQueue, aBook);
+    vec1TrainingCancelled(p);
     p->nCompletedWork += VEC1_TRAINING_WORK_CODEBOOKS;
     END_TRAINING_TIMER(p, VEC1_TRAINING_CODEBOOKS);
   }
+
+  vec1TrainingCancelled(p);
 
   /* Return the result blob. */
   if( p->rc==SQLITE_OK ){

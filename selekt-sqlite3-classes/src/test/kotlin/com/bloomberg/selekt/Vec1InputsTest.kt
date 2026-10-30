@@ -545,6 +545,7 @@ internal object Vec1SecurityProbeMain {
         } finally {
             sqlite.interrupt(db)
             worker.join()
+            sqlite.finalize(statement)
         }
     }
 
