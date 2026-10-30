@@ -6309,6 +6309,27 @@ static int vec1MetaValueRead(
 #define COMPARE(a, b) ((a)==(b) ? 0 : ((a)>(b) ? +1 : -1))
 
 /*
+** Compare an integer and a real without first converting the integer to a
+** double. The conversion loses precision for integers above 2^53, while
+** SQLite keeps those values distinct when applying numeric comparisons.
+** This follows sqlite3IntFloatCompare() in SQLite's VDBE comparator.
+*/
+static int vec1IntFloatCompare(i64 i, double r){
+  if( isnan(r) ){
+    /* SQLite considers NaN to be NULL, and integers are greater than NULL. */
+    return 1;
+  }else{
+    i64 y;
+    if( r<-9223372036854775808.0 ) return +1;
+    if( r>=9223372036854775808.0 ) return -1;
+    y = (i64)r;
+    if( i<y ) return -1;
+    if( i>y ) return +1;
+    return ((double)i)<r ? -1 : ((double)i)>r;
+  }
+}
+
+/*
 ** Return 0 if the meta value passes the filter, or 1 if it is excluded
 ** by the filter. This is the slow path that can do any operator for
 ** any types of values.
@@ -6333,7 +6354,7 @@ static int vec1MetaValueFilter(Vec1Filter *pFilter, Vec1MetaValue *pMeta){
         break;
       }
       case SQLITE_FLOAT: {
-        cmp = COMPARE(pFilter->fVal, (double)pMeta->iVal);
+        cmp = -vec1IntFloatCompare(pMeta->iVal, pFilter->fVal);
         break;
       }
       default: {
@@ -6348,7 +6369,7 @@ static int vec1MetaValueFilter(Vec1Filter *pFilter, Vec1MetaValue *pMeta){
       case SQLITE_NULL:  return 1;
 
       case SQLITE_INTEGER: {
-        cmp = COMPARE((double)pFilter->iVal, pMeta->fVal);
+        cmp = vec1IntFloatCompare(pFilter->iVal, pMeta->fVal);
         break;
       }
       case SQLITE_FLOAT: {
