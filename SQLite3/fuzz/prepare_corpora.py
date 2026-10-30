@@ -122,6 +122,12 @@ def prepare_vec1_campaigns(output: pathlib.Path) -> None:
             0x00, 0x02, 0x58, 0x00,
         ])
     )
+    (metadata / "integer-real-precision-in").write_bytes(
+        bytes.fromhex(
+            "04 00 03 03 00 41 01 01 01 00 00 00 00 00 20 00 "
+            "02 00 00 00 00 00 00 40 43 00 03 03 00 45 04 00"
+        )
+    )
 
     (training / "identical-zero-vectors").write_bytes(bytes(256))
     (training / "rank-one-padded-codebooks").write_bytes(
