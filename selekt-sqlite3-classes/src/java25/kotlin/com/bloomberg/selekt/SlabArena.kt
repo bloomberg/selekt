@@ -74,17 +74,31 @@ internal class SlabArena(
     }
 
     fun allocateFrom(value: String): MemorySegment {
-        return allocateFromAscii(value, rejectNul = true) ?: allocateFromNonAscii(value)
+        return allocateFromAsciiNativeCString(value) ?: allocateFromNonAscii(value)
     }
 
-    fun allocateFromAscii(value: String, rejectNul: Boolean = false): MemorySegment? {
+    fun allocateFromAscii(value: String): MemorySegment? {
         val length = value.length
         val needed = length + 1L
         if (offset + needed > slab.byteSize()) {
             grow(needed)
         }
         val segment = slab.asSlice(offset, needed)
-        if (!segment.copyFromAscii(value, rejectNul)) {
+        if (!segment.copyFromAscii(value)) {
+            return null
+        }
+        offset += needed
+        return segment
+    }
+
+    private fun allocateFromAsciiNativeCString(value: String): MemorySegment? {
+        val length = value.length
+        val needed = length + 1L
+        if (offset + needed > slab.byteSize()) {
+            grow(needed)
+        }
+        val segment = slab.asSlice(offset, needed)
+        if (!segment.copyFromAsciiNativeCString(value)) {
             return null
         }
         offset += needed
@@ -140,13 +154,34 @@ internal class SlabArena(
  * Copies [value] until its first non-ASCII-compatible code unit. Contents are unspecified when this returns false and
  * must not be passed to SQLite.
  */
-internal fun MemorySegment.copyFromAscii(value: String, rejectNul: Boolean = false): Boolean {
+internal fun MemorySegment.copyFromAscii(value: String): Boolean {
     var asciiCompatible = true
     var i = 0
     while (i < value.length && asciiCompatible) {
         val character = value[i]
         when {
-            character.code == 0 && rejectNul -> throw IllegalArgumentException(NATIVE_C_STRING_NUL_MESSAGE)
+            character.code < FIRST_NON_ASCII_CODE_POINT -> set(JAVA_BYTE, i.toLong(), character.code.toByte())
+            character.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
+                asciiCompatible = false
+            }
+            character.isSurrogate() -> set(JAVA_BYTE, i.toLong(), '?'.code.toByte())
+            else -> asciiCompatible = false
+        }
+        ++i
+    }
+    if (asciiCompatible) {
+        set(JAVA_BYTE, value.length.toLong(), 0)
+    }
+    return asciiCompatible
+}
+
+private fun MemorySegment.copyFromAsciiNativeCString(value: String): Boolean {
+    var asciiCompatible = true
+    var i = 0
+    while (i < value.length && asciiCompatible) {
+        val character = value[i]
+        when {
+            character.code == 0 -> throw IllegalArgumentException(NATIVE_C_STRING_NUL_MESSAGE)
             character.code < FIRST_NON_ASCII_CODE_POINT -> set(JAVA_BYTE, i.toLong(), character.code.toByte())
             character.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
                 asciiCompatible = false

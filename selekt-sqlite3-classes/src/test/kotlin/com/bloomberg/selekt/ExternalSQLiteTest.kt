@@ -1455,6 +1455,27 @@ internal class ExternalSQLiteTest {
             assertEquals(SQL_NULL, sqlite.columnType(statement, 6))
         }
 
+    @Test
+    fun `packed row binds embedded NUL in ASCII text`() = withStatement("SELECT ?") { statement ->
+        val value = "ascii\u0000text"
+        val handle = sqlite.newStatementHandle(statement)
+
+        assertEquals(
+            SQL_OK,
+            sqlite.bindRowPacked(
+                handle,
+                byteArrayOf(4),
+                LongArray(1),
+                arrayOf<Any?>(value),
+                0,
+                1,
+                BooleanArray(2)
+            )
+        )
+        assertEquals(SQL_ROW, sqlite.step(statement))
+        assertEquals(value, sqlite.columnText(statement, 0))
+    }
+
     private class TypedRowFixture {
         val tags = byteArrayOf(1, 2, 3, 4, 4, 4, 0)
         val ints = intArrayOf(7, 0, 0, 0, 0, 0, 0)

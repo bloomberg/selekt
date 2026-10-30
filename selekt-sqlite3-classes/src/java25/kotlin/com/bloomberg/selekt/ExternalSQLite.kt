@@ -948,6 +948,7 @@ internal class ExternalSQLite(
         size: Int,
         utf8TextParameters: BooleanArray
     ): SQLCode {
+        val attachment = statement.attachment as? StatementAttachment
         val statementSegment = statementSegment(statement)
         for (i in 0 until size) {
             val source = offset + i
@@ -961,7 +962,7 @@ internal class ExternalSQLite(
                     Double.fromBits(values[source])
                 ) as Int
                 4.toByte() -> when (val obj = objects[source]) {
-                    is String -> bindText(statementSegment, position, obj, utf8TextParameters)
+                    is String -> bindText(statementSegment, position, obj, utf8TextParameters, attachment?.asciiText)
                     is ByteArray -> bindBlob(statementSegment, position, obj, obj.size)
                     else -> sqlite3_bind_null.invoke(statementSegment, position) as Int
                 }
