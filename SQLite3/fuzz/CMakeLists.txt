@@ -31,6 +31,9 @@ target_compile_options(selekt_fuzz_support PRIVATE
   -fno-omit-frame-pointer
 )
 target_link_options(selekt_fuzz_support PRIVATE -fsanitize=address,undefined)
+if(SELEKT_FUZZ_ENGINE STREQUAL "libfuzzer")
+  target_compile_options(selekt_fuzz_support PRIVATE -fsanitize=fuzzer-no-link)
+endif()
 
 function(selekt_add_fuzzer target source)
   add_executable(${target} ${source})
@@ -40,6 +43,7 @@ function(selekt_add_fuzzer target source)
     -fno-omit-frame-pointer
   )
   if(SELEKT_FUZZ_ENGINE STREQUAL "libfuzzer")
+    target_compile_options(${target} PRIVATE -fsanitize=fuzzer-no-link)
     target_link_options(${target} PRIVATE -fsanitize=fuzzer,address,undefined)
   else()
     target_sources(${target} PRIVATE standalone_main.cpp)
@@ -51,6 +55,9 @@ selekt_add_fuzzer(selekt_fuzz_sql fuzz_sql.cpp)
 selekt_add_fuzzer(selekt_fuzz_vec1_scalar fuzz_vec1_scalar.cpp)
 selekt_add_fuzzer(selekt_fuzz_vec1_shadow fuzz_vec1_shadow.cpp)
 selekt_add_fuzzer(selekt_fuzz_vec1_lifecycle fuzz_vec1_lifecycle.cpp)
+selekt_add_fuzzer(selekt_fuzz_vec1_metadata fuzz_vec1_metadata.cpp)
+selekt_add_fuzzer(selekt_fuzz_vec1_training fuzz_vec1_training.cpp)
+selekt_add_fuzzer(selekt_fuzz_vec1_distance fuzz_vec1_distance.cpp)
 selekt_add_fuzzer(selekt_fuzz_database fuzz_database.cpp)
 
 add_custom_target(selekt_fuzzers DEPENDS
@@ -58,5 +65,8 @@ add_custom_target(selekt_fuzzers DEPENDS
   selekt_fuzz_vec1_scalar
   selekt_fuzz_vec1_shadow
   selekt_fuzz_vec1_lifecycle
+  selekt_fuzz_vec1_metadata
+  selekt_fuzz_vec1_training
+  selekt_fuzz_vec1_distance
   selekt_fuzz_database
 )

@@ -1835,7 +1835,9 @@ static int vec1JobQueueAddJob(
 /* 
 ** Number of codes in each codebook. This is always 256. 
 */
-#define VEC1_PQ_CODEBOOK_SZ 256
+#ifndef VEC1_PQ_CODEBOOK_SZ
+# define VEC1_PQ_CODEBOOK_SZ 256
+#endif
 
 #define VEC1_MIN_CODESIZE              8
 #define VEC1_MAX_CODESIZE            128
@@ -1876,8 +1878,12 @@ static int vec1JobQueueAddJob(
 ** vectors. The number of vectors is separately limited to the range of the
 ** signed counters used by the training algorithms.
 */
-#define VEC1_TRAINING_MAXCHUNK 1024
-#define VEC1_TRAINING_SZCHUNK  (64*1024*1024)
+#ifndef VEC1_TRAINING_MAXCHUNK
+# define VEC1_TRAINING_MAXCHUNK 1024
+#endif
+#ifndef VEC1_TRAINING_SZCHUNK
+# define VEC1_TRAINING_SZCHUNK  (64*1024*1024)
+#endif
 #ifndef VEC1_TRAINING_MAXVECTOR
 # define VEC1_TRAINING_MAXVECTOR INT_MAX
 #endif
@@ -6910,6 +6916,30 @@ static int vec1MetaFilterIntList(
   if( nEntry<0 || (szInt!=1 && szInt!=4) || nRequired>pMeta->n ){
     rc = VEC1_CORRUPT;
   }else{
+    /* Integer lists need the generic comparator for text/blob RHS values.
+    ** The integer fast path cannot represent SQLite's cross-type ordering
+    ** or its NULL comparison rules. */
+    if( pFilter->op!=VEC1_OP_IN
+     && (pFilter->eType==SQLITE_TEXT || pFilter->eType==SQLITE_BLOB)
+    ){
+      const u8 *a = &pMeta->a[VEC1_META_SZHDR];
+      const int eNull = szInt==1 ? VEC1_META_1BYTENULL : VEC1_META_4BYTENULL;
+      int jj;
+      for(jj=0; jj<nEntry; jj++){
+        Vec1MetaValue val = {0, 0, 0, 0};
+        int iVal = szInt==1 ? (int)a[jj] : (int)vec1GetU32(&a[jj*sizeof_u32]);
+        if( iVal==eNull ){
+          val.eType = SQLITE_NULL;
+        }else{
+          val.eType = SQLITE_INTEGER;
+          val.iVal = iVal;
+        }
+        if( vec1MetaValueFilter(pFilter, &val) ){
+          pBitmask->a[jj / 8] |= (1 << (jj % 8));
+        }
+      }
+      return SQLITE_OK;
+    }
     int *aRval = 0;
     int rval = 0;
     u8 op = 0;
@@ -7675,7 +7705,11 @@ static void *vec1Dup(int *pRc, const void *p, int n){
   assert( *pRc==SQLITE_OK );
   if( pRet==0 ){
     *pRc = SQLITE_NOMEM;
-  }else{
+  }else if( n>0 && p==0 ){
+    sqlite3_free(pRet);
+    *pRc = SQLITE_NOMEM;
+    pRet = 0;
+  }else if( n>0 ){
     memcpy(pRet, p, n);
   }
   return pRet;
@@ -7941,29 +7975,19 @@ static int vec1SetupKANNQuery(
   return rc;
 }
 
-static void vec1AppendFilterValue(sqlite3_str *pStr, Vec1Filter *p){
+static int vec1BindFilterValue(sqlite3_stmt *pStmt, int iBind, Vec1Filter *p){
   switch( p->eType ){
-    case SQLITE_NULL:
-      sqlite3_str_appendf(pStr, " NULL");
-      break;
-    case SQLITE_INTEGER:
-      sqlite3_str_appendf(pStr, " %lld", p->iVal);
-      break;
-    case SQLITE_FLOAT:
-      sqlite3_str_appendf(pStr, " %f", p->fVal);
-      break;
-    case SQLITE_TEXT:
-      sqlite3_str_appendf(pStr, " %Q", (const char*)p->pPtr);
-      break;
+    case SQLITE_NULL: return sqlite3_bind_null(pStmt, iBind);
+    case SQLITE_INTEGER: return sqlite3_bind_int64(pStmt, iBind, p->iVal);
+    case SQLITE_FLOAT: return sqlite3_bind_double(pStmt, iBind, p->fVal);
+    case SQLITE_TEXT: return sqlite3_bind_text(
+        pStmt, iBind, (const char*)p->pPtr, p->iVal, SQLITE_TRANSIENT
+    );
     default: {
-      int jj;
-      sqlite3_str_appendf(pStr, " X'");
-      for(jj=0; jj<p->iVal; jj++){
-        sqlite3_str_appendf(pStr, "%02x", (int)(p->pPtr[jj]));
-      }
-      sqlite3_str_appendf(pStr, "'");
       assert( p->eType==SQLITE_BLOB );
-      break;
+      return sqlite3_bind_blob(
+          pStmt, iBind, p->pPtr, p->iVal, SQLITE_TRANSIENT
+      );
     }
   }
 }
@@ -7976,6 +8000,7 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
   Vec1Tab *pTab = (Vec1Tab*)(pCsr->base.pVtab);
   Vec1Query *pQuery = pCsr->pQuery;
   int ii;
+  int iBind = 2;                 /* Parameter 1 is the query vector. */
   int rc = SQLITE_OK;
   char *zWhere = 0;
 
@@ -7992,10 +8017,9 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
         sqlite3_str_appendf(pWhere, "%s0", zAnd);
       }else{
         sqlite3_str_appendf(pWhere, "%sc%d IN(", zAnd, p->iMeta);
-        vec1AppendFilterValue(pWhere, &p[1]);
-        for(jj=2; jj<=p->iVal; jj++){
-          sqlite3_str_appendf(pWhere, ", ");
-          vec1AppendFilterValue(pWhere, &p[jj]);
+        for(jj=1; jj<=p->iVal; jj++){
+          if( jj>1 ) sqlite3_str_appendf(pWhere, ", ");
+          sqlite3_str_appendf(pWhere, "?%d", iBind++);
         }
         sqlite3_str_appendf(pWhere, ")");
       }
@@ -8018,7 +8042,7 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
       sqlite3_str_appendf(pWhere, "%sc%d %s", zAnd, p->iMeta, zOp);
 
       if( bRhs ){
-        vec1AppendFilterValue(pWhere, p);
+        sqlite3_str_appendf(pWhere, " ?%d", iBind++);
       }
     }
     zAnd = " AND ";
@@ -8046,6 +8070,20 @@ static int vec1QueryToSql(Vec1Csr *pCsr){
   if( rc==SQLITE_OK ){
     int n = pTab->cfg.nElem * sizeof_f32;
     sqlite3_bind_blob(pCsr->pStmt, 1, pQuery->aVector, n, SQLITE_TRANSIENT);
+    iBind = 2;
+    for(ii=0; rc==SQLITE_OK && ii<pQuery->nFilter; ii++){
+      Vec1Filter *p = &pQuery->aFilter[ii];
+      if( p->op==VEC1_OP_IN ){
+        int jj;
+        for(jj=1; jj<=p->iVal; jj++){
+          rc = vec1BindFilterValue(pCsr->pStmt, iBind++, &p[jj]);
+          if( rc!=SQLITE_OK ) break;
+        }
+        ii += p->iVal;
+      }else if( p->op!=VEC1_OP_NOTNULL ){
+        rc = vec1BindFilterValue(pCsr->pStmt, iBind++, p);
+      }
+    }
   }
 
   vec1QueryFree(pQuery);
@@ -9495,6 +9533,7 @@ static int vec1AppendMetaValue(
         z = (const u8*)sqlite3_value_blob(pVal);
         eSerial = (u64)n*2 + 6;
       }
+      if( n>0 && z==0 ) return SQLITE_NOMEM;
       pBuf->n += vec1PutVarint(&pBuf->a[pBuf->n], eSerial);
       if( n>0 ) memcpy(&pBuf->a[pBuf->n], z, n);
       pBuf->n += n;

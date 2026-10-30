@@ -312,7 +312,7 @@ internal object Vec1SecurityProbeMain {
                 "rollback-model-cache" -> probeRollbackModelCache(sqlite, db)
                 "metadata-block-packed-rebuild" -> probeMetadataBlockPackedRebuild(sqlite, db)
                 else -> error("Unknown probe")
-        }
+            }
     }
 
     private fun probeNullJson(sqlite: IExternalSQLite, db: Long) {
@@ -448,12 +448,14 @@ internal object Vec1SecurityProbeMain {
                 db,
                 "INSERT INTO t(rowid, vector, first, second) VALUES" +
                     "(1, vec1_from_json('[0,0]'), 1, 2)," +
-                    "(2, vec1_from_json('[1,1]'), 2, 3)"
+                    "(2, vec1_from_json('[1,1]'), 2, 3)," +
+                    "(3, vec1_from_json('[2,2]'), 3, 5e-299)"
             ) == SQL_OK
         )
         val prefix =
             "SELECT count(*) FROM t WHERE cmd=vec1_from_json('[0,0]') AND arg=2 AND "
         check(queryLong(sqlite, db, prefix + "first=1 AND second IN (2,3)") == 1L)
+        check(queryLong(sqlite, db, prefix + "first=3 AND second IN (5e-299,5e-299)") == 1L)
         check(queryLong(sqlite, db, prefix + "first=1 AND second IN (SELECT 1 WHERE 0)") == 0L)
         check(
             queryLong(
@@ -1822,7 +1824,7 @@ internal object Vec1SecurityProbeMain {
     }
 
     private fun probePqBlockPadding(sqlite: IExternalSQLite, db: Long) {
-        val nCodebook = 8
+        val codebookCount = 8
         listOf(1, 15, 16, 17).forEach { nEntry ->
             val table = "pq_padding_$nEntry"
             check(sqlite.exec(db, "CREATE VIRTUAL TABLE $table USING vec1(vector)") == SQL_OK)
@@ -1830,7 +1832,7 @@ internal object Vec1SecurityProbeMain {
                 sqlite,
                 db,
                 "INSERT INTO $table(cmd, arg) VALUES('rebuild', ?)",
-                codebookModel(nCodebook)
+                codebookModel(codebookCount)
             )
             check(
                 sqlite.exec(
@@ -1842,9 +1844,9 @@ internal object Vec1SecurityProbeMain {
                 ) == SQL_OK
             )
             val blob = readSingleIndexBlob(sqlite, db, table)
-            assertPqPaddingIsZero(blob, nEntry, nCodebook)
+            assertPqPaddingIsZero(blob, nEntry, codebookCount)
             if (nEntry == 1) {
-                poisonPqPadding(blob, nEntry, nCodebook)
+                poisonPqPadding(blob, nEntry, codebookCount)
                 executeBlob(sqlite, db, "UPDATE ${table}_idx SET val=?", blob)
                 check(
                     sqlite.exec(
@@ -1853,7 +1855,7 @@ internal object Vec1SecurityProbeMain {
                             "VALUES(2, vec1_from_json('[0,0]'))"
                     ) == SQL_OK
                 )
-                assertPqPaddingIsZero(readSingleIndexBlob(sqlite, db, table), 2, nCodebook)
+                assertPqPaddingIsZero(readSingleIndexBlob(sqlite, db, table), 2, codebookCount)
             }
         }
     }
@@ -1973,13 +1975,13 @@ internal object Vec1SecurityProbeMain {
 
     private fun assertPqPaddingIsZero(blob: ByteArray, nEntry: Int, nCodebook: Int) {
         val dataOffset = pqDataOffset(blob, nEntry)
-        val nBlock = (nEntry + VEC1_PQ_BLOCK_SIZE - 1) / VEC1_PQ_BLOCK_SIZE
-        check(blob.size == dataOffset + nBlock * VEC1_PQ_BLOCK_SIZE * nCodebook)
-        val nUsed = nEntry % VEC1_PQ_BLOCK_SIZE
-        if (nUsed == 0) return
-        val blockOffset = dataOffset + (nBlock - 1) * VEC1_PQ_BLOCK_SIZE * nCodebook
+        val blockCount = (nEntry + VEC1_PQ_BLOCK_SIZE - 1) / VEC1_PQ_BLOCK_SIZE
+        check(blob.size == dataOffset + blockCount * VEC1_PQ_BLOCK_SIZE * nCodebook)
+        val usedCount = nEntry % VEC1_PQ_BLOCK_SIZE
+        if (usedCount == 0) return
+        val blockOffset = dataOffset + (blockCount - 1) * VEC1_PQ_BLOCK_SIZE * nCodebook
         repeat(nCodebook) { iCodebook ->
-            for (iSlot in nUsed until VEC1_PQ_BLOCK_SIZE) {
+            for (iSlot in usedCount until VEC1_PQ_BLOCK_SIZE) {
                 val offset = blockOffset + iCodebook * VEC1_PQ_BLOCK_SIZE + iSlot
                 check(blob[offset] == 0.toByte()) { "Non-zero PQ padding at offset $offset" }
             }
@@ -1988,9 +1990,9 @@ internal object Vec1SecurityProbeMain {
 
     private fun poisonPqPadding(blob: ByteArray, nEntry: Int, nCodebook: Int) {
         val dataOffset = pqDataOffset(blob, nEntry)
-        val nUsed = nEntry % VEC1_PQ_BLOCK_SIZE
+        val usedCount = nEntry % VEC1_PQ_BLOCK_SIZE
         repeat(nCodebook) { iCodebook ->
-            for (iSlot in nUsed until VEC1_PQ_BLOCK_SIZE) {
+            for (iSlot in usedCount until VEC1_PQ_BLOCK_SIZE) {
                 blob[dataOffset + iCodebook * VEC1_PQ_BLOCK_SIZE + iSlot] = 0x5A
             }
         }
@@ -2048,15 +2050,15 @@ internal object Vec1SecurityProbeMain {
         }.array()
 
     private fun residualBucketModel(nBucket: Int): ByteArray {
-        val nElem = 2
-        val nCodebook = 1
-        val codebookSize = nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
-        return ByteBuffer.allocate(24 + codebookSize + nBucket * nElem * SIZEOF_F32).apply {
+        val elementCount = 2
+        val codebookCount = 1
+        val codebookSize = codebookCount * elementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        return ByteBuffer.allocate(24 + codebookSize + nBucket * elementCount * SIZEOF_F32).apply {
             order(ByteOrder.BIG_ENDIAN)
             putInt(4)
             putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
-            putInt(nElem)
-            putInt(nCodebook)
+            putInt(elementCount)
+            putInt(codebookCount)
             putInt(nBucket)
             putInt(VEC1_DISTANCE_L2)
             position(24 + codebookSize)
@@ -2069,52 +2071,52 @@ internal object Vec1SecurityProbeMain {
     }
 
     private fun paddedResidualModel(): ByteArray {
-        val nElem = 4
-        val nCodebook = 3
-        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
-        val nBucket = 2
-        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
-            nBucket * nElem * SIZEOF_F32
+        val elementCount = 4
+        val codebookCount = 3
+        val codeElementCount = (elementCount + codebookCount - 1) / codebookCount
+        val bucketCount = 2
+        val modelSize = 24 + codebookCount * codeElementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
+            bucketCount * elementCount * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
-            putInt(nElem)
-            putInt(nCodebook)
-            putInt(nBucket)
+            putInt(elementCount)
+            putInt(codebookCount)
+            putInt(bucketCount)
             putInt(VEC1_DISTANCE_L2)
             order(ByteOrder.nativeOrder())
-            repeat(nCodebook) {
+            repeat(codebookCount) {
                 repeat(VEC1_PQ_CODEBOOK_SIZE) { code ->
-                    repeat(nCodeElem) { putFloat(code.toFloat()) }
+                    repeat(codeElementCount) { putFloat(code.toFloat()) }
                 }
             }
         }.array()
     }
 
     private fun quantizedModel(): ByteArray {
-        val nElem = 4
-        val nCodebook = 1
-        val nBucket = 1
-        val modelSize = 24 + nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
-            nBucket * nElem * SIZEOF_F32
+        val elementCount = 4
+        val codebookCount = 1
+        val bucketCount = 1
+        val modelSize = 24 + codebookCount * elementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32 +
+            bucketCount * elementCount * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX)
-            putInt(nElem)
-            putInt(nCodebook)
-            putInt(nBucket)
+            putInt(elementCount)
+            putInt(codebookCount)
+            putInt(bucketCount)
             putInt(VEC1_DISTANCE_L2)
         }.array()
     }
 
     private fun codebookModel(nCodebook: Int): ByteArray {
-        val nElem = 2
-        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
-        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        val elementCount = 2
+        val codeElementCount = (elementCount + nCodebook - 1) / nCodebook
+        val modelSize = 24 + nCodebook * codeElementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX)
-            putInt(nElem)
+            putInt(elementCount)
             putInt(nCodebook)
             putInt(0)
             putInt(VEC1_DISTANCE_L2)
@@ -2122,29 +2124,29 @@ internal object Vec1SecurityProbeMain {
     }
 
     private fun paddedCodebookModel(): ByteArray {
-        val nElem = 4
-        val nCodebook = 3
-        val nCodeElem = (nElem + nCodebook - 1) / nCodebook
-        val modelSize = 24 + nCodebook * nCodeElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        val elementCount = 4
+        val codebookCount = 3
+        val codeElementCount = (elementCount + codebookCount - 1) / codebookCount
+        val modelSize = 24 + codebookCount * codeElementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX)
-            putInt(nElem)
-            putInt(nCodebook)
+            putInt(elementCount)
+            putInt(codebookCount)
             putInt(0)
             putInt(VEC1_DISTANCE_L2)
         }.array()
     }
 
     private fun residualModelWithoutBuckets(): ByteArray {
-        val nElem = 2
-        val nCodebook = 1
-        val modelSize = 24 + nCodebook * nElem * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
+        val elementCount = 2
+        val codebookCount = 1
+        val modelSize = 24 + codebookCount * elementCount * VEC1_PQ_CODEBOOK_SIZE * SIZEOF_F32
         return ByteBuffer.allocate(modelSize).order(ByteOrder.BIG_ENDIAN).apply {
             putInt(4)
             putInt(VEC1_MODEL_INDEX or VEC1_MODEL_RESIDUAL)
-            putInt(nElem)
-            putInt(nCodebook)
+            putInt(elementCount)
+            putInt(codebookCount)
             putInt(0)
             putInt(VEC1_DISTANCE_L2)
         }.array()

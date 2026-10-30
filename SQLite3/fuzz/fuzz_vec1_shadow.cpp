@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 
 namespace {
 
@@ -45,12 +46,14 @@ std::array<Slice, 3> splitInput(const std::byte* data, std::size_t size) {
         {data + 5 + modelSize + indexSize, afterModel - indexSize}}};
 }
 
-void bindBlobAndStep(sqlite3* database, const char* sql, Slice blob) {
+bool bindBlobAndStep(sqlite3* database, const char* sql, Slice blob) {
     sqlite3_stmt* statement = nullptr;
-    if (sqlite3_prepare_v2(database, sql, -1, &statement, nullptr) != SQLITE_OK) return;
+    if (sqlite3_prepare_v2(database, sql, -1, &statement, nullptr) != SQLITE_OK) return false;
     sqlite3_bind_blob(statement, 1, blob.data, static_cast<int>(blob.size), SQLITE_TRANSIENT);
     selekt::fuzz::resetExecutionBudget(database);
-    selekt::fuzz::stepAndFinalize(statement);
+    const auto result = sqlite3_step(statement);
+    sqlite3_finalize(statement);
+    return result == SQLITE_DONE;
 }
 
 }
@@ -91,35 +94,38 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, std::size_t size) {
     );
 
     selekt::fuzz::executeSql(database.get(), "CREATE VIRTUAL TABLE shadow_fuzz USING vec1(vector, tag)");
-    static constexpr std::array<uint8_t, 24> VALID_MODEL = {
-        0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 4,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-    };
-    bindBlobAndStep(
-        database.get(),
-        "INSERT INTO shadow_fuzz(cmd, arg) VALUES('rebuild', ?1)",
-        {VALID_MODEL.data(), VALID_MODEL.size()}
-    );
+    if (static constexpr std::array<uint8_t, 24> VALID_MODEL = {
+            0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 4,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+        };
+        !bindBlobAndStep(
+            database.get(),
+            "INSERT INTO shadow_fuzz(cmd, arg) VALUES('rebuild', ?1)",
+            {VALID_MODEL.data(), VALID_MODEL.size()}
+        )) std::abort();
     selekt::fuzz::executeSql(
         database.get(),
         "INSERT INTO shadow_fuzz(rowid, vector, tag) "
         "VALUES(1, vec1_from_json('[1,2,3,4]'), 1.0)"
     );
-    bindBlobAndStep(
+    if (!bindBlobAndStep(
         database.get(),
         "UPDATE shadow_fuzz_idx SET val=?1 WHERE id=1",
         slices[1]
-    );
-    bindBlobAndStep(
+    ) || sqlite3_changes(database.get()) != 1) std::abort();
+    if (!bindBlobAndStep(
         database.get(),
-        "INSERT INTO shadow_fuzz_meta VALUES(256, ?1)",
+        "UPDATE shadow_fuzz_meta SET val=?1 WHERE id=256",
         slices[2]
-    );
+    ) || sqlite3_changes(database.get()) != 1) std::abort();
     selekt::fuzz::executeSql(
         database.get(),
         "SELECT rowid, vector FROM shadow_fuzz "
         "WHERE cmd=vec1_from_json('[0,0,0,0]') AND arg=1 AND tag=1.0; "
         "SELECT vector FROM shadow_fuzz WHERE rowid=1; "
+        "BEGIN; SAVEPOINT shadow_savepoint; "
+        "UPDATE shadow_fuzz_meta SET val=val WHERE id=256; "
+        "ROLLBACK TO shadow_savepoint; RELEASE shadow_savepoint; COMMIT; "
         "PRAGMA integrity_check; DELETE FROM shadow_fuzz WHERE rowid=1; "
         "SELECT * FROM vec1cat"
     );

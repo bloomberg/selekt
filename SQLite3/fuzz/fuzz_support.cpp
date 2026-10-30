@@ -110,7 +110,7 @@ void executeSql(sqlite3* database, const char* sql, std::size_t size) {
     }
 }
 
-Database::Database() : database_(openDatabase()) {
+Database::Database(const char* filename) : database_(openDatabase(filename)) {
 }
 
 Database::~Database() {

@@ -27,6 +27,9 @@ targets=(
   "selekt_fuzz_vec1_scalar:scalar"
   "selekt_fuzz_vec1_shadow:shadow"
   "selekt_fuzz_vec1_lifecycle:lifecycle"
+  "selekt_fuzz_vec1_metadata:metadata"
+  "selekt_fuzz_vec1_training:training"
+  "selekt_fuzz_vec1_distance:distance"
   "selekt_fuzz_database:database"
 )
 

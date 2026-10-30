@@ -39,7 +39,7 @@ void stepAndFinalize(sqlite3_stmt* statement);
 
 class Database final {
 public:
-    Database();
+    explicit Database(const char* filename = ":memory:");
     ~Database();
 
     Database(const Database&) = delete;
