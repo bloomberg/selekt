@@ -109,7 +109,7 @@ jobs:
                   ;;
                 aarch64)
                   MAIN_INDEX_SHA256='917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273'
-                  COMMUNITY_INDEX_SHA256='56b890b2394c5c19a4ceb54958fa144d6fdc6c108549224c0a268ea98b46ec87'
+                  COMMUNITY_INDEX_SHA256='2978db487b00dcd4fb62608056cbc84a0d0d9bfd3ab804cab52ca56ca08f0e0a'
                   ;;
                 *) echo "Unsupported Alpine architecture: $(uname -m)" >&2; exit 1 ;;
               esac
@@ -139,15 +139,15 @@ jobs:
             else
               case "$(uname -m)" in
                 x86_64)
-                  BASEOS_REPOMD_SHA256='2abeb6c4b0989fd9a655ef108de1e544b2cd8d020c0558148f56d9eafbb4227d'
-                  APPSTREAM_REPOMD_SHA256='b301f37a27185aad0c5e30a60a8fc1dfc75dc2c385528426f425fac0aaab7976'
-                  CODEREADY_REPOMD_SHA256='06672266bd0a91158ceae4afe470e58799a1482d39264b9325d948da8643aa91'
+                  BASEOS_REPOMD_SHA256='84fa389e4df1fdaa8cea24ec39f2cd34c4179bfe8ad791904f5aad03058a77bf'
+                  APPSTREAM_REPOMD_SHA256='722629e7c6a1ef98c22d4cfe78d79751fc7a6f4522e845fc29d250f11a655e11'
+                  CODEREADY_REPOMD_SHA256='9f37c9e27a3c315067bd3b3ef5b70d5dd7c0c413bcaef585b2181d20670add29'
                   PERL_NEVRA='perl-5.32.1-475.module+el8.10.0+24767+f69b15b5'
                   ;;
                 aarch64)
-                  BASEOS_REPOMD_SHA256='d8a99e11cd30a1b444209f35115c2effa730bfd037527156c86f1df9b3c2493d'
-                  APPSTREAM_REPOMD_SHA256='c776a7b424db0bd132fe8252311ffea909f413e412e61bb15883adb51359edf0'
-                  CODEREADY_REPOMD_SHA256='9901974e1b6bc8b9ae7c81eefdd09d42688f602c3db675d4bf194752dabc6edf'
+                  BASEOS_REPOMD_SHA256='3aec8a811c5f6a9be95812b52efd29291db5bbf4f59ef3d248c113a7509bc020'
+                  APPSTREAM_REPOMD_SHA256='0adaaa96e232d5df23effd2156195ce99b3f7a03e0d0e66930f7d06e3c7f0317'
+                  CODEREADY_REPOMD_SHA256='210fbc50cac065d0ddb9e64190b7c59176173b85737d87a4a4b1d508b00a5623'
                   PERL_NEVRA='perl-5.26.3-423.el8_10.1'
                   ;;
                 *) echo "Unsupported UBI architecture: $(uname -m)" >&2; exit 1 ;;
@@ -432,7 +432,7 @@ jobs:
               apk update
               sha256sum /var/cache/apk/APKINDEX.*.tar.gz > /tmp/alpine-indexes.sha256
               grep -q "^917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273  " /tmp/alpine-indexes.sha256
-              grep -q "^56b890b2394c5c19a4ceb54958fa144d6fdc6c108549224c0a268ea98b46ec87  " /tmp/alpine-indexes.sha256
+              grep -q "^2978db487b00dcd4fb62608056cbc84a0d0d9bfd3ab804cab52ca56ca08f0e0a  " /tmp/alpine-indexes.sha256
               apk add \
                 bash=5.2.26-r0 \
                 git=2.45.4-r0 \
