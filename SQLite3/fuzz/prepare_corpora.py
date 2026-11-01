@@ -16,6 +16,7 @@ def shadow_packet(model: bytes, index: bytes, metadata: bytes) -> bytes:
 def prepare_shadow(output: pathlib.Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     model = struct.pack(">6I", 4, 1, 4, 0, 0, 1)
+    cosine_flat_before_dimension = struct.pack(">6I", 4, 1, 0, 0, 0, 2)
     index_overflow = struct.pack(">3I", 0, 0x40000000, 0)
     empty_index = struct.pack(">3I", 0, 0, 0)
     invalid_tombstone_count = struct.pack(">3I", 0, 0, 0x3B3A)
@@ -42,6 +43,9 @@ def prepare_shadow(output: pathlib.Path) -> None:
         shadow_packet(quantized_model, b"", b"\x00")
     )
     (output / "empty-components").write_bytes(shadow_packet(b"", b"", b""))
+    (output / "cosine-flat-before-dimension").write_bytes(
+        shadow_packet(cosine_flat_before_dimension, b"", b"")
+    )
 
 
 def prepare_database(output: pathlib.Path) -> None:
