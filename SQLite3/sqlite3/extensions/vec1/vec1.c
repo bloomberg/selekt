@@ -5976,6 +5976,12 @@ static const float *vec1TransformInputVector(
 ){
   const float *aRet = aInput;
   int nPadded = pMod->hdr.nCodebook * pMod->nCodeElem;
+
+  /* A flat model may be installed before the first vector establishes the
+  ** table dimension. Such a model has no vector transformation to perform;
+  ** in particular, do not dereference the unallocated temporary buffer. */
+  if( pMod->hdr.nElem==0 ) return aInput;
+
   if( (pMod->hdr.flags & VEC1_MODEL_ROTATE) ){
     vec1RotateVector(pMod->hdr.nElem, pMod->aRotation, aInput, aTmp);
     if( pMod->hdr.eDistance==VEC1_DISTANCE_COS ){
@@ -6009,9 +6015,11 @@ static const float *vec1TransformInputVector(
 */
 static int vec1TransformRequired(const Vec1Model *pMod){
   Vec1ModelHeader const *p = &pMod->hdr;
-  return (p->flags & VEC1_MODEL_ROTATE)
+  return p->nElem>0 && (
+         (p->flags & VEC1_MODEL_ROTATE)
       || (p->eDistance==VEC1_DISTANCE_COS)
-      || (p->nCodebook>0 && p->nCodebook*pMod->nCodeElem!=p->nElem);
+      || (p->nCodebook>0 && p->nCodebook*pMod->nCodeElem!=p->nElem)
+  );
 }
 
 
