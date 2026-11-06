@@ -600,7 +600,7 @@ jobs:
   publish:
     name: 'Publish'
     runs-on: ubuntu-latest
-    needs: [verify-release-commit, native-fuzzing, jvm-fuzzing]
+    needs: [verify-release-commit, native-fuzzing, jvm-fuzzing, publish-native]
     timeout-minutes: 120
     environment: release
     permissions:
