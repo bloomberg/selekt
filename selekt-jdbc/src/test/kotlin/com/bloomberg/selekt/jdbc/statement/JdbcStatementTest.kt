@@ -36,6 +36,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.whenever
 import java.sql.SQLException
+import java.sql.SQLTimeoutException
 import java.sql.Statement
 import java.util.Properties
 import kotlin.test.assertEquals
@@ -185,6 +186,41 @@ internal class JdbcStatementTest {
         assertTrue(statement.execute(sql))
         assertNotNull(statement.resultSet)
         assertEquals(-1, statement.updateCount)
+    }
+
+    @Test
+    fun executeMapsCancellationBeforeQueryCursorIsCreated() {
+        val sql = "SELECT * FROM users"
+        val cancelled = OperationCancelledException("cancelled")
+        val readOnlyStatement = mock<ISQLStatement> {
+            whenever(it.isReadOnly) doReturn true
+        }
+        whenever(mockDatabase.compileStatement(sql, null)) doReturn readOnlyStatement
+        lateinit var signal: CancellationSignal
+        whenever(
+            mockDatabase.queryForwardOnly(eq(sql), eq(emptyArray()), any<CancellationSignal>())
+        ) doAnswer {
+            signal = it.getArgument(2)
+            throw cancelled
+        }
+
+        val thrown = assertFailsWith<SQLTimeoutException> { statement.execute(sql) }
+        assertSame(cancelled, thrown.cause)
+        assertEquals("HYT00", thrown.sqlState)
+        assertNull(statement.resultSet)
+        statement.cancel()
+        assertFalse(signal.isCancelled)
+    }
+
+    @Test
+    fun executeMapsCancellationDuringStatementCompilation() {
+        val cancelled = OperationCancelledException("cancelled")
+        whenever(mockDatabase.compileStatement(any<String>(), isNull())) doThrow cancelled
+
+        val thrown = assertFailsWith<SQLTimeoutException> { statement.execute("SELECT 1") }
+        assertSame(cancelled, thrown.cause)
+        assertEquals("HYT00", thrown.sqlState)
+        assertNull(statement.resultSet)
     }
 
     @Test

@@ -301,6 +301,8 @@ internal class JdbcPreparedStatement private constructor(
         checkClosed()
         return try {
             executeInternal()
+        } catch (e: OperationCancelledException) {
+            throw SQLExceptionMapper.mapCancellation(e)
         } catch (e: SQLException) {
             throw SQLExceptionMapper.mapException(e)
         } catch (e: RuntimeException) {
