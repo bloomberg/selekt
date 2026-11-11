@@ -54,6 +54,7 @@ import java.sql.Ref
 import java.sql.ResultSet
 import java.sql.RowId
 import java.sql.SQLException
+import java.sql.SQLTimeoutException
 import java.sql.SQLXML
 import java.sql.Statement
 import java.sql.Time
@@ -422,6 +423,25 @@ internal class JdbcPreparedStatementTest {
                 setString(2, "test")
             }.executeQuery()
         }
+    }
+
+    @Test
+    fun executeMapsCancellationBeforeQueryCursorIsCreated() {
+        val cancelled = OperationCancelledException("cancelled")
+        lateinit var signal: CancellationSignal
+        whenever(
+            database.queryForwardOnly(eq(preparedStatement.sql), any<ParameterRow>(), any<CancellationSignal>())
+        ) doAnswer {
+            signal = it.getArgument(2)
+            throw cancelled
+        }
+
+        val thrown = assertFailsWith<SQLTimeoutException> { preparedStatement.execute() }
+        assertSame(cancelled, thrown.cause)
+        assertEquals("HYT00", thrown.sqlState)
+        assertNull(preparedStatement.resultSet)
+        preparedStatement.cancel()
+        assertFalse(signal.isCancelled)
     }
 
     @Test

@@ -231,12 +231,8 @@ open class JdbcStatement internal constructor(
         val signal = activateCancellationSignal()
         var signalHandedOff = false
         try {
-            val isReadOnly = runCatching {
-                connection.withSession {
-                    database.compileStatement(sql).use { it.isReadOnly }
-                }
-            }.getOrElse { e ->
-                throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
+            val isReadOnly = connection.withSession {
+                database.compileStatement(sql).use { it.isReadOnly }
             }
             return if (isReadOnly) {
                 executeQueryInternal(sql, signal)
@@ -244,15 +240,15 @@ open class JdbcStatement internal constructor(
                 true
             } else {
                 connection.checkWritable()
-                try {
-                    withCancellation(signal, primary = true) {
-                        database.compileStatement(sql).use { executeUpdate(sql, it) }
-                    }
-                } catch (e: OperationCancelledException) {
-                    throw SQLExceptionMapper.mapCancellation(e)
+                withCancellation(signal, primary = true) {
+                    database.compileStatement(sql).use { executeUpdate(sql, it) }
                 }
                 false
             }
+        } catch (e: Exception) {
+            throw SQLExceptionMapper.mapException(
+                e.translateCancellation() as? SQLException ?: SQLException(e.message, e)
+            )
         } finally {
             if (!signalHandedOff) {
                 deactivateCancellationSignal()
