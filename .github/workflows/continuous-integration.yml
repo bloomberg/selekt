@@ -563,7 +563,7 @@ jobs:
           key: openssl-ci-${{ runner.os }}-${{ hashFiles('OpenSSL/openssl.properties', 'OpenSSL/build.gradle.kts', 'OpenSSL/build_libraries.sh') }}
 
       - name: 'ccache'
-        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168
 
       - name: 'Configure Gradle'
         run: |
