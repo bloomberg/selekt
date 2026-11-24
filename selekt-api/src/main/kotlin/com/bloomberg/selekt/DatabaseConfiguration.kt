@@ -81,7 +81,12 @@ data class DatabaseConfiguration(
      * as KiB rather than a number of pages.
      * `null` preserves SQLite's compiled default.
      */
-    val pageCacheSizeKiB: Int? = null
+    val pageCacheSizeKiB: Int? = null,
+    /**
+     * Foreign-key enforcement on each physical connection, including connections created after eviction.
+     * `null` preserves SQLite's compiled default.
+     */
+    val foreignKeys: Boolean? = null
 ) {
     init {
         require(borrowWaitTimeoutMillis >= -1L) {

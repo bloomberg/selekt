@@ -116,7 +116,11 @@ internal class SelektDataSourceTest {
 
             val outcome = AtomicReference<Throwable>()
             val borrower = Thread {
-                outcome.set(runCatching { dataSource.connection }.exceptionOrNull())
+                outcome.set(runCatching {
+                    dataSource.connection.use { connection ->
+                        connection.createStatement().use { it.executeUpdate("INSERT INTO held VALUES (1)") }
+                    }
+                }.exceptionOrNull())
             }
             borrower.start()
             borrower.join(5_000L)

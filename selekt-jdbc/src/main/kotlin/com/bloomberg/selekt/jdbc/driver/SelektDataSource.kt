@@ -28,6 +28,7 @@ import com.bloomberg.selekt.externalSQLiteSingleton
 import com.bloomberg.selekt.jdbc.connection.JdbcConnection
 import com.bloomberg.selekt.jdbc.exception.SQLExceptionMapper
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
+import com.bloomberg.selekt.jdbc.util.getStrictBooleanProperty
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
@@ -356,6 +357,7 @@ class SelektDataSource internal constructor(
         properties: Properties,
         encryptionKeyBytes: ByteArray?
     ): SQLDatabase {
+        val configuration = buildDatabaseConfiguration(properties)
         val sqlite = object : SQLite(externalSQLiteSingleton()) {
             override fun throwSQLException(
                 code: SQLCode,
@@ -370,10 +372,10 @@ class SelektDataSource internal constructor(
             SQLDatabase(
                 path = connectionURL.databasePath,
                 sqlite = sqlite,
-                configuration = buildDatabaseConfiguration(properties),
+                configuration = configuration,
                 key = it,
                 random = CommonThreadLocalRandom
-            )
+            ).initialiseForJdbc(checkNotNull(configuration.foreignKeys))
         }
     }
 
@@ -393,6 +395,7 @@ class SelektDataSource internal constructor(
             borrowWaitTimeoutMillis = borrowWaitTimeoutValue,
             busyTimeoutMillis = busyTimeoutValue,
             pageCacheSizeKiB = pageCacheSizeKiBValue,
+            foreignKeys = properties.getStrictBooleanProperty(PROPERTY_FOREIGN_KEYS, true),
             useNativeTransactionListeners = true,
             cursorWindowSize = cursorWindowSizeValue,
             cursorWindowByteSize = cursorWindowByteSizeValue

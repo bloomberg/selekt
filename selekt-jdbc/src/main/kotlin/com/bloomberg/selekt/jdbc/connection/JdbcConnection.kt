@@ -30,6 +30,7 @@ import com.bloomberg.selekt.jdbc.metadata.JdbcDatabaseMetaData
 import com.bloomberg.selekt.jdbc.statement.JdbcPreparedStatement
 import com.bloomberg.selekt.jdbc.statement.JdbcStatement
 import com.bloomberg.selekt.jdbc.statement.PreparedStatementCacheEntry
+import com.bloomberg.selekt.jdbc.statement.isWalCheckpoint
 import com.bloomberg.selekt.jdbc.util.ConnectionURL
 import com.bloomberg.selekt.jdbc.util.getStrictBooleanProperty
 import java.lang.invoke.MethodHandles
@@ -106,7 +107,7 @@ internal class JdbcConnection(
 
     init {
         try {
-            applyConnectionProperties()
+            validateConnectionProperties()
         } catch (e: Exception) {
             databaseSession.close()
             throw e
@@ -589,17 +590,24 @@ internal class JdbcConnection(
         }
     }
 
-    private fun applyConnectionProperties() {
+    private fun validateConnectionProperties() {
         runCatching {
-            val foreignKeys = properties.getStrictBooleanProperty("foreignKeys", true)
-            withSession { configureForeignKeys(foreignKeys) }
+            properties.getStrictBooleanProperty("foreignKeys", true)
         }.onFailure { e ->
             throw SQLExceptionMapper.mapException(e as? SQLException ?: SQLException(e.message, e))
         }
     }
 
-    internal fun ensureTransaction() {
+    internal fun ensureTransaction(sql: String) {
         if (!autoCommit && !readOnly) {
+            ensureTransaction(isWalCheckpoint = sql.isWalCheckpoint())
+        }
+    }
+
+    internal fun ensureTransaction(isWalCheckpoint: Boolean = false) {
+        // A checkpoint needs the primary connection, but cannot run inside a write transaction.
+        // Leave an existing transaction intact so SQLite can reject the checkpoint without committing it.
+        if (!autoCommit && !readOnly && !isWalCheckpoint) {
             withSession {
                 if (!inTransaction) {
                     beginImmediateTransaction()

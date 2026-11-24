@@ -67,6 +67,7 @@ internal class PreparedStatementCacheEntry(
     val parameterCount: Int,
     val readOnly: Boolean
 ) : JdbcStatementState(resultSetType, resultSetConcurrency, resultSetHoldability) {
+    val isWalCheckpoint = sql.isWalCheckpoint()
     val parameterRow = ParameterRow(parameterCount)
     val batchRows = ChunkedParameterRows(parameterCount, INITIAL_BATCH_CHUNK_SIZE)
     var totalBatchCount = 0
@@ -210,6 +211,7 @@ internal class JdbcPreparedStatement private constructor(
     val sql: String get() = cacheEntry.sql
     private val parameterCount: Int get() = cacheEntry.parameterCount
     private val readOnly: Boolean get() = cacheEntry.readOnly
+    private val isWalCheckpoint: Boolean get() = cacheEntry.isWalCheckpoint
     private val parameterRow: ParameterRow get() = cacheEntry.parameterRow
     private val batchRows: ChunkedParameterRows get() = cacheEntry.batchRows
     private var totalBatchCount: Int
@@ -326,7 +328,7 @@ internal class JdbcPreparedStatement private constructor(
     }
 
     private fun executeWithSignal(signal: CancellationSignal): Boolean {
-        if (readOnly) {
+        if (readOnly || isWalCheckpoint) {
             executeRead(signal)
             return true
         }
@@ -336,7 +338,7 @@ internal class JdbcPreparedStatement private constructor(
     }
 
     private fun executeRead(signal: CancellationSignal): ResultSet {
-        val cursor = queryWithMaxRows(sql, parameterRow, signal, readOnly)
+        val cursor = queryWithMaxRows(sql, parameterRow, signal, readOnly, isWalCheckpoint)
         return trackResultSet(
             JdbcResultSet(
                 cursor,
@@ -351,7 +353,7 @@ internal class JdbcPreparedStatement private constructor(
     private fun executeWrite(signal: CancellationSignal): Int {
         return try {
             withCancellation(signal, primary = true) {
-                connection.ensureTransaction()
+                connection.ensureTransaction(isWalCheckpoint)
                 executeBoundUpdate()
             }
         } catch (e: OperationCancelledException) {
@@ -409,10 +411,13 @@ internal class JdbcPreparedStatement private constructor(
         val signal = activateCancellationSignal()
         try {
             withCancellation(signal, primary = true) {
+                if (isWalCheckpoint) {
+                    throw SQLException("Checkpoints are not allowed in batch execution")
+                }
                 if (database.compileStatement(sql).use { it.isReadOnly }) {
                     throw SQLException("Read-only statements are not allowed in batch execution")
                 }
-                connection.ensureTransaction()
+                connection.ensureTransaction(isWalCheckpoint)
                 batchRows(sql, batchRows)
             }
             return cacheEntry.successArray(totalBatchCount)

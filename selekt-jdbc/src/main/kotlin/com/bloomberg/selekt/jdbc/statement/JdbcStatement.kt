@@ -50,11 +50,12 @@ internal fun isInsertSql(sql: String): Boolean = sql.trimStart().run {
     startsWith("INSERT", ignoreCase = true) || startsWith("REPLACE", ignoreCase = true)
 }
 
-private fun String.leadingTokenIndex(): Int {
-    var index = 0
+private fun String.leadingTokenIndex(startIndex: Int = 0, skipEmptyStatements: Boolean = true): Int {
+    var index = startIndex
     while (index < length) {
         index = when {
-            this[index].isWhitespace() || this[index] == ';' || this[index] == '\uFEFF' -> index + 1
+            this[index] in " \t\n\r\u000C\uFEFF" -> index + 1
+            skipEmptyStatements && this[index] == ';' -> index + 1
             startsWith("--", index) -> indexAfterLineComment(index + 2)
             startsWith("/*", index) -> indexAfterBlockComment(index + 2)
             else -> return index
@@ -65,7 +66,7 @@ private fun String.leadingTokenIndex(): Int {
 
 private fun String.indexAfterLineComment(startIndex: Int): Int {
     var index = startIndex
-    while (index < length && this[index] != '\n' && this[index] != '\r') {
+    while (index < length && this[index] != '\n') {
         ++index
     }
     return if (index < length) { index + 1 } else { index }
@@ -79,12 +80,63 @@ private fun String.indexAfterBlockComment(startIndex: Int): Int {
 private fun String.tokenEqualsAt(index: Int, token: String): Boolean {
     val end = index + token.length
     return end <= length && regionMatches(index, token, 0, token.length, ignoreCase = true) &&
-        (end == length || !this[end].isLetter())
+        (end == length || !this[end].isSqliteIdentifierCharacter())
 }
+
+// SQLite accepts non-ASCII UTF-8 bytes in identifiers, including an embedded byte-order mark.
+private fun Char.isSqliteIdentifierCharacter(): Boolean =
+    this in 'a'..'z' || this in 'A'..'Z' || this in '0'..'9' || this in "_$" || this >= '\u0080'
 
 internal fun String.isSchemaAttachmentControl(): Boolean {
     val index = leadingTokenIndex()
     return tokenEqualsAt(index, "ATTACH") || tokenEqualsAt(index, "DETACH")
+}
+
+/** Classifies the first statement only; SQLite validates the complete PRAGMA syntax when preparing it. */
+internal fun String.isWalCheckpoint(): Boolean {
+    val first = leadingTokenIndex()
+    if (!tokenEqualsAt(first, "PRAGMA")) {
+        return false
+    }
+    var nameStart = leadingTokenIndex(first + "PRAGMA".length, skipEmptyStatements = false)
+    var nameEnd = identifierEnd(nameStart)
+    val separator = leadingTokenIndex(nameEnd, skipEmptyStatements = false)
+    if (getOrNull(separator) == '.') {
+        nameStart = leadingTokenIndex(separator + 1, skipEmptyStatements = false)
+        nameEnd = identifierEnd(nameStart)
+    }
+    val quoted = getOrNull(nameStart) in listOf('\'', '"', '`', '[')
+    val name = if (quoted && nameEnd > nameStart + 1) {
+        substring(nameStart + 1, nameEnd - 1)
+    } else {
+        substring(nameStart, nameEnd)
+    }
+    return name.all { it <= '\u007F' } && name.equals("wal_checkpoint", ignoreCase = true)
+}
+
+private fun String.identifierEnd(start: Int): Int {
+    val first = getOrNull(start) ?: return start
+    return when (first) {
+        '\'', '"', '`' -> quotedIdentifierEnd(start, first)
+        '[' -> quotedIdentifierEnd(start, ']')
+        else -> {
+            var index = start
+            while (index < length && this[index].isSqliteIdentifierCharacter()) {
+                ++index
+            }
+            index
+        }
+    }
+}
+
+private fun String.quotedIdentifierEnd(start: Int, quote: Char): Int {
+    var end = indexOf(quote, start + 1)
+    if (quote != ']') {
+        while (end >= 0 && getOrNull(end + 1) == quote) {
+            end = indexOf(quote, end + 2)
+        }
+    }
+    return if (end < 0) { length } else { end + 1 }
 }
 
 internal open class JdbcStatementState(
@@ -234,7 +286,7 @@ open class JdbcStatement internal constructor(
             val isReadOnly = connection.withSession {
                 database.compileStatement(sql).use { it.isReadOnly }
             }
-            return if (isReadOnly) {
+            return if (isReadOnly || sql.isWalCheckpoint()) {
                 executeQueryInternal(sql, signal)
                 signalHandedOff = true
                 true
@@ -282,6 +334,11 @@ open class JdbcStatement internal constructor(
         signal: CancellationSignal
     ): ICursor = connection.withSession {
         checkReadOnlyQuery(sql, args)
+        if (sql.isWalCheckpoint()) {
+            return@withSession withCancellation(signal, primary = true) {
+                queryUpTo(sql, args, 1, signal)
+            }
+        }
         // A read-only manual transaction deliberately materialises its result. Keeping a streaming
         // SQLite statement open there would pin a WAL snapshot beyond this call and can block a
         // FULL checkpoint. Auto-commit read-only queries have no such transaction-lifetime contract.
@@ -296,15 +353,22 @@ open class JdbcStatement internal constructor(
         }
     }
 
+    @JvmOverloads
     protected fun queryWithSignal(
         sql: String,
         args: ParameterRow,
         signal: CancellationSignal,
-        isReadOnly: Boolean
+        isReadOnly: Boolean,
+        isWalCheckpoint: Boolean = sql.isWalCheckpoint()
     ): ICursor = connection.withSession {
         checkReadOnlySchemaControl(sql)
         if (connection.isReadOnly && !isReadOnly) {
             connection.checkWritable()
+        }
+        if (isWalCheckpoint) {
+            return@withSession withCancellation(signal, primary = true) {
+                queryUpTo(sql, args, 1, signal)
+            }
         }
         val shouldStream = statementState.resultSetType == ResultSet.TYPE_FORWARD_ONLY &&
             (!connection.isReadOnly || connection.autoCommit)
@@ -349,7 +413,7 @@ open class JdbcStatement internal constructor(
                 lastGeneratedKey = -1L
                 statementState.updateCount = 0
             } else {
-                connection.ensureTransaction()
+                connection.ensureTransaction(sql)
                 executeWrite(sql, statement)
             }
             currentResultSet = null
@@ -537,7 +601,6 @@ open class JdbcStatement internal constructor(
             val signal = activateCancellationSignal()
             try {
                 withCancellation(signal, primary = true) {
-                    connection.ensureTransaction()
                     executeBatchStatements()
                 }
             } catch (e: OperationCancelledException) {
@@ -556,6 +619,7 @@ open class JdbcStatement internal constructor(
             runCatching {
                 validateBatchSql(sql)
                 connection.checkWritable()
+                connection.ensureTransaction(sql)
                 val count = database.compileStatement(sql).use {
                     if (isInsertSql(sql)) {
                         lastGeneratedKey = it.executeInsert()
@@ -585,6 +649,9 @@ open class JdbcStatement internal constructor(
     }
 
     private fun validateBatchSql(sql: String) {
+        if (sql.isWalCheckpoint()) {
+            throw SQLException("Checkpoints are not allowed in batch execution")
+        }
         database.compileStatement(sql).use {
             if (it.isReadOnly) {
                 throw SQLException("Read-only statements are not allowed in batch execution")
@@ -651,13 +718,15 @@ open class JdbcStatement internal constructor(
         }
     }
 
+    @JvmOverloads
     protected fun queryWithMaxRows(
         sql: String,
         args: ParameterRow,
         signal: CancellationSignal,
-        isReadOnly: Boolean
+        isReadOnly: Boolean,
+        isWalCheckpoint: Boolean = sql.isWalCheckpoint()
     ): ICursor {
-        val cursor = queryWithSignal(sql, args, signal, isReadOnly)
+        val cursor = queryWithSignal(sql, args, signal, isReadOnly, isWalCheckpoint)
         return if (statementState.maxRows > 0) {
             RowLimitedCursor(cursor, statementState.maxRows)
         } else {
