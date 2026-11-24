@@ -68,4 +68,5 @@ kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.8" }
 ksp = { id = "com.google.devtools.ksp", version = "2.3.4" }
 nmcp = { id = "com.gradleup.nmcp.aggregation", version = "1.6.2" }
 qodana = { id = "org.jetbrains.qodana", version = "0.1.12" }
+sigstore = { id = "dev.sigstore.sign", version = "2.4.0" }
 undercouch-download = { id = "de.undercouch.download", version = "5.4.0" }

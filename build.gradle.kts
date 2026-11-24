@@ -41,6 +41,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ideaExt)
     alias(libs.plugins.qodana)
+    alias(libs.plugins.sigstore) apply false
     alias(libs.plugins.ksp) apply false
 }
 
@@ -119,6 +120,9 @@ dependencies {
 subprojects {
     plugins.withId("maven-publish") {
         pluginManager.apply("com.gradleup.nmcp")
+        if (providers.gradleProperty("sigstoreSigning").map(String::toBoolean).getOrElse(false)) {
+            pluginManager.apply("dev.sigstore.sign")
+        }
     }
     plugins.withType<JavaPlugin>().configureEach {
         tasks.withType<Jar>().configureEach {
