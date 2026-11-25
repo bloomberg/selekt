@@ -985,12 +985,12 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun applyConnectionPropertiesErrorHandling() {
-        val database = mock<SQLDatabase> {
-            whenever(it.configureForeignKeys(true)) doThrow RuntimeException("PRAGMA failed")
+    fun propertyValidationWrapsRuntimeFailures() {
+        val properties = mock<Properties> {
+            whenever(it.getProperty("foreignKeys")) doThrow RuntimeException("invalid properties")
         }
         assertFailsWith<SQLException> {
-            JdbcConnection(testSharedDatabase(database), connectionURL, properties)
+            JdbcConnection(testSharedDatabase(mock()), connectionURL, properties)
         }
     }
 
@@ -1087,12 +1087,12 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun foreignKeysDisabled() {
+    fun constructionDoesNotConfigureForeignKeys() {
         mock<SQLDatabase>().run {
             JdbcConnection(testSharedDatabase(this), connectionURL, Properties().apply {
                 setProperty("foreignKeys", "false")
             })
-            verify(this).configureForeignKeys(false)
+            verify(this, never()).configureForeignKeys(any())
         }
     }
 
@@ -1268,13 +1268,14 @@ internal class JdbcConnectionTest {
     }
 
     @Test
-    fun applyConnectionPropertiesWithSQLException() {
-        val database = mock<SQLDatabase> {
-            whenever(it.configureForeignKeys(true)) doThrow SQLException("PRAGMA failed", "HY000", 100)
-        }
+    fun invalidPropertiesCloseNewSession() {
+        val database = mock<SQLDatabase>()
+        val shared = testSharedDatabase(database)
+        val session = database.openSession({}, {})
         assertFailsWith<SQLException> {
-            JdbcConnection(testSharedDatabase(database), connectionURL, properties)
+            JdbcConnection(shared, connectionURL, Properties().apply { setProperty("foreignKeys", "invalid") })
         }
+        verify(session).close()
     }
 
     @Test

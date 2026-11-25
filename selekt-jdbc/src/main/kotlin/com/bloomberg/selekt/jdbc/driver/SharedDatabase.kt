@@ -23,6 +23,16 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
 
+/** Opens the initial physical connection before publishing a database in the JDBC cache. */
+internal fun SQLDatabase.initialiseForJdbc(foreignKeys: Boolean): SQLDatabase {
+    return runCatching {
+        configureForeignKeys(foreignKeys)
+        this
+    }.onFailure { failure ->
+        runCatching(::close).exceptionOrNull()?.let(failure::addSuppressed)
+    }.getOrThrow()
+}
+
 /**
  * A reference-counted wrapper around [SQLDatabase] for use by the JDBC driver cache.
  *

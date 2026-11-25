@@ -217,6 +217,30 @@ internal class SQLConnectionTest {
     }
 
     @Test
+    fun configuresForeignKeysOnPhysicalConnections(): Unit = sqlite.run {
+        listOf(true, false).forEach { enabled ->
+            SQLConnection(
+                "file::memory:",
+                this,
+                databaseConfiguration.copy(foreignKeys = enabled),
+                0,
+                CommonThreadLocalRandom,
+                null
+            ).use {
+                verify(this@run).exec(DB, "PRAGMA foreign_keys=${if (enabled) { 1 } else { 0 }}")
+            }
+        }
+    }
+
+    @Test
+    fun preservesForeignKeysDefaultWhenUnspecified(): Unit = sqlite.run {
+        SQLConnection("file::memory:", this, databaseConfiguration, 0, CommonThreadLocalRandom, null).use {
+            verify(this@run, never()).exec(DB, "PRAGMA foreign_keys=1")
+            verify(this@run, never()).exec(DB, "PRAGMA foreign_keys=0")
+        }
+    }
+
+    @Test
     fun prepareChecksNull(): Unit = sqlite.run {
         whenever(openV2(any(), any(), any())) doAnswer {
             (it.arguments[2] as LongArray)[0] = 42L

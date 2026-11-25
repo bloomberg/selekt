@@ -26,23 +26,19 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
 internal class JdbcConnectionConstructionFailureTest {
     private val url = ConnectionURL.parse("jdbc:sqlite:/tmp/m01.db")
 
     @Test
     fun constructorFailureLeavesSharedDatabaseRetainCountUntouched() {
-        val database: SQLDatabase = mock {
-            whenever(it.configureForeignKeys(true)) doThrow SQLException("simulated PRAGMA failure")
-        }
+        val database: SQLDatabase = mock()
         val releaseCount = AtomicInteger(0)
         val shared = testSharedDatabase(database, onClose = { releaseCount.incrementAndGet() })
         shared.retain()
         assertFailsWith<SQLException> {
-            JdbcConnection(shared, url, Properties())
+            JdbcConnection(shared, url, Properties().apply { setProperty("foreignKeys", "invalid") })
         }
         assertTrue(shared.isOpen(), "SharedDatabase must remain open after constructor failure")
         assertEquals(0, releaseCount.get(), "JdbcConnection must not invoke onReleased")

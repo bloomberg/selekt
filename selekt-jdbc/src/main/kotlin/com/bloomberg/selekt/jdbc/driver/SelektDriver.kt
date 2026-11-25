@@ -242,7 +242,7 @@ class SelektDriver : Driver {
             configuration = configuration,
             key = null,
             random = com.bloomberg.selekt.CommonThreadLocalRandom
-        )
+        ).initialiseForJdbc(checkNotNull(configuration.foreignKeys))
     }
 
     private fun buildDatabaseConfiguration(properties: Properties): DatabaseConfiguration = properties.run {
@@ -262,6 +262,7 @@ class SelektDriver : Driver {
             maxConnectionPoolSize = poolSize,
             busyTimeoutMillis = busyTimeout,
             pageCacheSizeKiB = pageCacheSizeKiB,
+            foreignKeys = getStrictBooleanProperty(PROPERTY_FOREIGN_KEYS, true),
             useNativeTransactionListeners = true,
             cursorWindowSize = cursorWindowSize,
             cursorWindowByteSize = cursorWindowByteSize

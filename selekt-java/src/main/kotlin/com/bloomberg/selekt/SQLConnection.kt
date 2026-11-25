@@ -92,6 +92,7 @@ internal class SQLConnection(
             configuration.trace?.let { sqlite.traceV2(databaseHandle, it()) }
             sqlite.busyTimeout(databaseHandle, configuration.busyTimeoutMillis)
             configuration.pageCacheSizeKiB?.let { sqlite.exec(databaseHandle, "PRAGMA cache_size=-$it") }
+            configuration.foreignKeys?.let { sqlite.exec(databaseHandle, "PRAGMA foreign_keys=${if (it) { 1 } else { 0 }}") }
             sqlite.exec(databaseHandle, "PRAGMA secure_delete=${configuration.secureDelete.name}")
             progressHandlerSetting()?.let { setProgressHandler(it.instructionCount, it.handler) }
         }.exceptionOrNull()?.let {

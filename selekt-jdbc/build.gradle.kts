@@ -102,7 +102,13 @@ val jvmFuzzTargets = mapOf(
     "jvmFuzzTypeMapping" to "com.bloomberg.selekt.jdbc.util.TypeMappingFuzzTest.fuzzTypeMapping",
     "jvmFuzzMetadataSqlIsolation" to
         "com.bloomberg.selekt.jdbc.metadata.JdbcMetadataSqlIsolationFuzzTest.fuzzMetadataSqlIsolation",
-    "jvmFuzzStateMachine" to "com.bloomberg.selekt.jdbc.driver.JdbcStateMachineFuzzTest.fuzzJdbcStateMachine"
+    "jvmFuzzStateMachine" to "com.bloomberg.selekt.jdbc.driver.JdbcStateMachineFuzzTest.fuzzJdbcStateMachine",
+    "jvmFuzzCheckpointSql" to "com.bloomberg.selekt.jdbc.statement.JdbcCheckpointSqlFuzzTest.fuzzCheckpointSql"
+)
+val java25FuzzTargets = mapOf(
+    "jvmFuzzMetadataSqlIsolationJava25" to
+        "com.bloomberg.selekt.jdbc.metadata.JdbcMetadataSqlIsolationFuzzTest.fuzzMetadataSqlIsolation",
+    "jvmFuzzCheckpointSqlJava25" to "com.bloomberg.selekt.jdbc.statement.JdbcCheckpointSqlFuzzTest.fuzzCheckpointSql"
 )
 val jvmFuzzTasks = jvmFuzzTargets.map { (taskName, testName) ->
     tasks.register<Test>(taskName) {
@@ -139,7 +145,7 @@ tasks.register("jvmFuzz") {
 kover {
     currentProject {
         instrumentation {
-            disabledForTestTasks.addAll(jvmFuzzTargets.keys + "jvmFuzzMetadataSqlIsolationJava25")
+            disabledForTestTasks.addAll(jvmFuzzTargets.keys + java25FuzzTargets.keys)
         }
     }
 }
@@ -190,34 +196,35 @@ val java25TestRuntimeClasspath = configurations.create("java25TestRuntimeClasspa
     }
 }
 
-val jvmFuzzMetadataSqlIsolationJava25 = tasks.register<Test>("jvmFuzzMetadataSqlIsolationJava25") {
-    description = "Runs the metadata SQL-isolation Jazzer campaign on the Java 25 FFM backend."
-    group = "verification"
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().output + sourceSets.main.get().output + java25TestRuntimeClasspath
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    })
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
-    environment("JAZZER_FUZZ", "1")
-    filter {
-        includeTestsMatching(
-            "com.bloomberg.selekt.jdbc.metadata.JdbcMetadataSqlIsolationFuzzTest.fuzzMetadataSqlIsolation"
-        )
+val java25FuzzTasks = java25FuzzTargets.map { (taskName, testName) ->
+    tasks.register<Test>(taskName) {
+        description = "Runs the $testName Jazzer campaign on the Java 25 FFM backend."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().output + sourceSets.main.get().output + java25TestRuntimeClasspath
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        })
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
+        environment("JAZZER_FUZZ", "1")
+        filter { includeTestsMatching(testName) }
+        systemProperty("jazzer.instrument", "com.bloomberg.selekt.jdbc.**")
+        systemProperty("jazzer.max_duration", jvmFuzzDuration)
+        systemProperty("jazzer.reproducer_path", layout.buildDirectory.get().asFile.absolutePath)
+        systemProperty("junit.jupiter.execution.parallel.enabled", false)
+        systemProperty("junit.jupiter.execution.timeout.mode", "disabled")
+        maxHeapSize = "1g"
+        outputs.upToDateWhen { false }
+        workingDir(layout.buildDirectory.get().asFile)
+        mustRunAfter(jvmFuzzTasks.last())
     }
-    systemProperty("jazzer.instrument", "com.bloomberg.selekt.jdbc.**")
-    systemProperty("jazzer.max_duration", jvmFuzzDuration)
-    systemProperty("jazzer.reproducer_path", layout.buildDirectory.get().asFile.absolutePath)
-    systemProperty("junit.jupiter.execution.parallel.enabled", false)
-    systemProperty("junit.jupiter.execution.timeout.mode", "disabled")
-    maxHeapSize = "1g"
-    outputs.upToDateWhen { false }
-    workingDir(layout.buildDirectory.get().asFile)
-    mustRunAfter(jvmFuzzTasks.last())
+}
+java25FuzzTasks.zipWithNext().forEach { (previous, next) ->
+    next.configure { mustRunAfter(previous) }
 }
 
 tasks.named("jvmFuzz") {
-    dependsOn(jvmFuzzMetadataSqlIsolationJava25)
+    dependsOn(java25FuzzTasks)
 }
 
 jmh {
