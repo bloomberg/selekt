@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+## Version 1.7.4
+
+* Fix vec1 zero-dimension fuzz crash.
+* Publish Sigstore bundles alongside Maven Central release artifacts.
+* Fix JDBC reader initialisation and WAL checkpoints.
+
 ## Version 1.7.3
 
 * Harden release build inputs.
