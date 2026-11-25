@@ -139,15 +139,15 @@ jobs:
             else
               case "$(uname -m)" in
                 x86_64)
-                  BASEOS_REPOMD_SHA256='84fa389e4df1fdaa8cea24ec39f2cd34c4179bfe8ad791904f5aad03058a77bf'
-                  APPSTREAM_REPOMD_SHA256='722629e7c6a1ef98c22d4cfe78d79751fc7a6f4522e845fc29d250f11a655e11'
-                  CODEREADY_REPOMD_SHA256='9f37c9e27a3c315067bd3b3ef5b70d5dd7c0c413bcaef585b2181d20670add29'
+                  BASEOS_REPOMD_SHA256='dd3babf013e72bfcf3e08edbebd9b6ba2d2831347a8cd5221feb68d2b422889f'
+                  APPSTREAM_REPOMD_SHA256='7704672a9ded299c89a763acdd84125baa63c6f4eccb45fc559bc9e8d784adf6'
+                  CODEREADY_REPOMD_SHA256='0d4e328ba8420e4cbec8b87f5fc98bbc67a3f1ba0f12951725eb5fffabc4a197'
                   PERL_NEVRA='perl-5.26.3-423.el8_10.1'
                   ;;
                 aarch64)
-                  BASEOS_REPOMD_SHA256='3aec8a811c5f6a9be95812b52efd29291db5bbf4f59ef3d248c113a7509bc020'
-                  APPSTREAM_REPOMD_SHA256='0adaaa96e232d5df23effd2156195ce99b3f7a03e0d0e66930f7d06e3c7f0317'
-                  CODEREADY_REPOMD_SHA256='210fbc50cac065d0ddb9e64190b7c59176173b85737d87a4a4b1d508b00a5623'
+                  BASEOS_REPOMD_SHA256='c7d3c6df144efb4dfdf6fc4b5813ee209222a5ee1f792ae3766c71fcc6bfb7ab'
+                  APPSTREAM_REPOMD_SHA256='d7554c36f8651d3486c433b876598026e38b03d5e40d3cfb1076e22e76eb8114'
+                  CODEREADY_REPOMD_SHA256='9766f2e18acbb7ff9a28b0c1d35f5bad95b6ee8a403414c6150d6a254783e147'
                   PERL_NEVRA='perl-5.26.3-423.el8_10.1'
                   ;;
                 *) echo "Unsupported UBI architecture: $(uname -m)" >&2; exit 1 ;;
@@ -159,22 +159,22 @@ jobs:
               grep -q "^$CODEREADY_REPOMD_SHA256  " /tmp/ubi-repomd.sha256
               dnf install -y --setopt=install_weak_deps=False --setopt=metadata_expire=never \
                 git-2.43.7-1.el8_10 \
-                gcc-8.5.0-30.el8_10 \
-                gcc-c++-8.5.0-30.el8_10 \
-                clang-21.1.8-1.module+el8.10.0+23969+c061985f \
-                llvm-21.1.8-1.module+el8.10.0+23969+c061985f \
-                compiler-rt-21.1.8-1.module+el8.10.0+23969+c061985f \
-                libstdc++-static-8.5.0-30.el8_10 \
-                glibc-devel-2.28-251.el8_10.48 \
+                gcc-8.5.0-31.el8_10 \
+                gcc-c++-8.5.0-31.el8_10 \
+                clang-22.1.8-2.module+el8.10.0+24532+6f1944d0 \
+                llvm-22.1.8-2.module+el8.10.0+24532+6f1944d0 \
+                compiler-rt-22.1.8-2.module+el8.10.0+24532+6f1944d0 \
+                libstdc++-static-8.5.0-31.el8_10 \
+                glibc-devel-2.28-251.el8_10.53 \
                 make-4.2.1-11.el8 \
-                curl-7.61.1-34.el8_10.13 \
+                curl-7.61.1-34.el8_10.21 \
                 tar-1.30-13.el8_10 \
                 sed-4.5-5.el8_10 \
                 bash-4.4.20-6.el8_10 \
                 gnupg2-2.2.20-4.el8_10 \
                 file-5.33-27.el8_10 \
                 "$PERL_NEVRA" \
-                kernel-headers-4.18.0-553.180.1.el8_10 \
+                kernel-headers-4.18.0-553.189.1.el8_10 \
                 cmake-3.26.5-2.el8 \
                 diffutils-3.6-6.el8 \
                 tcl-8.6.8-2.el8 \
