@@ -104,11 +104,11 @@ jobs:
             if command -v apk > /dev/null 2>&1; then
               case "$(uname -m)" in
                 x86_64)
-                  MAIN_INDEX_SHA256='0efcc0b0838bcce24a677896864b6535a4a5586d64358027048ddc387ffe2b4e'
-                  COMMUNITY_INDEX_SHA256='815ef15704e3ec3a47688bb339d0b2c1dc674827f3025db2dd41e16de19468a9'
+                  MAIN_INDEX_SHA256='85cc20ba8f0c7ac174d88f6db3f0b689c61109332ff8fa39f317316555a6feb5'
+                  COMMUNITY_INDEX_SHA256='989cd517e0a7d49bd514cf8d6829c28d966f13a8665e80cea7b3f311bc0b151e'
                   ;;
                 aarch64)
-                  MAIN_INDEX_SHA256='917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273'
+                  MAIN_INDEX_SHA256='c9a6f6d02d08fd53bb54b179edd89eb279dd7fe693d74ed098eb503df8e14c7c'
                   COMMUNITY_INDEX_SHA256='2978db487b00dcd4fb62608056cbc84a0d0d9bfd3ab804cab52ca56ca08f0e0a'
                   ;;
                 *) echo "Unsupported Alpine architecture: $(uname -m)" >&2; exit 1 ;;
@@ -431,7 +431,7 @@ jobs:
               set -e
               apk update
               sha256sum /var/cache/apk/APKINDEX.*.tar.gz > /tmp/alpine-indexes.sha256
-              grep -q "^917a81a37b0e1c8315009482a56f54d3213c32b0756100bf2ed2b9ebeb342273  " /tmp/alpine-indexes.sha256
+              grep -q "^c9a6f6d02d08fd53bb54b179edd89eb279dd7fe693d74ed098eb503df8e14c7c  " /tmp/alpine-indexes.sha256
               grep -q "^2978db487b00dcd4fb62608056cbc84a0d0d9bfd3ab804cab52ca56ca08f0e0a  " /tmp/alpine-indexes.sha256
               apk add \
                 bash=5.2.26-r0 \
